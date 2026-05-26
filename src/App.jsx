@@ -2632,6 +2632,84 @@ function LeagueHub({
           </button>
         </div>
 
+        {/* 🎯 Hits & Misses awards */}
+        {hasActuals && members.length > 0 && (() => {
+          // Find member with most exact-score hits
+          const topHit = [...members].sort((a, b) => {
+            if (b.matchScore.exact !== a.matchScore.exact) return b.matchScore.exact - a.matchScore.exact;
+            // tie-break: more total points wins
+            return b.totalPoints - a.totalPoints;
+          })[0];
+          // Find member with most wrong predictions (only count members who actually predicted)
+          const eligibleForMiss = members.filter(m => m.matchScore.played > 0);
+          const topMiss = eligibleForMiss.length > 0 ? [...eligibleForMiss].sort((a, b) => {
+            if (b.matchScore.wrong !== a.matchScore.wrong) return b.matchScore.wrong - a.matchScore.wrong;
+            return a.totalPoints - b.totalPoints;
+          })[0] : null;
+          const anyHits = topHit && topHit.matchScore.exact > 0;
+          const anyMisses = topMiss && topMiss.matchScore.wrong > 0;
+          if (!anyHits && !anyMisses) return null;
+          return (
+            <div style={{marginBottom:14}}>
+              <div style={{fontSize:11,color:"#94a3b8",letterSpacing:3,marginBottom:8,textAlign:"center"}}>🎯 HITS &amp; MISSES</div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+                {/* Top Hit */}
+                <div style={{
+                  background:"linear-gradient(135deg,rgba(34,197,94,0.15),rgba(15,20,36,0.5))",
+                  border:"1px solid rgba(34,197,94,0.4)",
+                  borderRadius:12,padding:"10px 10px",
+                  boxShadow:"0 4px 12px rgba(34,197,94,0.15)",
+                }}>
+                  <div style={{display:"flex",alignItems:"center",gap:5,marginBottom:6}}>
+                    <span style={{fontSize:18}}>🎯</span>
+                    <span style={{fontSize:9,color:"#22c55e",letterSpacing:2,fontWeight:800}}>TOP HIT</span>
+                  </div>
+                  {anyHits ? (
+                    <>
+                      <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:4}}>
+                        <div style={{width:24,height:24,borderRadius:"50%",background:`linear-gradient(135deg,${colorFor(topHit.name)},${colorFor(topHit.name)}aa)`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:900,color:"#fff",flexShrink:0}}>{topHit.name[0]?.toUpperCase()}</div>
+                        <span style={{fontSize:13,color:"#f1f5f9",fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{topHit.name}{topHit.isMe?" (you)":""}</span>
+                      </div>
+                      <div style={{fontSize:11,color:"#22c55e",fontWeight:700}}>
+                        {topHit.matchScore.exact} exact {topHit.matchScore.exact === 1 ? "score" : "scores"}
+                      </div>
+                      <div style={{fontSize:9,color:"#64748b",marginTop:2}}>nailed it 🎯</div>
+                    </>
+                  ) : (
+                    <div style={{fontSize:11,color:"#64748b",fontStyle:"italic"}}>No exact picks yet</div>
+                  )}
+                </div>
+                {/* Top Miss */}
+                <div style={{
+                  background:"linear-gradient(135deg,rgba(239,68,68,0.12),rgba(15,20,36,0.5))",
+                  border:"1px solid rgba(239,68,68,0.4)",
+                  borderRadius:12,padding:"10px 10px",
+                  boxShadow:"0 4px 12px rgba(239,68,68,0.1)",
+                }}>
+                  <div style={{display:"flex",alignItems:"center",gap:5,marginBottom:6}}>
+                    <span style={{fontSize:18}}>💀</span>
+                    <span style={{fontSize:9,color:"#f87171",letterSpacing:2,fontWeight:800}}>TOP MISS</span>
+                  </div>
+                  {anyMisses ? (
+                    <>
+                      <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:4}}>
+                        <div style={{width:24,height:24,borderRadius:"50%",background:`linear-gradient(135deg,${colorFor(topMiss.name)},${colorFor(topMiss.name)}aa)`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:900,color:"#fff",flexShrink:0}}>{topMiss.name[0]?.toUpperCase()}</div>
+                        <span style={{fontSize:13,color:"#f1f5f9",fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{topMiss.name}{topMiss.isMe?" (you)":""}</span>
+                      </div>
+                      <div style={{fontSize:11,color:"#f87171",fontWeight:700}}>
+                        {topMiss.matchScore.wrong} wrong {topMiss.matchScore.wrong === 1 ? "pick" : "picks"}
+                      </div>
+                      <div style={{fontSize:9,color:"#64748b",marginTop:2}}>oof 💀</div>
+                    </>
+                  ) : (
+                    <div style={{fontSize:11,color:"#64748b",fontStyle:"italic"}}>No misses yet!</div>
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+
         {/* Leaderboard */}
         <div style={{fontSize:11,color:"#94a3b8",letterSpacing:3,marginBottom:8,textAlign:"center"}}>
           🏅 STANDINGS
