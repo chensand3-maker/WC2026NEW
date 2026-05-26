@@ -273,9 +273,13 @@ function getBestThirds(standings) {
 const allGroupsComplete = (picks) => GROUP_KEYS.every(g => groupComplete(g, picks));
 
 function buildR32(standings, bestThirds) {
-  if (!bestThirds || bestThirds.length < 8) return null;
-  const w = g => standings[g][0], r = g => standings[g][1];
-  const get3 = (i) => { const t = bestThirds[i]; return t ? { ...t, isThird: true } : null; };
+  if (!standings) return null;
+  const w = g => standings[g]?.[0] || null;
+  const r = g => standings[g]?.[1] || null;
+  const get3 = (i) => {
+    const t = bestThirds?.[i];
+    return t ? { ...t, isThird: true } : null;
+  };
   return [
     { id:"R32-1", a:w("A"), b:get3(7) }, { id:"R32-2", a:w("C"), b:get3(5) },
     { id:"R32-3", a:w("E"), b:get3(3) }, { id:"R32-4", a:w("B"), b:get3(6) },
@@ -796,11 +800,25 @@ function Welcome({ onStart, onImport }) {
           <div style={{display:"flex",justifyContent:"space-between",fontSize:11,color:"#cbd5e1",marginBottom:3}}>
             <span>✓ Result + goal diff</span><span style={{color:"#22c55e",fontWeight:700}}>+3 pts</span>
           </div>
-          <div style={{display:"flex",justifyContent:"space-between",fontSize:11,color:"#cbd5e1",marginBottom:3}}>
+          <div style={{display:"flex",justifyContent:"space-between",fontSize:11,color:"#cbd5e1",marginBottom:6}}>
             <span>✅ Right result only</span><span style={{color:"#3b82f6",fontWeight:700}}>+2 pts</span>
           </div>
-          <div style={{display:"flex",justifyContent:"space-between",fontSize:11,color:"#cbd5e1"}}>
-            <span>🏆 Champion bonus</span><span style={{color:"#fbbf24",fontWeight:700}}>+40 pts</span>
+          <div style={{
+            borderTop:"1px dashed rgba(71,85,105,0.4)",
+            paddingTop:6,marginTop:4,
+          }}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",fontSize:10,color:"#fbbf24",fontWeight:700,letterSpacing:1,marginBottom:4}}>
+              <span>🔥 KNOCKOUT — DOUBLE POINTS</span>
+            </div>
+            <div style={{display:"flex",justifyContent:"space-between",fontSize:10,color:"#cbd5e1",marginBottom:2}}>
+              <span>R16 pick · QF · SF</span><span style={{color:"#a78bfa",fontWeight:700}}>+6 / +10 / +16</span>
+            </div>
+            <div style={{display:"flex",justifyContent:"space-between",fontSize:10,color:"#cbd5e1",marginBottom:2}}>
+              <span>🏟️ Finalist pick</span><span style={{color:"#fbbf24",fontWeight:700}}>+24 pts</span>
+            </div>
+            <div style={{display:"flex",justifyContent:"space-between",fontSize:11,color:"#fde68a",fontWeight:700}}>
+              <span>👑 Champion bonus</span><span style={{color:"#fbbf24"}}>+40 pts</span>
+            </div>
           </div>
         </div>
 
@@ -1281,13 +1299,14 @@ function GroupView({ group, picks, actuals, standings, bestThirds, liveStandings
 function KnockoutBracket({ standings, bestThirds, koWinners, setKoWinners, onBack, onShare, complete, onChampionPicked }) {
   const r32 = useMemo(() => buildR32(standings, bestThirds), [standings, bestThirds]);
   const [confettiKey, setConfettiKey] = useState(0);
-  
-  if (!r32 || !complete) {
+
+  // Bracket renders even when incomplete — TBD slots fill in as group standings settle.
+  if (!r32) {
     return (
       <div style={{padding:"40px 20px",maxWidth:420,margin:"0 auto",textAlign:"center"}}>
         <div style={{fontSize:48,marginBottom:14}}>⏳</div>
-        <h2 style={{color:"#fbbf24",margin:"0 0 8px"}}>Finish the group stage first</h2>
-        <p style={{color:"#94a3b8",fontSize:14,marginBottom:20}}>Predict all 72 group matches to unlock the bracket.</p>
+        <h2 style={{color:"#fbbf24",margin:"0 0 8px"}}>Bracket loading...</h2>
+        <p style={{color:"#94a3b8",fontSize:14,marginBottom:20}}>Predict some matches first to see the bracket take shape.</p>
         <button onClick={onBack} style={primaryBtn}>← Back to groups</button>
       </div>
     );
@@ -1373,8 +1392,64 @@ function KnockoutBracket({ standings, bestThirds, koWinners, setKoWinners, onBac
       <div style={{textAlign:"center",marginBottom:18}}>
         <div style={{fontSize:10,color:"#64748b",letterSpacing:3}}>KNOCKOUT STAGE</div>
         <h2 style={{fontSize:24,margin:"4px 0",background:"linear-gradient(180deg,#fde68a,#f59e0b)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",fontWeight:900}}>🏆 The Bracket</h2>
-        <p style={{fontSize:12,color:"#94a3b8",margin:0}}>Tap a team to advance them.</p>
+        <p style={{fontSize:12,color:"#94a3b8",margin:"0 0 10px"}}>Tap a team to advance them.</p>
+        <div style={{
+          display:"inline-flex",alignItems:"center",gap:8,
+          background:"linear-gradient(135deg,#fbbf24,#d97706)",
+          color:"#0a0e1c",
+          padding:"5px 14px",borderRadius:20,
+          fontSize:11,fontWeight:900,letterSpacing:1,
+          boxShadow:"0 4px 12px rgba(251,191,36,0.4)",
+        }}>
+          <span style={{fontSize:14}}>🔥</span>
+          DOUBLE POINTS · UP TO 40 PTS PER PICK
+        </div>
       </div>
+
+      {/* Point values per round */}
+      <div style={{
+        display:"grid",gridTemplateColumns:"repeat(5, 1fr)",gap:6,marginBottom:14,
+      }}>
+        {[
+          {label:"R16",pts:6,color:"#a855f7"},
+          {label:"QF",pts:10,color:"#ec4899"},
+          {label:"SF",pts:16,color:"#f97316"},
+          {label:"Finalist",pts:24,color:"#fbbf24"},
+          {label:"Champion",pts:40,color:"#fbbf24",glow:true},
+        ].map(r => (
+          <div key={r.label} style={{
+            background: r.glow
+              ? "linear-gradient(135deg,rgba(251,191,36,0.18),rgba(217,119,6,0.08))"
+              : "rgba(15,20,36,0.6)",
+            border: `1px solid ${r.glow ? "#fbbf24" : `${r.color}55`}`,
+            borderRadius:10,padding:"6px 4px",textAlign:"center",
+            boxShadow: r.glow ? "0 2px 10px rgba(251,191,36,0.25)" : "none",
+          }}>
+            <div style={{fontSize:9,color:r.color,letterSpacing:1,fontWeight:700,marginBottom:1}}>
+              {r.label === "Champion" ? "👑" : ""} {r.label.toUpperCase()}
+            </div>
+            <div style={{fontSize:15,color:r.color,fontWeight:900,lineHeight:1}}>+{r.pts}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Status banner if bracket isn't fully ready */}
+      {!complete && (() => {
+        const filledSlots = r32.filter(m => m.a && m.b).length;
+        return (
+          <div style={{
+            background:"linear-gradient(135deg,rgba(59,130,246,0.1),rgba(99,102,241,0.05))",
+            border:"1px solid rgba(59,130,246,0.4)",
+            borderRadius:12,padding:"10px 14px",marginBottom:14,
+            display:"flex",alignItems:"center",gap:10,
+          }}>
+            <span style={{fontSize:20}}>🔮</span>
+            <div style={{flex:1,fontSize:11,color:"#cbd5e1",lineHeight:1.5}}>
+              <strong style={{color:"#93c5fd"}}>Bracket preview.</strong> {filledSlots}/16 R32 matchups confirmed from group standings. Finish predicting all 72 group matches to lock in the full bracket — TBD slots will fill in as you do.
+            </div>
+          </div>
+        );
+      })()}
 
       {champion && (
         <div key={`champ-${champion.name}`} style={{background:"linear-gradient(135deg,#fbbf24,#d97706)",borderRadius:14,padding:16,marginBottom:18,textAlign:"center",animation:"championPop 0.7s cubic-bezier(0.34, 1.56, 0.64, 1)",boxShadow:"0 10px 30px rgba(251,191,36,0.4)"}}>
