@@ -1,13 +1,10 @@
 // src/liveResults.js
-// ─── 🧪 TEST VERSION: pulls 2022 World Cup data instead of 2026 ───────────────
-// Set SEASON = 2026 when the real tournament starts.
+// ─── 🔴 LIVE 2026 — pulls real World Cup results from API-Football ────────────
 
 // 🔧 PASTE YOUR API-FOOTBALL KEY HERE
 const API_FOOTBALL_KEY = "PASTE_HERE";
 
-// 🔴 LIVE MODE: pulling real 2026 World Cup results from API-Football.
 const SEASON = 2026;
-
 const API_URL = "https://v3.football.api-sports.io";
 
 const TEAM_NAME_MAP = {
@@ -76,8 +73,9 @@ function normalizeTeam(name) {
   return TEAM_NAME_MAP[name] || name;
 }
 
-const CACHE_KEY = "wc2026_live_cache_v2";
-const CACHE_TTL = 5 * 60 * 1000;
+// 🆕 Cache key bumped to v3 — any old 2022 cached data will be ignored automatically.
+const CACHE_KEY = "wc2026_live_cache_v3";
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
 function getCache() {
   try {
@@ -93,7 +91,7 @@ function setCache(data) {
   try { localStorage.setItem(CACHE_KEY, JSON.stringify({ fetchedAt: Date.now(), data })); } catch {}
 }
 
-// ─── Detect which round a fixture is in (API "round" field varies) ────────────
+// Detect which round a fixture is in (API "round" field varies)
 function detectRound(roundStr) {
   if (!roundStr) return null;
   const s = roundStr.toLowerCase();
@@ -108,15 +106,7 @@ function detectRound(roundStr) {
 }
 
 /**
- * Fetch ALL World Cup matches (group + knockout).
- * Returns {
- *   group: { byTeamPair: { "TeamA|TeamB": {h, a} } },
- *   knockout: {
- *     R32: [{ home, away, winner, h, a }],
- *     R16: [...], QF: [...], SF: [...], FINAL: [{...}]
- *   },
- *   fetchedAt
- * }
+ * Fetch all 2026 World Cup matches (group + knockout).
  */
 export async function fetchLiveResults() {
   const cached = getCache();
@@ -154,11 +144,9 @@ export async function fetchLiveResults() {
     const home = normalizeTeam(rawHome);
     const away = normalizeTeam(rawAway);
 
-    // Goals — fall back to penalty-shootout score in score.penalty for PEN status
     let hGoals = fixture.goals?.home;
     let aGoals = fixture.goals?.away;
 
-    // Find the winner for knockout matches — API has teams.home.winner = true/false
     let winner = null;
     if (fixture.teams?.home?.winner === true) winner = home;
     else if (fixture.teams?.away?.winner === true) winner = away;
@@ -173,13 +161,11 @@ export async function fetchLiveResults() {
 
     const round = detectRound(fixture.league?.round);
     if (round === "GROUP" || !round) {
-      // Group stage: store for byTeamPair lookup
       byTeamPair[`${home}|${away}`] = { h: hGoals, a: aGoals, status };
       if (!round) unknownRounds.add(fixture.league?.round);
     } else if (round === "THIRD") {
       // Skip 3rd-place match (not in our bracket)
     } else {
-      // Knockout: store with both teams + winner
       knockout[round].push({
         home, away,
         h: hGoals, a: aGoals,
@@ -232,22 +218,12 @@ export function mapResultsToFixtures(liveData, FIXTURES) {
 
 /**
  * Map knockout results to bracket slot IDs (e.g. "R32-1", "R16-3", "FINAL").
- * Given the REAL bracket structure (built from real group standings),
- * find which slot each completed knockout match fills.
- *
- * Returns { koWinners: { "R32-0": "a"|"b", ... } } — same shape as user picks,
- * so we can plug it into the existing knockout scoring logic.
- *
- * @param {object} liveData - from fetchLiveResults
- * @param {object} realBracket - { r32, r16, qf, sf, final } each with { a, b } teams
- *                               built from real-world standings (use buildR32 etc).
  */
 export function mapKnockoutToWinners(liveData, realBracket) {
   const koWinners = {};
   if (!liveData?.knockout || !realBracket) return koWinners;
 
   const matchSlot = (slot, slotId, fixtures) => {
-    // Find a finished fixture whose teams match this slot's a vs b (either order)
     if (!slot?.a || !slot?.b) return;
     const aName = slot.a.name || slot.a.n;
     const bName = slot.b.name || slot.b.n;
@@ -256,13 +232,10 @@ export function mapKnockoutToWinners(liveData, realBracket) {
         (fx.home === aName && fx.away === bName) ||
         (fx.home === bName && fx.away === aName);
       if (!matches) continue;
-      // Determine winner side ("a" or "b" relative to the slot)
       if (fx.winner === aName) koWinners[slotId] = "a";
       else if (fx.winner === bName) koWinners[slotId] = "b";
-      // If no winner field but scores differ, derive
       else if (fx.h !== fx.a) {
-        const homeWon = fx.h > fx.a;
-        const winnerName = homeWon ? fx.home : fx.away;
+        const winnerName = fx.h > fx.a ? fx.home : fx.away;
         if (winnerName === aName) koWinners[slotId] = "a";
         else if (winnerName === bName) koWinners[slotId] = "b";
       }
@@ -270,22 +243,16 @@ export function mapKnockoutToWinners(liveData, realBracket) {
     }
   };
 
-  // R32
   realBracket.r32?.forEach((m) => matchSlot(m, m.id, liveData.knockout.R32));
-  // R16
   realBracket.r16?.forEach((m) => matchSlot(m, m.id, liveData.knockout.R16));
-  // QF
   realBracket.qf?.forEach((m) => matchSlot(m, m.id, liveData.knockout.QF));
-  // SF
   realBracket.sf?.forEach((m) => matchSlot(m, m.id, liveData.knockout.SF));
-  // FINAL
   if (realBracket.final) matchSlot(realBracket.final, realBracket.final.id, liveData.knockout.FINAL);
 
   console.log(`[liveResults] mapped ${Object.keys(koWinners).length} knockout slots to real winners`);
   return koWinners;
 }
 
-/** Backwards-compat wrapper for older code paths. */
 export async function fetchKnockoutResults() {
   const data = await fetchLiveResults();
   return data.knockout || {};
