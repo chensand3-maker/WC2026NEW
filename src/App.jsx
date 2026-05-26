@@ -46,6 +46,126 @@ GROUP_KEYS.forEach(g => {
   });
 });
 
+// ─── SCHEDULE: kickoff times (UTC) and venues for every group match ──────────
+// Times are given in ET in the published schedule; June 2026 is EDT (UTC−4),
+// so we convert: e.g. June 11 3:00 PM ET = June 11 19:00 UTC.
+// Key format: "TeamA|TeamB" (matching either direction).
+
+function _utc(year, month, day, hour, minute) {
+  // month is 1-12 for readability; Date.UTC expects 0-11
+  return new Date(Date.UTC(year, month - 1, day, hour, minute)).toISOString();
+}
+
+const SCHEDULE = {
+  // ── Group A ──
+  "Mexico|South Africa":  { kickoff: _utc(2026,6,11,19, 0), venue: "Estadio Azteca, Mexico City" },
+  "South Korea|Czechia":  { kickoff: _utc(2026,6,12, 2, 0), venue: "Estadio Akron, Zapopan" },
+  "Czechia|South Africa": { kickoff: _utc(2026,6,18,16, 0), venue: "Mercedes-Benz Stadium, Atlanta" },
+  "Mexico|South Korea":   { kickoff: _utc(2026,6,19, 1, 0), venue: "Estadio Akron, Zapopan" },
+  "Czechia|Mexico":       { kickoff: _utc(2026,6,25, 1, 0), venue: "Estadio Azteca, Mexico City" },
+  "South Africa|South Korea": { kickoff: _utc(2026,6,25, 1, 0), venue: "Estadio BBVA, Guadalupe" },
+  // ── Group B ──
+  "Canada|Bosnia":        { kickoff: _utc(2026,6,12,19, 0), venue: "BMO Field, Toronto" },
+  "Qatar|Switzerland":    { kickoff: _utc(2026,6,13,19, 0), venue: "Levi's Stadium, Santa Clara" },
+  "Switzerland|Bosnia":   { kickoff: _utc(2026,6,18,19, 0), venue: "SoFi Stadium, Inglewood" },
+  "Canada|Qatar":         { kickoff: _utc(2026,6,18,22, 0), venue: "BC Place, Vancouver" },
+  "Switzerland|Canada":   { kickoff: _utc(2026,6,24,19, 0), venue: "BC Place, Vancouver" },
+  "Bosnia|Qatar":         { kickoff: _utc(2026,6,24,19, 0), venue: "Lumen Field, Seattle" },
+  // ── Group C ──
+  "Brazil|Morocco":       { kickoff: _utc(2026,6,13,22, 0), venue: "MetLife Stadium, East Rutherford" },
+  "Haiti|Scotland":       { kickoff: _utc(2026,6,14, 1, 0), venue: "Gillette Stadium, Foxborough" },
+  "Scotland|Morocco":     { kickoff: _utc(2026,6,19,22, 0), venue: "Gillette Stadium, Foxborough" },
+  "Brazil|Haiti":         { kickoff: _utc(2026,6,20, 1, 0), venue: "Lincoln Financial Field, Philadelphia" },
+  "Scotland|Brazil":      { kickoff: _utc(2026,6,24,22, 0), venue: "Hard Rock Stadium, Miami Gardens" },
+  "Morocco|Haiti":        { kickoff: _utc(2026,6,24,22, 0), venue: "Mercedes-Benz Stadium, Atlanta" },
+  // ── Group D ──
+  "USA|Paraguay":         { kickoff: _utc(2026,6,13, 1, 0), venue: "SoFi Stadium, Inglewood" },
+  "Australia|Türkiye":    { kickoff: _utc(2026,6,13, 4, 0), venue: "BC Place, Vancouver" },
+  "Türkiye|Paraguay":     { kickoff: _utc(2026,6,19, 4, 0), venue: "Levi's Stadium, Santa Clara" },
+  "USA|Australia":        { kickoff: _utc(2026,6,19,19, 0), venue: "Lumen Field, Seattle" },
+  "Türkiye|USA":          { kickoff: _utc(2026,6,26, 2, 0), venue: "SoFi Stadium, Inglewood" },
+  "Paraguay|Australia":   { kickoff: _utc(2026,6,26, 2, 0), venue: "Levi's Stadium, Santa Clara" },
+  // ── Group E ──
+  "Germany|Curaçao":      { kickoff: _utc(2026,6,14,17, 0), venue: "NRG Stadium, Houston" },
+  "Côte d'Ivoire|Ecuador":{ kickoff: _utc(2026,6,14,23, 0), venue: "Lincoln Financial Field, Philadelphia" },
+  "Germany|Côte d'Ivoire":{ kickoff: _utc(2026,6,20,20, 0), venue: "BMO Field, Toronto" },
+  "Ecuador|Curaçao":      { kickoff: _utc(2026,6,21, 0, 0), venue: "Arrowhead Stadium, Kansas City" },
+  "Ecuador|Germany":      { kickoff: _utc(2026,6,25,20, 0), venue: "MetLife Stadium, East Rutherford" },
+  "Curaçao|Côte d'Ivoire":{ kickoff: _utc(2026,6,25,20, 0), venue: "Lincoln Financial Field, Philadelphia" },
+  // ── Group F ──
+  "Netherlands|Japan":    { kickoff: _utc(2026,6,14,20, 0), venue: "AT&T Stadium, Arlington" },
+  "Sweden|Tunisia":       { kickoff: _utc(2026,6,15, 2, 0), venue: "Estadio BBVA, Guadalupe" },
+  "Netherlands|Sweden":   { kickoff: _utc(2026,6,20,17, 0), venue: "NRG Stadium, Houston" },
+  "Tunisia|Japan":        { kickoff: _utc(2026,6,20, 4, 0), venue: "Estadio BBVA, Guadalupe" },
+  "Tunisia|Netherlands":  { kickoff: _utc(2026,6,25,23, 0), venue: "AT&T Stadium, Arlington" },
+  "Japan|Sweden":         { kickoff: _utc(2026,6,25,23, 0), venue: "Arrowhead Stadium, Kansas City" },
+  // ── Group G ──
+  "Belgium|Egypt":        { kickoff: _utc(2026,6,15,19, 0), venue: "Lumen Field, Seattle" },
+  "Iran|New Zealand":     { kickoff: _utc(2026,6,16, 1, 0), venue: "SoFi Stadium, Inglewood" },
+  "Belgium|Iran":         { kickoff: _utc(2026,6,21,19, 0), venue: "SoFi Stadium, Inglewood" },
+  "New Zealand|Egypt":    { kickoff: _utc(2026,6,22, 1, 0), venue: "BC Place, Vancouver" },
+  "New Zealand|Belgium":  { kickoff: _utc(2026,6,27, 3, 0), venue: "BC Place, Vancouver" },
+  "Egypt|Iran":           { kickoff: _utc(2026,6,27, 3, 0), venue: "Lumen Field, Seattle" },
+  // ── Group H ──
+  "Spain|Cabo Verde":     { kickoff: _utc(2026,6,15,16, 0), venue: "Mercedes-Benz Stadium, Atlanta" },
+  "Saudi Arabia|Uruguay": { kickoff: _utc(2026,6,15,22, 0), venue: "Hard Rock Stadium, Miami Gardens" },
+  "Spain|Saudi Arabia":   { kickoff: _utc(2026,6,21,16, 0), venue: "Mercedes-Benz Stadium, Atlanta" },
+  "Uruguay|Cabo Verde":   { kickoff: _utc(2026,6,21,22, 0), venue: "Hard Rock Stadium, Miami Gardens" },
+  "Uruguay|Spain":        { kickoff: _utc(2026,6,27, 0, 0), venue: "NRG Stadium, Houston" },
+  "Cabo Verde|Saudi Arabia": { kickoff: _utc(2026,6,27, 0, 0), venue: "Estadio Akron, Zapopan" },
+  // ── Group I ──
+  "France|Senegal":       { kickoff: _utc(2026,6,16,19, 0), venue: "MetLife Stadium, East Rutherford" },
+  "Iraq|Norway":          { kickoff: _utc(2026,6,16,22, 0), venue: "Gillette Stadium, Foxborough" },
+  "France|Iraq":          { kickoff: _utc(2026,6,22,21, 0), venue: "Lincoln Financial Field, Philadelphia" },
+  "Norway|Senegal":       { kickoff: _utc(2026,6,23, 0, 0), venue: "MetLife Stadium, East Rutherford" },
+  "Norway|France":        { kickoff: _utc(2026,6,26,19, 0), venue: "Gillette Stadium, Foxborough" },
+  "Senegal|Iraq":         { kickoff: _utc(2026,6,26,19, 0), venue: "BMO Field, Toronto" },
+  // ── Group J ──
+  "Argentina|Algeria":    { kickoff: _utc(2026,6,17, 1, 0), venue: "Arrowhead Stadium, Kansas City" },
+  "Austria|Jordan":       { kickoff: _utc(2026,6,17, 4, 0), venue: "Levi's Stadium, Santa Clara" },
+  "Argentina|Austria":    { kickoff: _utc(2026,6,22,17, 0), venue: "AT&T Stadium, Arlington" },
+  "Jordan|Algeria":       { kickoff: _utc(2026,6,23, 3, 0), venue: "Levi's Stadium, Santa Clara" },
+  "Jordan|Argentina":     { kickoff: _utc(2026,6,28, 2, 0), venue: "AT&T Stadium, Arlington" },
+  "Algeria|Austria":      { kickoff: _utc(2026,6,28, 2, 0), venue: "Arrowhead Stadium, Kansas City" },
+  // ── Group K ──
+  "Portugal|DR Congo":    { kickoff: _utc(2026,6,17,17, 0), venue: "NRG Stadium, Houston" },
+  "Uzbekistan|Colombia":  { kickoff: _utc(2026,6,18, 2, 0), venue: "Estadio Azteca, Mexico City" },
+  "Portugal|Uzbekistan":  { kickoff: _utc(2026,6,23,17, 0), venue: "NRG Stadium, Houston" },
+  "Colombia|DR Congo":    { kickoff: _utc(2026,6,24, 2, 0), venue: "Estadio Akron, Zapopan" },
+  "Colombia|Portugal":    { kickoff: _utc(2026,6,27,23,30), venue: "Hard Rock Stadium, Miami Gardens" },
+  "DR Congo|Uzbekistan":  { kickoff: _utc(2026,6,27,23,30), venue: "Mercedes-Benz Stadium, Atlanta" },
+  // ── Group L ──
+  "England|Croatia":      { kickoff: _utc(2026,6,17,20, 0), venue: "AT&T Stadium, Arlington" },
+  "Ghana|Panama":         { kickoff: _utc(2026,6,17,23, 0), venue: "BMO Field, Toronto" },
+  "England|Ghana":        { kickoff: _utc(2026,6,23,20, 0), venue: "Gillette Stadium, Foxborough" },
+  "Panama|Croatia":       { kickoff: _utc(2026,6,23,23, 0), venue: "BMO Field, Toronto" },
+  "Panama|England":       { kickoff: _utc(2026,6,27,21, 0), venue: "MetLife Stadium, East Rutherford" },
+  "Croatia|Ghana":        { kickoff: _utc(2026,6,27,21, 0), venue: "Lincoln Financial Field, Philadelphia" },
+};
+
+// Merge schedule info into FIXTURES (lookup by either team-pair direction)
+FIXTURES.forEach(f => {
+  const a = SCHEDULE[`${f.home}|${f.away}`];
+  const b = SCHEDULE[`${f.away}|${f.home}`];
+  const s = a || b;
+  if (s) {
+    f.kickoff = s.kickoff;
+    f.venue = s.venue;
+  }
+});
+
+// Format a kickoff time in the user's local time zone
+function formatKickoff(iso) {
+  if (!iso) return null;
+  try {
+    const d = new Date(iso);
+    const day = d.toLocaleDateString(undefined, { month: "short", day: "numeric", weekday: "short" });
+    const time = d.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+    return { day, time, dateObj: d };
+  } catch { return null; }
+}
+
+
 // ─── SCORING ──────────────────────────────────────────────────────────────────
 
 const POINTS = {
@@ -350,208 +470,291 @@ async function copyText(text) {
 
 function SoccerIntro({ onDone }) {
   useEffect(() => {
-    const t = setTimeout(onDone, 3200);
+    const t = setTimeout(onDone, 4200);
     return () => clearTimeout(t);
   }, [onDone]);
 
   return (
     <div style={{
-      position:"fixed",inset:0,zIndex:50,
-      background:"linear-gradient(180deg,#1e293b 0%,#0f172a 60%,#14532d 60%,#166534 100%)",
-      display:"flex",alignItems:"flex-end",justifyContent:"center",
-      overflow:"hidden",
+      position:"fixed",inset:0,zIndex:50,overflow:"hidden",
+      background:"linear-gradient(180deg, #0a0e1c 0%, #1e1b4b 35%, #1e293b 65%, #14532d 65%, #052e16 100%)",
+      animation:"introFadeOut 0.4s ease-in 3.8s forwards",
     }}>
-      <style>{`
-        @keyframes pitchLines {
-          from { opacity: 0; } to { opacity: 0.4; }
-        }
-        @keyframes runUp {
-          0% { transform: translateX(-30vw) translateY(0); }
-          70% { transform: translateX(-2vw) translateY(0); }
-          78% { transform: translateX(0) translateY(-4px) rotate(-15deg); }
-          85% { transform: translateX(2vw) translateY(0) rotate(0deg); }
-          100% { transform: translateX(2vw) translateY(0); }
-        }
-        @keyframes playerLeg {
-          0%, 70% { transform: rotate(0deg); }
-          78% { transform: rotate(-50deg); }
-          85% { transform: rotate(20deg); }
-          100% { transform: rotate(0deg); }
-        }
-        @keyframes ballKick {
-          0%, 76% { transform: translate(0,0) rotate(0deg); opacity: 1; }
-          77% { transform: translate(0,0) rotate(0deg); opacity: 1; }
-          100% { transform: translate(38vw, -32vh) rotate(720deg); opacity: 1; }
-        }
-        @keyframes netShake {
-          0%, 95% { transform: translateX(0); }
-          96% { transform: translateX(-2px); }
-          97% { transform: translateX(3px); }
-          98% { transform: translateX(-2px); }
-          99% { transform: translateX(1px); }
-          100% { transform: translateX(0); }
-        }
-        @keyframes goalFlash {
-          0%, 94% { opacity: 0; transform: scale(0.5); }
-          96% { opacity: 1; transform: scale(1.2); }
-          100% { opacity: 1; transform: scale(1); }
-        }
-        @keyframes crowdRoar {
-          0%, 95% { opacity: 0; transform: translateY(20px); }
-          100% { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes fadeIntro {
-          0%, 90% { opacity: 1; }
-          100% { opacity: 0; }
-        }
-        @keyframes dustPuff {
-          0%, 76% { opacity: 0; transform: scale(0.3); }
-          78% { opacity: 0.6; transform: scale(1); }
-          90% { opacity: 0; transform: scale(2); }
-          100% { opacity: 0; transform: scale(2); }
-        }
-      `}</style>
+      {/* Stadium lights — soft glow at top */}
+      <div style={{
+        position:"absolute", top:0, left:"50%", transform:"translateX(-50%)",
+        width:"120%", height:"40%",
+        background:"radial-gradient(ellipse at center top, rgba(251,191,36,0.15) 0%, transparent 60%)",
+        pointerEvents:"none",
+      }}/>
 
-      {/* whole intro fades out at end */}
-      <div style={{position:"absolute",inset:0,animation:"fadeIntro 3.2s ease-in forwards"}}>
-        {/* stadium lights / sky glow */}
-        <div style={{
-          position:"absolute",top:0,left:0,right:0,height:"60%",
-          background:"radial-gradient(ellipse at 50% 0%, rgba(251,191,36,0.15) 0%, transparent 60%)",
+      {/* Crowd silhouette (very subtle, behind everything) */}
+      <div style={{
+        position:"absolute", left:0, right:0, top:"35%",
+        height:"30%", opacity:0.15,
+        background:`url("data:image/svg+xml;utf8,${encodeURIComponent(`
+<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 60' preserveAspectRatio='none'>
+  <path d='M0,60 ${Array.from({length:80},(_,i)=>{
+    const x = i*5;
+    const h = 25 + Math.random()*20;
+    return `L${x},${60-h} L${x+3},${60-h}`;
+  }).join(' ')} L400,60 Z' fill='#0a0e1c'/>
+</svg>
+        `)}")`,
+        backgroundSize:"100% 100%",
+        backgroundRepeat:"no-repeat",
+      }}/>
+
+      {/* Pitch perspective lines */}
+      <svg viewBox="0 0 800 500" preserveAspectRatio="xMidYMax slice" style={{
+        position:"absolute", inset:0, width:"100%", height:"100%",
+        pointerEvents:"none",
+      }}>
+        <defs>
+          <linearGradient id="pitchFade" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#22c55e" stopOpacity="0"/>
+            <stop offset="100%" stopColor="#22c55e" stopOpacity="0.4"/>
+          </linearGradient>
+        </defs>
+        {/* Pitch grass overlay with stripes */}
+        <rect x="0" y="325" width="800" height="175" fill="url(#pitchFade)"/>
+        {/* Vanishing-point pitch lines */}
+        <g stroke="#ffffff" strokeWidth="1.2" strokeOpacity="0.18" fill="none">
+          {/* Sidelines converging */}
+          <path d="M 50 500 L 380 325"/>
+          <path d="M 750 500 L 420 325"/>
+          {/* Horizontal lines */}
+          <line x1="100" y1="450" x2="700" y2="450"/>
+          <line x1="180" y1="395" x2="620" y2="395"/>
+          <line x1="240" y1="360" x2="560" y2="360"/>
+          {/* Center circle (partial, in perspective) */}
+          <ellipse cx="400" cy="450" rx="100" ry="22" strokeOpacity="0.25"/>
+          <circle cx="400" cy="450" r="2.5" fill="#ffffff" fillOpacity="0.5" stroke="none"/>
+        </g>
+
+        {/* GOAL — sized to vanishing point, prominent at top of pitch */}
+        <g style={{
+          animation:"introGoalEntry 0.6s ease-out 0.2s both",
+        }}>
+          {/* Goal net background — diamond mesh */}
+          <defs>
+            <pattern id="goalNet" x="0" y="0" width="8" height="8" patternUnits="userSpaceOnUse">
+              <path d="M 0 4 L 4 0 L 8 4 L 4 8 Z" fill="none" stroke="#ffffff" strokeOpacity="0.35" strokeWidth="0.5"/>
+            </pattern>
+          </defs>
+          {/* Net area */}
+          <rect x="330" y="245" width="140" height="80" fill="url(#goalNet)" stroke="none"/>
+          {/* Frame: posts + crossbar */}
+          <g stroke="#ffffff" strokeWidth="3.5" fill="none" strokeLinecap="square">
+            <line x1="330" y1="245" x2="330" y2="325"/>
+            <line x1="470" y1="245" x2="470" y2="325"/>
+            <line x1="328" y1="245" x2="472" y2="245"/>
+          </g>
+          {/* Net shake on impact */}
+          <rect id="netShake" x="330" y="245" width="140" height="80" fill="url(#goalNet)" stroke="none"
+            style={{
+              transformOrigin:"400px 245px",
+              animation:"introNetShake 0.6s ease-out 3.1s",
+              opacity:0,
+            }}/>
+        </g>
+
+        {/* SHADOW under player + ball trajectory shadow */}
+        <ellipse cx="150" cy="475" rx="22" ry="4" fill="#000000" fillOpacity="0.4" style={{
+          animation:"introShadowMove 1.6s ease-in 1s both",
         }}/>
 
-        {/* pitch markings */}
-        <div style={{position:"absolute",bottom:0,left:0,right:0,height:"40%",animation:"pitchLines 0.6s ease-out forwards"}}>
-          <svg width="100%" height="100%" viewBox="0 0 400 200" preserveAspectRatio="none" style={{opacity:0.3}}>
-            <line x1="0" y1="40" x2="400" y2="40" stroke="#fff" strokeWidth="2"/>
-            <ellipse cx="200" cy="200" rx="120" ry="40" stroke="#fff" strokeWidth="2" fill="none"/>
-          </svg>
-        </div>
-
-        {/* GOAL with net */}
-        <div style={{
-          position:"absolute",top:"18%",left:"50%",
-          transform:"translateX(-50%)",
-          width:"min(70vw, 280px)",height:"min(40vw, 160px)",
+        {/* PLAYER (silhouette with proper proportions) - runs in, plants, kicks */}
+        <g style={{
+          animation:"introPlayerRun 1.6s cubic-bezier(0.4,0,0.2,1) 1s both",
         }}>
-          <div style={{
-            width:"100%",height:"100%",position:"relative",
-            animation:"netShake 3.2s ease-out forwards",
-          }}>
-            {/* net pattern */}
-            <svg viewBox="0 0 200 120" width="100%" height="100%" style={{position:"absolute",inset:0}}>
-              {/* net mesh */}
-              <defs>
-                <pattern id="netPat" width="10" height="10" patternUnits="userSpaceOnUse">
-                  <path d="M 0 0 L 10 10 M 10 0 L 0 10" stroke="rgba(255,255,255,0.5)" strokeWidth="0.5"/>
-                </pattern>
-              </defs>
-              <rect x="10" y="10" width="180" height="100" fill="url(#netPat)" />
-              {/* posts and crossbar */}
-              <rect x="6" y="6" width="6" height="108" fill="#fff"/>
-              <rect x="188" y="6" width="6" height="108" fill="#fff"/>
-              <rect x="6" y="6" width="188" height="6" fill="#fff"/>
-            </svg>
-          </div>
-        </div>
+          <g id="player" transform="translate(150, 475)">
+            {/* Body parts use grouped transforms for the kick animation */}
+            {/* Back leg (planted) */}
+            <g style={{transformOrigin:"0px -28px",animation:"introBackLeg 0.6s ease-out 2.6s both"}}>
+              <rect x="-3" y="-28" width="6" height="22" rx="2" fill="#0a0e1c"/>
+              <rect x="-5" y="-8" width="10" height="5" rx="1" fill="#fbbf24"/>
+            </g>
+            {/* Front leg (kicking) */}
+            <g style={{
+              transformOrigin:"0px -28px",
+              animation:"introKickLeg 0.5s cubic-bezier(0.5,0,0.4,1.2) 2.6s both",
+            }}>
+              <rect x="-3" y="-28" width="6" height="22" rx="2" fill="#0a0e1c"/>
+              <rect x="-5" y="-8" width="10" height="5" rx="1" fill="#fbbf24"/>
+            </g>
+            {/* Body (jersey) */}
+            <path d="M -10 -55 L -8 -28 L 8 -28 L 10 -55 Z" fill="#dc2626"/>
+            <path d="M -10 -55 L -16 -45 L -14 -38 L -10 -42 Z" fill="#dc2626"/>
+            <path d="M 10 -55 L 16 -45 L 14 -38 L 10 -42 Z" fill="#dc2626"/>
+            {/* Number on jersey */}
+            <text x="0" y="-40" textAnchor="middle" fill="#ffffff" fontSize="10" fontWeight="900" fontFamily="Arial">10</text>
+            {/* Head */}
+            <circle cx="0" cy="-62" r="8" fill="#fcd34d"/>
+            {/* Arms — front arm swung forward */}
+            <g style={{transformOrigin:"-10px -55px",animation:"introArmBack 0.5s ease-out 2.6s both"}}>
+              <rect x="-22" y="-55" width="6" height="20" rx="2" fill="#fcd34d" transform="rotate(20)"/>
+            </g>
+            <g style={{transformOrigin:"10px -55px",animation:"introArmFront 0.5s ease-out 2.6s both"}}>
+              <rect x="16" y="-55" width="6" height="20" rx="2" fill="#fcd34d" transform="rotate(-30)"/>
+            </g>
+          </g>
+        </g>
 
-        {/* GOAL! flash text */}
-        <div style={{
-          position:"absolute",top:"30%",left:"50%",
-          transform:"translateX(-50%)",
-          animation:"goalFlash 3.2s ease-out forwards",
-          fontSize:"clamp(48px, 14vw, 110px)",
-          fontWeight:900,
-          background:"linear-gradient(180deg,#fde047,#f59e0b,#dc2626)",
-          WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",
-          letterSpacing:4,
-          textShadow:"0 0 40px rgba(251,191,36,0.6)",
-          pointerEvents:"none",
-          whiteSpace:"nowrap",
-        }}>GOAL!</div>
-
-        {/* Player (run-up + kick) */}
-        <div style={{
-          position:"absolute",bottom:"8%",left:"50%",
-          animation:"runUp 3s cubic-bezier(0.4,0,0.2,1) forwards",
+        {/* BALL — sits still, then launches toward goal */}
+        <g style={{
+          animation:"introBallShot 1.0s cubic-bezier(0.3,0.1,0.4,1) 3.05s both",
         }}>
-          {/* dust puff under foot */}
-          <div style={{
-            position:"absolute",bottom:"-4px",left:"50%",
-            width:30,height:30,borderRadius:"50%",
-            background:"radial-gradient(circle, rgba(251,191,36,0.5) 0%, transparent 70%)",
-            animation:"dustPuff 3s ease-out forwards",
-            transform:"translateX(-50%)",
+          <g id="ball" transform="translate(195, 475)">
+            <g style={{transformOrigin:"0 0", animation:"introBallSpin 1.0s linear 3.05s both"}}>
+              <circle cx="0" cy="0" r="9" fill="#ffffff"/>
+              <polygon points="0,-5 4.8,-1.5 3,4 -3,4 -4.8,-1.5" fill="#0a0e1c"/>
+              <line x1="0" y1="-5" x2="0" y2="-9" stroke="#0a0e1c" strokeWidth="0.8"/>
+              <line x1="4.8" y1="-1.5" x2="8.5" y2="-2.8" stroke="#0a0e1c" strokeWidth="0.8"/>
+              <line x1="3" y1="4" x2="5.3" y2="7.3" stroke="#0a0e1c" strokeWidth="0.8"/>
+              <line x1="-3" y1="4" x2="-5.3" y2="7.3" stroke="#0a0e1c" strokeWidth="0.8"/>
+              <line x1="-4.8" y1="-1.5" x2="-8.5" y2="-2.8" stroke="#0a0e1c" strokeWidth="0.8"/>
+            </g>
+          </g>
+        </g>
+
+        {/* Motion-blur streak following the ball */}
+        <path d="M 195 475 Q 290 380 400 290" stroke="#ffffff" strokeWidth="2" fill="none"
+          strokeLinecap="round" strokeDasharray="2 8" strokeOpacity="0.6"
+          style={{
+            strokeDashoffset:200,
+            animation:"introTrail 1.0s ease-out 3.05s both",
           }}/>
-          {/* body */}
-          <div style={{position:"relative",width:50,height:80}}>
-            {/* head */}
-            <div style={{
-              position:"absolute",top:0,left:"50%",transform:"translateX(-50%)",
-              width:20,height:20,borderRadius:"50%",
-              background:"#fbbf24",
-              boxShadow:"inset -3px -3px 0 rgba(0,0,0,0.15)",
-            }}/>
-            {/* torso */}
-            <div style={{
-              position:"absolute",top:18,left:"50%",transform:"translateX(-50%)",
-              width:24,height:30,borderRadius:6,
-              background:"linear-gradient(180deg,#dc2626,#991b1b)",
-            }}/>
-            {/* number on shirt */}
-            <div style={{
-              position:"absolute",top:24,left:"50%",transform:"translateX(-50%)",
-              color:"#fff",fontSize:11,fontWeight:900,
-            }}>10</div>
-            {/* standing leg */}
-            <div style={{
-              position:"absolute",bottom:0,left:"38%",
-              width:6,height:30,borderRadius:3,
-              background:"#0f172a",
-              transformOrigin:"top center",
-            }}/>
-            {/* kicking leg (animated) */}
-            <div style={{
-              position:"absolute",top:44,left:"55%",
-              width:6,height:30,borderRadius:3,
-              background:"#0f172a",
-              transformOrigin:"top center",
-              animation:"playerLeg 3s cubic-bezier(0.4,0,0.2,1) forwards",
-            }}/>
-          </div>
-        </div>
 
-        {/* Ball (sits next to player, then flies to goal) */}
+        {/* IMPACT FLASH on net */}
+        <circle cx="400" cy="290" r="0" fill="#fbbf24" fillOpacity="0.8"
+          style={{ animation:"introImpact 0.5s ease-out 3.95s both" }}/>
+      </svg>
+
+      {/* GOAL! text overlay */}
+      <div style={{
+        position:"absolute", inset:0, display:"flex",
+        alignItems:"center", justifyContent:"center",
+        pointerEvents:"none",
+      }}>
         <div style={{
-          position:"absolute",bottom:"6%",left:"calc(50% + 30px)",
-          fontSize:"clamp(28px, 7vw, 42px)",
-          animation:"ballKick 3s cubic-bezier(0.2, 0.7, 0.4, 1) forwards",
-          filter:"drop-shadow(0 4px 6px rgba(0,0,0,0.5))",
-        }}>⚽</div>
-
-        {/* Bottom title */}
-        <div style={{
-          position:"absolute",bottom:30,left:0,right:0,textAlign:"center",
-          animation:"crowdRoar 3.2s ease-out forwards",
-        }}>
-          <div style={{fontSize:11,letterSpacing:6,color:"#fbbf24",marginBottom:2}}>FIFA WORLD CUP</div>
-          <div style={{
-            fontSize:"clamp(28px, 8vw, 44px)",fontWeight:900,
-            background:"linear-gradient(180deg,#fde68a,#f59e0b)",
-            WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",
-            letterSpacing:3,
-          }}>2026</div>
-        </div>
-
-        {/* Skip button */}
-        <button onClick={onDone} style={{
-          position:"absolute",top:16,right:16,
-          background:"rgba(15,23,42,0.6)",
-          border:"1px solid rgba(148,163,184,0.3)",
-          color:"#cbd5e1",padding:"6px 12px",borderRadius:20,
-          fontSize:11,cursor:"pointer",letterSpacing:1,fontFamily:"inherit",
-        }}>Skip ›</button>
+          fontSize:"clamp(48px, 12vw, 110px)",
+          fontWeight:900,
+          letterSpacing:6,
+          background:"linear-gradient(180deg, #fde68a 0%, #fbbf24 50%, #d97706 100%)",
+          WebkitBackgroundClip:"text",
+          WebkitTextFillColor:"transparent",
+          backgroundClip:"text",
+          textShadow:"0 0 40px rgba(251,191,36,0.5)",
+          opacity:0,
+          transform:"scale(0.5)",
+          animation:"introGoalText 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 3.2s forwards",
+          fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+        }}>GOAL!</div>
       </div>
+
+      {/* Title text at bottom */}
+      <div style={{
+        position:"absolute", left:0, right:0, bottom:"8%",
+        textAlign:"center",
+        opacity:0,
+        animation:"introTitleSlide 0.8s ease-out 3.3s forwards",
+      }}>
+        <div style={{
+          fontSize:11, letterSpacing:6, color:"#fbbf24",
+          textTransform:"uppercase", marginBottom:6, fontWeight:700,
+        }}>FIFA World Cup 2026</div>
+        <h1 style={{
+          fontSize:"clamp(20px, 5vw, 32px)", margin:0,
+          color:"#f1f5f9", fontWeight:900, letterSpacing:2,
+        }}>PREDICTIONS</h1>
+      </div>
+
+      {/* Skip button */}
+      <button onClick={onDone} style={{
+        position:"absolute", top:20, right:20,
+        background:"rgba(15,23,42,0.7)", backdropFilter:"blur(6px)",
+        border:"1px solid rgba(148,163,184,0.3)",
+        color:"#cbd5e1", padding:"6px 14px", borderRadius:20,
+        fontSize:11, cursor:"pointer", letterSpacing:1, fontFamily:"inherit",
+        zIndex:60,
+      }}>Skip ›</button>
+
+      {/* Animations */}
+      <style>{`
+        @keyframes introFadeOut {
+          to { opacity: 0; }
+        }
+        @keyframes introGoalEntry {
+          from { opacity: 0; transform: translateY(-20px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        /* Player runs in from the left */
+        @keyframes introPlayerRun {
+          0% { transform: translateX(-220px); }
+          85% { transform: translateX(0); }
+          100% { transform: translateX(0); }
+        }
+        @keyframes introShadowMove {
+          0% { transform: translateX(-220px); opacity: 0.4; }
+          85% { transform: translateX(0); opacity: 0.4; }
+          100% { transform: translateX(0); opacity: 0.4; }
+        }
+        /* Back leg stays planted */
+        @keyframes introBackLeg {
+          0% { transform: rotate(20deg); }
+          100% { transform: rotate(-10deg); }
+        }
+        /* Front leg swings forward to kick */
+        @keyframes introKickLeg {
+          0% { transform: rotate(-50deg); }
+          100% { transform: rotate(70deg); }
+        }
+        @keyframes introArmBack {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(-30deg); }
+        }
+        @keyframes introArmFront {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(40deg); }
+        }
+        /* Ball launches in a parabolic arc to the goal */
+        @keyframes introBallShot {
+          0%   { transform: translate(0,0); }
+          50%  { transform: translate(102px, -110px) scale(0.85); }
+          100% { transform: translate(205px, -185px) scale(0.5); }
+        }
+        @keyframes introBallSpin {
+          0%   { transform: rotate(0deg); }
+          100% { transform: rotate(720deg); }
+        }
+        @keyframes introTrail {
+          0%   { stroke-dashoffset: 200; opacity: 0; }
+          15%  { opacity: 1; }
+          100% { stroke-dashoffset: 0; opacity: 0; }
+        }
+        @keyframes introImpact {
+          0%   { r: 0; opacity: 0.9; }
+          100% { r: 80; opacity: 0; }
+        }
+        @keyframes introNetShake {
+          0%   { transform: translateY(0) scaleY(1); opacity: 0; }
+          10%  { transform: translateY(0) scaleY(1); opacity: 0.7; }
+          30%  { transform: translateY(4px) scaleY(1.06); opacity: 0.5; }
+          60%  { transform: translateY(-2px) scaleY(0.97); opacity: 0.3; }
+          100% { transform: translateY(0) scaleY(1); opacity: 0; }
+        }
+        @keyframes introGoalText {
+          0%   { opacity: 0; transform: scale(0.3) rotate(-8deg); }
+          60%  { opacity: 1; transform: scale(1.15) rotate(3deg); }
+          80%  { transform: scale(0.95) rotate(-1deg); }
+          100% { opacity: 1; transform: scale(1) rotate(0deg); }
+        }
+        @keyframes introTitleSlide {
+          from { opacity: 0; transform: translateY(15px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
     </div>
   );
 }
@@ -636,13 +839,27 @@ function Welcome({ onStart, onImport }) {
   );
 }
 
-function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, awayInputId, nextInputId }) {
+function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, awayInputId, nextInputId, lockable = true }) {
   const home = findTeam(fixture.home);
   const away = findTeam(fixture.away);
   const h = pick?.h ?? "";
   const a = pick?.a ?? "";
   const hasResult = h !== "" && a !== "";
-  
+
+  // ─── LOCKOUT: matches lock 1 hour before kickoff ──
+  const LOCK_MS = 60 * 60 * 1000; // 1 hour
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => {
+    if (!lockable) return;
+    // Re-check the clock every 30s so we lock automatically as time approaches
+    const t = setInterval(() => setNow(Date.now()), 30 * 1000);
+    return () => clearInterval(t);
+  }, [lockable]);
+  const kickoffMs = fixture.kickoff ? new Date(fixture.kickoff).getTime() : null;
+  const msUntilKickoff = kickoffMs != null ? (kickoffMs - now) : null;
+  const isLocked = lockable && msUntilKickoff != null && msUntilKickoff < LOCK_MS;
+  const isLockingSoon = lockable && msUntilKickoff != null && msUntilKickoff < LOCK_MS + 60*60*1000 && msUntilKickoff >= LOCK_MS;
+
   let result = null;
   if (hasResult) {
     if (h > a) result = "home";
@@ -685,6 +902,7 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
   }, [hasResult, h, a]);
 
   const setScore = (side, val) => {
+    if (isLocked) return; // hard block
     let n = parseInt(val);
     if (isNaN(n)) n = "";
     else n = Math.max(0, Math.min(9, n));
@@ -693,6 +911,7 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
 
   // Auto-advance: when a digit is typed, jump to next input
   const handleInput = (side, e) => {
+    if (isLocked) return;
     const raw = e.target.value.replace(/\D/g, "").slice(-1); // only last digit typed
     setScore(side, raw);
     if (raw !== "") {
@@ -721,7 +940,7 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
   };
 
   // Score this match if actuals are present
-  const score = showResults && actual ? scoreMatch(pick, actual) : null;
+  const score = actual && actual.h !== undefined && actual.h !== "" && hasResult ? scoreMatch(pick, actual) : null;
   const scoreColors = {
     exact: {bg:"rgba(251,191,36,0.15)", border:"#fbbf24", text:"#fbbf24", label:"🎯 EXACT"},
     gd: {bg:"rgba(34,197,94,0.15)", border:"#22c55e", text:"#22c55e", label:"✓ GD"},
@@ -759,10 +978,27 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
           </div>
         </div>
       )}
-      <div style={{fontSize:9,color:"#64748b",letterSpacing:2,marginBottom:6,display:"flex",justifyContent:"space-between"}}>
-        <span>MATCHDAY {fixture.matchday}</span>
-        {sc && <span style={{color:sc.text,fontWeight:700}}>{sc.label} +{score.points}</span>}
-        {!sc && hasResult && <span style={{color:"#22c55e"}}>✓</span>}
+      <div style={{fontSize:9,color:"#64748b",letterSpacing:2,marginBottom:6,display:"flex",justifyContent:"space-between",alignItems:"center",gap:6}}>
+        <span style={{whiteSpace:"nowrap"}}>MD {fixture.matchday}</span>
+        {(() => {
+          const k = formatKickoff(fixture.kickoff);
+          if (!k) return null;
+          const isPast = k.dateObj.getTime() < Date.now();
+          return (
+            <span style={{
+              flex:1,textAlign:"center",
+              color: isPast ? "#475569" : "#cbd5e1",
+              fontWeight: 600, letterSpacing: 1,
+              overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+            }}>
+              📅 {k.day} · 🕐 {k.time}
+            </span>
+          );
+        })()}
+        {isLocked && <span style={{color:"#f87171",fontWeight:700,whiteSpace:"nowrap"}}>🔒 LOCKED</span>}
+        {!isLocked && isLockingSoon && <span style={{color:"#fbbf24",fontWeight:700,whiteSpace:"nowrap"}}>⏰ LOCKS SOON</span>}
+        {sc && <span style={{color:sc.text,fontWeight:700,whiteSpace:"nowrap"}}>{sc.label} +{score.points}</span>}
+        {!sc && !isLocked && hasResult && <span style={{color:"#22c55e"}}>✓</span>}
       </div>
       <div style={{display:"grid",gridTemplateColumns:"1fr auto 1fr",alignItems:"center",gap:8}}>
         <div style={{display:"flex",alignItems:"center",gap:8,justifyContent:"flex-end",opacity:result==="away"?0.5:1}}>
@@ -774,36 +1010,121 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
             onChange={e=>handleInput("h", e)}
             onKeyDown={e=>handleKeyDown("h", e)}
             onFocus={e=>e.target.select()}
-            placeholder="—"
-            style={{width:36,height:36,textAlign:"center",background:"#0a0e1c",border:`1px solid ${result==="home"?"#22c55e":"rgba(71,85,105,0.5)"}`,borderRadius:8,color:result==="home"?"#22c55e":"#f1f5f9",fontSize:18,fontWeight:800,fontFamily:"inherit",outline:"none"}}/>
+            readOnly={isLocked}
+            placeholder={isLocked?"·":"—"}
+            style={{width:36,height:36,textAlign:"center",
+              background: isLocked?"rgba(71,85,105,0.2)":"#0a0e1c",
+              border:`1px solid ${isLocked?"rgba(71,85,105,0.4)":(result==="home"?"#22c55e":"rgba(71,85,105,0.5)")}`,
+              borderRadius:8,
+              color: isLocked?"#64748b":(result==="home"?"#22c55e":"#f1f5f9"),
+              fontSize:18,fontWeight:800,fontFamily:"inherit",outline:"none",
+              cursor: isLocked?"not-allowed":"text",
+            }}/>
           <span style={{color:"#475569",fontSize:11}}>:</span>
           <input id={awayInputId} type="text" inputMode="numeric" value={a}
             onChange={e=>handleInput("a", e)}
             onKeyDown={e=>handleKeyDown("a", e)}
             onFocus={e=>e.target.select()}
-            placeholder="—"
-            style={{width:36,height:36,textAlign:"center",background:"#0a0e1c",border:`1px solid ${result==="away"?"#22c55e":"rgba(71,85,105,0.5)"}`,borderRadius:8,color:result==="away"?"#22c55e":"#f1f5f9",fontSize:18,fontWeight:800,fontFamily:"inherit",outline:"none"}}/>
+            readOnly={isLocked}
+            placeholder={isLocked?"·":"—"}
+            style={{width:36,height:36,textAlign:"center",
+              background: isLocked?"rgba(71,85,105,0.2)":"#0a0e1c",
+              border:`1px solid ${isLocked?"rgba(71,85,105,0.4)":(result==="away"?"#22c55e":"rgba(71,85,105,0.5)")}`,
+              borderRadius:8,
+              color: isLocked?"#64748b":(result==="away"?"#22c55e":"#f1f5f9"),
+              fontSize:18,fontWeight:800,fontFamily:"inherit",outline:"none",
+              cursor: isLocked?"not-allowed":"text",
+            }}/>
         </div>
         <div style={{display:"flex",alignItems:"center",gap:8,opacity:result==="home"?0.5:1}}>
           <span style={{fontSize:22}}>{away.f}</span>
           <span style={{fontSize:13,fontWeight:result==="away"?800:500,color:"#f1f5f9"}}>{away.n}</span>
         </div>
       </div>
-      {showResults && actual && actual.h !== undefined && actual.h !== "" && (
-        <div style={{marginTop:6,paddingTop:6,borderTop:"1px dashed rgba(71,85,105,0.3)",fontSize:10,color:"#94a3b8",textAlign:"center"}}>
-          Actual: <strong style={{color:"#f1f5f9"}}>{actual.h} – {actual.a}</strong>
+      {actual && actual.h !== undefined && actual.h !== "" && (
+        <div style={{
+          marginTop:8,paddingTop:8,
+          borderTop:"1px solid rgba(71,85,105,0.3)",
+        }}>
+          <div style={{
+            display:"grid",gridTemplateColumns:"1fr auto 1fr",alignItems:"center",gap:8,
+            padding:"6px 4px",
+            background: sc?.bg || "rgba(15,20,36,0.5)",
+            borderRadius:8,
+            border: `1px solid ${sc?.border || "rgba(71,85,105,0.4)"}`,
+          }}>
+            <div style={{textAlign:"right",fontSize:10,color:"#94a3b8",letterSpacing:1,fontWeight:700}}>FINAL SCORE</div>
+            <div style={{
+              display:"flex",alignItems:"center",gap:4,
+              background:"#0a0e1c",border:`1px solid ${sc?.border || "#22c55e"}`,
+              borderRadius:6,padding:"3px 10px",justifyContent:"center",
+              color: sc?.text || "#22c55e",fontWeight:900,fontSize:16,
+            }}>
+              {actual.h} – {actual.a}
+            </div>
+            <div style={{textAlign:"left",fontSize:10,fontWeight:700,letterSpacing:1}}>
+              {hasResult ? (
+                score?.points > 0 ? (
+                  <span style={{color: sc?.text}}>+{score.points} PTS</span>
+                ) : (
+                  <span style={{color:"#f87171"}}>0 PTS</span>
+                )
+              ) : (
+                <span style={{color:"#64748b"}}>NO PICK</span>
+              )}
+            </div>
+          </div>
+          {hasResult && (
+            <div style={{fontSize:9,color:"#64748b",textAlign:"center",marginTop:4,letterSpacing:1}}>
+              You picked <strong style={{color:"#cbd5e1"}}>{h}–{a}</strong>
+              {score?.type === "exact" && " · perfect call! 🎯"}
+              {score?.type === "gd" && " · right margin ✓"}
+              {score?.type === "result" && " · right result ✅"}
+              {score?.type === "wrong" && " · missed this one"}
+            </div>
+          )}
+        </div>
+      )}
+      {fixture.venue && (
+        <div style={{marginTop:5,fontSize:9,color:"#475569",textAlign:"center",letterSpacing:1}}>
+          📍 {fixture.venue}
         </div>
       )}
     </div>
   );
 }
 
-function StandingsTable({ group, standings, bestThirds }) {
+function StandingsTable({ group, standings, bestThirds, liveStandings, liveBestThirds, hasActuals }) {
   const color = COLORS[group];
-  const thirdsGroups = (bestThirds || []).map(t => t.group);
+  const [mode, setMode] = useState("predicted"); // "predicted" | "live"
+  const showLive = mode === "live" && hasActuals && liveStandings;
+  const activeStandings = showLive ? liveStandings : standings;
+  const activeThirds = showLive ? (liveBestThirds || []) : (bestThirds || []);
+  const thirdsGroups = activeThirds.map(t => t.group);
+
   return (
     <div style={{background:"rgba(15,20,36,0.6)",border:`1px solid ${color}33`,borderRadius:12,padding:"10px 12px",marginTop:14}}>
-      <div style={{fontSize:10,color:color,letterSpacing:2,marginBottom:8,fontWeight:700}}>LIVE STANDINGS</div>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
+        <div style={{fontSize:10,color,letterSpacing:2,fontWeight:700}}>
+          {showLive ? "📡 LIVE STANDINGS" : "🔮 PREDICTED STANDINGS"}
+        </div>
+        {hasActuals && (
+          <div style={{display:"flex",background:"rgba(15,20,36,0.8)",borderRadius:6,padding:2,border:"1px solid rgba(71,85,105,0.4)"}}>
+            <button onClick={()=>setMode("predicted")} style={{
+              padding:"3px 8px",border:"none",borderRadius:4,cursor:"pointer",fontFamily:"inherit",
+              background: mode==="predicted" ? color : "transparent",
+              color: mode==="predicted" ? "#0a0e1c" : "#94a3b8",
+              fontSize:9,fontWeight:800,letterSpacing:0.5,
+            }}>YOURS</button>
+            <button onClick={()=>setMode("live")} style={{
+              padding:"3px 8px",border:"none",borderRadius:4,cursor:"pointer",fontFamily:"inherit",
+              background: mode==="live" ? color : "transparent",
+              color: mode==="live" ? "#0a0e1c" : "#94a3b8",
+              fontSize:9,fontWeight:800,letterSpacing:0.5,
+            }}>LIVE</button>
+          </div>
+        )}
+      </div>
       <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
         <thead>
           <tr style={{color:"#64748b",fontSize:9,letterSpacing:1}}>
@@ -818,7 +1139,7 @@ function StandingsTable({ group, standings, bestThirds }) {
           </tr>
         </thead>
         <tbody>
-          {standings.map((row, i) => {
+          {activeStandings.map((row, i) => {
             const is3rdQual = i === 2 && thirdsGroups.includes(group);
             let posColor = "#475569", bg = "transparent";
             if (i < 2) { posColor = "#22c55e"; bg = "rgba(34,197,94,0.08)"; }
@@ -843,7 +1164,7 @@ function StandingsTable({ group, standings, bestThirds }) {
   );
 }
 
-function GroupView({ group, picks, actuals, standings, bestThirds, onPick, onNext, onPrev, onJump, isFirst, isLast, showResults, scope = "p" }) {
+function GroupView({ group, picks, actuals, standings, bestThirds, liveStandings, liveBestThirds, hasActuals, onPick, onNext, onPrev, onJump, isFirst, isLast, showResults, scope = "p" }) {
   const fixtures = FIXTURES.filter(f => f.group === group);
   const color = COLORS[group];
 
@@ -938,13 +1259,14 @@ function GroupView({ group, picks, actuals, standings, bestThirds, onPick, onNex
                 homeInputId={inputId(f.id, "h")}
                 awayInputId={inputId(f.id, "a")}
                 nextInputId={nextId ? inputId(nextId, "h") : null}
+                lockable={scope === "p"}
               />
             );
           })}
         </div>
       ))}
 
-      <StandingsTable group={group} standings={standings} bestThirds={bestThirds} />
+      <StandingsTable group={group} standings={standings} bestThirds={bestThirds} liveStandings={liveStandings} liveBestThirds={liveBestThirds} hasActuals={hasActuals} />
 
       <div style={{display:"flex",gap:10,marginTop:18}}>
         <button onClick={onPrev} disabled={isFirst} style={{...ghostBtn,flex:1,opacity:isFirst?0.4:1,cursor:isFirst?"not-allowed":"pointer"}}>← Previous</button>
@@ -1486,6 +1808,14 @@ function LeagueHub({
                 {score && <span style={{color:scoreColor,marginLeft:6,fontWeight:700}}>+{score.points}</span>}
               </div>
             )}
+            {f.kickoff && (() => {
+              const k = formatKickoff(f.kickoff);
+              return k ? (
+                <div style={{gridColumn:"1 / -1",textAlign:"center",fontSize:9,color:"#475569",marginTop:2,letterSpacing:1}}>
+                  📅 {k.day} · 🕐 {k.time}
+                </div>
+              ) : null;
+            })()}
           </div>
         );
       };
@@ -2435,6 +2765,8 @@ export default function App() {
 
   const standings = useMemo(() => allStandings(picks), [picks]);
   const bestThirds = useMemo(() => getBestThirds(standings), [standings]);
+  const liveStandings = useMemo(() => allStandings(actuals), [actuals]);
+  const liveBestThirds = useMemo(() => getBestThirds(liveStandings), [liveStandings]);
   const complete = useMemo(() => allGroupsComplete(picks), [picks]);
   const totalPredicted = Object.keys(picks).filter(k => picks[k]?.h !== undefined && picks[k]?.h !== "").length;
   const hasActuals = Object.keys(actuals).some(k => actuals[k]?.h !== undefined && actuals[k]?.h !== "");
@@ -2689,6 +3021,9 @@ export default function App() {
           actuals={actuals}
           standings={standings[currentGroup]}
           bestThirds={bestThirds}
+          liveStandings={liveStandings[currentGroup]}
+          liveBestThirds={liveBestThirds}
+          hasActuals={hasActuals}
           onPick={setPick}
           showResults={hasActuals}
           onNext={()=>{
