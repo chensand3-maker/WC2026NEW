@@ -274,11 +274,19 @@ const allGroupsComplete = (picks) => GROUP_KEYS.every(g => groupComplete(g, pick
 
 function buildR32(standings, bestThirds) {
   if (!standings) return null;
-  const w = g => standings[g]?.[0] || null;
-  const r = g => standings[g]?.[1] || null;
+  // Only return a team if they've actually played at least one match.
+  // Otherwise the alphabetical tiebreaker would put random teams in winner slots.
+  const w = g => {
+    const t = standings[g]?.[0];
+    return (t && t.p > 0) ? t : null;
+  };
+  const r = g => {
+    const t = standings[g]?.[1];
+    return (t && t.p > 0) ? t : null;
+  };
   const get3 = (i) => {
     const t = bestThirds?.[i];
-    return t ? { ...t, isThird: true } : null;
+    return (t && t.p > 0) ? { ...t, isThird: true } : null;
   };
   return [
     { id:"R32-1", a:w("A"), b:get3(7) }, { id:"R32-2", a:w("C"), b:get3(5) },
