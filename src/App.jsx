@@ -173,11 +173,17 @@ const POINTS = {
   GD: 3,            // correct winner + correct goal difference
   RESULT: 2,        // correct result (win/draw/loss) only
   WRONG: 0,
+  // Knockout: same scoring as group stage but DOUBLED (per round bonus)
+  KO_EXACT: 10,     // exact score in a knockout match
+  KO_GD: 6,         // correct goal-diff in a knockout match
+  KO_RESULT: 4,     // correct result only in a knockout match
   R16_PICK: 6,      // each correct R16 team
   QF_PICK: 10,      // each correct QF team
   SF_PICK: 16,      // each correct SF team
   FINALIST: 24,     // correct finalist
   CHAMPION: 40,     // correct champion
+  WINNER_BET: 50,   // flat bonus for picking the tournament winner correctly
+  TOP_SCORER_GOAL: 5, // each goal scored by your top-scorer pick
 };
 
 function scoreMatch(predicted, actual) {
@@ -771,7 +777,255 @@ function SoccerIntro({ onDone }) {
   );
 }
 
-function Welcome({ onStart, onImport }) {
+// ─── BONUS PICKS: tournament winner + top scorer ──────────────────────────────
+
+// Curated list of top-scorer candidates (favorites at the time of the 2026 draw).
+// User can also enter a free-form player name if their pick isn't here.
+const TOP_SCORER_CANDIDATES = [
+  { name: "Kylian Mbappé", team: "France" },
+  { name: "Erling Haaland", team: "Norway" },
+  { name: "Lionel Messi", team: "Argentina" },
+  { name: "Vinícius Júnior", team: "Brazil" },
+  { name: "Harry Kane", team: "England" },
+  { name: "Cristiano Ronaldo", team: "Portugal" },
+  { name: "Lautaro Martínez", team: "Argentina" },
+  { name: "Bukayo Saka", team: "England" },
+  { name: "Jude Bellingham", team: "England" },
+  { name: "Rodrygo", team: "Brazil" },
+  { name: "Mohamed Salah", team: "Egypt" },
+  { name: "Lamine Yamal", team: "Spain" },
+  { name: "Robert Lewandowski", team: "Poland" }, // unlikely qualifier but icon
+  { name: "Cody Gakpo", team: "Netherlands" },
+  { name: "Memphis Depay", team: "Netherlands" },
+  { name: "Romelu Lukaku", team: "Belgium" },
+  { name: "Kevin De Bruyne", team: "Belgium" },
+  { name: "Florian Wirtz", team: "Germany" },
+  { name: "Jamal Musiala", team: "Germany" },
+  { name: "Kai Havertz", team: "Germany" },
+  { name: "Bernardo Silva", team: "Portugal" },
+  { name: "Bruno Fernandes", team: "Portugal" },
+  { name: "Rafael Leão", team: "Portugal" },
+  { name: "Khvicha Kvaratskhelia", team: "Georgia" }, // not in 2026
+  { name: "Christopher Nkunku", team: "France" },
+  { name: "Ousmane Dembélé", team: "France" },
+  { name: "Antoine Griezmann", team: "France" },
+  { name: "Hakim Ziyech", team: "Morocco" },
+  { name: "Achraf Hakimi", team: "Morocco" },
+  { name: "Youssef En-Nesyri", team: "Morocco" },
+  { name: "Luka Modrić", team: "Croatia" },
+  { name: "Andrej Kramarić", team: "Croatia" },
+  { name: "Joško Gvardiol", team: "Croatia" },
+  { name: "Christian Pulisic", team: "USA" },
+  { name: "Tim Weah", team: "USA" },
+  { name: "Folarin Balogun", team: "USA" },
+  { name: "Hirving Lozano", team: "Mexico" },
+  { name: "Raúl Jiménez", team: "Mexico" },
+  { name: "Alphonso Davies", team: "Canada" },
+  { name: "Jonathan David", team: "Canada" },
+  { name: "Kaoru Mitoma", team: "Japan" },
+  { name: "Takefusa Kubo", team: "Japan" },
+  { name: "Son Heung-min", team: "South Korea" },
+  { name: "Sadio Mané", team: "Senegal" },
+  { name: "Mehdi Taremi", team: "Iran" },
+  { name: "Mitchell Duke", team: "Australia" },
+  { name: "Federico Valverde", team: "Uruguay" },
+  { name: "Darwin Núñez", team: "Uruguay" },
+  { name: "Federico Chiesa", team: "Italy" }, // unlikely
+  { name: "Julián Álvarez", team: "Argentina" },
+];
+
+function BonusPicks({
+  winnerPick, setWinnerPick,
+  topScorerPick, setTopScorerPick,
+  actualWinner, actualTopScorer,
+  isLocked, onBack,
+}) {
+  const [scorerMode, setScorerMode] = useState("list"); // "list" | "custom"
+  const [customPlayer, setCustomPlayer] = useState("");
+  const [customTeam, setCustomTeam] = useState("");
+  const [scorerFilter, setScorerFilter] = useState("");
+
+  const allTeams = ALL_TEAMS;
+  const filteredScorers = TOP_SCORER_CANDIDATES.filter(p =>
+    !scorerFilter || p.name.toLowerCase().includes(scorerFilter.toLowerCase()) || p.team.toLowerCase().includes(scorerFilter.toLowerCase())
+  );
+
+  const submitCustom = () => {
+    if (!customPlayer.trim() || !customTeam.trim()) return;
+    setTopScorerPick({ name: customPlayer.trim(), team: customTeam.trim() });
+    setCustomPlayer(""); setCustomTeam("");
+    setScorerMode("list");
+  };
+
+  return (
+    <div style={{padding:"16px 14px 60px",maxWidth:560,margin:"0 auto"}}>
+      <button onClick={onBack} style={{...ghostBtn,marginBottom:14,padding:"7px 14px",width:"auto"}}>← Back</button>
+
+      <div style={{textAlign:"center",marginBottom:18}}>
+        <div style={{fontSize:10,color:"#64748b",letterSpacing:3}}>BONUS PICKS</div>
+        <h2 style={{fontSize:24,margin:"4px 0",background:"linear-gradient(180deg,#fde68a,#f59e0b)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",fontWeight:900}}>⭐ Big Bets</h2>
+        <p style={{fontSize:12,color:"#94a3b8",margin:0}}>Two big calls for major bonus points.</p>
+      </div>
+
+      {isLocked && (
+        <div style={{background:"rgba(239,68,68,0.1)",border:"1px solid rgba(239,68,68,0.4)",borderRadius:10,padding:"10px 12px",marginBottom:14,fontSize:11,color:"#fca5a5",textAlign:"center"}}>
+          🔒 Bonus picks locked — the tournament has started.
+        </div>
+      )}
+
+      {/* ─── TOURNAMENT WINNER ─── */}
+      <div style={{background:"linear-gradient(135deg,rgba(251,191,36,0.08),rgba(15,20,36,0.6))",border:"1px solid rgba(251,191,36,0.3)",borderRadius:14,padding:14,marginBottom:14}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
+          <div>
+            <div style={{fontSize:11,color:"#fbbf24",letterSpacing:2,fontWeight:700}}>🏆 TOURNAMENT WINNER</div>
+            <div style={{fontSize:10,color:"#94a3b8",marginTop:2}}>Pick one team to lift the trophy</div>
+          </div>
+          <div style={{background:"#fbbf24",color:"#0a0e1c",fontSize:11,fontWeight:900,padding:"3px 8px",borderRadius:6,letterSpacing:1}}>+50 PTS</div>
+        </div>
+
+        {winnerPick ? (
+          <div style={{
+            background:"linear-gradient(135deg,#fbbf24,#d97706)",
+            color:"#0a0e1c",borderRadius:10,padding:"10px 12px",
+            display:"flex",alignItems:"center",gap:10,
+          }}>
+            <span style={{fontSize:28}}>{winnerPick.flag || winnerPick.f}</span>
+            <span style={{flex:1,fontSize:16,fontWeight:900}}>{winnerPick.name || winnerPick.n}</span>
+            {!isLocked && (
+              <button onClick={()=>setWinnerPick(null)} style={{background:"rgba(10,14,28,0.2)",border:"none",borderRadius:6,padding:"4px 10px",color:"#0a0e1c",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Change</button>
+            )}
+            {actualWinner && (
+              <div style={{fontSize:11,fontWeight:900}}>
+                {(actualWinner.name||actualWinner.n) === (winnerPick.name||winnerPick.n) ? "✅ +50" : "❌"}
+              </div>
+            )}
+          </div>
+        ) : !isLocked ? (
+          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(94px,1fr))",gap:5}}>
+            {allTeams.map(t => (
+              <button key={t.n} onClick={()=>setWinnerPick({name:t.n, flag:t.f})} style={{
+                background:"rgba(30,41,59,0.6)",border:"1px solid rgba(71,85,105,0.4)",
+                borderRadius:8,padding:"7px 4px",color:"#cbd5e1",fontSize:11,
+                cursor:"pointer",fontFamily:"inherit",
+                display:"flex",alignItems:"center",gap:5,
+                overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",
+              }}>
+                <span style={{fontSize:14}}>{t.f}</span>
+                <span style={{flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",textAlign:"left"}}>{t.n}</span>
+              </button>
+            ))}
+          </div>
+        ) : (
+          <div style={{fontSize:11,color:"#64748b",textAlign:"center",padding:"10px 0"}}>No pick made.</div>
+        )}
+      </div>
+
+      {/* ─── TOP SCORER ─── */}
+      <div style={{background:"linear-gradient(135deg,rgba(168,85,247,0.08),rgba(15,20,36,0.6))",border:"1px solid rgba(168,85,247,0.3)",borderRadius:14,padding:14}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
+          <div>
+            <div style={{fontSize:11,color:"#a855f7",letterSpacing:2,fontWeight:700}}>👟 GOLDEN BOOT</div>
+            <div style={{fontSize:10,color:"#94a3b8",marginTop:2}}>Pick a player — every goal scores you points</div>
+          </div>
+          <div style={{background:"#a855f7",color:"#0a0e1c",fontSize:11,fontWeight:900,padding:"3px 8px",borderRadius:6,letterSpacing:1}}>+5 PER GOAL</div>
+        </div>
+
+        {topScorerPick ? (
+          <div style={{
+            background:"linear-gradient(135deg,#a855f7,#7c3aed)",
+            color:"#fff",borderRadius:10,padding:"10px 12px",
+            display:"flex",alignItems:"center",gap:10,
+          }}>
+            <span style={{fontSize:24}}>👟</span>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{fontSize:15,fontWeight:900,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{topScorerPick.name}</div>
+              <div style={{fontSize:11,opacity:0.85}}>{topScorerPick.team}</div>
+            </div>
+            {!isLocked && (
+              <button onClick={()=>setTopScorerPick(null)} style={{background:"rgba(255,255,255,0.2)",border:"none",borderRadius:6,padding:"4px 10px",color:"#fff",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Change</button>
+            )}
+            {actualTopScorer && (
+              <div style={{textAlign:"center",fontSize:10}}>
+                <div style={{fontWeight:900,fontSize:13}}>
+                  {actualTopScorer.name === topScorerPick.name ? `+${actualTopScorer.goals * 5}` : "❌"}
+                </div>
+                {actualTopScorer.name === topScorerPick.name && <div style={{opacity:0.85}}>{actualTopScorer.goals} goals</div>}
+              </div>
+            )}
+          </div>
+        ) : !isLocked ? (
+          <>
+            <div style={{display:"flex",background:"rgba(15,20,36,0.6)",borderRadius:8,padding:2,marginBottom:10}}>
+              <button onClick={()=>setScorerMode("list")} style={{
+                flex:1,padding:"6px 0",border:"none",borderRadius:6,cursor:"pointer",fontFamily:"inherit",
+                background:scorerMode==="list"?"rgba(168,85,247,0.2)":"transparent",
+                color:scorerMode==="list"?"#a855f7":"#94a3b8",
+                fontSize:11,fontWeight:700,
+              }}>From favorites</button>
+              <button onClick={()=>setScorerMode("custom")} style={{
+                flex:1,padding:"6px 0",border:"none",borderRadius:6,cursor:"pointer",fontFamily:"inherit",
+                background:scorerMode==="custom"?"rgba(168,85,247,0.2)":"transparent",
+                color:scorerMode==="custom"?"#a855f7":"#94a3b8",
+                fontSize:11,fontWeight:700,
+              }}>Enter manually</button>
+            </div>
+
+            {scorerMode === "list" && (
+              <>
+                <input value={scorerFilter} onChange={e=>setScorerFilter(e.target.value)} placeholder="Search players or teams..." style={{
+                  width:"100%",padding:"8px 10px",borderRadius:8,fontSize:13,
+                  background:"#0a0e1c",border:"1px solid rgba(71,85,105,0.4)",
+                  color:"#f1f5f9",fontFamily:"inherit",outline:"none",
+                  marginBottom:8,boxSizing:"border-box",
+                }}/>
+                <div style={{maxHeight:280,overflowY:"auto"}}>
+                  {filteredScorers.map(p => (
+                    <button key={p.name} onClick={()=>setTopScorerPick(p)} style={{
+                      width:"100%",display:"flex",alignItems:"center",gap:8,
+                      background:"rgba(30,41,59,0.5)",border:"1px solid rgba(71,85,105,0.3)",
+                      borderRadius:8,padding:"7px 10px",marginBottom:4,
+                      color:"#f1f5f9",fontSize:13,cursor:"pointer",fontFamily:"inherit",textAlign:"left",
+                    }}>
+                      <span style={{flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.name}</span>
+                      <span style={{fontSize:11,color:"#94a3b8"}}>{p.team}</span>
+                    </button>
+                  ))}
+                  {filteredScorers.length === 0 && (
+                    <div style={{fontSize:11,color:"#64748b",textAlign:"center",padding:"10px"}}>No matches — try "Enter manually"</div>
+                  )}
+                </div>
+              </>
+            )}
+
+            {scorerMode === "custom" && (
+              <div>
+                <input value={customPlayer} onChange={e=>setCustomPlayer(e.target.value)} placeholder="Player name" style={{
+                  width:"100%",padding:"8px 10px",borderRadius:8,fontSize:13,
+                  background:"#0a0e1c",border:"1px solid rgba(71,85,105,0.4)",
+                  color:"#f1f5f9",fontFamily:"inherit",outline:"none",
+                  marginBottom:6,boxSizing:"border-box",
+                }}/>
+                <input value={customTeam} onChange={e=>setCustomTeam(e.target.value)} placeholder="Team" style={{
+                  width:"100%",padding:"8px 10px",borderRadius:8,fontSize:13,
+                  background:"#0a0e1c",border:"1px solid rgba(71,85,105,0.4)",
+                  color:"#f1f5f9",fontFamily:"inherit",outline:"none",
+                  marginBottom:8,boxSizing:"border-box",
+                }}/>
+                <button onClick={submitCustom} disabled={!customPlayer.trim()||!customTeam.trim()} style={{
+                  ...primaryBtn,opacity:(!customPlayer.trim()||!customTeam.trim())?0.5:1,
+                }}>Lock in pick</button>
+              </div>
+            )}
+          </>
+        ) : (
+          <div style={{fontSize:11,color:"#64748b",textAlign:"center",padding:"10px 0"}}>No pick made.</div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+
   const [name, setName] = useState("");
   const [showImport, setShowImport] = useState(false);
   const [code, setCode] = useState("");
@@ -1492,12 +1746,55 @@ function KnockoutBracket({ standings, bestThirds, koWinners, setKoWinners, onBac
         </div>
       )}
 
-      <div style={{display:"grid",gridTemplateColumns:"repeat(5,minmax(140px,1fr))",gap:10,overflowX:"auto"}}>
-        <div><div style={koRoundHeader}>ROUND OF 32</div>{r32.map(m=>renderMatch(m))}</div>
-        <div><div style={koRoundHeader}>ROUND OF 16</div>{r16.map(m=>renderMatch(m))}</div>
-        <div><div style={koRoundHeader}>QUARTER-FINALS</div>{qf.map(m=>renderMatch(m))}</div>
-        <div><div style={koRoundHeader}>SEMI-FINALS</div>{sf.map(m=>renderMatch(m))}</div>
-        <div><div style={{...koRoundHeader,color:"#fbbf24"}}>FINAL</div>{renderMatch(final)}</div>
+      {/* Two-sided tournament bracket */}
+      <div style={{
+        display:"grid",
+        gridTemplateColumns:"repeat(9, minmax(0, 1fr))",
+        gap:6,
+        overflowX:"auto",
+      }}>
+        {/* LEFT SIDE: R32 (8) → R16 (4) → QF (2) → SF (1) */}
+        <div style={{display:"flex",flexDirection:"column",justifyContent:"space-around"}}>
+          <div style={koRoundHeader}>R32</div>
+          {r32.slice(0, 8).map(m => renderMatch(m))}
+        </div>
+        <div style={{display:"flex",flexDirection:"column",justifyContent:"space-around"}}>
+          <div style={koRoundHeader}>R16</div>
+          {r16.slice(0, 4).map(m => renderMatch(m))}
+        </div>
+        <div style={{display:"flex",flexDirection:"column",justifyContent:"space-around"}}>
+          <div style={koRoundHeader}>QF</div>
+          {qf.slice(0, 2).map(m => renderMatch(m))}
+        </div>
+        <div style={{display:"flex",flexDirection:"column",justifyContent:"space-around"}}>
+          <div style={koRoundHeader}>SF</div>
+          {renderMatch(sf[0])}
+        </div>
+
+        {/* CENTER: Final + trophy */}
+        <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"}}>
+          <div style={{...koRoundHeader, color:"#fbbf24"}}>FINAL</div>
+          <div style={{fontSize:32,marginBottom:4,filter:"drop-shadow(0 0 6px rgba(251,191,36,0.6))"}}>🏆</div>
+          {renderMatch(final)}
+        </div>
+
+        {/* RIGHT SIDE: SF (1) ← QF (2) ← R16 (4) ← R32 (8) */}
+        <div style={{display:"flex",flexDirection:"column",justifyContent:"space-around"}}>
+          <div style={koRoundHeader}>SF</div>
+          {renderMatch(sf[1])}
+        </div>
+        <div style={{display:"flex",flexDirection:"column",justifyContent:"space-around"}}>
+          <div style={koRoundHeader}>QF</div>
+          {qf.slice(2, 4).map(m => renderMatch(m))}
+        </div>
+        <div style={{display:"flex",flexDirection:"column",justifyContent:"space-around"}}>
+          <div style={koRoundHeader}>R16</div>
+          {r16.slice(4, 8).map(m => renderMatch(m))}
+        </div>
+        <div style={{display:"flex",flexDirection:"column",justifyContent:"space-around"}}>
+          <div style={koRoundHeader}>R32</div>
+          {r32.slice(8, 16).map(m => renderMatch(m))}
+        </div>
       </div>
 
       <div style={{display:"flex",gap:10,marginTop:18}}>
@@ -2045,30 +2342,61 @@ function LeagueHub({
           )}
 
           {/* TAB: BRACKET — knockout view */}
-          {viewTab === "bracket" && memberBracket && (
-            <div style={{display:"grid",gridTemplateColumns:"repeat(5, minmax(135px, 1fr))",gap:8,overflowX:"auto"}}>
-              <div>
-                <div style={{fontSize:9,color:"#94a3b8",letterSpacing:2,fontWeight:700,textAlign:"center",marginBottom:6,padding:"3px 0",borderBottom:"1px solid rgba(71,85,105,0.3)"}}>R32</div>
-                {memberBracket.r32.map(mt => renderKoMatch(mt, m.koWinners||{}))}
+          {viewTab === "bracket" && memberBracket && (() => {
+            const koH = {fontSize:9,color:"#94a3b8",letterSpacing:2,fontWeight:700,textAlign:"center",marginBottom:6,padding:"3px 0",borderBottom:"1px solid rgba(71,85,105,0.3)"};
+            const koHFinal = {...koH, color:"#fbbf24"};
+            const ko = m.koWinners || {};
+            return (
+              <div style={{
+                display:"grid",
+                gridTemplateColumns:"repeat(9, minmax(0, 1fr))",
+                gap:5,overflowX:"auto",
+              }}>
+                {/* LEFT SIDE */}
+                <div style={{display:"flex",flexDirection:"column",justifyContent:"space-around"}}>
+                  <div style={koH}>R32</div>
+                  {memberBracket.r32.slice(0, 8).map(mt => renderKoMatch(mt, ko))}
+                </div>
+                <div style={{display:"flex",flexDirection:"column",justifyContent:"space-around"}}>
+                  <div style={koH}>R16</div>
+                  {memberBracket.r16.slice(0, 4).map(mt => renderKoMatch(mt, ko))}
+                </div>
+                <div style={{display:"flex",flexDirection:"column",justifyContent:"space-around"}}>
+                  <div style={koH}>QF</div>
+                  {memberBracket.qf.slice(0, 2).map(mt => renderKoMatch(mt, ko))}
+                </div>
+                <div style={{display:"flex",flexDirection:"column",justifyContent:"space-around"}}>
+                  <div style={koH}>SF</div>
+                  {renderKoMatch(memberBracket.sf[0], ko)}
+                </div>
+
+                {/* CENTER: FINAL */}
+                <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"}}>
+                  <div style={koHFinal}>FINAL</div>
+                  <div style={{fontSize:24,marginBottom:3,filter:"drop-shadow(0 0 6px rgba(251,191,36,0.6))"}}>🏆</div>
+                  {renderKoMatch(memberBracket.final, ko)}
+                </div>
+
+                {/* RIGHT SIDE */}
+                <div style={{display:"flex",flexDirection:"column",justifyContent:"space-around"}}>
+                  <div style={koH}>SF</div>
+                  {renderKoMatch(memberBracket.sf[1], ko)}
+                </div>
+                <div style={{display:"flex",flexDirection:"column",justifyContent:"space-around"}}>
+                  <div style={koH}>QF</div>
+                  {memberBracket.qf.slice(2, 4).map(mt => renderKoMatch(mt, ko))}
+                </div>
+                <div style={{display:"flex",flexDirection:"column",justifyContent:"space-around"}}>
+                  <div style={koH}>R16</div>
+                  {memberBracket.r16.slice(4, 8).map(mt => renderKoMatch(mt, ko))}
+                </div>
+                <div style={{display:"flex",flexDirection:"column",justifyContent:"space-around"}}>
+                  <div style={koH}>R32</div>
+                  {memberBracket.r32.slice(8, 16).map(mt => renderKoMatch(mt, ko))}
+                </div>
               </div>
-              <div>
-                <div style={{fontSize:9,color:"#94a3b8",letterSpacing:2,fontWeight:700,textAlign:"center",marginBottom:6,padding:"3px 0",borderBottom:"1px solid rgba(71,85,105,0.3)"}}>R16</div>
-                {memberBracket.r16.map(mt => renderKoMatch(mt, m.koWinners||{}))}
-              </div>
-              <div>
-                <div style={{fontSize:9,color:"#94a3b8",letterSpacing:2,fontWeight:700,textAlign:"center",marginBottom:6,padding:"3px 0",borderBottom:"1px solid rgba(71,85,105,0.3)"}}>QF</div>
-                {memberBracket.qf.map(mt => renderKoMatch(mt, m.koWinners||{}))}
-              </div>
-              <div>
-                <div style={{fontSize:9,color:"#94a3b8",letterSpacing:2,fontWeight:700,textAlign:"center",marginBottom:6,padding:"3px 0",borderBottom:"1px solid rgba(71,85,105,0.3)"}}>SF</div>
-                {memberBracket.sf.map(mt => renderKoMatch(mt, m.koWinners||{}))}
-              </div>
-              <div>
-                <div style={{fontSize:9,color:"#fbbf24",letterSpacing:2,fontWeight:700,textAlign:"center",marginBottom:6,padding:"3px 0",borderBottom:"1px solid rgba(71,85,105,0.3)"}}>FINAL</div>
-                {renderKoMatch(memberBracket.final, m.koWinners||{})}
-              </div>
-            </div>
-          )}
+            );
+          })()}
           {viewTab === "bracket" && !memberBracket && (
             <div style={{background:"rgba(30,41,59,0.4)",border:"1px dashed rgba(71,85,105,0.4)",borderRadius:10,padding:"20px",textAlign:"center",fontSize:12,color:"#94a3b8"}}>
               {m.isMe?"You haven't":"They haven't"} finished the group stage yet, so the bracket isn't built.
@@ -2733,6 +3061,10 @@ export default function App() {
   const [friends, setFriends] = useState(saved?.friends || []);
   const [actuals, setActuals] = useState(saved?.actuals || {});
   const [actualKo, setActualKo] = useState(saved?.actualKo || {});
+  const [winnerPick, setWinnerPick] = useState(saved?.winnerPick || null); // {name, flag} of team you bet wins it all
+  const [topScorerPick, setTopScorerPick] = useState(saved?.topScorerPick || null); // {name, team}
+  const [actualWinner, setActualWinner] = useState(saved?.actualWinner || null);
+  const [actualTopScorer, setActualTopScorer] = useState(saved?.actualTopScorer || null); // {name, team, goals}
   const [leagueName, setLeagueName] = useState(saved?.leagueName || "");
   const [leagueCode, setLeagueCode] = useState(saved?.leagueCode || ""); // joined league code
   const [userId] = useState(() => saved?.userId || `u_${Date.now()}_${Math.random().toString(36).slice(2,8)}`);
@@ -2775,13 +3107,13 @@ export default function App() {
   // Auto-save on any change
   useEffect(() => {
     if (!name) return;
-    const ok = saveState({ name, picks, koWinners, groupIdx, friends, actuals, actualKo, leagueName, leagueCode, userId });
+    const ok = saveState({ name, picks, koWinners, groupIdx, friends, actuals, actualKo, leagueName, leagueCode, userId, winnerPick, topScorerPick, actualWinner, actualTopScorer });
     if (ok) {
       setJustSaved(true);
       const t = setTimeout(()=>setJustSaved(false), 1500);
       return () => clearTimeout(t);
     }
-  }, [name, picks, koWinners, groupIdx, friends, actuals, actualKo, leagueName, leagueCode]);
+  }, [name, picks, koWinners, groupIdx, friends, actuals, actualKo, leagueName, leagueCode, winnerPick, topScorerPick, actualWinner, actualTopScorer]);
 
   // ─── FIREBASE LEAGUE SYNC ──────────────────────────────────────────────────
   // When we're in a league, subscribe to real-time updates and push our picks
@@ -2808,11 +3140,11 @@ export default function App() {
   useEffect(() => {
     if (!leagueCode || !name) return;
     const handle = setTimeout(() => {
-      updateMyPicks(leagueCode, userId, name, picks, koWinners)
+      updateMyPicks(leagueCode, userId, name, picks, koWinners, { winnerPick, topScorerPick })
         .catch(err => console.error("Failed to push picks:", err));
     }, 800);
     return () => clearTimeout(handle);
-  }, [leagueCode, userId, name, picks, koWinners]);
+  }, [leagueCode, userId, name, picks, koWinners, winnerPick, topScorerPick]);
 
   // ─── LIVE RESULTS AUTO-FETCH ───────────────────────────────────────────────
   // Poll API-Football every 5 min for new match results
@@ -2897,6 +3229,11 @@ export default function App() {
   const complete = useMemo(() => allGroupsComplete(picks), [picks]);
   const totalPredicted = Object.keys(picks).filter(k => picks[k]?.h !== undefined && picks[k]?.h !== "").length;
   const hasActuals = Object.keys(actuals).some(k => actuals[k]?.h !== undefined && actuals[k]?.h !== "");
+  // Bonus picks (winner + top scorer) lock once the first match has kicked off
+  const bonusLocked = (() => {
+    const firstKick = Math.min(...FIXTURES.filter(f => f.kickoff).map(f => new Date(f.kickoff).getTime()));
+    return Number.isFinite(firstKick) && Date.now() >= firstKick;
+  })();
 
   const handleStart = (n) => { setName(n); setScreen("group"); };
   const handleImport = (d) => {
@@ -2915,6 +3252,8 @@ export default function App() {
     setActualKo(restored.actualKo || {});
     setLeagueName(restored.leagueName || "");
     setLeagueCode(restored.leagueCode || "");
+    setWinnerPick(restored.winnerPick || null);
+    setTopScorerPick(restored.topScorerPick || null);
     setScreen("group");
   };
   const handleReset = () => {
@@ -2926,7 +3265,7 @@ export default function App() {
       onConfirm: () => {
         clearState();
         setName(""); setPicks({}); setKoWinners({}); setGroupIdx(0);
-        setFriends([]); setActuals({}); setActualKo({}); setLeagueName(""); setLeagueCode("");
+        setFriends([]); setActuals({}); setActualKo({}); setLeagueName(""); setLeagueCode(""); setWinnerPick(null); setTopScorerPick(null);
         setScreen("welcome");
         setShowIntro(false);
       },
@@ -2938,7 +3277,7 @@ export default function App() {
       // No data to worry about, just log out
       clearState();
       setName(""); setPicks({}); setKoWinners({}); setGroupIdx(0);
-      setFriends([]); setActuals({}); setActualKo({}); setLeagueName(""); setLeagueCode("");
+      setFriends([]); setActuals({}); setActualKo({}); setLeagueName(""); setLeagueCode(""); setWinnerPick(null); setTopScorerPick(null);
       setScreen("welcome");
       setShowIntro(false);
       return;
@@ -2952,7 +3291,7 @@ export default function App() {
       onConfirm: () => {
         clearState();
         setName(""); setPicks({}); setKoWinners({}); setGroupIdx(0);
-        setFriends([]); setActuals({}); setActualKo({}); setLeagueName(""); setLeagueCode("");
+        setFriends([]); setActuals({}); setActualKo({}); setLeagueName(""); setLeagueCode(""); setWinnerPick(null); setTopScorerPick(null);
         setScreen("welcome");
         setShowIntro(false);
       },
@@ -3119,11 +3458,12 @@ export default function App() {
             )}
           </div>
           {/* Bottom nav */}
-          {(screen === "group" || screen === "bracket" || screen === "league") && (
+          {(screen === "group" || screen === "bracket" || screen === "bonus" || screen === "league") && (
             <div style={{display:"flex",justifyContent:"center",borderTop:"1px solid rgba(71,85,105,0.3)"}}>
               {[
                 ["group", "⚽ Predict"],
                 ["bracket", "🏆 Bracket"],
+                ["bonus", "⭐ Bonus"],
                 ["league", "🏅 League"],
               ].map(([s, label]) => (
                 <button key={s} onClick={()=>setScreen(s)} style={{
@@ -3180,6 +3520,16 @@ export default function App() {
           onBack={()=>setScreen("group")}
           onShare={()=>setScreen("league")}
           complete={complete}
+        />
+      )}
+
+      {screen === "bonus" && (
+        <BonusPicks
+          winnerPick={winnerPick} setWinnerPick={setWinnerPick}
+          topScorerPick={topScorerPick} setTopScorerPick={setTopScorerPick}
+          actualWinner={actualWinner} actualTopScorer={actualTopScorer}
+          isLocked={bonusLocked}
+          onBack={()=>setScreen("group")}
         />
       )}
 
