@@ -154,6 +154,52 @@ FIXTURES.forEach(f => {
   }
 });
 
+// ─── KNOCKOUT SCHEDULE: kickoff and venue for each bracket slot ──────────────
+// All times in UTC. June/July 2026 ET = UTC-4 (EDT).
+// Source: FIFA official fixture list.
+const KO_SCHEDULE = {
+  // Round of 32 (16 matches, Jun 28 – Jul 3)
+  "R32-1":  { kickoff: _utc(2026,6,28,19, 0), venue: "SoFi Stadium, Los Angeles" },          // Jun 28 3 PM EDT
+  "R32-2":  { kickoff: _utc(2026,6,29,17, 0), venue: "Gillette Stadium, Boston" },           // Jun 29 1 PM EDT
+  "R32-3":  { kickoff: _utc(2026,6,29,20, 0), venue: "Gillette Stadium, Boston" },           // Jun 29 4 PM EDT
+  "R32-4":  { kickoff: _utc(2026,6,30, 1, 0), venue: "Estadio BBVA, Monterrey" },            // Jun 29 9 PM EDT
+  "R32-5":  { kickoff: _utc(2026,6,30,17, 0), venue: "AT&T Stadium, Dallas" },               // Jun 30 1 PM EDT
+  "R32-6":  { kickoff: _utc(2026,6,30,21, 0), venue: "MetLife Stadium, East Rutherford" },   // Jun 30 5 PM EDT
+  "R32-7":  { kickoff: _utc(2026,7, 1, 1, 0), venue: "Estadio Azteca, Mexico City" },        // Jun 30 9 PM EDT
+  "R32-8":  { kickoff: _utc(2026,7, 1,16, 0), venue: "Mercedes-Benz Stadium, Atlanta" },     // Jul 1 12 PM EDT
+  "R32-9":  { kickoff: _utc(2026,7, 1,20, 0), venue: "Lumen Field, Seattle" },               // Jul 1 4 PM EDT
+  "R32-10": { kickoff: _utc(2026,7, 2, 0, 0), venue: "Levi's Stadium, Santa Clara" },        // Jul 1 8 PM EDT
+  "R32-11": { kickoff: _utc(2026,7, 2,19, 0), venue: "SoFi Stadium, Los Angeles" },          // Jul 2 3 PM EDT
+  "R32-12": { kickoff: _utc(2026,7, 2,23, 0), venue: "BMO Field, Toronto" },                 // Jul 2 7 PM EDT
+  "R32-13": { kickoff: _utc(2026,7, 3, 1, 0), venue: "BC Place, Vancouver" },                // Jul 2 9 PM EDT
+  "R32-14": { kickoff: _utc(2026,7, 3,18, 0), venue: "AT&T Stadium, Dallas" },               // Jul 3 2 PM EDT
+  "R32-15": { kickoff: _utc(2026,7, 3,22, 0), venue: "Hard Rock Stadium, Miami Gardens" },   // Jul 3 6 PM EDT
+  "R32-16": { kickoff: _utc(2026,7, 4, 1,30), venue: "Arrowhead Stadium, Kansas City" },     // Jul 3 9:30 PM EDT
+
+  // Round of 16 (8 matches, Jul 4–7)
+  "R16-0": { kickoff: _utc(2026,7, 4,17, 0), venue: "NRG Stadium, Houston" },                // Jul 4 1 PM EDT
+  "R16-1": { kickoff: _utc(2026,7, 4,21, 0), venue: "Lincoln Financial Field, Philadelphia" }, // Jul 4 5 PM EDT
+  "R16-2": { kickoff: _utc(2026,7, 5,20, 0), venue: "MetLife Stadium, East Rutherford" },    // Jul 5 4 PM EDT
+  "R16-3": { kickoff: _utc(2026,7, 6, 0, 0), venue: "Estadio Azteca, Mexico City" },         // Jul 5 8 PM EDT
+  "R16-4": { kickoff: _utc(2026,7, 6,16, 0), venue: "Mercedes-Benz Stadium, Atlanta" },      // Jul 6 12 PM EDT
+  "R16-5": { kickoff: _utc(2026,7, 6,19, 0), venue: "AT&T Stadium, Dallas" },                // Jul 6 3 PM EDT
+  "R16-6": { kickoff: _utc(2026,7, 7, 0, 0), venue: "Lumen Field, Seattle" },                // Jul 6 8 PM EDT
+  "R16-7": { kickoff: _utc(2026,7, 7,20, 0), venue: "BC Place, Vancouver" },                 // Jul 7 4 PM EDT
+
+  // Quarter-finals (4 matches, Jul 9–11)
+  "QF-0": { kickoff: _utc(2026,7, 9,20, 0), venue: "Gillette Stadium, Boston" },             // Jul 9 4 PM EDT
+  "QF-1": { kickoff: _utc(2026,7,10,19, 0), venue: "SoFi Stadium, Los Angeles" },            // Jul 10 3 PM EDT
+  "QF-2": { kickoff: _utc(2026,7,11,21, 0), venue: "Hard Rock Stadium, Miami Gardens" },     // Jul 11 5 PM EDT
+  "QF-3": { kickoff: _utc(2026,7,12, 1, 0), venue: "Arrowhead Stadium, Kansas City" },       // Jul 11 9 PM EDT
+
+  // Semi-finals (Jul 14 & 15)
+  "SF-0": { kickoff: _utc(2026,7,14,19, 0), venue: "AT&T Stadium, Dallas" },                 // Jul 14 3 PM EDT
+  "SF-1": { kickoff: _utc(2026,7,15,19, 0), venue: "Mercedes-Benz Stadium, Atlanta" },       // Jul 15 3 PM EDT
+
+  // Final
+  "FINAL": { kickoff: _utc(2026,7,19,19, 0), venue: "MetLife Stadium, East Rutherford" },    // Jul 19 3 PM EDT
+};
+
 // Format a kickoff time in the user's local time zone
 function formatKickoff(iso) {
   if (!iso) return null;
@@ -1639,24 +1685,59 @@ function KnockoutBracket({ standings, bestThirds, koWinners, setKoWinners, onBac
     });
   };
 
+  // Lock knockout picks 1 hour before kickoff (same window as group matches).
+  // Re-check every 30s so locks engage smoothly.
+  const LOCK_MS = 60 * 60 * 1000;
+  const [nowTs, setNowTs] = useState(Date.now());
+  useEffect(() => {
+    const t = setInterval(() => setNowTs(Date.now()), 30 * 1000);
+    return () => clearInterval(t);
+  }, []);
+
   const renderMatch = (m) => {
     const ready = m.a && m.b;
     const winner = koWinners[m.id];
+    const sched = KO_SCHEDULE[m.id];
+    const k = sched ? formatKickoff(sched.kickoff) : null;
+    const kickMs = sched ? new Date(sched.kickoff).getTime() : null;
+    const isLocked = kickMs != null && (kickMs - nowTs) < LOCK_MS;
+
     return (
-      <div key={m.id} style={{background:ready?"rgba(30,41,59,0.6)":"rgba(15,20,36,0.4)",border:`1px solid ${winner?"rgba(251,191,36,0.4)":"rgba(71,85,105,0.3)"}`,borderRadius:10,padding:"7px 9px",marginBottom:6,opacity:ready?1:0.5}}>
+      <div key={m.id} style={{
+        background: ready ? "rgba(30,41,59,0.6)" : "rgba(15,20,36,0.4)",
+        border: `1px solid ${winner ? "rgba(251,191,36,0.4)" : "rgba(71,85,105,0.3)"}`,
+        borderRadius: 10, padding: "7px 9px", marginBottom: 6,
+        opacity: ready ? 1 : 0.5,
+      }}>
+        {k && (
+          <div style={{
+            display:"flex",alignItems:"center",justifyContent:"space-between",
+            fontSize:9,color: isLocked ? "#f87171" : "#64748b",letterSpacing:1,
+            marginBottom:4,fontWeight:600,
+          }}>
+            <span style={{whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",flex:1}}>📅 {k.day} · {k.time}</span>
+            {isLocked && <span style={{marginLeft:4,whiteSpace:"nowrap"}}>🔒</span>}
+          </div>
+        )}
         {[m.a,m.b].map((team,idx) => {
           const side = idx === 0 ? "a" : "b";
           const selected = winner === side;
           const otherSelected = winner && winner !== side;
+          const canPick = ready && !isLocked;
           return (
-            <button key={idx} onClick={()=>ready&&pickWinner(m.id,side)} disabled={!ready}
-              style={{width:"100%",display:"flex",alignItems:"center",gap:8,padding:"5px 7px",marginBottom:idx===0?3:0,background:selected?"rgba(251,191,36,0.18)":"transparent",border:`1px solid ${selected?"#fbbf24":"transparent"}`,borderRadius:6,cursor:ready?"pointer":"not-allowed",fontFamily:"inherit",opacity:otherSelected?0.4:1}}>
+            <button key={idx} onClick={()=>canPick&&pickWinner(m.id,side)} disabled={!canPick}
+              style={{width:"100%",display:"flex",alignItems:"center",gap:8,padding:"5px 7px",marginBottom:idx===0?3:0,background:selected?"rgba(251,191,36,0.18)":"transparent",border:`1px solid ${selected?"#fbbf24":"transparent"}`,borderRadius:6,cursor:canPick?"pointer":"not-allowed",fontFamily:"inherit",opacity:otherSelected?0.4:1}}>
               <span style={{fontSize:16}}>{team?.flag||team?.f||"?"}</span>
               <span style={{flex:1,textAlign:"left",fontSize:12,color:selected?"#fbbf24":"#f1f5f9",fontWeight:selected?700:500}}>{team?.name||team?.n||"TBD"}</span>
               {selected && <span style={{fontSize:12,color:"#fbbf24"}}>✓</span>}
             </button>
           );
         })}
+        {sched?.venue && (
+          <div style={{fontSize:8,color:"#475569",marginTop:3,textAlign:"center",letterSpacing:0.5,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+            📍 {sched.venue}
+          </div>
+        )}
       </div>
     );
   };
