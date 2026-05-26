@@ -1025,7 +1025,7 @@ function BonusPicks({
   );
 }
 
-
+function Welcome({ onStart, onImport }) {
   const [name, setName] = useState("");
   const [showImport, setShowImport] = useState(false);
   const [code, setCode] = useState("");
