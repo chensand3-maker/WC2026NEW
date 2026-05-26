@@ -1566,6 +1566,14 @@ function KnockoutBracket({ standings, bestThirds, koWinners, setKoWinners, onBac
   const r32 = useMemo(() => buildR32(standings, bestThirds), [standings, bestThirds]);
   const [confettiKey, setConfettiKey] = useState(0);
 
+  // Responsive: stack vertically on narrow phones
+  const [isNarrow, setIsNarrow] = useState(() => typeof window !== "undefined" && window.innerWidth < 720);
+  useEffect(() => {
+    const onResize = () => setIsNarrow(window.innerWidth < 720);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
   // Bracket renders even when incomplete — TBD slots fill in as group standings settle.
   if (!r32) {
     return (
@@ -1751,55 +1759,102 @@ function KnockoutBracket({ standings, bestThirds, koWinners, setKoWinners, onBac
       )}
 
       {/* Two-sided tournament bracket */}
-      <div style={{
-        display:"grid",
-        gridTemplateColumns:"repeat(9, minmax(0, 1fr))",
-        gap:6,
-        overflowX:"auto",
-      }}>
-        {/* LEFT SIDE: R32 (8) → R16 (4) → QF (2) → SF (1) */}
-        <div style={{display:"flex",flexDirection:"column",justifyContent:"space-around"}}>
-          <div style={koRoundHeader}>R32</div>
-          {r32.slice(0, 8).map(m => renderMatch(m))}
+      {isNarrow ? (
+        // ─── MOBILE LAYOUT: vertical with section headers ───
+        <div style={{display:"flex",flexDirection:"column",gap:14}}>
+          {/* Final at top with trophy */}
+          <div style={{
+            background:"linear-gradient(135deg, rgba(251,191,36,0.08), rgba(217,119,6,0.04))",
+            border:"1px solid rgba(251,191,36,0.4)",
+            borderRadius:14,padding:"12px 14px",
+          }}>
+            <div style={{textAlign:"center",marginBottom:8}}>
+              <div style={{fontSize:28,filter:"drop-shadow(0 0 8px rgba(251,191,36,0.7))",marginBottom:2}}>🏆</div>
+              <div style={{fontSize:11,color:"#fbbf24",letterSpacing:3,fontWeight:800}}>FINAL</div>
+            </div>
+            {renderMatch(final)}
+          </div>
+          {/* Semis */}
+          <div>
+            <div style={{fontSize:10,color:"#94a3b8",letterSpacing:3,fontWeight:700,textAlign:"center",marginBottom:6}}>SEMI-FINALS</div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
+              {renderMatch(sf[0])}
+              {renderMatch(sf[1])}
+            </div>
+          </div>
+          {/* Quarters */}
+          <div>
+            <div style={{fontSize:10,color:"#94a3b8",letterSpacing:3,fontWeight:700,textAlign:"center",marginBottom:6}}>QUARTER-FINALS</div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
+              {qf.map(m => renderMatch(m))}
+            </div>
+          </div>
+          {/* R16 */}
+          <div>
+            <div style={{fontSize:10,color:"#94a3b8",letterSpacing:3,fontWeight:700,textAlign:"center",marginBottom:6}}>ROUND OF 16</div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
+              {r16.map(m => renderMatch(m))}
+            </div>
+          </div>
+          {/* R32 */}
+          <div>
+            <div style={{fontSize:10,color:"#94a3b8",letterSpacing:3,fontWeight:700,textAlign:"center",marginBottom:6}}>ROUND OF 32</div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
+              {r32.map(m => renderMatch(m))}
+            </div>
+          </div>
         </div>
-        <div style={{display:"flex",flexDirection:"column",justifyContent:"space-around"}}>
-          <div style={koRoundHeader}>R16</div>
-          {r16.slice(0, 4).map(m => renderMatch(m))}
-        </div>
-        <div style={{display:"flex",flexDirection:"column",justifyContent:"space-around"}}>
-          <div style={koRoundHeader}>QF</div>
-          {qf.slice(0, 2).map(m => renderMatch(m))}
-        </div>
-        <div style={{display:"flex",flexDirection:"column",justifyContent:"space-around"}}>
-          <div style={koRoundHeader}>SF</div>
-          {renderMatch(sf[0])}
-        </div>
+      ) : (
+        // ─── DESKTOP LAYOUT: two-sided 9-column bracket ───
+        <div style={{
+          display:"grid",
+          gridTemplateColumns:"repeat(9, minmax(0, 1fr))",
+          gap:6,
+        }}>
+          {/* LEFT SIDE: R32 (8) → R16 (4) → QF (2) → SF (1) */}
+          <div style={{display:"flex",flexDirection:"column",justifyContent:"space-around"}}>
+            <div style={koRoundHeader}>R32</div>
+            {r32.slice(0, 8).map(m => renderMatch(m))}
+          </div>
+          <div style={{display:"flex",flexDirection:"column",justifyContent:"space-around"}}>
+            <div style={koRoundHeader}>R16</div>
+            {r16.slice(0, 4).map(m => renderMatch(m))}
+          </div>
+          <div style={{display:"flex",flexDirection:"column",justifyContent:"space-around"}}>
+            <div style={koRoundHeader}>QF</div>
+            {qf.slice(0, 2).map(m => renderMatch(m))}
+          </div>
+          <div style={{display:"flex",flexDirection:"column",justifyContent:"space-around"}}>
+            <div style={koRoundHeader}>SF</div>
+            {renderMatch(sf[0])}
+          </div>
 
-        {/* CENTER: Final + trophy */}
-        <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"}}>
-          <div style={{...koRoundHeader, color:"#fbbf24"}}>FINAL</div>
-          <div style={{fontSize:32,marginBottom:4,filter:"drop-shadow(0 0 6px rgba(251,191,36,0.6))"}}>🏆</div>
-          {renderMatch(final)}
-        </div>
+          {/* CENTER: Final + trophy */}
+          <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"}}>
+            <div style={{...koRoundHeader, color:"#fbbf24"}}>FINAL</div>
+            <div style={{fontSize:32,marginBottom:4,filter:"drop-shadow(0 0 6px rgba(251,191,36,0.6))"}}>🏆</div>
+            {renderMatch(final)}
+          </div>
 
-        {/* RIGHT SIDE: SF (1) ← QF (2) ← R16 (4) ← R32 (8) */}
-        <div style={{display:"flex",flexDirection:"column",justifyContent:"space-around"}}>
-          <div style={koRoundHeader}>SF</div>
-          {renderMatch(sf[1])}
+          {/* RIGHT SIDE: SF (1) ← QF (2) ← R16 (4) ← R32 (8) */}
+          <div style={{display:"flex",flexDirection:"column",justifyContent:"space-around"}}>
+            <div style={koRoundHeader}>SF</div>
+            {renderMatch(sf[1])}
+          </div>
+          <div style={{display:"flex",flexDirection:"column",justifyContent:"space-around"}}>
+            <div style={koRoundHeader}>QF</div>
+            {qf.slice(2, 4).map(m => renderMatch(m))}
+          </div>
+          <div style={{display:"flex",flexDirection:"column",justifyContent:"space-around"}}>
+            <div style={koRoundHeader}>R16</div>
+            {r16.slice(4, 8).map(m => renderMatch(m))}
+          </div>
+          <div style={{display:"flex",flexDirection:"column",justifyContent:"space-around"}}>
+            <div style={koRoundHeader}>R32</div>
+            {r32.slice(8, 16).map(m => renderMatch(m))}
+          </div>
         </div>
-        <div style={{display:"flex",flexDirection:"column",justifyContent:"space-around"}}>
-          <div style={koRoundHeader}>QF</div>
-          {qf.slice(2, 4).map(m => renderMatch(m))}
-        </div>
-        <div style={{display:"flex",flexDirection:"column",justifyContent:"space-around"}}>
-          <div style={koRoundHeader}>R16</div>
-          {r16.slice(4, 8).map(m => renderMatch(m))}
-        </div>
-        <div style={{display:"flex",flexDirection:"column",justifyContent:"space-around"}}>
-          <div style={koRoundHeader}>R32</div>
-          {r32.slice(8, 16).map(m => renderMatch(m))}
-        </div>
-      </div>
+      )}
 
       <div style={{display:"flex",gap:10,marginTop:18}}>
         <button onClick={onBack} style={{...ghostBtn,flex:1}}>← Groups</button>
@@ -1989,6 +2044,12 @@ function LeagueHub({
   const [copied, setCopied] = useState(false);
   const [viewing, setViewing] = useState(null);
   const [viewTab, setViewTab] = useState("matches");
+  const [isNarrow, setIsNarrow] = useState(() => typeof window !== "undefined" && window.innerWidth < 720);
+  useEffect(() => {
+    const onResize = () => setIsNarrow(window.innerWidth < 720);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
 
   useEffect(() => {
     setMode(leagueCode ? "active" : "home");
@@ -2350,11 +2411,49 @@ function LeagueHub({
             const koH = {fontSize:9,color:"#94a3b8",letterSpacing:2,fontWeight:700,textAlign:"center",marginBottom:6,padding:"3px 0",borderBottom:"1px solid rgba(71,85,105,0.3)"};
             const koHFinal = {...koH, color:"#fbbf24"};
             const ko = m.koWinners || {};
+            if (isNarrow) {
+              return (
+                <div style={{display:"flex",flexDirection:"column",gap:12}}>
+                  {/* Final on top */}
+                  <div style={{background:"linear-gradient(135deg, rgba(251,191,36,0.08), rgba(217,119,6,0.04))",border:"1px solid rgba(251,191,36,0.4)",borderRadius:12,padding:"10px 12px"}}>
+                    <div style={{textAlign:"center",marginBottom:6}}>
+                      <div style={{fontSize:22,filter:"drop-shadow(0 0 6px rgba(251,191,36,0.6))"}}>🏆</div>
+                      <div style={{fontSize:10,color:"#fbbf24",letterSpacing:3,fontWeight:800}}>FINAL</div>
+                    </div>
+                    {renderKoMatch(memberBracket.final, ko)}
+                  </div>
+                  <div>
+                    <div style={{fontSize:9,color:"#94a3b8",letterSpacing:3,fontWeight:700,textAlign:"center",marginBottom:5}}>SEMI-FINALS</div>
+                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:5}}>
+                      {memberBracket.sf.map(mt => renderKoMatch(mt, ko))}
+                    </div>
+                  </div>
+                  <div>
+                    <div style={{fontSize:9,color:"#94a3b8",letterSpacing:3,fontWeight:700,textAlign:"center",marginBottom:5}}>QUARTER-FINALS</div>
+                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:5}}>
+                      {memberBracket.qf.map(mt => renderKoMatch(mt, ko))}
+                    </div>
+                  </div>
+                  <div>
+                    <div style={{fontSize:9,color:"#94a3b8",letterSpacing:3,fontWeight:700,textAlign:"center",marginBottom:5}}>ROUND OF 16</div>
+                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:5}}>
+                      {memberBracket.r16.map(mt => renderKoMatch(mt, ko))}
+                    </div>
+                  </div>
+                  <div>
+                    <div style={{fontSize:9,color:"#94a3b8",letterSpacing:3,fontWeight:700,textAlign:"center",marginBottom:5}}>ROUND OF 32</div>
+                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:5}}>
+                      {memberBracket.r32.map(mt => renderKoMatch(mt, ko))}
+                    </div>
+                  </div>
+                </div>
+              );
+            }
             return (
               <div style={{
                 display:"grid",
                 gridTemplateColumns:"repeat(9, minmax(0, 1fr))",
-                gap:5,overflowX:"auto",
+                gap:5,
               }}>
                 {/* LEFT SIDE */}
                 <div style={{display:"flex",flexDirection:"column",justifyContent:"space-around"}}>
