@@ -7,9 +7,9 @@ import {
   collection, getDoc, serverTimestamp, deleteField,
 } from "firebase/firestore";
 
-// 🔧 PASTE YOUR FIREBASE CONFIG HERE (see SETUP.md step 2)
+// 🔧 Firebase config
 const firebaseConfig = {
-  apiKey: "AIzaSyD4HwvAZZCNwgVMh_h6zsyZ17lzl69_0rM",
+  apiKey: "AIzaSyD4HwvAZZCNwgVMh_h6zsyZ17lzl69_OrM",
   authDomain: "wc-2026-8b41e.firebaseapp.com",
   projectId: "wc-2026-8b41e",
   storageBucket: "wc-2026-8b41e.firebasestorage.app",
@@ -41,7 +41,7 @@ export async function createLeague(code, leagueName, creator) {
     name: leagueName,
     createdBy: creator,
     createdAt: serverTimestamp(),
-    members: {}, // { userId: { name, picks, koWinners, updatedAt } }
+    members: {},
   });
   return code;
 }
@@ -53,13 +53,15 @@ export async function joinLeague(code) {
   return { code, ...snap.data() };
 }
 
-export async function updateMyPicks(code, userId, name, picks, koWinners) {
+// Updated to accept extras (e.g. winnerPick, topScorerPick) so bonus picks sync
+export async function updateMyPicks(code, userId, name, picks, koWinners, extras = {}) {
   const ref = doc(db, "leagues", code);
   await updateDoc(ref, {
     [`members.${userId}`]: {
       name,
       picks,
       koWinners,
+      ...extras,
       updatedAt: Date.now(),
     },
   });
