@@ -2,7 +2,7 @@
 // ─── 🔴 LIVE 2026 — pulls real World Cup results from API-Football ────────────
 
 // 🔧 PASTE YOUR API-FOOTBALL KEY HERE
-const API_FOOTBALL_KEY = "PASTE_HERE";
+const API_FOOTBALL_KEY = "50b86c6e4ce49b2c24362c4947a7e3d5";
 
 const SEASON = 2026;
 const API_URL = "https://v3.football.api-sports.io";
