@@ -3,7 +3,7 @@ import {
   generateLeagueCode, createLeague, joinLeague,
   updateMyPicks, leaveLeague, subscribeLeague, updateActualResults,
 } from "./firebase";
-import { fetchLiveResults, mapResultsToFixtures } from "./liveResults";
+import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners } from "./liveResults";
 
 // ─── TEAMS ────────────────────────────────────────────────────────────────────
 
@@ -173,11 +173,11 @@ const POINTS = {
   GD: 3,            // correct winner + correct goal difference
   RESULT: 2,        // correct result (win/draw/loss) only
   WRONG: 0,
-  R16_PICK: 3,      // each correct R16 team
-  QF_PICK: 5,       // each correct QF team
-  SF_PICK: 8,       // each correct SF team
-  FINALIST: 12,     // correct finalist
-  CHAMPION: 20,     // correct champion
+  R16_PICK: 6,      // each correct R16 team
+  QF_PICK: 10,      // each correct QF team
+  SF_PICK: 16,      // each correct SF team
+  FINALIST: 24,     // correct finalist
+  CHAMPION: 40,     // correct champion
 };
 
 function scoreMatch(predicted, actual) {
@@ -800,7 +800,7 @@ function Welcome({ onStart, onImport }) {
             <span>✅ Right result only</span><span style={{color:"#3b82f6",fontWeight:700}}>+2 pts</span>
           </div>
           <div style={{display:"flex",justifyContent:"space-between",fontSize:11,color:"#cbd5e1"}}>
-            <span>🏆 Champion bonus</span><span style={{color:"#fbbf24",fontWeight:700}}>+20 pts</span>
+            <span>🏆 Champion bonus</span><span style={{color:"#fbbf24",fontWeight:700}}>+40 pts</span>
           </div>
         </div>
 
@@ -2737,14 +2737,58 @@ export default function App() {
     try {
       const data = await fetchLiveResults();
       const mapped = mapResultsToFixtures(data, FIXTURES);
+      const newActuals = Object.keys(mapped).length > 0
+        ? { ...mapped, ...actuals } // existing actuals (manual entries) win over auto
+        : actuals;
+
       if (Object.keys(mapped).length > 0) {
-        // Merge with any existing actuals (don't overwrite manually entered ones if they exist)
-        setActuals(prev => ({ ...mapped, ...prev }));
-        // If we're in a league, also push to Firebase so everyone gets it
-        if (leagueCode) {
-          updateActualResults(leagueCode, { ...mapped }, actualKo).catch(()=>{});
-        }
+        setActuals(newActuals);
       }
+
+      // Now compute REAL-WORLD bracket from newActuals → map knockout winners
+      let newActualKo = actualKo;
+      try {
+        const realStandings = allStandings(newActuals);
+        const realBestThirds = getBestThirds(realStandings);
+        const realR32 = buildR32(realStandings, realBestThirds);
+        if (realR32 && data.knockout) {
+          // Build full real bracket structure (without picks yet — we're going to derive them from API)
+          // For R16/QF/SF/Final, the slots get filled progressively as winners are determined
+          const buildRealBracket = (currentKo) => {
+            const r32Winners = realR32.map(m => currentKo[m.id] === "a" ? m.a : currentKo[m.id] === "b" ? m.b : null);
+            const r16 = []; for (let i=0;i<16;i+=2) r16.push({id:`R16-${i/2}`, a:r32Winners[i], b:r32Winners[i+1]});
+            const r16Winners = r16.map(m => currentKo[m.id] === "a" ? m.a : currentKo[m.id] === "b" ? m.b : null);
+            const qf = []; for (let i=0;i<8;i+=2) qf.push({id:`QF-${i/2}`, a:r16Winners[i], b:r16Winners[i+1]});
+            const qfWinners = qf.map(m => currentKo[m.id] === "a" ? m.a : currentKo[m.id] === "b" ? m.b : null);
+            const sf = []; for (let i=0;i<4;i+=2) sf.push({id:`SF-${i/2}`, a:qfWinners[i], b:qfWinners[i+1]});
+            const sfWinners = sf.map(m => currentKo[m.id] === "a" ? m.a : currentKo[m.id] === "b" ? m.b : null);
+            const final = { id:"FINAL", a:sfWinners[0], b:sfWinners[1] };
+            return { r32: realR32, r16, qf, sf, final };
+          };
+
+          // Iteratively resolve: each round needs the previous round's winners filled in
+          let workingKo = { ...actualKo };
+          for (let pass = 0; pass < 5; pass++) {
+            const realBracket = buildRealBracket(workingKo);
+            const fromApi = mapKnockoutToWinners(data, realBracket);
+            const merged = { ...workingKo, ...fromApi };
+            if (JSON.stringify(merged) === JSON.stringify(workingKo)) break;
+            workingKo = merged;
+          }
+          if (JSON.stringify(workingKo) !== JSON.stringify(actualKo)) {
+            newActualKo = workingKo;
+            setActualKo(workingKo);
+          }
+        }
+      } catch (e) {
+        console.warn("Knockout mapping failed:", e);
+      }
+
+      // Push to Firebase so everyone in the league gets it
+      if (leagueCode && (Object.keys(mapped).length > 0 || newActualKo !== actualKo)) {
+        updateActualResults(leagueCode, newActuals, newActualKo).catch(()=>{});
+      }
+
       setLiveFetchAt(Date.now());
       setLiveError("");
     } catch (err) {
