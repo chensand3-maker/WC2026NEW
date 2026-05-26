@@ -1084,36 +1084,40 @@ function Welcome({ onStart, onImport }) {
           </div>
         </div>
 
-        {!showImport ? <>
-          <label style={lbl}>YOUR NAME</label>
-          <input autoFocus placeholder="e.g. Alex" value={name}
-            onChange={e=>{setName(e.target.value);setErr("");}}
-            onKeyDown={e=>e.key==="Enter"&&(name.trim()?onStart(name.trim()):setErr("Enter your name"))}
-            maxLength={20} style={inputStyle}/>
-          {name.trim() && (
-            <div style={{fontSize:12,color:"#fbbf24",textAlign:"center",marginBottom:8,animation:"fadeUp 0.3s ease-out"}}>
-              👋 Welcome, <strong>{name.trim()}</strong>! Ready to call the tournament?
-            </div>
-          )}
-          {err && <div style={errStyle}>⚠️ {err}</div>}
-          <button onClick={()=>name.trim()?onStart(name.trim()):setErr("Enter your name")} style={primaryBtn}>
-            {name.trim() ? `Let's go, ${name.trim().split(" ")[0]}! →` : "Let's predict! →"}
-          </button>
-          <div style={{textAlign:"center",margin:"14px 0 8px",color:"#475569",fontSize:11,letterSpacing:2}}>━━━━━ OR ━━━━━</div>
-          <button onClick={()=>setShowImport(true)} style={ghostBtn}>📥 Import code</button>
-        </> : <>
-          <label style={lbl}>PASTE FRIEND'S CODE</label>
-          <textarea autoFocus placeholder="WC26P|..." value={code}
-            onChange={e=>{setCode(e.target.value);setErr("");}} rows={3}
-            style={{...inputStyle,fontFamily:"monospace",fontSize:11,resize:"vertical"}}/>
-          {err && <div style={errStyle}>⚠️ {err}</div>}
-          <button onClick={()=>{
-            const d = decodePicks(code);
-            if (!d) { setErr("Invalid code"); return; }
-            onImport(d);
-          }} style={primaryBtn}>Import →</button>
-          <button onClick={()=>{setShowImport(false);setErr("");}} style={{...ghostBtn,marginTop:10}}>← Back</button>
-        </>}
+        {!showImport ? (
+          <div>
+            <label style={lbl}>YOUR NAME</label>
+            <input autoFocus placeholder="e.g. Alex" value={name}
+              onChange={e=>{setName(e.target.value);setErr("");}}
+              onKeyDown={e=>e.key==="Enter"&&(name.trim()?onStart(name.trim()):setErr("Enter your name"))}
+              maxLength={20} style={inputStyle}/>
+            {name.trim() && (
+              <div style={{fontSize:12,color:"#fbbf24",textAlign:"center",marginBottom:8,animation:"fadeUp 0.3s ease-out"}}>
+                👋 Welcome, <strong>{name.trim()}</strong>! Ready to call the tournament?
+              </div>
+            )}
+            {err && <div style={errStyle}>⚠️ {err}</div>}
+            <button onClick={()=>name.trim()?onStart(name.trim()):setErr("Enter your name")} style={primaryBtn}>
+              {name.trim() ? `Let's go, ${name.trim().split(" ")[0]}! →` : "Let's predict! →"}
+            </button>
+            <div style={{textAlign:"center",margin:"14px 0 8px",color:"#475569",fontSize:11,letterSpacing:2}}>━━━━━ OR ━━━━━</div>
+            <button onClick={()=>setShowImport(true)} style={ghostBtn}>📥 Import code</button>
+          </div>
+        ) : (
+          <div>
+            <label style={lbl}>PASTE FRIEND'S CODE</label>
+            <textarea autoFocus placeholder="WC26P|..." value={code}
+              onChange={e=>{setCode(e.target.value);setErr("");}} rows={3}
+              style={{...inputStyle,fontFamily:"monospace",fontSize:11,resize:"vertical"}}/>
+            {err && <div style={errStyle}>⚠️ {err}</div>}
+            <button onClick={()=>{
+              const d = decodePicks(code);
+              if (!d) { setErr("Invalid code"); return; }
+              onImport(d);
+            }} style={primaryBtn}>Import →</button>
+            <button onClick={()=>{setShowImport(false);setErr("");}} style={{...ghostBtn,marginTop:10}}>← Back</button>
+          </div>
+        )}
       </div>
     </div>
   );
