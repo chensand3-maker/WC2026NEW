@@ -2562,6 +2562,7 @@ function LeagueHub({
   actuals, hasActuals,
   liveFetchAt, liveError, onFetchLive,
 }) {
+  const t = useT();
   const [mode, setMode] = useState("home"); // home | creating | joining | active
   const [draftName, setDraftName] = useState("");
   const [draftCode, setDraftCode] = useState("");
@@ -2650,20 +2651,20 @@ function LeagueHub({
       <div style={{padding:"16px 14px 40px",maxWidth:480,margin:"0 auto"}}>
         <div style={{textAlign:"center",marginBottom:20}}>
           <div style={{fontSize:48,marginBottom:6}}>🏆</div>
-          <h2 style={{margin:"0 0 4px",fontSize:22,background:"linear-gradient(180deg,#fde68a,#f59e0b)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",fontWeight:900}}>Play With Friends</h2>
-          <p style={{color:"#94a3b8",fontSize:13,margin:0,lineHeight:1.5}}>Create a league or join one. Everyone's picks sync live, and real match results update automatically.</p>
+          <h2 style={{margin:"0 0 4px",fontSize:22,background:"linear-gradient(180deg,#fde68a,#f59e0b)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",fontWeight:900}}>{t("league.playWithFriends")}</h2>
+          <p style={{color:"#94a3b8",fontSize:13,margin:0,lineHeight:1.5}}>{t("league.intro")}</p>
         </div>
 
         {/* CREATE */}
         <div style={{background:"linear-gradient(145deg,#1e293b,#0f172a)",border:"1px solid rgba(251,191,36,0.3)",borderRadius:14,padding:16,marginBottom:12}}>
           <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
             <span style={{fontSize:24}}>✨</span>
-            <span style={{fontSize:15,fontWeight:800,color:"#fbbf24"}}>Create a league</span>
+            <span style={{fontSize:15,fontWeight:800,color:"#fbbf24"}}>{t("league.createLeague")}</span>
           </div>
           <input value={draftName} onChange={e=>{setDraftName(e.target.value);setErr("");}} maxLength={30}
-            placeholder="e.g. Mike's Crew" style={inputStyle}/>
+            placeholder={t("league.createPlaceholder")} style={inputStyle}/>
           <button onClick={handleCreate} disabled={busy} style={{...primaryBtn,opacity:busy?0.5:1}}>
-            {busy ? "Creating..." : "✨ Create league"}
+            {busy ? t("league.creating") : t("league.createBtn")}
           </button>
         </div>
 
@@ -2671,13 +2672,13 @@ function LeagueHub({
         <div style={{background:"linear-gradient(145deg,#1e293b,#0f172a)",border:"1px solid rgba(71,85,105,0.4)",borderRadius:14,padding:16}}>
           <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
             <span style={{fontSize:24}}>🤝</span>
-            <span style={{fontSize:15,fontWeight:800,color:"#cbd5e1"}}>Join a league</span>
+            <span style={{fontSize:15,fontWeight:800,color:"#cbd5e1"}}>{t("league.joinLeague")}</span>
           </div>
           <input value={draftCode} onChange={e=>{setDraftCode(e.target.value.toUpperCase());setErr("");}}
-            placeholder="e.g. GOLDEN-TIGER-123" maxLength={30}
+            placeholder={t("league.joinPlaceholder")} maxLength={30}
             style={{...inputStyle,fontFamily:"monospace",letterSpacing:1}}/>
           <button onClick={handleJoin} disabled={busy} style={{...ghostBtn,opacity:busy?0.5:1}}>
-            {busy ? "Joining..." : "🤝 Join league"}
+            {busy ? t("league.joining") : t("league.joinBtn")}
           </button>
         </div>
 
@@ -2696,9 +2697,9 @@ function LeagueHub({
       return (
         <div style={{padding:"30px 20px",textAlign:"center",maxWidth:420,margin:"0 auto"}}>
           <div style={{fontSize:36,marginBottom:12}}>⚠️</div>
-          <h2 style={{color:"#fca5a5",margin:"0 0 8px",fontSize:18}}>League connection error</h2>
+          <h2 style={{color:"#fca5a5",margin:"0 0 8px",fontSize:18}}>{t("league.connectionError")}</h2>
           <p style={{color:"#94a3b8",fontSize:13,marginBottom:16}}>{leagueError}</p>
-          <button onClick={handleLeave} style={ghostBtn}>← Back to league menu</button>
+          <button onClick={handleLeave} style={ghostBtn}>{t("league.backToMenu")}</button>
         </div>
       );
     }
@@ -2706,7 +2707,7 @@ function LeagueHub({
       return (
         <div style={{padding:"30px 20px",textAlign:"center"}}>
           <div style={{fontSize:32,marginBottom:8,animation:"pulse 1.5s infinite"}}>⏳</div>
-          <p style={{color:"#94a3b8",fontSize:13}}>Connecting to league...</p>
+          <p style={{color:"#94a3b8",fontSize:13}}>{t("league.connecting")}</p>
         </div>
       );
     }
@@ -3048,32 +3049,32 @@ function LeagueHub({
           <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:10}}>
             <div style={{fontSize:32}}>🏆</div>
             <div style={{flex:1,minWidth:0}}>
-              <div style={{fontSize:10,color:"#fbbf24",letterSpacing:2,marginBottom:2}}>YOUR LEAGUE</div>
+              <div style={{fontSize:10,color:"#fbbf24",letterSpacing:2,marginBottom:2}}>{t("league.yourLeague")}</div>
               <h2 style={{margin:0,fontSize:17,color:"#f1f5f9",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{leagueData.name}</h2>
               <div style={{fontSize:11,color:"#94a3b8",marginTop:2}}>
-                <span style={{color:"#22c55e"}}>●</span> Live sync · {members.length} {members.length===1?"member":"members"}
+                <span style={{color:"#22c55e"}}>●</span> {t("league.liveSync")} · {members.length} {members.length===1?t("league.member"):t("league.members")}
               </div>
             </div>
           </div>
           <div style={{display:"flex",alignItems:"center",gap:6,background:"#0a0e1c",borderRadius:8,padding:"8px 10px",border:"1px dashed rgba(71,85,105,0.5)"}}>
-            <span style={{fontSize:10,color:"#64748b",letterSpacing:1}}>CODE</span>
+            <span style={{fontSize:10,color:"#64748b",letterSpacing:1}}>{t("league.code")}</span>
             <span style={{flex:1,fontFamily:"monospace",fontSize:13,color:"#fbbf24",letterSpacing:1,fontWeight:700,wordBreak:"break-all"}}>{leagueCode}</span>
             <button onClick={copy} style={{background:copied?"#22c55e":"#fbbf24",color:"#0a0e1c",border:"none",borderRadius:6,padding:"4px 10px",fontSize:11,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>
               {copied ? "✓" : "📋"}
             </button>
           </div>
-          <p style={{fontSize:11,color:"#64748b",margin:"6px 0 0",textAlign:"center"}}>Share this code so friends can join.</p>
+          <p style={{fontSize:11,color:"#64748b",margin:"6px 0 0",textAlign:"center"}}>{t("league.shareCode")}</p>
         </div>
 
         {/* Live results status */}
         <div style={{background:"rgba(30,41,59,0.5)",border:"1px solid rgba(71,85,105,0.3)",borderRadius:10,padding:"10px 12px",marginBottom:14,display:"flex",alignItems:"center",gap:10}}>
           <span style={{fontSize:18}}>📡</span>
           <div style={{flex:1,minWidth:0}}>
-            <div style={{fontSize:11,color:"#f1f5f9",fontWeight:600}}>Live results auto-fetch</div>
+            <div style={{fontSize:11,color:"#f1f5f9",fontWeight:600}}>{t("league.liveResults")}</div>
             <div style={{fontSize:10,color:liveError?"#fca5a5":"#94a3b8"}}>{liveError || fetchedLabel}</div>
           </div>
           <button onClick={onFetchLive} style={{background:"rgba(251,191,36,0.15)",border:"1px solid rgba(251,191,36,0.4)",color:"#fbbf24",borderRadius:6,padding:"5px 10px",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
-            Refresh
+            {t("league.refresh")}
           </button>
         </div>
 
@@ -3096,7 +3097,7 @@ function LeagueHub({
           if (!anyHits && !anyMisses) return null;
           return (
             <div style={{marginBottom:14}}>
-              <div style={{fontSize:11,color:"#94a3b8",letterSpacing:3,marginBottom:8,textAlign:"center"}}>🎯 HITS &amp; MISSES</div>
+              <div style={{fontSize:11,color:"#94a3b8",letterSpacing:3,marginBottom:8,textAlign:"center"}}>{t("league.hitsMisses")}</div>
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
                 {/* Top Hit */}
                 <div style={{
@@ -3107,21 +3108,21 @@ function LeagueHub({
                 }}>
                   <div style={{display:"flex",alignItems:"center",gap:5,marginBottom:6}}>
                     <span style={{fontSize:18}}>🎯</span>
-                    <span style={{fontSize:9,color:"#22c55e",letterSpacing:2,fontWeight:800}}>TOP HIT</span>
+                    <span style={{fontSize:9,color:"#22c55e",letterSpacing:2,fontWeight:800}}>{t("league.topHit")}</span>
                   </div>
                   {anyHits ? (
                     <>
                       <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:4}}>
                         <div style={{width:24,height:24,borderRadius:"50%",background:`linear-gradient(135deg,${colorFor(topHit.name)},${colorFor(topHit.name)}aa)`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:900,color:"#fff",flexShrink:0}}>{topHit.name[0]?.toUpperCase()}</div>
-                        <span style={{fontSize:13,color:"#f1f5f9",fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{topHit.name}{topHit.isMe?" (you)":""}</span>
+                        <span style={{fontSize:13,color:"#f1f5f9",fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{topHit.name}{topHit.isMe?t("league.you"):""}</span>
                       </div>
                       <div style={{fontSize:11,color:"#22c55e",fontWeight:700}}>
-                        {topHit.matchScore.exact} exact {topHit.matchScore.exact === 1 ? "score" : "scores"}
+                        {topHit.matchScore.exact} {topHit.matchScore.exact === 1 ? t("league.exactScoreOne") : t("league.exactScoresMany")}
                       </div>
-                      <div style={{fontSize:9,color:"#64748b",marginTop:2}}>nailed it 🎯</div>
+                      <div style={{fontSize:9,color:"#64748b",marginTop:2}}>{t("league.nailedIt")}</div>
                     </>
                   ) : (
-                    <div style={{fontSize:11,color:"#64748b",fontStyle:"italic"}}>No exact picks yet</div>
+                    <div style={{fontSize:11,color:"#64748b",fontStyle:"italic"}}>{t("league.noExactPicks")}</div>
                   )}
                 </div>
                 {/* Top Miss */}
@@ -3133,21 +3134,21 @@ function LeagueHub({
                 }}>
                   <div style={{display:"flex",alignItems:"center",gap:5,marginBottom:6}}>
                     <span style={{fontSize:18}}>💀</span>
-                    <span style={{fontSize:9,color:"#f87171",letterSpacing:2,fontWeight:800}}>TOP MISS</span>
+                    <span style={{fontSize:9,color:"#f87171",letterSpacing:2,fontWeight:800}}>{t("league.topMiss")}</span>
                   </div>
                   {anyMisses ? (
                     <>
                       <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:4}}>
                         <div style={{width:24,height:24,borderRadius:"50%",background:`linear-gradient(135deg,${colorFor(topMiss.name)},${colorFor(topMiss.name)}aa)`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:900,color:"#fff",flexShrink:0}}>{topMiss.name[0]?.toUpperCase()}</div>
-                        <span style={{fontSize:13,color:"#f1f5f9",fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{topMiss.name}{topMiss.isMe?" (you)":""}</span>
+                        <span style={{fontSize:13,color:"#f1f5f9",fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{topMiss.name}{topMiss.isMe?t("league.you"):""}</span>
                       </div>
                       <div style={{fontSize:11,color:"#f87171",fontWeight:700}}>
-                        {topMiss.matchScore.wrong} wrong {topMiss.matchScore.wrong === 1 ? "pick" : "picks"}
+                        {topMiss.matchScore.wrong} {topMiss.matchScore.wrong === 1 ? t("league.wrongPickOne") : t("league.wrongPicksMany")}
                       </div>
-                      <div style={{fontSize:9,color:"#64748b",marginTop:2}}>oof 💀</div>
+                      <div style={{fontSize:9,color:"#64748b",marginTop:2}}>{t("league.oof")}</div>
                     </>
                   ) : (
-                    <div style={{fontSize:11,color:"#64748b",fontStyle:"italic"}}>No misses yet!</div>
+                    <div style={{fontSize:11,color:"#64748b",fontStyle:"italic"}}>{t("league.noMissesYet")}</div>
                   )}
                 </div>
               </div>
@@ -3157,16 +3158,16 @@ function LeagueHub({
 
         {/* Leaderboard */}
         <div style={{fontSize:11,color:"#94a3b8",letterSpacing:3,marginBottom:8,textAlign:"center"}}>
-          🏅 STANDINGS
+          {t("league.standings")}
         </div>
         {!hasActuals && (
           <div style={{background:"rgba(59,130,246,0.08)",border:"1px solid rgba(59,130,246,0.3)",borderRadius:10,padding:"10px 12px",marginBottom:10,fontSize:11,color:"#93c5fd",lineHeight:1.5,textAlign:"center"}}>
-            💡 Points will fill in once real match results arrive. Tap <strong>Refresh</strong> above to pull the latest, or wait — it auto-fetches every 5 min.
+            {t("league.pointsFillIn")} <strong>{t("league.refresh")}</strong> {t("league.pointsFillInRest")}
           </div>
         )}
         {members.length === 0 && (
           <div style={{background:"rgba(30,41,59,0.4)",border:"1px dashed rgba(71,85,105,0.4)",borderRadius:10,padding:"16px 12px",textAlign:"center",fontSize:12,color:"#94a3b8"}}>
-            No members yet. Share your league code so friends can join.
+            {t("league.noMembers")}
           </div>
         )}
         {members.map((p, i) => {
@@ -3235,10 +3236,10 @@ function LeagueHub({
                   fontSize: isPodium && showPoints ? 15 : 14,
                   color:"#f1f5f9",fontWeight:700,
                   overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",
-                }}>{p.name}{p.isMe?" (you)":""}</div>
+                }}>{p.name}{p.isMe?t("league.you"):""}</div>
                 <div style={{fontSize:10,color:"#64748b",marginTop:1}}>
-                  {p.predictedCount}/{FIXTURES.length} predicted
-                  {showPoints && p.matchScore.exact>0 && ` · 🎯${p.matchScore.exact} exact`}
+                  {p.predictedCount}/{FIXTURES.length} {t("league.predicted")}
+                  {showPoints && p.matchScore.exact>0 && ` · 🎯${p.matchScore.exact} ${t("league.exact")}`}
                   {showPoints && p.matchScore.gd>0 && ` · ✓${p.matchScore.gd} GD`}
                   {showPoints && p.matchScore.result>0 && ` · ✅${p.matchScore.result}`}
                   {showPoints && p.koScore.breakdown.champion>0 && " · 👑"}
@@ -3252,7 +3253,7 @@ function LeagueHub({
                   color: showPoints ? (isPodium ? podiumBorder : "#94a3b8") : "#475569",
                   lineHeight:1,
                 }}>{p.totalPoints}</div>
-                <div style={{fontSize:9,color:"#94a3b8",letterSpacing:1}}>PTS</div>
+                <div style={{fontSize:9,color:"#94a3b8",letterSpacing:1}}>{t("league.pts")}</div>
               </div>
             </button>
           );
@@ -3260,7 +3261,7 @@ function LeagueHub({
 
         {/* Leave league */}
         <div style={{marginTop:24,textAlign:"center"}}>
-          <button onClick={handleLeave} style={{background:"transparent",border:"none",color:"#64748b",fontSize:12,cursor:"pointer",fontFamily:"inherit",textDecoration:"underline"}}>Leave this league</button>
+          <button onClick={handleLeave} style={{background:"transparent",border:"none",color:"#64748b",fontSize:12,cursor:"pointer",fontFamily:"inherit",textDecoration:"underline"}}>{t("league.leaveLeague")}</button>
         </div>
       </div>
     );
