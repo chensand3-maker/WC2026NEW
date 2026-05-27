@@ -827,58 +827,154 @@ function SoccerIntro({ onDone }) {
 
 // Curated list of top-scorer candidates (favorites at the time of the 2026 draw).
 // User can also enter a free-form player name if their pick isn't here.
-const TOP_SCORER_CANDIDATES = [
-  { name: "Kylian Mbappé", team: "France" },
-  { name: "Erling Haaland", team: "Norway" },
+// Curated top-scorer candidates — only from teams in the 2026 World Cup.
+// Auto-filtered at runtime against ALL_TEAMS so any non-qualifier slip-ups are hidden.
+const TOP_SCORER_CANDIDATES_RAW = [
+  // Argentina
   { name: "Lionel Messi", team: "Argentina" },
-  { name: "Vinícius Júnior", team: "Brazil" },
-  { name: "Harry Kane", team: "England" },
-  { name: "Cristiano Ronaldo", team: "Portugal" },
   { name: "Lautaro Martínez", team: "Argentina" },
+  { name: "Julián Álvarez", team: "Argentina" },
+  // France
+  { name: "Kylian Mbappé", team: "France" },
+  { name: "Ousmane Dembélé", team: "France" },
+  { name: "Antoine Griezmann", team: "France" },
+  { name: "Christopher Nkunku", team: "France" },
+  // Brazil
+  { name: "Vinícius Júnior", team: "Brazil" },
+  { name: "Rodrygo", team: "Brazil" },
+  { name: "Raphinha", team: "Brazil" },
+  // England
+  { name: "Harry Kane", team: "England" },
   { name: "Bukayo Saka", team: "England" },
   { name: "Jude Bellingham", team: "England" },
-  { name: "Rodrygo", team: "Brazil" },
-  { name: "Mohamed Salah", team: "Egypt" },
+  { name: "Phil Foden", team: "England" },
+  // Spain
   { name: "Lamine Yamal", team: "Spain" },
-  { name: "Robert Lewandowski", team: "Poland" }, // unlikely qualifier but icon
-  { name: "Cody Gakpo", team: "Netherlands" },
-  { name: "Memphis Depay", team: "Netherlands" },
-  { name: "Romelu Lukaku", team: "Belgium" },
-  { name: "Kevin De Bruyne", team: "Belgium" },
-  { name: "Florian Wirtz", team: "Germany" },
-  { name: "Jamal Musiala", team: "Germany" },
-  { name: "Kai Havertz", team: "Germany" },
+  { name: "Álvaro Morata", team: "Spain" },
+  { name: "Nico Williams", team: "Spain" },
+  // Portugal
+  { name: "Cristiano Ronaldo", team: "Portugal" },
   { name: "Bernardo Silva", team: "Portugal" },
   { name: "Bruno Fernandes", team: "Portugal" },
   { name: "Rafael Leão", team: "Portugal" },
-  { name: "Khvicha Kvaratskhelia", team: "Georgia" }, // not in 2026
-  { name: "Christopher Nkunku", team: "France" },
-  { name: "Ousmane Dembélé", team: "France" },
-  { name: "Antoine Griezmann", team: "France" },
+  // Germany
+  { name: "Florian Wirtz", team: "Germany" },
+  { name: "Jamal Musiala", team: "Germany" },
+  { name: "Kai Havertz", team: "Germany" },
+  // Netherlands
+  { name: "Cody Gakpo", team: "Netherlands" },
+  { name: "Memphis Depay", team: "Netherlands" },
+  { name: "Xavi Simons", team: "Netherlands" },
+  // Belgium
+  { name: "Romelu Lukaku", team: "Belgium" },
+  { name: "Kevin De Bruyne", team: "Belgium" },
+  // Norway
+  { name: "Erling Haaland", team: "Norway" },
+  { name: "Martin Ødegaard", team: "Norway" },
+  // Croatia
+  { name: "Luka Modrić", team: "Croatia" },
+  { name: "Andrej Kramarić", team: "Croatia" },
+  // Morocco
   { name: "Hakim Ziyech", team: "Morocco" },
   { name: "Achraf Hakimi", team: "Morocco" },
   { name: "Youssef En-Nesyri", team: "Morocco" },
-  { name: "Luka Modrić", team: "Croatia" },
-  { name: "Andrej Kramarić", team: "Croatia" },
-  { name: "Joško Gvardiol", team: "Croatia" },
+  // Egypt
+  { name: "Mohamed Salah", team: "Egypt" },
+  // Senegal
+  { name: "Sadio Mané", team: "Senegal" },
+  { name: "Nicolas Jackson", team: "Senegal" },
+  // Côte d'Ivoire
+  { name: "Sébastien Haller", team: "Côte d'Ivoire" },
+  { name: "Simon Adingra", team: "Côte d'Ivoire" },
+  // Ghana
+  { name: "Mohammed Kudus", team: "Ghana" },
+  { name: "Iñaki Williams", team: "Ghana" },
+  // DR Congo
+  { name: "Cédric Bakambu", team: "DR Congo" },
+  // Cabo Verde
+  { name: "Ryan Mendes", team: "Cabo Verde" },
+  // South Africa
+  { name: "Lyle Foster", team: "South Africa" },
+  // Tunisia
+  { name: "Wahbi Khazri", team: "Tunisia" },
+  // Algeria
+  { name: "Riyad Mahrez", team: "Algeria" },
+  { name: "Islam Slimani", team: "Algeria" },
+  // USA
   { name: "Christian Pulisic", team: "USA" },
-  { name: "Tim Weah", team: "USA" },
   { name: "Folarin Balogun", team: "USA" },
+  { name: "Tim Weah", team: "USA" },
+  // Mexico
   { name: "Hirving Lozano", team: "Mexico" },
   { name: "Raúl Jiménez", team: "Mexico" },
+  { name: "Santiago Giménez", team: "Mexico" },
+  // Canada
   { name: "Alphonso Davies", team: "Canada" },
   { name: "Jonathan David", team: "Canada" },
+  { name: "Cyle Larin", team: "Canada" },
+  // Uruguay
+  { name: "Darwin Núñez", team: "Uruguay" },
+  { name: "Federico Valverde", team: "Uruguay" },
+  // Colombia
+  { name: "Luis Díaz", team: "Colombia" },
+  { name: "James Rodríguez", team: "Colombia" },
+  // Paraguay
+  { name: "Miguel Almirón", team: "Paraguay" },
+  // Ecuador
+  { name: "Enner Valencia", team: "Ecuador" },
+  // Haiti
+  { name: "Duckens Nazon", team: "Haiti" },
+  // Curaçao
+  { name: "Tahith Chong", team: "Curaçao" },
+  // Japan
   { name: "Kaoru Mitoma", team: "Japan" },
   { name: "Takefusa Kubo", team: "Japan" },
+  { name: "Daichi Kamada", team: "Japan" },
+  // South Korea
   { name: "Son Heung-min", team: "South Korea" },
-  { name: "Sadio Mané", team: "Senegal" },
+  // Iran
   { name: "Mehdi Taremi", team: "Iran" },
+  { name: "Sardar Azmoun", team: "Iran" },
+  // Saudi Arabia
+  { name: "Salem Al-Dawsari", team: "Saudi Arabia" },
+  // Uzbekistan
+  { name: "Eldor Shomurodov", team: "Uzbekistan" },
+  // Iraq
+  { name: "Ali Al-Hamadi", team: "Iraq" },
+  // Jordan
+  { name: "Mousa Al-Tamari", team: "Jordan" },
+  // Qatar
+  { name: "Akram Afif", team: "Qatar" },
+  // Australia
   { name: "Mitchell Duke", team: "Australia" },
-  { name: "Federico Valverde", team: "Uruguay" },
-  { name: "Darwin Núñez", team: "Uruguay" },
-  { name: "Federico Chiesa", team: "Italy" }, // unlikely
-  { name: "Julián Álvarez", team: "Argentina" },
+  { name: "Mat Leckie", team: "Australia" },
+  // New Zealand
+  { name: "Chris Wood", team: "New Zealand" },
+  // Switzerland
+  { name: "Granit Xhaka", team: "Switzerland" },
+  { name: "Breel Embolo", team: "Switzerland" },
+  // Türkiye
+  { name: "Arda Güler", team: "Türkiye" },
+  { name: "Kenan Yıldız", team: "Türkiye" },
+  // Austria
+  { name: "Marko Arnautović", team: "Austria" },
+  // Sweden
+  { name: "Alexander Isak", team: "Sweden" },
+  { name: "Viktor Gyökeres", team: "Sweden" },
+  // Czechia
+  { name: "Patrik Schick", team: "Czechia" },
+  // Bosnia
+  { name: "Edin Džeko", team: "Bosnia" },
+  // Scotland
+  { name: "Scott McTominay", team: "Scotland" },
+  { name: "Che Adams", team: "Scotland" },
+  // Panama
+  { name: "José Fajardo", team: "Panama" },
 ];
+
+// Runtime filter: only show players from teams actually in the 2026 tournament
+const _qualifiedTeamSet = new Set(ALL_TEAMS.map(t => t.n));
+const TOP_SCORER_CANDIDATES = TOP_SCORER_CANDIDATES_RAW.filter(p => _qualifiedTeamSet.has(p.team));
 
 function BonusPicks({
   winnerPick, setWinnerPick,
