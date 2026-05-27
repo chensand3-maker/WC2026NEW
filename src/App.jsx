@@ -1328,6 +1328,7 @@ function BonusPicks({
   actualWinner, actualTopScorer,
   isLocked, onBack,
 }) {
+  const t = useT();
   const [scorerMode, setScorerMode] = useState("list"); // "list" | "custom"
   const [customPlayer, setCustomPlayer] = useState("");
   const [customTeam, setCustomTeam] = useState("");
@@ -1347,17 +1348,17 @@ function BonusPicks({
 
   return (
     <div style={{padding:"16px 14px 60px",maxWidth:560,margin:"0 auto"}}>
-      <button onClick={onBack} style={{...ghostBtn,marginBottom:14,padding:"7px 14px",width:"auto"}}>← Back</button>
+      <button onClick={onBack} style={{...ghostBtn,marginBottom:14,padding:"7px 14px",width:"auto"}}>{t("welcome.back")}</button>
 
       <div style={{textAlign:"center",marginBottom:18}}>
-        <div style={{fontSize:10,color:"#64748b",letterSpacing:3}}>BONUS PICKS</div>
-        <h2 style={{fontSize:24,margin:"4px 0",background:"linear-gradient(180deg,#fde68a,#f59e0b)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",fontWeight:900}}>⭐ Big Bets</h2>
-        <p style={{fontSize:12,color:"#94a3b8",margin:0}}>Two big calls for major bonus points.</p>
+        <div style={{fontSize:10,color:"#64748b",letterSpacing:3}}>{t("bonus.bonusPicks")}</div>
+        <h2 style={{fontSize:24,margin:"4px 0",background:"linear-gradient(180deg,#fde68a,#f59e0b)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",fontWeight:900}}>{t("bonus.title")}</h2>
+        <p style={{fontSize:12,color:"#94a3b8",margin:0}}>{t("bonus.subtitle")}</p>
       </div>
 
       {isLocked && (
         <div style={{background:"rgba(239,68,68,0.1)",border:"1px solid rgba(239,68,68,0.4)",borderRadius:10,padding:"10px 12px",marginBottom:14,fontSize:11,color:"#fca5a5",textAlign:"center"}}>
-          🔒 Bonus picks locked — the tournament has started.
+          {t("bonus.locked")}
         </div>
       )}
 
@@ -1365,10 +1366,10 @@ function BonusPicks({
       <div style={{background:"linear-gradient(135deg,rgba(251,191,36,0.08),rgba(15,20,36,0.6))",border:"1px solid rgba(251,191,36,0.3)",borderRadius:14,padding:14,marginBottom:14}}>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
           <div>
-            <div style={{fontSize:11,color:"#fbbf24",letterSpacing:2,fontWeight:700}}>🏆 TOURNAMENT WINNER</div>
-            <div style={{fontSize:10,color:"#94a3b8",marginTop:2}}>Pick one team to lift the trophy</div>
+            <div style={{fontSize:11,color:"#fbbf24",letterSpacing:2,fontWeight:700}}>{t("bonus.tournamentWinner")}</div>
+            <div style={{fontSize:10,color:"#94a3b8",marginTop:2}}>{t("bonus.pickOneTeam")}</div>
           </div>
-          <div style={{background:"#fbbf24",color:"#0a0e1c",fontSize:11,fontWeight:900,padding:"3px 8px",borderRadius:6,letterSpacing:1}}>+50 PTS</div>
+          <div style={{background:"#fbbf24",color:"#0a0e1c",fontSize:11,fontWeight:900,padding:"3px 8px",borderRadius:6,letterSpacing:1}}>{t("bonus.fiftyPts")}</div>
         </div>
 
         {winnerPick ? (
@@ -1380,7 +1381,7 @@ function BonusPicks({
             <span style={{fontSize:28}}>{winnerPick.flag || winnerPick.f}</span>
             <span style={{flex:1,fontSize:16,fontWeight:900}}>{winnerPick.name || winnerPick.n}</span>
             {!isLocked && (
-              <button onClick={()=>setWinnerPick(null)} style={{background:"rgba(10,14,28,0.2)",border:"none",borderRadius:6,padding:"4px 10px",color:"#0a0e1c",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Change</button>
+              <button onClick={()=>setWinnerPick(null)} style={{background:"rgba(10,14,28,0.2)",border:"none",borderRadius:6,padding:"4px 10px",color:"#0a0e1c",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>{t("bonus.change")}</button>
             )}
             {actualWinner && (
               <div style={{fontSize:11,fontWeight:900}}>
@@ -1390,21 +1391,21 @@ function BonusPicks({
           </div>
         ) : !isLocked ? (
           <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(94px,1fr))",gap:5}}>
-            {allTeams.map(t => (
-              <button key={t.n} onClick={()=>setWinnerPick({name:t.n, flag:t.f})} style={{
+            {allTeams.map(team => (
+              <button key={team.n} onClick={()=>setWinnerPick({name:team.n, flag:team.f})} style={{
                 background:"rgba(30,41,59,0.6)",border:"1px solid rgba(71,85,105,0.4)",
                 borderRadius:8,padding:"7px 4px",color:"#cbd5e1",fontSize:11,
                 cursor:"pointer",fontFamily:"inherit",
                 display:"flex",alignItems:"center",gap:5,
                 overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",
               }}>
-                <span style={{fontSize:14}}>{t.f}</span>
-                <span style={{flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",textAlign:"left"}}>{t.n}</span>
+                <span style={{fontSize:14}}>{team.f}</span>
+                <span style={{flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",textAlign:"left"}}>{team.n}</span>
               </button>
             ))}
           </div>
         ) : (
-          <div style={{fontSize:11,color:"#64748b",textAlign:"center",padding:"10px 0"}}>No pick made.</div>
+          <div style={{fontSize:11,color:"#64748b",textAlign:"center",padding:"10px 0"}}>{t("bonus.noPickMade")}</div>
         )}
       </div>
 
@@ -1412,10 +1413,10 @@ function BonusPicks({
       <div style={{background:"linear-gradient(135deg,rgba(168,85,247,0.08),rgba(15,20,36,0.6))",border:"1px solid rgba(168,85,247,0.3)",borderRadius:14,padding:14}}>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
           <div>
-            <div style={{fontSize:11,color:"#a855f7",letterSpacing:2,fontWeight:700}}>👟 GOLDEN BOOT</div>
-            <div style={{fontSize:10,color:"#94a3b8",marginTop:2}}>Pick a player — every goal scores you points</div>
+            <div style={{fontSize:11,color:"#a855f7",letterSpacing:2,fontWeight:700}}>{t("bonus.goldenBoot")}</div>
+            <div style={{fontSize:10,color:"#94a3b8",marginTop:2}}>{t("bonus.pickPlayer")}</div>
           </div>
-          <div style={{background:"#a855f7",color:"#0a0e1c",fontSize:11,fontWeight:900,padding:"3px 8px",borderRadius:6,letterSpacing:1}}>+5 PER GOAL</div>
+          <div style={{background:"#a855f7",color:"#0a0e1c",fontSize:11,fontWeight:900,padding:"3px 8px",borderRadius:6,letterSpacing:1}}>{t("bonus.fivePerGoal")}</div>
         </div>
 
         {topScorerPick ? (
@@ -1430,14 +1431,14 @@ function BonusPicks({
               <div style={{fontSize:11,opacity:0.85}}>{topScorerPick.team}</div>
             </div>
             {!isLocked && (
-              <button onClick={()=>setTopScorerPick(null)} style={{background:"rgba(255,255,255,0.2)",border:"none",borderRadius:6,padding:"4px 10px",color:"#fff",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Change</button>
+              <button onClick={()=>setTopScorerPick(null)} style={{background:"rgba(255,255,255,0.2)",border:"none",borderRadius:6,padding:"4px 10px",color:"#fff",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>{t("bonus.change")}</button>
             )}
             {actualTopScorer && (
               <div style={{textAlign:"center",fontSize:10}}>
                 <div style={{fontWeight:900,fontSize:13}}>
                   {actualTopScorer.name === topScorerPick.name ? `+${actualTopScorer.goals * 5}` : "❌"}
                 </div>
-                {actualTopScorer.name === topScorerPick.name && <div style={{opacity:0.85}}>{actualTopScorer.goals} goals</div>}
+                {actualTopScorer.name === topScorerPick.name && <div style={{opacity:0.85}}>{actualTopScorer.goals} {t("bonus.goals")}</div>}
               </div>
             )}
           </div>
@@ -1449,18 +1450,18 @@ function BonusPicks({
                 background:scorerMode==="list"?"rgba(168,85,247,0.2)":"transparent",
                 color:scorerMode==="list"?"#a855f7":"#94a3b8",
                 fontSize:11,fontWeight:700,
-              }}>From favorites</button>
+              }}>{t("bonus.fromFavorites")}</button>
               <button onClick={()=>setScorerMode("custom")} style={{
                 flex:1,padding:"6px 0",border:"none",borderRadius:6,cursor:"pointer",fontFamily:"inherit",
                 background:scorerMode==="custom"?"rgba(168,85,247,0.2)":"transparent",
                 color:scorerMode==="custom"?"#a855f7":"#94a3b8",
                 fontSize:11,fontWeight:700,
-              }}>Enter manually</button>
+              }}>{t("bonus.enterManually")}</button>
             </div>
 
             {scorerMode === "list" && (
               <>
-                <input value={scorerFilter} onChange={e=>setScorerFilter(e.target.value)} placeholder="Search players or teams..." style={{
+                <input value={scorerFilter} onChange={e=>setScorerFilter(e.target.value)} placeholder={t("bonus.searchPlaceholder")} style={{
                   width:"100%",padding:"8px 10px",borderRadius:8,fontSize:13,
                   background:"#0a0e1c",border:"1px solid rgba(71,85,105,0.4)",
                   color:"#f1f5f9",fontFamily:"inherit",outline:"none",
@@ -1479,7 +1480,7 @@ function BonusPicks({
                     </button>
                   ))}
                   {filteredScorers.length === 0 && (
-                    <div style={{fontSize:11,color:"#64748b",textAlign:"center",padding:"10px"}}>No matches — try "Enter manually"</div>
+                    <div style={{fontSize:11,color:"#64748b",textAlign:"center",padding:"10px"}}>{t("bonus.noMatches")}</div>
                   )}
                 </div>
               </>
@@ -1487,13 +1488,13 @@ function BonusPicks({
 
             {scorerMode === "custom" && (
               <div>
-                <input value={customPlayer} onChange={e=>setCustomPlayer(e.target.value)} placeholder="Player name" style={{
+                <input value={customPlayer} onChange={e=>setCustomPlayer(e.target.value)} placeholder={t("bonus.playerName")} style={{
                   width:"100%",padding:"8px 10px",borderRadius:8,fontSize:13,
                   background:"#0a0e1c",border:"1px solid rgba(71,85,105,0.4)",
                   color:"#f1f5f9",fontFamily:"inherit",outline:"none",
                   marginBottom:6,boxSizing:"border-box",
                 }}/>
-                <input value={customTeam} onChange={e=>setCustomTeam(e.target.value)} placeholder="Team" style={{
+                <input value={customTeam} onChange={e=>setCustomTeam(e.target.value)} placeholder={t("bonus.team")} style={{
                   width:"100%",padding:"8px 10px",borderRadius:8,fontSize:13,
                   background:"#0a0e1c",border:"1px solid rgba(71,85,105,0.4)",
                   color:"#f1f5f9",fontFamily:"inherit",outline:"none",
@@ -1501,12 +1502,12 @@ function BonusPicks({
                 }}/>
                 <button onClick={submitCustom} disabled={!customPlayer.trim()||!customTeam.trim()} style={{
                   ...primaryBtn,opacity:(!customPlayer.trim()||!customTeam.trim())?0.5:1,
-                }}>Lock in pick</button>
+                }}>{t("bonus.lockIn")}</button>
               </div>
             )}
           </>
         ) : (
-          <div style={{fontSize:11,color:"#64748b",textAlign:"center",padding:"10px 0"}}>No pick made.</div>
+          <div style={{fontSize:11,color:"#64748b",textAlign:"center",padding:"10px 0"}}>{t("bonus.noPickMade")}</div>
         )}
       </div>
     </div>
