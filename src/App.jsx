@@ -1,9 +1,355 @@
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo, useEffect, useRef, createContext, useContext } from "react";
 import {
   generateLeagueCode, createLeague, joinLeague,
   updateMyPicks, leaveLeague, subscribeLeague, updateActualResults,
 } from "./firebase";
 import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners } from "./liveResults";
+
+// ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
+// Bilingual support: English (default) + Hebrew (RTL).
+// Use t("key") inside components — falls back to English if a Hebrew key is missing.
+
+const TRANSLATIONS = {
+  en: {
+    // Nav
+    "nav.predict": "⚽ Predict",
+    "nav.bracket": "🏆 Bracket",
+    "nav.bonus": "⭐ Bonus",
+    "nav.league": "🏅 League",
+    // Welcome
+    "welcome.title": "FIFA World Cup 2026 Predictions",
+    "welcome.subtitle": "Predict every match, pick your champion, beat your friends.",
+    "welcome.yourName": "YOUR NAME",
+    "welcome.namePlaceholder": "e.g. Alex",
+    "welcome.welcomeGreeting": "👋 Welcome,",
+    "welcome.welcomeQuestion": "Ready to call the tournament?",
+    "welcome.enterName": "Enter your name",
+    "welcome.letsGo": "Let's go,",
+    "welcome.letsPredict": "Let's predict! →",
+    "welcome.or": "━━━━━ OR ━━━━━",
+    "welcome.importCode": "📥 Import code",
+    "welcome.pasteCode": "PASTE FRIEND'S CODE",
+    "welcome.import": "Import →",
+    "welcome.back": "← Back",
+    "welcome.invalidCode": "Invalid code",
+    // Scoring section
+    "welcome.scoring": "🎯 SCORING",
+    "welcome.exactScore": "🎯 Exact score",
+    "welcome.resultGd": "✓ Result + goal diff",
+    "welcome.rightResultOnly": "✅ Right result only",
+    "welcome.knockoutDouble": "🔥 KNOCKOUT — DOUBLE POINTS",
+    "welcome.r16Qfsf": "R16 pick · QF · SF",
+    "welcome.finalistPick": "🏟️ Finalist pick",
+    "welcome.championBonus": "👑 Champion bonus",
+    "welcome.pts": "pts",
+    // Group view
+    "group.groupStage": "GROUP STAGE",
+    "group.typeAuto": "⚡ TYPE TO AUTO-ADVANCE",
+    "group.group": "GROUP",
+    "group.previous": "← Previous",
+    "group.next": "Next →",
+    "group.toBracket": "To bracket →",
+    // Match card
+    "match.matchday": "MD",
+    "match.locked": "🔒 LOCKED",
+    "match.locksSoon": "⏰ LOCKS SOON",
+    "match.finalScore": "FINAL SCORE",
+    "match.noPick": "NO PICK",
+    "match.youPicked": "You picked",
+    "match.perfectCall": "perfect call! 🎯",
+    "match.rightMargin": "right margin ✓",
+    "match.rightResult": "right result ✅",
+    "match.missed": "missed this one",
+    // Standings
+    "standings.predicted": "🔮 PREDICTED STANDINGS",
+    "standings.live": "📡 LIVE STANDINGS",
+    "standings.yours": "YOURS",
+    "standings.liveBtn": "LIVE",
+    "standings.team": "TEAM",
+    "standings.pts": "PTS",
+    // Bracket
+    "bracket.knockoutStage": "KNOCKOUT STAGE",
+    "bracket.title": "🏆 The Bracket",
+    "bracket.tapToAdvance": "Tap a team to advance them.",
+    "bracket.doublePoints": "🔥 DOUBLE POINTS · UP TO 40 PTS PER PICK",
+    "bracket.r16": "R16",
+    "bracket.qf": "QF",
+    "bracket.sf": "SF",
+    "bracket.finalist": "Finalist",
+    "bracket.champion": "Champion",
+    "bracket.final": "FINAL",
+    "bracket.roundOf32": "ROUND OF 32",
+    "bracket.roundOf16": "ROUND OF 16",
+    "bracket.quarterFinals": "QUARTER-FINALS",
+    "bracket.semiFinals": "SEMI-FINALS",
+    "bracket.r32": "R32",
+    "bracket.tbd": "TBD",
+    "bracket.yourChampion": "🏆 YOUR CHAMPION 🏆",
+    "bracket.bracketLoading": "Bracket loading...",
+    "bracket.predictFirst": "Predict some matches first to see the bracket take shape.",
+    "bracket.backToGroups": "← Back to groups",
+    "bracket.bracketPreview": "Bracket preview.",
+    "bracket.r32Confirmed": "R32 matchups confirmed from group standings. Finish predicting all 72 group matches to lock in the full bracket — TBD slots will fill in as you do.",
+    // Bonus
+    "bonus.title": "⭐ Big Bets",
+    "bonus.subtitle": "Two big calls for major bonus points.",
+    "bonus.locked": "🔒 Bonus picks locked — the tournament has started.",
+    "bonus.tournamentWinner": "🏆 TOURNAMENT WINNER",
+    "bonus.pickOneTeam": "Pick one team to lift the trophy",
+    "bonus.fiftyPts": "+50 PTS",
+    "bonus.change": "Change",
+    "bonus.goldenBoot": "👟 GOLDEN BOOT",
+    "bonus.pickPlayer": "Pick a player — every goal scores you points",
+    "bonus.fivePerGoal": "+5 PER GOAL",
+    "bonus.fromFavorites": "From favorites",
+    "bonus.enterManually": "Enter manually",
+    "bonus.searchPlaceholder": "Search players or teams...",
+    "bonus.noMatches": "No matches — try \"Enter manually\"",
+    "bonus.playerName": "Player name",
+    "bonus.team": "Team",
+    "bonus.lockIn": "Lock in pick",
+    "bonus.bonusPicks": "BONUS PICKS",
+    "bonus.noPickMade": "No pick made.",
+    "bonus.goals": "goals",
+    // League
+    "league.playWithFriends": "Play With Friends",
+    "league.intro": "Create a league or join one. Everyone's picks sync live, and real match results update automatically.",
+    "league.createLeague": "Create a league",
+    "league.createPlaceholder": "e.g. Mike's Crew",
+    "league.creating": "Creating...",
+    "league.createBtn": "✨ Create league",
+    "league.joinLeague": "Join a league",
+    "league.joinPlaceholder": "e.g. GOLDEN-TIGER-123",
+    "league.joining": "Joining...",
+    "league.joinBtn": "🤝 Join league",
+    "league.nameRequired": "Give your league a name",
+    "league.codeRequired": "Enter a league code",
+    "league.couldntCreate": "Couldn't create league. Check Firebase setup.",
+    "league.couldntJoin": "Couldn't join. Check the code.",
+    "league.yourLeague": "YOUR LEAGUE",
+    "league.liveSync": "Live sync",
+    "league.member": "member",
+    "league.members": "members",
+    "league.code": "CODE",
+    "league.shareCode": "Share this code so friends can join.",
+    "league.liveResults": "Live results auto-fetch",
+    "league.refresh": "Refresh",
+    "league.never": "Never fetched",
+    "league.updatedAgo": "Updated",
+    "league.standings": "🏅 STANDINGS",
+    "league.pointsFillIn": "💡 Points will fill in once real match results arrive. Tap",
+    "league.pointsFillInRest": "above to pull the latest, or wait — it auto-fetches every 5 min.",
+    "league.noMembers": "No members yet. Share your league code so friends can join.",
+    "league.you": " (you)",
+    "league.predicted": "predicted",
+    "league.exact": "exact",
+    "league.leaveLeague": "Leave this league",
+    "league.connectionError": "League connection error",
+    "league.backToMenu": "← Back to league menu",
+    "league.connecting": "Connecting to league...",
+    "league.hitsMisses": "🎯 HITS & MISSES",
+    "league.topHit": "TOP HIT",
+    "league.topMiss": "TOP MISS",
+    "league.exactScoreOne": "exact score",
+    "league.exactScoresMany": "exact scores",
+    "league.nailedIt": "nailed it 🎯",
+    "league.wrongPickOne": "wrong pick",
+    "league.wrongPicksMany": "wrong picks",
+    "league.oof": "oof 💀",
+    "league.noExactYet": "No exact picks yet",
+    "league.noMissesYet": "No misses yet!",
+    // Drill-in tabs
+    "drill.backToLeague": "← Back to league",
+    "drill.predictedChampion": "🏆 PREDICTED CHAMPION",
+    "drill.matchesTab": "⚽ Matches",
+    "drill.standingsTab": "📊 Standings",
+    "drill.bracketTab": "🏆 Bracket",
+    "drill.matchday": "━ MATCHDAY",
+    "drill.bracketNotBuilt": "haven't finished the group stage yet, so the bracket isn't built.",
+    "drill.youHaventBracket": "You haven't",
+    "drill.theyHaventBracket": "They haven't",
+    "drill.actual": "Actual:",
+    // Misc
+    "common.cancel": "Cancel",
+    "common.confirm": "Confirm",
+    "common.skip": "Skip ›",
+    "common.goal": "GOAL!",
+    "common.matches": "matches",
+  },
+  he: {
+    // Nav
+    "nav.predict": "⚽ ניחושים",
+    "nav.bracket": "🏆 שלב הנוקאאוט",
+    "nav.bonus": "⭐ בונוס",
+    "nav.league": "🏅 ליגה",
+    // Welcome
+    "welcome.title": "ניחושי מונדיאל 2026",
+    "welcome.subtitle": "נחשו כל משחק, בחרו אלוף, נצחו את חבריכם.",
+    "welcome.yourName": "השם שלך",
+    "welcome.namePlaceholder": "למשל אלכס",
+    "welcome.welcomeGreeting": "👋 ברוך הבא,",
+    "welcome.welcomeQuestion": "מוכן לנחש את הטורניר?",
+    "welcome.enterName": "הזן את שמך",
+    "welcome.letsGo": "קדימה,",
+    "welcome.letsPredict": "בואו ננחש! ←",
+    "welcome.or": "━━━━━ או ━━━━━",
+    "welcome.importCode": "📥 ייבוא קוד",
+    "welcome.pasteCode": "הדבק קוד חבר",
+    "welcome.import": "ייבוא ←",
+    "welcome.back": "→ חזרה",
+    "welcome.invalidCode": "קוד לא תקין",
+    // Scoring
+    "welcome.scoring": "🎯 ניקוד",
+    "welcome.exactScore": "🎯 תוצאה מדויקת",
+    "welcome.resultGd": "✓ מנצח + הפרש שערים",
+    "welcome.rightResultOnly": "✅ מנצח בלבד",
+    "welcome.knockoutDouble": "🔥 נוקאאוט — נקודות כפולות",
+    "welcome.r16Qfsf": "שמינית · רבע · חצי",
+    "welcome.finalistPick": "🏟️ ניחוש פיינליסט",
+    "welcome.championBonus": "👑 בונוס אלוף",
+    "welcome.pts": "נק'",
+    // Group view
+    "group.groupStage": "שלב הבתים",
+    "group.typeAuto": "⚡ הקלידו למעבר אוטומטי",
+    "group.group": "בית",
+    "group.previous": "→ הקודם",
+    "group.next": "הבא ←",
+    "group.toBracket": "לשלב הנוקאאוט ←",
+    // Match card
+    "match.matchday": "מ\"מ",
+    "match.locked": "🔒 נעול",
+    "match.locksSoon": "⏰ ננעל בקרוב",
+    "match.finalScore": "תוצאה סופית",
+    "match.noPick": "אין ניחוש",
+    "match.youPicked": "ניחשת",
+    "match.perfectCall": "ניחוש מושלם! 🎯",
+    "match.rightMargin": "הפרש נכון ✓",
+    "match.rightResult": "מנצח נכון ✅",
+    "match.missed": "פספסת בגדול",
+    // Standings
+    "standings.predicted": "🔮 דירוג חזוי",
+    "standings.live": "📡 דירוג בזמן אמת",
+    "standings.yours": "שלי",
+    "standings.liveBtn": "אמת",
+    "standings.team": "קבוצה",
+    "standings.pts": "נק'",
+    // Bracket
+    "bracket.knockoutStage": "שלב הנוקאאוט",
+    "bracket.title": "🏆 העץ",
+    "bracket.tapToAdvance": "הקש על קבוצה כדי להעבירה הלאה.",
+    "bracket.doublePoints": "🔥 נקודות כפולות · עד 40 נק' לבחירה",
+    "bracket.r16": "שמינית",
+    "bracket.qf": "רבע",
+    "bracket.sf": "חצי",
+    "bracket.finalist": "פיינליסט",
+    "bracket.champion": "אלוף",
+    "bracket.final": "גמר",
+    "bracket.roundOf32": "שלב 32 הקבוצות",
+    "bracket.roundOf16": "שמינית הגמר",
+    "bracket.quarterFinals": "רבע הגמר",
+    "bracket.semiFinals": "חצי הגמר",
+    "bracket.r32": "32",
+    "bracket.tbd": "טרם נקבע",
+    "bracket.yourChampion": "🏆 האלוף שלך 🏆",
+    "bracket.bracketLoading": "העץ נטען...",
+    "bracket.predictFirst": "נחש כמה משחקים קודם כדי לראות את העץ מתעצב.",
+    "bracket.backToGroups": "→ חזרה לבתים",
+    "bracket.bracketPreview": "תצוגה מקדימה של העץ.",
+    "bracket.r32Confirmed": "צמדי שלב 32 שנקבעו מהבתים. השלם את כל 72 משחקי הבתים כדי לנעול את העץ המלא — משבצות טרם נקבעו ימולאו תוך כדי.",
+    // Bonus
+    "bonus.title": "⭐ הימורים גדולים",
+    "bonus.subtitle": "שני ניחושים גדולים לנקודות בונוס משמעותיות.",
+    "bonus.locked": "🔒 ניחושי הבונוס נעולים — הטורניר התחיל.",
+    "bonus.tournamentWinner": "🏆 אלוף הטורניר",
+    "bonus.pickOneTeam": "בחר קבוצה אחת שתרים את הגביע",
+    "bonus.fiftyPts": "+50 נק'",
+    "bonus.change": "שינוי",
+    "bonus.goldenBoot": "👟 הנעל הזהובה",
+    "bonus.pickPlayer": "בחר שחקן — כל שער שלו = נקודות",
+    "bonus.fivePerGoal": "+5 לכל שער",
+    "bonus.fromFavorites": "מהמועדפים",
+    "bonus.enterManually": "הזנה ידנית",
+    "bonus.searchPlaceholder": "חיפוש שחקנים או קבוצות...",
+    "bonus.noMatches": "אין התאמות — נסה \"הזנה ידנית\"",
+    "bonus.playerName": "שם השחקן",
+    "bonus.team": "קבוצה",
+    "bonus.lockIn": "נעל ניחוש",
+    "bonus.bonusPicks": "ניחושי בונוס",
+    "bonus.noPickMade": "לא נעשה ניחוש.",
+    "bonus.goals": "שערים",
+    // League
+    "league.playWithFriends": "שחק עם חברים",
+    "league.intro": "צור ליגה או הצטרף לאחת. הניחושים של כולם מסתנכרנים בזמן אמת, ותוצאות אמיתיות מתעדכנות אוטומטית.",
+    "league.createLeague": "צור ליגה",
+    "league.createPlaceholder": "למשל החבר'ה של מייק",
+    "league.creating": "יוצר...",
+    "league.createBtn": "✨ צור ליגה",
+    "league.joinLeague": "הצטרף לליגה",
+    "league.joinPlaceholder": "למשל GOLDEN-TIGER-123",
+    "league.joining": "מצטרף...",
+    "league.joinBtn": "🤝 הצטרף לליגה",
+    "league.nameRequired": "תן שם לליגה",
+    "league.codeRequired": "הזן קוד ליגה",
+    "league.couldntCreate": "לא ניתן ליצור ליגה. בדוק את הגדרות Firebase.",
+    "league.couldntJoin": "לא ניתן להצטרף. בדוק את הקוד.",
+    "league.yourLeague": "הליגה שלך",
+    "league.liveSync": "סנכרון חי",
+    "league.member": "חבר",
+    "league.members": "חברים",
+    "league.code": "קוד",
+    "league.shareCode": "שתף את הקוד הזה כדי שחברים יוכלו להצטרף.",
+    "league.liveResults": "תוצאות חיות (אוטומטי)",
+    "league.refresh": "רענון",
+    "league.never": "לא נטען",
+    "league.updatedAgo": "עודכן",
+    "league.standings": "🏅 דירוג",
+    "league.pointsFillIn": "💡 הנקודות יתעדכנו כשיגיעו תוצאות אמיתיות. הקש",
+    "league.pointsFillInRest": "למעלה כדי לטעון, או חכה — מתעדכן אוטומטית כל 5 דקות.",
+    "league.noMembers": "אין עדיין חברים. שתף את קוד הליגה כדי שחברים יצטרפו.",
+    "league.you": " (אתה)",
+    "league.predicted": "נוחשו",
+    "league.exact": "מדויק",
+    "league.leaveLeague": "עזוב את הליגה",
+    "league.connectionError": "שגיאת חיבור לליגה",
+    "league.backToMenu": "→ חזרה לתפריט הליגה",
+    "league.connecting": "מתחבר לליגה...",
+    "league.hitsMisses": "🎯 פגיעות והחמצות",
+    "league.topHit": "פגיעה מובילה",
+    "league.topMiss": "החמצה מובילה",
+    "league.exactScoreOne": "תוצאה מדויקת",
+    "league.exactScoresMany": "תוצאות מדויקות",
+    "league.nailedIt": "פגע! 🎯",
+    "league.wrongPickOne": "ניחוש שגוי",
+    "league.wrongPicksMany": "ניחושים שגויים",
+    "league.oof": "אאוץ' 💀",
+    "league.noExactYet": "אין עדיין ניחושים מדויקים",
+    "league.noMissesYet": "אין עדיין החמצות!",
+    // Drill-in
+    "drill.backToLeague": "→ חזרה לליגה",
+    "drill.predictedChampion": "🏆 אלוף חזוי",
+    "drill.matchesTab": "⚽ משחקים",
+    "drill.standingsTab": "📊 דירוג",
+    "drill.bracketTab": "🏆 עץ",
+    "drill.matchday": "━ מחזור",
+    "drill.bracketNotBuilt": "טרם סיים את שלב הבתים, אז העץ לא נבנה.",
+    "drill.youHaventBracket": "עוד לא",
+    "drill.theyHaventBracket": "הוא עוד לא",
+    "drill.actual": "תוצאה:",
+    // Misc
+    "common.cancel": "ביטול",
+    "common.confirm": "אישור",
+    "common.skip": "דלג ›",
+    "common.goal": "גול!",
+    "common.matches": "משחקים",
+  },
+};
+
+const LangContext = createContext({ lang: "en", setLang: () => {} });
+function useT() {
+  const { lang } = useContext(LangContext);
+  return (key) => TRANSLATIONS[lang]?.[key] || TRANSLATIONS.en[key] || key;
+}
+function useLang() { return useContext(LangContext); }
 
 // ─── TEAMS ────────────────────────────────────────────────────────────────────
 
@@ -1168,12 +1514,13 @@ function BonusPicks({
 }
 
 function Welcome({ onStart, onImport }) {
+  const t = useT();
   const [name, setName] = useState("");
   const [showImport, setShowImport] = useState(false);
   const [code, setCode] = useState("");
   const [err, setErr] = useState("");
 
-  // Cycle through fun taglines
+  // Cycle through fun taglines (English only — Hebrew uses a static one)
   const taglines = [
     "Predict matches → earn points → beat your friends",
     "Who's lifting the trophy in your bracket?",
@@ -1192,72 +1539,72 @@ function Welcome({ onStart, onImport }) {
         boxShadow:"0 20px 60px rgba(0,0,0,0.5)",animation:"fadeUp 0.5s ease-out",
       }}>
         <div style={{textAlign:"center",fontSize:54,marginBottom:6,animation:"bounce 2s infinite"}}>⚽</div>
-        <h1 style={{fontSize:24,textAlign:"center",margin:"0 0 6px",background:"linear-gradient(180deg,#fde68a,#f59e0b)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",fontWeight:900}}>WORLD CUP 2026</h1>
-        <p style={{textAlign:"center",color:"#94a3b8",fontSize:12,margin:"0 0 16px",fontStyle:"italic"}}>{tagline}</p>
+        <h1 style={{fontSize:24,textAlign:"center",margin:"0 0 6px",background:"linear-gradient(180deg,#fde68a,#f59e0b)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",fontWeight:900}}>{t("welcome.title")}</h1>
+        <p style={{textAlign:"center",color:"#94a3b8",fontSize:12,margin:"0 0 16px",fontStyle:"italic"}}>{t("welcome.subtitle") || tagline}</p>
 
         {/* Scoring rules preview */}
         <div style={{background:"rgba(15,20,36,0.6)",border:"1px solid rgba(71,85,105,0.3)",borderRadius:10,padding:"10px 12px",marginBottom:18}}>
-          <div style={{fontSize:10,color:"#fbbf24",letterSpacing:2,marginBottom:6,textAlign:"center"}}>🎯 SCORING</div>
+          <div style={{fontSize:10,color:"#fbbf24",letterSpacing:2,marginBottom:6,textAlign:"center"}}>{t("welcome.scoring")}</div>
           <div style={{display:"flex",justifyContent:"space-between",fontSize:11,color:"#cbd5e1",marginBottom:3}}>
-            <span>🎯 Exact score</span><span style={{color:"#fbbf24",fontWeight:700}}>+5 pts</span>
+            <span>{t("welcome.exactScore")}</span><span style={{color:"#fbbf24",fontWeight:700}}>+5 {t("welcome.pts")}</span>
           </div>
           <div style={{display:"flex",justifyContent:"space-between",fontSize:11,color:"#cbd5e1",marginBottom:3}}>
-            <span>✓ Result + goal diff</span><span style={{color:"#22c55e",fontWeight:700}}>+3 pts</span>
+            <span>{t("welcome.resultGd")}</span><span style={{color:"#22c55e",fontWeight:700}}>+3 {t("welcome.pts")}</span>
           </div>
           <div style={{display:"flex",justifyContent:"space-between",fontSize:11,color:"#cbd5e1",marginBottom:6}}>
-            <span>✅ Right result only</span><span style={{color:"#3b82f6",fontWeight:700}}>+2 pts</span>
+            <span>{t("welcome.rightResultOnly")}</span><span style={{color:"#3b82f6",fontWeight:700}}>+2 {t("welcome.pts")}</span>
           </div>
           <div style={{
             borderTop:"1px dashed rgba(71,85,105,0.4)",
             paddingTop:6,marginTop:4,
           }}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",fontSize:10,color:"#fbbf24",fontWeight:700,letterSpacing:1,marginBottom:4}}>
-              <span>🔥 KNOCKOUT — DOUBLE POINTS</span>
+              <span>{t("welcome.knockoutDouble")}</span>
             </div>
             <div style={{display:"flex",justifyContent:"space-between",fontSize:10,color:"#cbd5e1",marginBottom:2}}>
-              <span>R16 pick · QF · SF</span><span style={{color:"#a78bfa",fontWeight:700}}>+6 / +10 / +16</span>
+              <span>{t("welcome.r16Qfsf")}</span><span style={{color:"#a78bfa",fontWeight:700}}>+6 / +10 / +16</span>
             </div>
             <div style={{display:"flex",justifyContent:"space-between",fontSize:10,color:"#cbd5e1",marginBottom:2}}>
-              <span>🏟️ Finalist pick</span><span style={{color:"#fbbf24",fontWeight:700}}>+24 pts</span>
+              <span>{t("welcome.finalistPick")}</span><span style={{color:"#fbbf24",fontWeight:700}}>+24 {t("welcome.pts")}</span>
             </div>
             <div style={{display:"flex",justifyContent:"space-between",fontSize:11,color:"#fde68a",fontWeight:700}}>
-              <span>👑 Champion bonus</span><span style={{color:"#fbbf24"}}>+40 pts</span>
+              <span>{t("welcome.championBonus")}</span><span style={{color:"#fbbf24"}}>+40 {t("welcome.pts")}</span>
             </div>
           </div>
         </div>
 
         {!showImport ? (
           <div>
-            <label style={lbl}>YOUR NAME</label>
-            <input autoFocus placeholder="e.g. Alex" value={name}
+            <label style={lbl}>{t("welcome.yourName")}</label>
+            <input autoFocus placeholder={t("welcome.namePlaceholder")} value={name}
               onChange={e=>{setName(e.target.value);setErr("");}}
-              onKeyDown={e=>e.key==="Enter"&&(name.trim()?onStart(name.trim()):setErr("Enter your name"))}
+              onKeyDown={e=>e.key==="Enter"&&(name.trim()?onStart(name.trim()):setErr(t("welcome.enterName")))}
               maxLength={20} style={inputStyle}/>
             {name.trim() && (
               <div style={{fontSize:12,color:"#fbbf24",textAlign:"center",marginBottom:8,animation:"fadeUp 0.3s ease-out"}}>
-                👋 Welcome, <strong>{name.trim()}</strong>! Ready to call the tournament?
+                {t("welcome.welcomeGreeting")} <strong>{name.trim()}</strong>! {t("welcome.welcomeQuestion")}
               </div>
             )}
             {err && <div style={errStyle}>⚠️ {err}</div>}
-            <button onClick={()=>name.trim()?onStart(name.trim()):setErr("Enter your name")} style={primaryBtn}>
-              {name.trim() ? `Let's go, ${name.trim().split(" ")[0]}! →` : "Let's predict! →"}
+            <button onClick={()=>name.trim()?onStart(name.trim()):setErr(t("welcome.enterName"))} style={primaryBtn}>
+              {name.trim() ? `${t("welcome.letsGo")} ${name.trim().split(" ")[0]}! →` : t("welcome.letsPredict")}
             </button>
-            <div style={{textAlign:"center",margin:"14px 0 8px",color:"#475569",fontSize:11,letterSpacing:2}}>━━━━━ OR ━━━━━</div>
-            <button onClick={()=>setShowImport(true)} style={ghostBtn}>📥 Import code</button>
+            <div style={{textAlign:"center",margin:"14px 0 8px",color:"#475569",fontSize:11,letterSpacing:2}}>{t("welcome.or")}</div>
+            <button onClick={()=>setShowImport(true)} style={ghostBtn}>{t("welcome.importCode")}</button>
           </div>
         ) : (
           <div>
-            <label style={lbl}>PASTE FRIEND'S CODE</label>
+            <label style={lbl}>{t("welcome.pasteCode")}</label>
             <textarea autoFocus placeholder="WC26P|..." value={code}
               onChange={e=>{setCode(e.target.value);setErr("");}} rows={3}
               style={{...inputStyle,fontFamily:"monospace",fontSize:11,resize:"vertical"}}/>
             {err && <div style={errStyle}>⚠️ {err}</div>}
             <button onClick={()=>{
               const d = decodePicks(code);
-              if (!d) { setErr("Invalid code"); return; }
+              if (!d) { setErr(t("welcome.invalidCode")); return; }
               onImport(d);
-            }} style={primaryBtn}>Import →</button>
-            <button onClick={()=>{setShowImport(false);setErr("");}} style={{...ghostBtn,marginTop:10}}>← Back</button>
+            }} style={primaryBtn}>{t("welcome.import")}</button>
+            <button onClick={()=>{setShowImport(false);setErr("");}} style={{...ghostBtn,marginTop:10}}>{t("welcome.back")}</button>
           </div>
         )}
       </div>
@@ -1591,6 +1938,7 @@ function StandingsTable({ group, standings, bestThirds, liveStandings, liveBestT
 }
 
 function GroupView({ group, picks, actuals, standings, bestThirds, liveStandings, liveBestThirds, hasActuals, onPick, onNext, onPrev, onJump, isFirst, isLast, showResults, scope = "p" }) {
+  const t = useT();
   const fixtures = FIXTURES.filter(f => f.group === group);
   const color = COLORS[group];
 
@@ -1656,7 +2004,7 @@ function GroupView({ group, picks, actuals, standings, bestThirds, liveStandings
       </div>
 
       <div style={{textAlign:"center",marginBottom:18}}>
-        <div style={{fontSize:10,color:"#64748b",letterSpacing:3,marginBottom:4}}>GROUP STAGE</div>
+        <div style={{fontSize:10,color:"#64748b",letterSpacing:3,marginBottom:4}}>{t("group.groupStage")}</div>
         <div style={{
           display:"inline-block",
           background: color,
@@ -1668,13 +2016,13 @@ function GroupView({ group, picks, actuals, standings, bestThirds, liveStandings
           borderRadius: 14,
           letterSpacing: 1,
           boxShadow: `0 6px 20px ${color}55`,
-        }}>GROUP {group}</div>
-        <div style={{fontSize:10,color:"#475569",letterSpacing:2,marginTop:8}}>⚡ TYPE TO AUTO-ADVANCE</div>
+        }}>{t("group.group")} {group}</div>
+        <div style={{fontSize:10,color:"#475569",letterSpacing:2,marginTop:8}}>{t("group.typeAuto")}</div>
       </div>
 
       {[1,2,3].map(md => (
         <div key={md} style={{marginBottom:14}}>
-          <div style={{fontSize:10,color:"#64748b",letterSpacing:3,marginBottom:6,paddingLeft:4}}>━━ MATCHDAY {md}</div>
+          <div style={{fontSize:10,color:"#64748b",letterSpacing:3,marginBottom:6,paddingLeft:4}}>━━ {t("match.matchday")} {md}</div>
           {fixtures.filter(f => f.matchday === md).map(f => {
             const idx = orderedIds.indexOf(f.id);
             const nextId = idx >= 0 && idx < orderedIds.length - 1 ? orderedIds[idx + 1] : null;
@@ -1695,8 +2043,8 @@ function GroupView({ group, picks, actuals, standings, bestThirds, liveStandings
       <StandingsTable group={group} standings={standings} bestThirds={bestThirds} liveStandings={liveStandings} liveBestThirds={liveBestThirds} hasActuals={hasActuals} />
 
       <div style={{display:"flex",gap:10,marginTop:18}}>
-        <button onClick={onPrev} disabled={isFirst} style={{...ghostBtn,flex:1,opacity:isFirst?0.4:1,cursor:isFirst?"not-allowed":"pointer"}}>← Previous</button>
-        <button onClick={onNext} style={{...primaryBtn,flex:2}}>{isLast?"🏆 To Knockouts →":`Group ${GROUP_KEYS[GROUP_KEYS.indexOf(group)+1]} →`}</button>
+        <button onClick={onPrev} disabled={isFirst} style={{...ghostBtn,flex:1,opacity:isFirst?0.4:1,cursor:isFirst?"not-allowed":"pointer"}}>{t("group.previous")}</button>
+        <button onClick={onNext} style={{...primaryBtn,flex:2}}>{isLast ? t("group.toBracket") : `${t("group.group")} ${GROUP_KEYS[GROUP_KEYS.indexOf(group)+1]} →`}</button>
       </div>
     </div>
   );
@@ -3420,6 +3768,20 @@ export default function App() {
   const [actuals, setActuals] = useState(saved?.actuals || {});
   const [actualKo, setActualKo] = useState(saved?.actualKo || {});
   const [winnerPick, setWinnerPick] = useState(saved?.winnerPick || null); // {name, flag} of team you bet wins it all
+  const [lang, setLangState] = useState(() => {
+    try { return localStorage.getItem("wc2026_lang") || "en"; } catch { return "en"; }
+  });
+  const setLang = (l) => {
+    setLangState(l);
+    try { localStorage.setItem("wc2026_lang", l); } catch {}
+  };
+  // Update document direction when language changes (RTL for Hebrew)
+  useEffect(() => {
+    if (typeof document !== "undefined") {
+      document.documentElement.dir = lang === "he" ? "rtl" : "ltr";
+      document.documentElement.lang = lang;
+    }
+  }, [lang]);
   const [topScorerPick, setTopScorerPick] = useState(saved?.topScorerPick || null); // {name, team}
   const [actualWinner, setActualWinner] = useState(saved?.actualWinner || null);
   const [actualTopScorer, setActualTopScorer] = useState(saved?.actualTopScorer || null); // {name, team, goals}
@@ -3662,7 +4024,34 @@ export default function App() {
   const fullState = { name, picks, koWinners, groupIdx, friends, actuals, actualKo, leagueName, leagueCode, userId };
 
   return (
-    <div style={{minHeight:"100vh",background:"radial-gradient(ellipse at top,#1e1b4b 0%,#0a0e1c 70%)",color:"#f1f5f9",fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif",position:"relative",overflow:"hidden"}}>
+    <LangContext.Provider value={{ lang, setLang }}>
+    <div style={{minHeight:"100vh",background:"radial-gradient(ellipse at top,#1e1b4b 0%,#0a0e1c 70%)",color:"#f1f5f9",fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif",position:"relative",overflow:"hidden",direction:lang==="he"?"rtl":"ltr"}}>
+      {/* Language toggle: top-right corner, always visible */}
+      <div style={{
+        position:"fixed",
+        top:10,
+        [lang==="he" ? "left" : "right"]:10,
+        zIndex:100,
+        display:"flex",
+        background:"rgba(15,23,42,0.85)",
+        backdropFilter:"blur(8px)",
+        border:"1px solid rgba(71,85,105,0.4)",
+        borderRadius:20,
+        padding:2,
+      }}>
+        <button onClick={()=>setLang("en")} style={{
+          padding:"4px 10px",border:"none",borderRadius:16,cursor:"pointer",fontFamily:"inherit",
+          background: lang==="en" ? "#fbbf24" : "transparent",
+          color: lang==="en" ? "#0a0e1c" : "#94a3b8",
+          fontSize:10,fontWeight:800,letterSpacing:1,
+        }}>EN</button>
+        <button onClick={()=>setLang("he")} style={{
+          padding:"4px 10px",border:"none",borderRadius:16,cursor:"pointer",fontFamily:"inherit",
+          background: lang==="he" ? "#fbbf24" : "transparent",
+          color: lang==="he" ? "#0a0e1c" : "#94a3b8",
+          fontSize:10,fontWeight:800,letterSpacing:1,
+        }}>עב</button>
+      </div>
       {/* Big World Cup trophy backdrop */}
       <div aria-hidden="true" style={{
         position:"fixed", inset:0, pointerEvents:"none",
@@ -3819,10 +4208,10 @@ export default function App() {
           {(screen === "group" || screen === "bracket" || screen === "bonus" || screen === "league") && (
             <div style={{display:"flex",justifyContent:"center",borderTop:"1px solid rgba(71,85,105,0.3)"}}>
               {[
-                ["group", "⚽ Predict"],
-                ["bracket", "🏆 Bracket"],
-                ["bonus", "⭐ Bonus"],
-                ["league", "🏅 League"],
+                ["group", TRANSLATIONS[lang]?.["nav.predict"] || TRANSLATIONS.en["nav.predict"]],
+                ["bracket", TRANSLATIONS[lang]?.["nav.bracket"] || TRANSLATIONS.en["nav.bracket"]],
+                ["bonus", TRANSLATIONS[lang]?.["nav.bonus"] || TRANSLATIONS.en["nav.bonus"]],
+                ["league", TRANSLATIONS[lang]?.["nav.league"] || TRANSLATIONS.en["nav.league"]],
               ].map(([s, label]) => (
                 <button key={s} onClick={()=>setScreen(s)} style={{
                   flex:1,padding:"8px 4px",background:screen===s?"rgba(251,191,36,0.1)":"transparent",
@@ -3924,5 +4313,6 @@ export default function App() {
       <ConfirmModal action={confirmAction} onClose={()=>setConfirmAction(null)} />
       </div>
     </div>
+    </LangContext.Provider>
   );
 }
