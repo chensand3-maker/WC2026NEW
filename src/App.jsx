@@ -4852,8 +4852,17 @@ function LeagueHub({
           );
         })}
 
-        {/* Leave league */}
-        <div style={{marginTop:24,textAlign:"center"}}>
+        {/* Leave league + Add another league */}
+        <div style={{marginTop:24,display:"flex",flexDirection:"column",alignItems:"center",gap:10}}>
+          {leagueCodes && leagueCodes.length < (maxLeagues || 5) && (
+            <button onClick={()=>setMode("creating-or-joining")} style={{
+              background:"linear-gradient(135deg,rgba(251,191,36,0.15),rgba(217,119,6,0.08))",
+              border:"1px solid rgba(251,191,36,0.4)",
+              color:"#fbbf24",fontSize:12,fontWeight:700,
+              padding:"8px 16px",borderRadius:10,
+              cursor:"pointer",fontFamily:"inherit",
+            }}>✨ {t("leagues.addNew")}</button>
+          )}
           <button onClick={handleLeave} style={{background:"transparent",border:"none",color:"#64748b",fontSize:12,cursor:"pointer",fontFamily:"inherit",textDecoration:"underline"}}>{t("league.leaveLeague")}</button>
         </div>
       </div>
