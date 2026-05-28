@@ -13,6 +13,7 @@ const TRANSLATIONS = {
   en: {
     // Nav
     "nav.predict": "⚽ Predict",
+    "nav.today": "📅 Today",
     "nav.bracket": "🏆 Bracket",
     "nav.bonus": "⭐ Bonus",
     "nav.league": "🏅 League",
@@ -187,6 +188,26 @@ const TRANSLATIONS = {
     "celebration.tapToDismiss": "tap anywhere to dismiss",
     "celebration.topScorerScored": "YOUR PLAYER SCORED!",
     "celebration.totalGoals": "TOTAL GOALS",
+    // Recap modal
+    "recap.title": "Match Recap",
+    "recap.subtitle": "{n} matches finished since you were last here",
+    "recap.youEarned": "YOU EARNED",
+    "recap.youPicked": "Your pick",
+    "recap.noPickMade": "You didn't predict this one",
+    "recap.gotIt": "Got it! →",
+    // Today screen
+    "today.title": "Match Day",
+    "today.upcoming": "UPCOMING MATCHES",
+    "today.subtitle": "All matches happening today and tomorrow",
+    "today.today": "TODAY",
+    "today.tomorrow": "TOMORROW",
+    "today.liveNow": "LIVE / JUST FINISHED",
+    "today.noMatchesToday": "No matches today",
+    "today.noMatchesTomorrow": "No matches tomorrow",
+    "today.matchNoPick": "match needs your prediction",
+    "today.matchesNoPick": "matches need your prediction",
+    "today.dontMissOut": "Lock them in before they kick off!",
+    "today.openBracket": "Open in Bracket →",
     // Profile / Stats
     "profile.yourStats": "YOUR STATS",
     "profile.totalPoints": "TOTAL POINTS",
@@ -225,6 +246,7 @@ const TRANSLATIONS = {
   he: {
     // Nav
     "nav.predict": "⚽ ניחושים",
+    "nav.today": "📅 היום",
     "nav.bracket": "🏆 שלב הנוקאאוט",
     "nav.bonus": "⭐ בונוס",
     "nav.league": "🏅 ליגה",
@@ -399,6 +421,26 @@ const TRANSLATIONS = {
     "celebration.tapToDismiss": "הקש לסגירה",
     "celebration.topScorerScored": "השחקן שלך הבקיע!",
     "celebration.totalGoals": "סך הגולים",
+    // Recap modal
+    "recap.title": "סיכום משחקים",
+    "recap.subtitle": "{n} משחקים נגמרו מאז ביקרת",
+    "recap.youEarned": "צברת",
+    "recap.youPicked": "הניחוש שלך",
+    "recap.noPickMade": "לא ניחשת את המשחק הזה",
+    "recap.gotIt": "הבנתי! →",
+    // Today screen
+    "today.title": "המשחקים של היום",
+    "today.upcoming": "משחקים קרובים",
+    "today.subtitle": "כל המשחקים של היום ומחר",
+    "today.today": "היום",
+    "today.tomorrow": "מחר",
+    "today.liveNow": "חי / זה עתה הסתיים",
+    "today.noMatchesToday": "אין משחקים היום",
+    "today.noMatchesTomorrow": "אין משחקים מחר",
+    "today.matchNoPick": "משחק מחכה לניחוש שלך",
+    "today.matchesNoPick": "משחקים מחכים לניחוש שלך",
+    "today.dontMissOut": "אל תפספס — נעל אותם לפני שריקת הפתיחה!",
+    "today.openBracket": "פתח בברקט →",
     // Profile / Stats
     "profile.yourStats": "הסטטיסטיקה שלך",
     "profile.totalPoints": "סך הנקודות",
@@ -1860,6 +1902,155 @@ function StatTile({ color, label, value, icon }) {
   );
 }
 
+// ─── BACK TO TOP: floating button that appears after scrolling 400px ─────────
+function BackToTopButton() {
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    const onScroll = () => setVisible(window.scrollY > 400);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+  if (!visible) return null;
+  return (
+    <button
+      onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+      aria-label="Back to top"
+      style={{
+        position: "fixed",
+        bottom: 70,
+        right: 16,
+        zIndex: 50,
+        width: 44, height: 44,
+        borderRadius: "50%",
+        background: "linear-gradient(135deg,#fbbf24,#d97706)",
+        border: "none",
+        color: "#0a0e1c",
+        fontSize: 20,
+        fontWeight: 900,
+        cursor: "pointer",
+        fontFamily: "inherit",
+        boxShadow: "0 4px 16px rgba(0,0,0,0.4), 0 0 16px rgba(251,191,36,0.4)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        animation: "fadeUp 0.3s ease-out",
+        transition: "transform 0.2s",
+      }}
+      onMouseEnter={e => e.currentTarget.style.transform = "translateY(-2px)"}
+      onMouseLeave={e => e.currentTarget.style.transform = "translateY(0)"}
+    >⬆</button>
+  );
+}
+
+// ─── RECAP MODAL: summary of matches that finished since user's last visit ───
+function RecapModal({ recap, onClose }) {
+  const t = useT();
+  if (!recap || !recap.newMatches?.length) return null;
+  const { newMatches, totalPoints } = recap;
+  return (
+    <div onClick={onClose} style={{
+      position:"fixed",inset:0,zIndex:9000,
+      background:"rgba(0,0,0,0.85)",backdropFilter:"blur(8px)",
+      display:"flex",alignItems:"center",justifyContent:"center",
+      padding:16,animation:"goalFadeIn 0.3s ease-out",
+    }}>
+      <div onClick={e=>e.stopPropagation()} style={{
+        background:"linear-gradient(145deg,#1a1f3a,#0f1424)",
+        border:"1px solid rgba(251,191,36,0.4)",
+        borderRadius:18,padding:"22px 18px",
+        maxWidth:460,width:"100%",maxHeight:"90vh",overflowY:"auto",
+        boxShadow:"0 20px 60px rgba(0,0,0,0.6)",
+      }}>
+        <style>{`@keyframes goalFadeIn { from { opacity: 0; } to { opacity: 1; } }`}</style>
+
+        {/* Header */}
+        <div style={{textAlign:"center",marginBottom:14}}>
+          <div style={{fontSize:34,marginBottom:4}}>📊</div>
+          <h2 style={{
+            margin:0,fontSize:20,
+            background:"linear-gradient(180deg,#fde68a,#f59e0b)",
+            WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",
+            fontWeight:900,
+          }}>{t("recap.title")}</h2>
+          <p style={{margin:"4px 0 0",fontSize:12,color:"#94a3b8"}}>
+            {t("recap.subtitle").replace("{n}", newMatches.length)}
+          </p>
+        </div>
+
+        {/* Big point total */}
+        <div style={{
+          textAlign:"center",
+          background: totalPoints > 0
+            ? "linear-gradient(135deg,rgba(34,197,94,0.18),rgba(15,20,36,0.5))"
+            : "linear-gradient(135deg,rgba(71,85,105,0.15),rgba(15,20,36,0.5))",
+          border:`1px solid ${totalPoints > 0 ? "rgba(34,197,94,0.5)" : "rgba(71,85,105,0.4)"}`,
+          borderRadius:12,padding:"12px 10px",marginBottom:14,
+        }}>
+          <div style={{fontSize:10,color:totalPoints > 0 ? "#22c55e" : "#64748b",letterSpacing:3,marginBottom:2,fontWeight:700}}>
+            {t("recap.youEarned")}
+          </div>
+          <div style={{fontSize:36,fontWeight:900,color:totalPoints > 0 ? "#22c55e" : "#64748b",lineHeight:1}}>
+            +{totalPoints}
+          </div>
+          <div style={{fontSize:11,color:"#94a3b8",marginTop:2}}>{t("welcome.pts")}</div>
+        </div>
+
+        {/* Per-match recap */}
+        <div style={{maxHeight:320,overflowY:"auto",marginBottom:14}}>
+          {newMatches.map(({ fixture, actual, pick, score }, i) => {
+            const home = findTeam(fixture.home);
+            const away = findTeam(fixture.away);
+            const userPicked = pick && pick.h !== undefined && pick.h !== "";
+            const scoreColor = score.type === "exact" ? "#fbbf24"
+              : score.type === "result" ? "#22c55e"
+              : score.type === "wrong" ? "#f87171" : "#475569";
+            const scoreBg = score.type === "exact" ? "rgba(251,191,36,0.12)"
+              : score.type === "result" ? "rgba(34,197,94,0.1)"
+              : score.type === "wrong" ? "rgba(239,68,68,0.08)" : "rgba(30,41,59,0.4)";
+            return (
+              <div key={fixture.id} style={{
+                background: scoreBg,
+                border: `1px solid ${scoreColor}55`,
+                borderRadius:10,padding:"8px 10px",marginBottom:6,
+              }}>
+                {/* Match teams + actual score */}
+                <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:userPicked ? 4 : 0}}>
+                  <span style={{fontSize:16,flexShrink:0}}>{home?.f}</span>
+                  <span style={{flex:1,fontSize:12,color:"#f1f5f9",fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{home?.n}</span>
+                  <span style={{fontSize:14,fontWeight:900,color:"#fff",letterSpacing:1,fontVariantNumeric:"tabular-nums"}}>
+                    {actual.h} - {actual.a}
+                  </span>
+                  <span style={{flex:1,fontSize:12,color:"#f1f5f9",fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",textAlign:"right"}}>{away?.n}</span>
+                  <span style={{fontSize:16,flexShrink:0}}>{away?.f}</span>
+                </div>
+                {/* User's pick + points earned */}
+                {userPicked ? (
+                  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",fontSize:10,paddingTop:4,borderTop:"1px dashed rgba(71,85,105,0.3)"}}>
+                    <span style={{color:"#94a3b8"}}>
+                      {t("recap.youPicked")}: <strong style={{color:"#cbd5e1"}}>{pick.h}-{pick.a}</strong>
+                    </span>
+                    <span style={{color:scoreColor,fontWeight:900,fontSize:12}}>
+                      {score.type === "exact" && `🎯 +${score.points}`}
+                      {score.type === "result" && `✅ +${score.points}`}
+                      {score.type === "wrong" && `❌ +0`}
+                    </span>
+                  </div>
+                ) : (
+                  <div style={{fontSize:10,color:"#64748b",textAlign:"center",paddingTop:3,fontStyle:"italic"}}>
+                    {t("recap.noPickMade")}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        <button onClick={onClose} style={primaryBtn}>{t("recap.gotIt")}</button>
+      </div>
+    </div>
+  );
+}
+
 // ─── SCORING RULES: floating info modal accessible from anywhere ──────────────
 function ScoringRulesModal({ onClose }) {
   const t = useT();
@@ -2654,6 +2845,180 @@ function StandingsTable({ group, standings, bestThirds, liveStandings, liveBestT
           })}
         </tbody>
       </table>
+    </div>
+  );
+}
+
+// ─── TODAY SCREEN: matches happening today/tomorrow ──────────────────────────
+function TodayScreen({ picks, actuals, onPick, onBack, onGoToBracket }) {
+  const t = useT();
+
+  // Group all fixtures (group + knockout) by date
+  // For group matches we already have kickoff. For KO we use KO_SCHEDULE.
+  const allMatches = useMemo(() => {
+    const list = [];
+    // Group stage
+    FIXTURES.forEach(f => {
+      if (f.kickoff) list.push({ type: "group", fixture: f, kickoff: f.kickoff });
+    });
+    // Knockout (only show if we have a kickoff and slot is ready)
+    Object.entries(KO_SCHEDULE).forEach(([slotId, sched]) => {
+      if (sched.kickoff) list.push({ type: "ko", slotId, kickoff: sched.kickoff, venue: sched.venue });
+    });
+    return list.sort((a, b) => new Date(a.kickoff) - new Date(b.kickoff));
+  }, []);
+
+  const now = Date.now();
+  const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
+  const tomorrowEnd = new Date(); tomorrowEnd.setDate(tomorrowEnd.getDate() + 2); tomorrowEnd.setHours(0, 0, 0, 0);
+
+  // Bucket matches by day
+  const todayMatches = [];
+  const tomorrowMatches = [];
+  const liveOrJustEndedMatches = [];
+  for (const m of allMatches) {
+    const k = new Date(m.kickoff).getTime();
+    if (k < todayStart.getTime()) {
+      // Possibly live / just ended (within last 3 hours)
+      if (k > now - 3 * 60 * 60 * 1000 && k < now) {
+        liveOrJustEndedMatches.push(m);
+      }
+      continue;
+    }
+    const isToday = k < todayStart.getTime() + 24 * 60 * 60 * 1000;
+    if (isToday) todayMatches.push(m);
+    else if (k < tomorrowEnd.getTime()) tomorrowMatches.push(m);
+  }
+
+  const renderMatchRow = (m) => {
+    if (m.type === "group") {
+      const f = m.fixture;
+      const p = picks[f.id];
+      const a = actuals[f.id];
+      const hasPick = p && p.h !== undefined && p.h !== "";
+      const hasResult = a && a.h !== undefined && a.h !== "";
+      const lockMs = new Date(f.kickoff).getTime() - Date.now();
+      const isLocked = lockMs < 60 * 60 * 1000;
+      const needsPick = !hasPick && !isLocked;
+
+      const kf = formatKickoff(f.kickoff);
+
+      return (
+        <MatchCard
+          key={f.id}
+          fixture={f}
+          pick={p}
+          actual={a}
+          onPick={(field, val) => onPick(f.id, field, val)}
+          showResults={hasResult}
+          homeInputId={`today-h-${f.id}`}
+          awayInputId={`today-a-${f.id}`}
+          nextInputId={null}
+          lockable={true}
+        />
+      );
+    }
+    // KO match — read-only summary card (can't easily predict score here without slot context)
+    const k = formatKickoff(m.kickoff);
+    return (
+      <div key={m.slotId} style={{
+        background:"rgba(168,85,247,0.05)",
+        border:"1px solid rgba(168,85,247,0.3)",
+        borderRadius:12,padding:"10px 14px",marginBottom:8,
+      }}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:4}}>
+          <span style={{fontSize:10,color:"#a855f7",letterSpacing:2,fontWeight:700}}>🏆 KNOCKOUT · {m.slotId}</span>
+          <span style={{fontSize:10,color:"#94a3b8"}}>📅 {k.day} · 🕐 {k.time}</span>
+        </div>
+        {m.venue && <div style={{fontSize:10,color:"#64748b"}}>📍 {m.venue}</div>}
+        <button onClick={onGoToBracket} style={{
+          marginTop:8,width:"100%",
+          padding:"6px 10px",background:"rgba(168,85,247,0.15)",
+          border:"1px solid rgba(168,85,247,0.4)",borderRadius:6,
+          color:"#a855f7",fontSize:11,fontWeight:700,cursor:"pointer",
+          fontFamily:"inherit",
+        }}>{t("today.openBracket")}</button>
+      </div>
+    );
+  };
+
+  const renderEmptySection = (label) => (
+    <div style={{textAlign:"center",padding:"20px 12px",color:"#64748b",fontSize:12,fontStyle:"italic"}}>
+      {label}
+    </div>
+  );
+
+  // Count missing predictions for the today/tomorrow group matches
+  const missingPicks = [...todayMatches, ...tomorrowMatches]
+    .filter(m => m.type === "group")
+    .filter(m => {
+      const p = picks[m.fixture.id];
+      const hasPick = p && p.h !== undefined && p.h !== "";
+      const lockMs = new Date(m.kickoff).getTime() - Date.now();
+      const isLocked = lockMs < 60 * 60 * 1000;
+      return !hasPick && !isLocked;
+    }).length;
+
+  return (
+    <div style={{padding:"16px 14px 60px",maxWidth:560,margin:"0 auto"}}>
+      <button onClick={onBack} style={{...ghostBtn,marginBottom:14,padding:"7px 14px",width:"auto"}}>{t("welcome.back")}</button>
+
+      <div style={{textAlign:"center",marginBottom:18}}>
+        <div style={{fontSize:10,color:"#64748b",letterSpacing:3}}>{t("today.upcoming")}</div>
+        <h2 style={{
+          fontSize:24,margin:"4px 0",
+          background:"linear-gradient(180deg,#fde68a,#f59e0b)",
+          WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",
+          fontWeight:900,
+        }}>📅 {t("today.title")}</h2>
+        <p style={{fontSize:12,color:"#94a3b8",margin:0}}>{t("today.subtitle")}</p>
+      </div>
+
+      {/* Missing picks warning */}
+      {missingPicks > 0 && (
+        <div style={{
+          background:"linear-gradient(135deg,rgba(239,68,68,0.12),rgba(15,20,36,0.5))",
+          border:"1px solid rgba(239,68,68,0.4)",
+          borderRadius:12,padding:"10px 14px",marginBottom:14,
+          display:"flex",alignItems:"center",gap:10,
+        }}>
+          <span style={{fontSize:22}}>🚨</span>
+          <div style={{flex:1,fontSize:12,color:"#fca5a5",lineHeight:1.4}}>
+            <strong>{missingPicks} {missingPicks === 1 ? t("today.matchNoPick") : t("today.matchesNoPick")}</strong>
+            <div style={{fontSize:10,color:"#f87171",opacity:0.85}}>{t("today.dontMissOut")}</div>
+          </div>
+        </div>
+      )}
+
+      {/* Live / just-ended */}
+      {liveOrJustEndedMatches.length > 0 && (
+        <div style={{marginBottom:18}}>
+          <div style={{fontSize:11,color:"#22c55e",letterSpacing:3,marginBottom:8,fontWeight:700}}>
+            🔴 {t("today.liveNow")}
+          </div>
+          {liveOrJustEndedMatches.map(renderMatchRow)}
+        </div>
+      )}
+
+      {/* Today */}
+      <div style={{marginBottom:18}}>
+        <div style={{fontSize:11,color:"#fbbf24",letterSpacing:3,marginBottom:8,fontWeight:700}}>
+          ⚽ {t("today.today")} ({todayMatches.length})
+        </div>
+        {todayMatches.length === 0
+          ? renderEmptySection(t("today.noMatchesToday"))
+          : todayMatches.map(renderMatchRow)}
+      </div>
+
+      {/* Tomorrow */}
+      <div>
+        <div style={{fontSize:11,color:"#a78bfa",letterSpacing:3,marginBottom:8,fontWeight:700}}>
+          🌅 {t("today.tomorrow")} ({tomorrowMatches.length})
+        </div>
+        {tomorrowMatches.length === 0
+          ? renderEmptySection(t("today.noMatchesTomorrow"))
+          : tomorrowMatches.map(renderMatchRow)}
+      </div>
     </div>
   );
 }
@@ -4337,8 +4702,14 @@ function decodeBackup(code) {
 // ─── BACKUP MODAL ─────────────────────────────────────────────────────────────
 
 function ConfirmModal({ action, onClose }) {
+  const [typedText, setTypedText] = useState("");
+  // Reset typed text whenever the modal opens with a new action
+  useEffect(() => { setTypedText(""); }, [action]);
   if (!action) return null;
+  const requireType = action.requireType; // optional string user must type
+  const canConfirm = !requireType || typedText.trim().toLowerCase() === requireType.toLowerCase();
   const handleConfirm = () => {
+    if (!canConfirm) return;
     onClose();
     setTimeout(()=>action.onConfirm?.(), 0);
   };
@@ -4364,18 +4735,46 @@ function ConfirmModal({ action, onClose }) {
         <p style={{fontSize:13,color:"#cbd5e1",lineHeight:1.5,textAlign:"center",margin:"0 0 18px"}}>
           {action.message}
         </p>
+        {requireType && (
+          <div style={{marginBottom:14}}>
+            <div style={{fontSize:11,color:"#fca5a5",textAlign:"center",marginBottom:6,letterSpacing:1}}>
+              {action.typePrompt || `Type "${requireType}" to confirm:`}
+            </div>
+            <input
+              autoFocus
+              value={typedText}
+              onChange={e => setTypedText(e.target.value)}
+              placeholder={requireType}
+              style={{
+                width:"100%",
+                padding:"10px 12px",
+                borderRadius:8,
+                background:"#0a0e1c",
+                border:`1px solid ${canConfirm ? "rgba(34,197,94,0.6)" : "rgba(239,68,68,0.4)"}`,
+                color:"#f1f5f9",
+                fontSize:14,
+                fontFamily:"inherit",
+                outline:"none",
+                textAlign:"center",
+                boxSizing:"border-box",
+              }}
+            />
+          </div>
+        )}
         <div style={{display:"flex",flexDirection:"column",gap:8}}>
           {action.secondaryLabel && (
             <button onClick={handleSecondary} style={{...primaryBtn}}>
               {action.secondaryLabel}
             </button>
           )}
-          <button onClick={handleConfirm} style={{
+          <button onClick={handleConfirm} disabled={!canConfirm} style={{
             ...primaryBtn,
             background: action.danger ? "linear-gradient(135deg,#ef4444,#dc2626)" : (action.secondaryLabel ? "rgba(30,41,59,0.6)" : primaryBtn.background),
             color: action.secondaryLabel && !action.danger ? "#cbd5e1" : (action.danger ? "#fff" : primaryBtn.color),
             boxShadow: action.danger ? "0 6px 18px rgba(239,68,68,0.3)" : (action.secondaryLabel ? "none" : primaryBtn.boxShadow),
             border: action.secondaryLabel && !action.danger ? "1px solid rgba(71,85,105,0.4)" : "none",
+            opacity: canConfirm ? 1 : 0.4,
+            cursor: canConfirm ? "pointer" : "not-allowed",
           }}>
             {action.confirmLabel}
           </button>
@@ -4519,6 +4918,14 @@ export default function App() {
   // Pending celebration to show right now
   const [pendingCelebration, setPendingCelebration] = useState(null);
   const [pendingTopScorerCeleb, setPendingTopScorerCeleb] = useState(null);
+  // Recap of recent finished matches the user hasn't seen yet
+  const [seenActualIds, setSeenActualIds] = useState(() => {
+    try {
+      const raw = localStorage.getItem("wc2026_seen_actuals_v1");
+      return raw ? new Set(JSON.parse(raw)) : new Set();
+    } catch { return new Set(); }
+  });
+  const [pendingRecap, setPendingRecap] = useState(null); // {newMatches: [...], totalPoints: N}
   // Profile modal open?
   const [showProfile, setShowProfile] = useState(false);
   const [showRules, setShowRules] = useState(false);
@@ -4561,6 +4968,35 @@ export default function App() {
       }
     }
   }, [actuals, picks, name, pendingCelebration]);
+
+  // ─── RECAP: when user opens app, show summary of new finished matches ─────
+  useEffect(() => {
+    if (!name) return;
+    if (pendingRecap) return; // already showing
+    // Find finished matches (with actual scores) that the user hasn't seen yet
+    const unseenMatches = [];
+    let recapPoints = 0;
+    for (const f of FIXTURES) {
+      const a = actuals[f.id];
+      const p = picks[f.id];
+      if (!a || a.h === undefined || a.h === "" || a.a === undefined || a.a === "") continue;
+      if (seenActualIds.has(f.id)) continue;
+      const sc = (p && p.h !== undefined && p.h !== "") ? scoreMatch(p, a) : { points: 0, type: "none" };
+      unseenMatches.push({ fixture: f, actual: a, pick: p, score: sc });
+      recapPoints += sc.points;
+    }
+    // Only show recap if 2+ new matches (otherwise the goal celebration handles it)
+    if (unseenMatches.length >= 2) {
+      setPendingRecap({ newMatches: unseenMatches, totalPoints: recapPoints });
+    }
+    // Mark them all as seen (whether we show recap or not — single matches don't get a recap, just the celebration)
+    if (unseenMatches.length > 0) {
+      const newSet = new Set(seenActualIds);
+      unseenMatches.forEach(m => newSet.add(m.fixture.id));
+      setSeenActualIds(newSet);
+      try { localStorage.setItem("wc2026_seen_actuals_v1", JSON.stringify([...newSet])); } catch {}
+    }
+  }, [actuals, picks, name, pendingRecap]);
 
   const [topScorerPick, setTopScorerPick] = useState(saved?.topScorerPick || null); // {name, team}
   const [actualWinner, setActualWinner] = useState(saved?.actualWinner || null);
@@ -4816,10 +5252,12 @@ export default function App() {
       message: "This wipes all your predictions, friends, and results from this device. There's no undo. Copy your backup code first if you want to keep your progress.",
       confirmLabel: "🗑️ Yes, delete everything",
       danger: true,
+      requireType: name || "DELETE",
+      typePrompt: name ? `Type your name ("${name}") to confirm:` : `Type "DELETE" to confirm:`,
       onConfirm: () => {
         clearState();
         setName(""); setPicks({}); setKoWinners({}); setGroupIdx(0);
-        setFriends([]); setActuals({}); setActualKo({}); setLeagueName(""); setLeagueCode(""); setWinnerPick(null); setTopScorerPick(null); setCelebratedIds(new Set()); setLastSeenGoals(0); try { localStorage.removeItem("wc2026_celebrated_v1"); localStorage.removeItem("wc2026_lastseen_goals_v1"); } catch {}
+        setFriends([]); setActuals({}); setActualKo({}); setLeagueName(""); setLeagueCode(""); setWinnerPick(null); setTopScorerPick(null); setCelebratedIds(new Set()); setLastSeenGoals(0); setSeenActualIds(new Set()); try { localStorage.removeItem("wc2026_celebrated_v1"); localStorage.removeItem("wc2026_lastseen_goals_v1"); localStorage.removeItem("wc2026_seen_actuals_v1"); } catch {}
         setScreen("welcome");
         setShowIntro(false);
       },
@@ -4831,7 +5269,7 @@ export default function App() {
       // No data to worry about, just log out
       clearState();
       setName(""); setPicks({}); setKoWinners({}); setGroupIdx(0);
-      setFriends([]); setActuals({}); setActualKo({}); setLeagueName(""); setLeagueCode(""); setWinnerPick(null); setTopScorerPick(null); setCelebratedIds(new Set()); setLastSeenGoals(0); try { localStorage.removeItem("wc2026_celebrated_v1"); localStorage.removeItem("wc2026_lastseen_goals_v1"); } catch {}
+      setFriends([]); setActuals({}); setActualKo({}); setLeagueName(""); setLeagueCode(""); setWinnerPick(null); setTopScorerPick(null); setCelebratedIds(new Set()); setLastSeenGoals(0); setSeenActualIds(new Set()); try { localStorage.removeItem("wc2026_celebrated_v1"); localStorage.removeItem("wc2026_lastseen_goals_v1"); localStorage.removeItem("wc2026_seen_actuals_v1"); } catch {}
       setScreen("welcome");
       setShowIntro(false);
       return;
@@ -4845,7 +5283,7 @@ export default function App() {
       onConfirm: () => {
         clearState();
         setName(""); setPicks({}); setKoWinners({}); setGroupIdx(0);
-        setFriends([]); setActuals({}); setActualKo({}); setLeagueName(""); setLeagueCode(""); setWinnerPick(null); setTopScorerPick(null); setCelebratedIds(new Set()); setLastSeenGoals(0); try { localStorage.removeItem("wc2026_celebrated_v1"); localStorage.removeItem("wc2026_lastseen_goals_v1"); } catch {}
+        setFriends([]); setActuals({}); setActualKo({}); setLeagueName(""); setLeagueCode(""); setWinnerPick(null); setTopScorerPick(null); setCelebratedIds(new Set()); setLastSeenGoals(0); setSeenActualIds(new Set()); try { localStorage.removeItem("wc2026_celebrated_v1"); localStorage.removeItem("wc2026_lastseen_goals_v1"); localStorage.removeItem("wc2026_seen_actuals_v1"); } catch {}
         setScreen("welcome");
         setShowIntro(false);
       },
@@ -5055,19 +5493,20 @@ export default function App() {
             )}
           </div>
           {/* Bottom nav */}
-          {(screen === "group" || screen === "bracket" || screen === "bonus" || screen === "league") && (
+          {(screen === "group" || screen === "today" || screen === "bracket" || screen === "bonus" || screen === "league") && (
             <div style={{display:"flex",justifyContent:"center",borderTop:"1px solid rgba(71,85,105,0.3)"}}>
               {[
+                ["today", TRANSLATIONS[lang]?.["nav.today"] || TRANSLATIONS.en["nav.today"]],
                 ["group", TRANSLATIONS[lang]?.["nav.predict"] || TRANSLATIONS.en["nav.predict"]],
                 ["bracket", TRANSLATIONS[lang]?.["nav.bracket"] || TRANSLATIONS.en["nav.bracket"]],
                 ["bonus", TRANSLATIONS[lang]?.["nav.bonus"] || TRANSLATIONS.en["nav.bonus"]],
                 ["league", TRANSLATIONS[lang]?.["nav.league"] || TRANSLATIONS.en["nav.league"]],
               ].map(([s, label]) => (
                 <button key={s} onClick={()=>setScreen(s)} style={{
-                  flex:1,padding:"8px 4px",background:screen===s?"rgba(251,191,36,0.1)":"transparent",
+                  flex:1,padding:"8px 2px",background:screen===s?"rgba(251,191,36,0.1)":"transparent",
                   border:"none",borderBottom:screen===s?"2px solid #fbbf24":"2px solid transparent",
-                  color:screen===s?"#fbbf24":"#94a3b8",fontSize:11,cursor:"pointer",fontFamily:"inherit",
-                  letterSpacing:1,
+                  color:screen===s?"#fbbf24":"#94a3b8",fontSize:10,cursor:"pointer",fontFamily:"inherit",
+                  letterSpacing:0.5,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",
                 }}>{label}</button>
               ))}
             </div>
@@ -5105,6 +5544,16 @@ export default function App() {
           }}
           isFirst={groupIdx === 0}
           isLast={groupIdx === GROUP_KEYS.length - 1}
+        />
+      )}
+
+      {screen === "today" && (
+        <TodayScreen
+          picks={picks}
+          actuals={actuals}
+          onPick={(fid, field, val) => setPicks(p => ({ ...p, [fid]: { ...p[fid], [field]: val } }))}
+          onBack={()=>setScreen("group")}
+          onGoToBracket={()=>setScreen("bracket")}
         />
       )}
 
@@ -5201,6 +5650,14 @@ export default function App() {
 
       {/* ⓘ Scoring rules modal */}
       {showRules && <ScoringRulesModal onClose={()=>setShowRules(false)} />}
+
+      {/* 📊 Recap modal — new matches since last visit */}
+      {pendingRecap && (
+        <RecapModal recap={pendingRecap} onClose={()=>setPendingRecap(null)} />
+      )}
+
+      {/* ⬆ Back to top floating button */}
+      <BackToTopButton />
       </div>
     </div>
     </LangContext.Provider>
