@@ -242,6 +242,11 @@ const TRANSLATIONS = {
     "leagues.maxReached": "You've reached the max number of leagues",
     "leagues.alreadyJoined": "You're already in this league",
     "leagues.allLeagues": "All my leagues",
+    // Leave league confirmation
+    "leagueConfirm.title": "Leave this league?",
+    "leagueConfirm.message": "You'll lose access to \"{name}\" and stop seeing its standings. You can always rejoin with the league code later.",
+    "leagueConfirm.confirm": "Yes, leave league",
+    "leagueConfirm.cancel": "Stay",
     // Profile / Stats
     "profile.yourStats": "YOUR STATS",
     "profile.totalPoints": "TOTAL POINTS",
@@ -509,6 +514,11 @@ const TRANSLATIONS = {
     "leagues.maxReached": "הגעת למקסימום הליגות",
     "leagues.alreadyJoined": "אתה כבר בליגה הזו",
     "leagues.allLeagues": "כל הליגות שלי",
+    // Leave league confirmation
+    "leagueConfirm.title": "לעזוב את הליגה?",
+    "leagueConfirm.message": "תאבד גישה ל\"{name}\" ולא תראה יותר את הדירוג שלה. תמיד אפשר להצטרף שוב עם קוד הליגה בעתיד.",
+    "leagueConfirm.confirm": "כן, עזוב את הליגה",
+    "leagueConfirm.cancel": "תישאר",
     // Profile / Stats
     "profile.yourStats": "הסטטיסטיקה שלך",
     "profile.totalPoints": "סך הנקודות",
@@ -4093,12 +4103,17 @@ function LeagueHub({
   };
 
   // ─── Leave league ──
+  const [confirmLeave, setConfirmLeave] = useState(false);
+
   const handleLeave = async () => {
     if (!leagueCode) return;
     try { await leaveLeague(leagueCode, userId); } catch {}
     setLeagueCode(""); // shim handles removing from list + switching to next
+    setConfirmLeave(false);
     // After leaving, go back to list (or creating-or-joining handled by useEffect)
   };
+
+  const requestLeave = () => setConfirmLeave(true);
 
   const copy = async () => {
     const ok = await copyText(leagueCode);
@@ -4889,8 +4904,46 @@ function LeagueHub({
               cursor:"pointer",fontFamily:"inherit",
             }}>✨ {t("leagues.addNew")}</button>
           )}
-          <button onClick={handleLeave} style={{background:"transparent",border:"none",color:"#64748b",fontSize:12,cursor:"pointer",fontFamily:"inherit",textDecoration:"underline"}}>{t("league.leaveLeague")}</button>
+          <button onClick={requestLeave} style={{background:"transparent",border:"none",color:"#64748b",fontSize:12,cursor:"pointer",fontFamily:"inherit",textDecoration:"underline"}}>{t("league.leaveLeague")}</button>
         </div>
+
+        {/* Leave confirmation modal */}
+        {confirmLeave && (
+          <div onClick={()=>setConfirmLeave(false)} style={{
+            position:"fixed",inset:0,background:"rgba(0,0,0,0.85)",zIndex:200,
+            display:"flex",alignItems:"center",justifyContent:"center",padding:20,
+            backdropFilter:"blur(8px)",
+          }}>
+            <div onClick={e=>e.stopPropagation()} style={{
+              background:"linear-gradient(145deg,#1a1f3a,#0f1424)",
+              border:"1px solid rgba(239,68,68,0.5)",
+              borderRadius:18,padding:"24px 22px",maxWidth:380,width:"100%",
+              boxShadow:"0 20px 60px rgba(0,0,0,0.6)",
+            }}>
+              <div style={{fontSize:34,textAlign:"center",marginBottom:8}}>⚠️</div>
+              <h2 style={{margin:"0 0 10px",fontSize:18,textAlign:"center",color:"#fca5a5"}}>
+                {t("leagueConfirm.title")}
+              </h2>
+              <p style={{fontSize:13,color:"#cbd5e1",lineHeight:1.5,textAlign:"center",margin:"0 0 18px"}}>
+                {t("leagueConfirm.message").replace("{name}", leagueData?.name || leagueCode)}
+              </p>
+              <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                <button onClick={handleLeave} style={{
+                  ...primaryBtn,
+                  background:"linear-gradient(135deg,#ef4444,#dc2626)",
+                  color:"#fff",
+                  boxShadow:"0 6px 18px rgba(239,68,68,0.3)",
+                }}>
+                  {t("leagueConfirm.confirm")}
+                </button>
+                <button onClick={()=>setConfirmLeave(false)} style={{
+                  background:"transparent",border:"none",color:"#94a3b8",
+                  fontSize:12,padding:"8px 0",cursor:"pointer",fontFamily:"inherit",
+                }}>{t("leagueConfirm.cancel")}</button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
