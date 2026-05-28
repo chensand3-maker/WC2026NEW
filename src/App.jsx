@@ -4119,36 +4119,45 @@ function LeagueHub({
   // ─── LIST MODE: overview of all leagues the user is in ──
   if (mode === "list") {
     const myLeagues = (leagueCodes || []).map(code => {
-      const data = allLeagueData?.[code] || null;
-      if (!data) return { code, loading: true };
-      const members = Object.values(data.members || {});
-      // Compute rank for me
-      const ranked = members.map(m => {
-        const ms = m.picks ? totalScore(m.picks, actuals) : { total: 0 };
-        const kt = m.koWinners ? buildKnockoutFromWinners(m.picks ? allStandings(m.picks) : [], findBestThirds(m.picks ? allStandings(m.picks) : []), m.koWinners) : null;
-        // For simplicity, just use match score for ranking on the list screen
-        let bonus = 0;
-        if (actualWinner && m.winnerPick) {
-          const aw = actualWinner.name || actualWinner.n;
-          const mw = m.winnerPick.name || m.winnerPick.n;
-          if (aw && mw && aw === mw) bonus += POINTS.WINNER_BET;
-        }
-        if (actualTopScorer && m.topScorerPick && actualTopScorer.name === m.topScorerPick.name) {
-          bonus += (actualTopScorer.goals || 0) * POINTS.TOP_SCORER_GOAL;
-        }
-        return { uid: m.uid, name: m.name, total: ms.total + bonus };
-      }).sort((a, b) => b.total - a.total);
-      const myEntry = ranked.find(r => r.uid === userId);
-      const myRank = myEntry ? ranked.indexOf(myEntry) + 1 : null;
-      return {
-        code,
-        name: data.name,
-        memberCount: members.length,
-        myRank,
-        myPoints: myEntry?.total ?? 0,
-        topName: ranked[0]?.name,
-        topPoints: ranked[0]?.total ?? 0,
-      };
+      try {
+        const data = allLeagueData?.[code] || null;
+        if (!data) return { code, loading: true };
+        const members = Object.values(data.members || {});
+        // Compute rank for me — use only match score + bonus picks (simple, no bracket calc)
+        const ranked = members.map(m => {
+          let total = 0;
+          try {
+            if (m.picks) {
+              const ms = totalScore(m.picks, actuals);
+              total = ms.total;
+            }
+          } catch (e) {}
+          // Bonus picks
+          if (actualWinner && m.winnerPick) {
+            const aw = actualWinner.name || actualWinner.n;
+            const mw = m.winnerPick.name || m.winnerPick.n;
+            if (aw && mw && aw === mw) total += POINTS.WINNER_BET;
+          }
+          if (actualTopScorer && m.topScorerPick && actualTopScorer.name === m.topScorerPick.name) {
+            total += (actualTopScorer.goals || 0) * POINTS.TOP_SCORER_GOAL;
+          }
+          return { uid: m.uid, name: m.name, total };
+        }).sort((a, b) => b.total - a.total);
+        const myEntry = ranked.find(r => r.uid === userId);
+        const myRank = myEntry ? ranked.indexOf(myEntry) + 1 : null;
+        return {
+          code,
+          name: data.name,
+          memberCount: members.length,
+          myRank,
+          myPoints: myEntry?.total ?? 0,
+          topName: ranked[0]?.name,
+          topPoints: ranked[0]?.total ?? 0,
+        };
+      } catch (e) {
+        console.error("Error computing league summary:", e);
+        return { code, loading: false, name: code, memberCount: 0 };
+      }
     });
 
     const canAddMore = (leagueCodes?.length || 0) < (maxLeagues || 5);
