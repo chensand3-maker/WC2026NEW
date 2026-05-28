@@ -1,12 +1,12 @@
 // src/liveResults.js
-// ─── 🔴 LIVE 2026 — pulls real World Cup results from API-Football ────────────
+// ─── Live results fetcher — calls API-Football and maps to our match IDs ──────
 
-// 🔧 PASTE YOUR API-FOOTBALL KEY HERE
-const API_FOOTBALL_KEY = "50b86c6e4ce49b2c24362c4947a7e3d5";
-
-const SEASON = 2026;
+// 🔧 PASTE YOUR API-FOOTBALL KEY HERE (see SETUP.md step 3)
+const API_FOOTBALL_KEY = "PASTE_HERE";
 const API_URL = "https://v3.football.api-sports.io";
 
+// Team name normalization: API-Football names → our internal names
+// You may need to tweak these once tournament starts and you see actual names returned
 const TEAM_NAME_MAP = {
   "USA": "USA",
   "United States": "USA",
@@ -33,7 +33,6 @@ const TEAM_NAME_MAP = {
   "Curacao": "Curaçao",
   "Ivory Coast": "Côte d'Ivoire",
   "Côte d'Ivoire": "Côte d'Ivoire",
-  "Cote d'Ivoire": "Côte d'Ivoire",
   "Ecuador": "Ecuador",
   "Netherlands": "Netherlands",
   "Japan": "Japan",
@@ -69,12 +68,11 @@ const TEAM_NAME_MAP = {
 };
 
 function normalizeTeam(name) {
-  if (!name) return null;
   return TEAM_NAME_MAP[name] || name;
 }
 
-// 🆕 Cache key bumped to v3 — any old 2022 cached data will be ignored automatically.
-const CACHE_KEY = "wc2026_live_cache_v3";
+// In-memory cache to avoid hammering the API (free tier: 100 req/day)
+const CACHE_KEY = "wc2026_live_cache_v1";
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
 function getCache() {
@@ -88,117 +86,61 @@ function getCache() {
 }
 
 function setCache(data) {
-  try { localStorage.setItem(CACHE_KEY, JSON.stringify({ fetchedAt: Date.now(), data })); } catch {}
-}
-
-// Detect which round a fixture is in (API "round" field varies)
-function detectRound(roundStr) {
-  if (!roundStr) return null;
-  const s = roundStr.toLowerCase();
-  if (s.includes("final") && !s.includes("semi") && !s.includes("quarter")) return "FINAL";
-  if (s.includes("3rd") || s.includes("third place")) return "THIRD";
-  if (s.includes("semi")) return "SF";
-  if (s.includes("quarter")) return "QF";
-  if (s.includes("round of 16") || s.includes("16th") || s.includes("r16")) return "R16";
-  if (s.includes("round of 32") || s.includes("32nd") || s.includes("r32")) return "R32";
-  if (s.includes("group")) return "GROUP";
-  return null;
+  try {
+    localStorage.setItem(CACHE_KEY, JSON.stringify({ fetchedAt: Date.now(), data }));
+  } catch {}
 }
 
 /**
- * Fetch all 2026 World Cup matches (group + knockout).
+ * Fetch all completed matches for the World Cup 2026 group stage.
+ * Returns { byTeamPair: { "TeamA|TeamB": {h, a} }, fetchedAt }
  */
 export async function fetchLiveResults() {
+  // Check cache first
   const cached = getCache();
-  if (cached) {
-    console.log("[liveResults] using cached data");
-    return cached.data;
-  }
+  if (cached) return cached.data;
 
   if (!API_FOOTBALL_KEY || API_FOOTBALL_KEY === "PASTE_HERE") {
     throw new Error("API-Football key not set. See SETUP.md step 3.");
   }
 
-  console.log(`[liveResults] fetching season ${SEASON}...`);
-  const res = await fetch(`${API_URL}/fixtures?league=1&season=${SEASON}`, {
+  // API-Football: league 1 = FIFA World Cup, season 2026
+  // Pull all fixtures for the tournament; we'll filter to finished ones
+  const res = await fetch(`${API_URL}/fixtures?league=1&season=2026`, {
     headers: { "x-apisports-key": API_FOOTBALL_KEY },
   });
   if (!res.ok) throw new Error(`API request failed: ${res.status}`);
   const json = await res.json();
   if (!json.response) throw new Error("Unexpected API response");
 
-  console.log(`[liveResults] API returned ${json.response.length} fixtures`);
-
   const byTeamPair = {};
-  const knockout = { R32: [], R16: [], QF: [], SF: [], FINAL: [] };
-  let matched = 0, skipped = 0;
-  const unknownTeams = new Set();
-  const unknownRounds = new Set();
-
   for (const fixture of json.response) {
     const status = fixture.fixture?.status?.short;
-    if (!["FT", "AET", "PEN"].includes(status)) { skipped++; continue; }
+    // FT = full time, AET = after extra time, PEN = penalties (all finished)
+    if (!["FT", "AET", "PEN"].includes(status)) continue;
 
-    const rawHome = fixture.teams?.home?.name;
-    const rawAway = fixture.teams?.away?.name;
-    const home = normalizeTeam(rawHome);
-    const away = normalizeTeam(rawAway);
+    const home = normalizeTeam(fixture.teams?.home?.name);
+    const away = normalizeTeam(fixture.teams?.away?.name);
+    const hGoals = fixture.goals?.home;
+    const aGoals = fixture.goals?.away;
+    if (home == null || away == null || hGoals == null || aGoals == null) continue;
 
-    let hGoals = fixture.goals?.home;
-    let aGoals = fixture.goals?.away;
-
-    let winner = null;
-    if (fixture.teams?.home?.winner === true) winner = home;
-    else if (fixture.teams?.away?.winner === true) winner = away;
-
-    if (home == null || away == null || hGoals == null || aGoals == null) {
-      skipped++;
-      continue;
-    }
-
-    if (!TEAM_NAME_MAP[rawHome]) unknownTeams.add(rawHome);
-    if (!TEAM_NAME_MAP[rawAway]) unknownTeams.add(rawAway);
-
-    const round = detectRound(fixture.league?.round);
-    if (round === "GROUP" || !round) {
-      byTeamPair[`${home}|${away}`] = { h: hGoals, a: aGoals, status };
-      if (!round) unknownRounds.add(fixture.league?.round);
-    } else if (round === "THIRD") {
-      // Skip 3rd-place match (not in our bracket)
-    } else {
-      knockout[round].push({
-        home, away,
-        h: hGoals, a: aGoals,
-        winner,
-        status,
-      });
-    }
-    matched++;
+    // Store both orderings so we can match regardless of home/away order in our fixtures
+    byTeamPair[`${home}|${away}`] = { h: hGoals, a: aGoals, status, originalHome: home };
   }
 
-  console.log(`[liveResults] processed: ${matched} completed, ${skipped} skipped`);
-  console.log(`[liveResults] knockout counts: R32=${knockout.R32.length}, R16=${knockout.R16.length}, QF=${knockout.QF.length}, SF=${knockout.SF.length}, FINAL=${knockout.FINAL.length}`);
-  if (unknownTeams.size > 0) {
-    console.log("[liveResults] unknown team names (won't match):", [...unknownTeams]);
-  }
-  if (unknownRounds.size > 0) {
-    console.log("[liveResults] unrecognized round labels:", [...unknownRounds]);
-  }
-
-  const data = {
-    byTeamPair,
-    knockout,
-    fetchedAt: Date.now(),
-  };
+  const data = { byTeamPair, fetchedAt: Date.now() };
   setCache(data);
   return data;
 }
 
-/** Map group-stage results to our FIXTURES array. */
+/**
+ * Given our FIXTURES array, map live results to our match IDs.
+ * Handles home/away order differences.
+ */
 export function mapResultsToFixtures(liveData, FIXTURES) {
   const out = {};
   if (!liveData?.byTeamPair) return out;
-  let matched = 0;
 
   for (const f of FIXTURES) {
     const direct = liveData.byTeamPair[`${f.home}|${f.away}`];
@@ -206,54 +148,96 @@ export function mapResultsToFixtures(liveData, FIXTURES) {
 
     if (direct) {
       out[f.id] = { h: direct.h, a: direct.a };
-      matched++;
     } else if (reverse) {
+      // Order was flipped in API response — swap scores
       out[f.id] = { h: reverse.a, a: reverse.h };
-      matched++;
     }
   }
-  console.log(`[liveResults] mapped ${matched}/${FIXTURES.length} fixtures to real scores`);
   return out;
 }
 
 /**
- * Map knockout results to bracket slot IDs (e.g. "R32-1", "R16-3", "FINAL").
+ * Fetch & return knockout match results (R16 → Final).
+ * Returns map of fixture-id-style → winner names.
+ * Not used in v1 (group stage only) but stub here for later.
  */
-export function mapKnockoutToWinners(liveData, realBracket) {
-  const koWinners = {};
-  if (!liveData?.knockout || !realBracket) return koWinners;
-
-  const matchSlot = (slot, slotId, fixtures) => {
-    if (!slot?.a || !slot?.b) return;
-    const aName = slot.a.name || slot.a.n;
-    const bName = slot.b.name || slot.b.n;
-    for (const fx of fixtures) {
-      const matches =
-        (fx.home === aName && fx.away === bName) ||
-        (fx.home === bName && fx.away === aName);
-      if (!matches) continue;
-      if (fx.winner === aName) koWinners[slotId] = "a";
-      else if (fx.winner === bName) koWinners[slotId] = "b";
-      else if (fx.h !== fx.a) {
-        const winnerName = fx.h > fx.a ? fx.home : fx.away;
-        if (winnerName === aName) koWinners[slotId] = "a";
-        else if (winnerName === bName) koWinners[slotId] = "b";
-      }
-      return;
-    }
-  };
-
-  realBracket.r32?.forEach((m) => matchSlot(m, m.id, liveData.knockout.R32));
-  realBracket.r16?.forEach((m) => matchSlot(m, m.id, liveData.knockout.R16));
-  realBracket.qf?.forEach((m) => matchSlot(m, m.id, liveData.knockout.QF));
-  realBracket.sf?.forEach((m) => matchSlot(m, m.id, liveData.knockout.SF));
-  if (realBracket.final) matchSlot(realBracket.final, realBracket.final.id, liveData.knockout.FINAL);
-
-  console.log(`[liveResults] mapped ${Object.keys(koWinners).length} knockout slots to real winners`);
-  return koWinners;
-}
-
 export async function fetchKnockoutResults() {
-  const data = await fetchLiveResults();
-  return data.knockout || {};
+  // TODO: implement once group stage is done — would map to our R32/R16/QF/SF/FINAL IDs
+  return {};
 }
+
+// ─── TOP SCORERS ────────────────────────────────────────────────────────────
+// Cache top scorers separately. Pulled from /players/topscorers endpoint.
+const TOP_SCORERS_CACHE_KEY = "wc2026_topscorers_v1";
+const TOP_SCORERS_TTL_MS = 5 * 60 * 1000; // 5 min
+
+function getTopScorersCache() {
+  try {
+    const raw = localStorage.getItem(TOP_SCORERS_CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (Date.now() - parsed.fetchedAt > TOP_SCORERS_TTL_MS) return null;
+    return parsed;
+  } catch { return null; }
+}
+
+function setTopScorersCache(data) {
+  try { localStorage.setItem(TOP_SCORERS_CACHE_KEY, JSON.stringify({ fetchedAt: Date.now(), data })); } catch {}
+}
+
+/**
+ * Fetch all top scorers of the 2026 WC.
+ * Returns an array of { name, team, goals, rank } sorted by goals desc.
+ */
+export async function fetchTopScorers() {
+  const cached = getTopScorersCache();
+  if (cached) {
+    console.log("[topScorers] using cached data");
+    return cached.data;
+  }
+
+  if (!API_FOOTBALL_KEY || API_FOOTBALL_KEY === "PASTE_HERE") {
+    throw new Error("API-Football key not set");
+  }
+
+  console.log("[topScorers] fetching from API...");
+  const res = await fetch(`${API_URL}/players/topscorers?league=1&season=2026`, {
+    headers: { "x-apisports-key": API_FOOTBALL_KEY },
+  });
+  if (!res.ok) throw new Error(`API request failed: ${res.status}`);
+  const json = await res.json();
+  if (!json.response) throw new Error("Unexpected API response");
+
+  // Each entry has { player: { name, ... }, statistics: [{ goals: { total }, team: { name } }] }
+  const out = [];
+  for (const item of json.response) {
+    const name = item.player?.name;
+    const stat = item.statistics?.[0];
+    const goals = stat?.goals?.total ?? 0;
+    const rawTeam = stat?.team?.name;
+    const team = TEAM_NAME_MAP[rawTeam] || rawTeam || "";
+    if (!name) continue;
+    out.push({ name, team, goals });
+  }
+
+  // Sort by goals desc, then by name as tiebreaker
+  out.sort((a, b) => {
+    if (b.goals !== a.goals) return b.goals - a.goals;
+    return a.name.localeCompare(b.name);
+  });
+
+  // Assign ranks (handle ties — same goals = same rank)
+  let prevGoals = -1, prevRank = 0;
+  for (let i = 0; i < out.length; i++) {
+    if (out[i].goals !== prevGoals) {
+      prevRank = i + 1;
+      prevGoals = out[i].goals;
+    }
+    out[i].rank = prevRank;
+  }
+
+  console.log(`[topScorers] got ${out.length} scorers`);
+  setTopScorersCache(out);
+  return out;
+}
+

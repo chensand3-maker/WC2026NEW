@@ -3,7 +3,7 @@ import {
   generateLeagueCode, createLeague, joinLeague,
   updateMyPicks, leaveLeague, subscribeLeague, updateActualResults,
 } from "./firebase";
-import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners } from "./liveResults";
+import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, fetchTopScorers } from "./liveResults";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -71,7 +71,7 @@ const TRANSLATIONS = {
     "bracket.knockoutStage": "KNOCKOUT STAGE",
     "bracket.title": "🏆 The Bracket",
     "bracket.tapToAdvance": "Tap a team to advance them.",
-    "bracket.doublePoints": "🔥 DOUBLE POINTS · UP TO 40 PTS PER PICK",
+    "bracket.doublePoints": "🔥 DOUBLE POINTS PER MATCH",
     "bracket.r16": "R16",
     "bracket.qf": "QF",
     "bracket.sf": "SF",
@@ -110,6 +110,13 @@ const TRANSLATIONS = {
     "bonus.lockIn": "Lock in pick",
     "bonus.bonusPicks": "BONUS PICKS",
     "bonus.noPickMade": "No pick made.",
+    "bonus.topScorersLive": "TOP SCORERS · LIVE",
+    "bonus.updated": "updated",
+    "bonus.minAgo": "ago",
+    "bonus.loadingScorers": "Loading...",
+    "bonus.noScorersYet": "No goals scored yet — the tournament hasn't started!",
+    "bonus.yourPick": "YOUR PICK",
+    "bonus.notScoredYet": "Hasn't scored yet",
     "bonus.goals": "goals",
     // League
     "league.playWithFriends": "Play With Friends",
@@ -315,6 +322,13 @@ const TRANSLATIONS = {
     "bonus.lockIn": "נעל ניחוש",
     "bonus.bonusPicks": "ניחושי בונוס",
     "bonus.noPickMade": "לא נעשה ניחוש.",
+    "bonus.topScorersLive": "מלכי השערים · חי",
+    "bonus.updated": "עודכן לפני",
+    "bonus.minAgo": "דקות",
+    "bonus.loadingScorers": "טוען...",
+    "bonus.noScorersYet": "עדיין לא נרשמו שערים — הטורניר טרם החל!",
+    "bonus.yourPick": "הניחוש שלך",
+    "bonus.notScoredYet": "טרם בקיע",
     "bonus.goals": "שערים",
     // League
     "league.playWithFriends": "שחק עם חברים",
@@ -1928,6 +1942,7 @@ function BonusPicks({
   topScorerPick, setTopScorerPick,
   actualWinner, actualTopScorer,
   isLocked, onBack,
+  topScorers = [], topScorersFetchedAt, topScorersError,
 }) {
   const t = useT();
   const [scorerMode, setScorerMode] = useState("list"); // "list" | "custom"
@@ -2111,6 +2126,120 @@ function BonusPicks({
           <div style={{fontSize:11,color:"#64748b",textAlign:"center",padding:"10px 0"}}>{t("bonus.noPickMade")}</div>
         )}
       </div>
+
+      {/* ─── TOP SCORERS LEADERBOARD ─── */}
+      {(topScorers.length > 0 || topScorerPick) && (
+        <div style={{
+          marginTop:14,
+          background:"linear-gradient(135deg,rgba(168,85,247,0.05),rgba(15,20,36,0.6))",
+          border:"1px solid rgba(168,85,247,0.3)",
+          borderRadius:14,padding:14,
+        }}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
+            <div style={{fontSize:11,color:"#a855f7",letterSpacing:2,fontWeight:700}}>📊 {t("bonus.topScorersLive")}</div>
+            <div style={{fontSize:9,color:"#64748b"}}>
+              {topScorersError ? `⚠️ ${topScorersError}` :
+                topScorersFetchedAt ? `${t("bonus.updated")} ${Math.max(0,Math.round((Date.now()-topScorersFetchedAt)/60000))}m ${t("bonus.minAgo")}` :
+                t("bonus.loadingScorers")}
+            </div>
+          </div>
+
+          {topScorers.length === 0 ? (
+            <div style={{fontSize:11,color:"#64748b",textAlign:"center",padding:"16px 0",fontStyle:"italic"}}>
+              {t("bonus.noScorersYet")}
+            </div>
+          ) : (
+            <>
+              {/* Top 10 */}
+              <div>
+                {topScorers.slice(0, 10).map((s, i) => {
+                  const isMine = topScorerPick && s.name === topScorerPick.name;
+                  return (
+                    <div key={s.name+i} style={{
+                      display:"flex",alignItems:"center",gap:8,
+                      padding:"6px 8px",
+                      background: isMine ? "rgba(168,85,247,0.2)" : "transparent",
+                      border: isMine ? "1px solid rgba(168,85,247,0.5)" : "1px solid transparent",
+                      borderRadius:6,
+                      marginBottom:2,
+                    }}>
+                      <span style={{
+                        fontSize:11,color: s.rank===1?"#fbbf24":s.rank===2?"#cbd5e1":s.rank===3?"#d97706":"#64748b",
+                        fontWeight:800,minWidth:20,textAlign:"center",
+                      }}>
+                        {s.rank===1?"🥇":s.rank===2?"🥈":s.rank===3?"🥉":`${s.rank}.`}
+                      </span>
+                      <div style={{flex:1,minWidth:0}}>
+                        <div style={{fontSize:12,color:"#f1f5f9",fontWeight:isMine?700:500,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                          {s.name}
+                          {isMine && <span style={{fontSize:9,color:"#a855f7",marginLeft:6,letterSpacing:1,fontWeight:800}}>👟 {t("bonus.yourPick")}</span>}
+                        </div>
+                        <div style={{fontSize:10,color:"#64748b"}}>{s.team}</div>
+                      </div>
+                      <div style={{fontSize:14,color:"#fbbf24",fontWeight:900}}>{s.goals}</div>
+                      <span style={{fontSize:11}}>⚽</span>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* If user's pick is OUTSIDE top 10, show their rank separately */}
+              {topScorerPick && (() => {
+                const myPick = topScorers.find(s => s.name === topScorerPick.name);
+                if (!myPick || myPick.rank <= 10) return null;
+                return (
+                  <>
+                    <div style={{height:1,background:"rgba(71,85,105,0.3)",margin:"8px 0",borderTop:"1px dashed rgba(71,85,105,0.4)"}}/>
+                    <div style={{
+                      display:"flex",alignItems:"center",gap:8,
+                      padding:"6px 8px",
+                      background:"rgba(168,85,247,0.2)",
+                      border:"1px solid rgba(168,85,247,0.5)",
+                      borderRadius:6,
+                    }}>
+                      <span style={{fontSize:11,color:"#a855f7",fontWeight:800,minWidth:30,textAlign:"center"}}>#{myPick.rank}</span>
+                      <div style={{flex:1,minWidth:0}}>
+                        <div style={{fontSize:12,color:"#f1f5f9",fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                          {myPick.name}
+                          <span style={{fontSize:9,color:"#a855f7",marginLeft:6,letterSpacing:1,fontWeight:800}}>👟 {t("bonus.yourPick")}</span>
+                        </div>
+                        <div style={{fontSize:10,color:"#64748b"}}>{myPick.team}</div>
+                      </div>
+                      <div style={{fontSize:14,color:"#fbbf24",fontWeight:900}}>{myPick.goals}</div>
+                      <span style={{fontSize:11}}>⚽</span>
+                    </div>
+                  </>
+                );
+              })()}
+
+              {/* If user's pick hasn't scored at all (not in API list) */}
+              {topScorerPick && !topScorers.find(s => s.name === topScorerPick.name) && (
+                <>
+                  <div style={{height:1,background:"rgba(71,85,105,0.3)",margin:"8px 0",borderTop:"1px dashed rgba(71,85,105,0.4)"}}/>
+                  <div style={{
+                    display:"flex",alignItems:"center",gap:8,
+                    padding:"6px 8px",
+                    background:"rgba(71,85,105,0.15)",
+                    border:"1px dashed rgba(71,85,105,0.4)",
+                    borderRadius:6,
+                  }}>
+                    <span style={{fontSize:11,color:"#64748b",fontWeight:800,minWidth:30,textAlign:"center"}}>—</span>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{fontSize:12,color:"#cbd5e1",fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                        {topScorerPick.name}
+                        <span style={{fontSize:9,color:"#a855f7",marginLeft:6,letterSpacing:1,fontWeight:800}}>👟 {t("bonus.yourPick")}</span>
+                      </div>
+                      <div style={{fontSize:10,color:"#64748b"}}>{topScorerPick.team} · {t("bonus.notScoredYet")}</div>
+                    </div>
+                    <div style={{fontSize:14,color:"#64748b",fontWeight:900}}>0</div>
+                    <span style={{fontSize:11,opacity:0.4}}>⚽</span>
+                  </div>
+                </>
+              )}
+            </>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -2160,14 +2289,11 @@ function Welcome({ onStart, onImport }) {
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",fontSize:10,color:"#fbbf24",fontWeight:700,letterSpacing:1,marginBottom:4}}>
               <span>{t("welcome.knockoutDouble")}</span>
             </div>
-            <div style={{display:"flex",justifyContent:"space-between",fontSize:10,color:"#cbd5e1",marginBottom:2}}>
-              <span>{t("welcome.r16Qfsf")}</span><span style={{color:"#a78bfa",fontWeight:700}}>+6 / +10 / +16</span>
+            <div style={{display:"flex",justifyContent:"space-between",fontSize:11,color:"#cbd5e1",marginBottom:2}}>
+              <span>{t("welcome.exactScore")}</span><span style={{color:"#fbbf24",fontWeight:700}}>+10 {t("welcome.pts")}</span>
             </div>
-            <div style={{display:"flex",justifyContent:"space-between",fontSize:10,color:"#cbd5e1",marginBottom:2}}>
-              <span>{t("welcome.finalistPick")}</span><span style={{color:"#fbbf24",fontWeight:700}}>+24 {t("welcome.pts")}</span>
-            </div>
-            <div style={{display:"flex",justifyContent:"space-between",fontSize:11,color:"#fde68a",fontWeight:700}}>
-              <span>{t("welcome.championBonus")}</span><span style={{color:"#fbbf24"}}>+40 {t("welcome.pts")}</span>
+            <div style={{display:"flex",justifyContent:"space-between",fontSize:11,color:"#cbd5e1"}}>
+              <span>{t("welcome.rightResultOnly")}</span><span style={{color:"#22c55e",fontWeight:700}}>+6 {t("welcome.pts")}</span>
             </div>
           </div>
         </div>
@@ -2650,6 +2776,7 @@ function GroupView({ group, picks, actuals, standings, bestThirds, liveStandings
 // ─── KNOCKOUT BRACKET ─────────────────────────────────────────────────────────
 
 function KnockoutBracket({ standings, bestThirds, koWinners, setKoWinners, onBack, onShare, complete, onChampionPicked }) {
+  const t = useT();
   const r32 = useMemo(() => buildR32(standings, bestThirds), [standings, bestThirds]);
   const [confettiKey, setConfettiKey] = useState(0);
 
@@ -2786,9 +2913,9 @@ function KnockoutBracket({ standings, bestThirds, koWinners, setKoWinners, onBac
   return (
     <div style={{padding:"16px 14px 100px",maxWidth:920,margin:"0 auto"}}>
       <div style={{textAlign:"center",marginBottom:18}}>
-        <div style={{fontSize:10,color:"#64748b",letterSpacing:3}}>KNOCKOUT STAGE</div>
-        <h2 style={{fontSize:24,margin:"4px 0",background:"linear-gradient(180deg,#fde68a,#f59e0b)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",fontWeight:900}}>🏆 The Bracket</h2>
-        <p style={{fontSize:12,color:"#94a3b8",margin:"0 0 10px"}}>Tap a team to advance them.</p>
+        <div style={{fontSize:10,color:"#64748b",letterSpacing:3}}>{t("bracket.knockoutStage")}</div>
+        <h2 style={{fontSize:24,margin:"4px 0",background:"linear-gradient(180deg,#fde68a,#f59e0b)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",fontWeight:900}}>{t("bracket.title")}</h2>
+        <p style={{fontSize:12,color:"#94a3b8",margin:"0 0 10px"}}>{t("bracket.tapToAdvance")}</p>
         <div style={{
           display:"inline-flex",alignItems:"center",gap:8,
           background:"linear-gradient(135deg,#fbbf24,#d97706)",
@@ -2797,36 +2924,36 @@ function KnockoutBracket({ standings, bestThirds, koWinners, setKoWinners, onBac
           fontSize:11,fontWeight:900,letterSpacing:1,
           boxShadow:"0 4px 12px rgba(251,191,36,0.4)",
         }}>
-          <span style={{fontSize:14}}>🔥</span>
-          DOUBLE POINTS · UP TO 40 PTS PER PICK
+          {t("bracket.doublePoints")}
         </div>
       </div>
 
-      {/* Point values per round */}
+      {/* Knockout scoring info — only per-match scoring, doubled */}
       <div style={{
-        display:"grid",gridTemplateColumns:"repeat(5, 1fr)",gap:6,marginBottom:14,
+        display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,marginBottom:14,
       }}>
-        {[
-          {label:"R16",pts:6,color:"#a855f7"},
-          {label:"QF",pts:10,color:"#ec4899"},
-          {label:"SF",pts:16,color:"#f97316"},
-          {label:"Finalist",pts:24,color:"#fbbf24"},
-          {label:"Champion",pts:40,color:"#fbbf24",glow:true},
-        ].map(r => (
-          <div key={r.label} style={{
-            background: r.glow
-              ? "linear-gradient(135deg,rgba(251,191,36,0.18),rgba(217,119,6,0.08))"
-              : "rgba(15,20,36,0.6)",
-            border: `1px solid ${r.glow ? "#fbbf24" : `${r.color}55`}`,
-            borderRadius:10,padding:"6px 4px",textAlign:"center",
-            boxShadow: r.glow ? "0 2px 10px rgba(251,191,36,0.25)" : "none",
-          }}>
-            <div style={{fontSize:9,color:r.color,letterSpacing:1,fontWeight:700,marginBottom:1}}>
-              {r.label === "Champion" ? "👑" : ""} {r.label.toUpperCase()}
-            </div>
-            <div style={{fontSize:15,color:r.color,fontWeight:900,lineHeight:1}}>+{r.pts}</div>
+        <div style={{
+          background:"linear-gradient(135deg,rgba(251,191,36,0.15),rgba(15,20,36,0.5))",
+          border:"1px solid #fbbf24",
+          borderRadius:10,padding:"8px 6px",textAlign:"center",
+          boxShadow:"0 2px 10px rgba(251,191,36,0.2)",
+        }}>
+          <div style={{fontSize:9,color:"#fbbf24",letterSpacing:1,fontWeight:700,marginBottom:2}}>
+            🎯 {t("welcome.exactScore").replace(/^🎯\s*/, "")}
           </div>
-        ))}
+          <div style={{fontSize:18,color:"#fbbf24",fontWeight:900,lineHeight:1}}>+10</div>
+        </div>
+        <div style={{
+          background:"linear-gradient(135deg,rgba(34,197,94,0.15),rgba(15,20,36,0.5))",
+          border:"1px solid #22c55e",
+          borderRadius:10,padding:"8px 6px",textAlign:"center",
+          boxShadow:"0 2px 10px rgba(34,197,94,0.2)",
+        }}>
+          <div style={{fontSize:9,color:"#22c55e",letterSpacing:1,fontWeight:700,marginBottom:2}}>
+            ✅ {t("welcome.rightResultOnly").replace(/^✅\s*/, "")}
+          </div>
+          <div style={{fontSize:18,color:"#22c55e",fontWeight:900,lineHeight:1}}>+6</div>
+        </div>
       </div>
 
       {/* Status banner if bracket isn't fully ready */}
@@ -4440,6 +4567,10 @@ export default function App() {
   const [topScorerPick, setTopScorerPick] = useState(saved?.topScorerPick || null); // {name, team}
   const [actualWinner, setActualWinner] = useState(saved?.actualWinner || null);
   const [actualTopScorer, setActualTopScorer] = useState(saved?.actualTopScorer || null); // {name, team, goals}
+  // Top scorers leaderboard — array of {name, team, goals, rank}
+  const [topScorers, setTopScorers] = useState([]);
+  const [topScorersFetchedAt, setTopScorersFetchedAt] = useState(null);
+  const [topScorersError, setTopScorersError] = useState(null);
 
   // ─── TOP SCORER CELEBRATION: detect when your pick scores another goal ──
   useEffect(() => {
@@ -4611,12 +4742,38 @@ export default function App() {
     }
   };
 
+  // Fetch top scorers (separate API call, same 5-min cache)
+  const fetchAndApplyTopScorers = async () => {
+    try {
+      const scorers = await fetchTopScorers();
+      setTopScorers(scorers);
+      setTopScorersFetchedAt(Date.now());
+      setTopScorersError(null);
+      // If user has a top-scorer pick, sync actualTopScorer to their match
+      if (topScorerPick && scorers.length > 0) {
+        const found = scorers.find(s => s.name === topScorerPick.name);
+        if (found) {
+          setActualTopScorer({ name: found.name, team: found.team, goals: found.goals });
+        }
+      }
+      // Track overall top scorer (rank 1) for winner-bet bonus
+      if (scorers.length > 0 && scorers[0].rank === 1) {
+        const leader = scorers[0];
+        // Only set actualTopScorer if user hasn't picked anyone or their pick isn't found
+        // (the per-pick sync above handles their own pick already)
+      }
+    } catch (err) {
+      console.error("Top scorers fetch failed:", err);
+      setTopScorersError(err.message || "Couldn't fetch top scorers");
+    }
+  };
+
   useEffect(() => {
     if (!name) return;
     // Initial fetch shortly after load
-    const initial = setTimeout(fetchAndApplyLive, 3000);
+    const initial = setTimeout(() => { fetchAndApplyLive(); fetchAndApplyTopScorers(); }, 3000);
     // Then every 5 minutes
-    const interval = setInterval(fetchAndApplyLive, 5 * 60 * 1000);
+    const interval = setInterval(() => { fetchAndApplyLive(); fetchAndApplyTopScorers(); }, 5 * 60 * 1000);
     return () => { clearTimeout(initial); clearInterval(interval); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [name, leagueCode]);
@@ -4972,6 +5129,9 @@ export default function App() {
           actualWinner={actualWinner} actualTopScorer={actualTopScorer}
           isLocked={bonusLocked}
           onBack={()=>setScreen("group")}
+          topScorers={topScorers}
+          topScorersFetchedAt={topScorersFetchedAt}
+          topScorersError={topScorersError}
         />
       )}
 
