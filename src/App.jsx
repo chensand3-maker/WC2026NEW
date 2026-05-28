@@ -208,6 +208,22 @@ const TRANSLATIONS = {
     "today.matchesNoPick": "matches need your prediction",
     "today.dontMissOut": "Lock them in before they kick off!",
     "today.openBracket": "Open in Bracket →",
+    // Onboarding
+    "onboarding.skip": "SKIP",
+    "onboarding.next": "Next →",
+    "onboarding.back": "← Back",
+    "onboarding.letsGo": "Let's go! 🚀",
+    "onboarding.slide1Title": "Predict every match",
+    "onboarding.slide1Body": "Type a score for each match in the group stage. Exact score = +5 pts. Right winner = +3 pts. Tap a team in the bracket to pick who advances.",
+    "onboarding.slide2Title": "Make big bets",
+    "onboarding.slide2Body": "In the ⭐ Bonus tab, pick the tournament winner (+20 pts) and the Golden Boot top scorer (+2 per goal). All bonus picks lock when the tournament starts.",
+    "onboarding.slide3Title": "Compete with friends",
+    "onboarding.slide3Body": "Create a league and share the code with friends. Watch the live standings, see who's nailing the predictions, and celebrate every win together.",
+    // Toast notifications
+    "toast.codeCopied": "League code copied! 📋",
+    "toast.refreshing": "Refreshing results...",
+    "toast.leagueCreated": "League created! 🎉",
+    "toast.leagueJoined": "You're in! Welcome to the league 🏆",
     // Profile / Stats
     "profile.yourStats": "YOUR STATS",
     "profile.totalPoints": "TOTAL POINTS",
@@ -441,6 +457,22 @@ const TRANSLATIONS = {
     "today.matchesNoPick": "משחקים מחכים לניחוש שלך",
     "today.dontMissOut": "אל תפספס — נעל אותם לפני שריקת הפתיחה!",
     "today.openBracket": "פתח בברקט →",
+    // Onboarding
+    "onboarding.skip": "דלג",
+    "onboarding.next": "הבא →",
+    "onboarding.back": "→ חזור",
+    "onboarding.letsGo": "יאללה! 🚀",
+    "onboarding.slide1Title": "נחש כל משחק",
+    "onboarding.slide1Body": "הקלד תוצאה לכל משחק בשלב הבתים. תוצאה מדויקת = +5 נק'. מנצח נכון = +3 נק'. בברקט — תלחץ על קבוצה כדי לבחור מי עוברת לסיבוב הבא.",
+    "onboarding.slide2Title": "הימורים גדולים",
+    "onboarding.slide2Body": "בטאב ⭐ בונוס — נחש את אלוף הטורניר (+20 נק') ואת מלך השערים (+2 לכל שער). כל ההימורים ננעלים ברגע שהטורניר מתחיל.",
+    "onboarding.slide3Title": "התחרה עם חברים",
+    "onboarding.slide3Body": "צור ליגה ושתף את הקוד עם חברים. צפה בדירוג בזמן אמת, ראה מי קולע בניחושים, וחגגו כל ניצחון יחד.",
+    // Toast notifications
+    "toast.codeCopied": "קוד הליגה הועתק! 📋",
+    "toast.refreshing": "מרענן תוצאות...",
+    "toast.leagueCreated": "הליגה נוצרה! 🎉",
+    "toast.leagueJoined": "הצטרפת! ברוך הבא לליגה 🏆",
     // Profile / Stats
     "profile.yourStats": "הסטטיסטיקה שלך",
     "profile.totalPoints": "סך הנקודות",
@@ -1709,6 +1741,193 @@ function GoalCelebration({ fixture, score, onDismiss }) {
 }
 
 // ─── PROFILE STATS: personal performance dashboard ──────────────────────────
+// ─── ONBOARDING: 3-slide tutorial shown to new users ────────────────────────
+function OnboardingTutorial({ onDone }) {
+  const t = useT();
+  const [slide, setSlide] = useState(0);
+
+  const slides = [
+    {
+      emoji: "🎯",
+      title: t("onboarding.slide1Title"),
+      body: t("onboarding.slide1Body"),
+      accent: "#fbbf24",
+    },
+    {
+      emoji: "⭐",
+      title: t("onboarding.slide2Title"),
+      body: t("onboarding.slide2Body"),
+      accent: "#a855f7",
+    },
+    {
+      emoji: "🏅",
+      title: t("onboarding.slide3Title"),
+      body: t("onboarding.slide3Body"),
+      accent: "#22c55e",
+    },
+  ];
+
+  const current = slides[slide];
+  const isLast = slide === slides.length - 1;
+
+  return (
+    <div style={{
+      position:"fixed",inset:0,zIndex:9500,
+      background:"linear-gradient(180deg, rgba(10,14,28,0.97), rgba(15,20,36,0.97))",
+      backdropFilter:"blur(8px)",
+      display:"flex",alignItems:"center",justifyContent:"center",
+      padding:20,animation:"goalFadeIn 0.4s ease-out",
+    }}>
+      <style>{`
+        @keyframes goalFadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideIn {
+          from { transform: translateX(20px); opacity: 0; }
+          to { transform: translateX(0); opacity: 1; }
+        }
+      `}</style>
+
+      <div style={{
+        maxWidth:420,width:"100%",
+        background:"linear-gradient(145deg,#1a1f3a,#0f1424)",
+        border:`1px solid ${current.accent}66`,
+        borderRadius:20,padding:"30px 24px",
+        boxShadow:`0 20px 60px rgba(0,0,0,0.6), 0 0 40px ${current.accent}22`,
+      }}>
+        {/* Skip button */}
+        <div style={{textAlign:"right",marginBottom:8}}>
+          <button onClick={onDone} style={{
+            background:"transparent",border:"none",
+            color:"#64748b",fontSize:11,cursor:"pointer",fontFamily:"inherit",
+            padding:"4px 8px",letterSpacing:1,
+          }}>{t("onboarding.skip")}</button>
+        </div>
+
+        {/* Slide content */}
+        <div key={slide} style={{textAlign:"center",animation:"slideIn 0.4s ease-out"}}>
+          <div style={{
+            fontSize:72,marginBottom:8,
+            filter:`drop-shadow(0 4px 16px ${current.accent}66)`,
+          }}>{current.emoji}</div>
+
+          <h2 style={{
+            fontSize:22,margin:"0 0 12px",
+            color:current.accent,fontWeight:900,
+            letterSpacing:0.5,
+          }}>{current.title}</h2>
+
+          <p style={{
+            fontSize:14,color:"#cbd5e1",
+            lineHeight:1.6,margin:"0 0 24px",
+          }}>{current.body}</p>
+        </div>
+
+        {/* Progress dots */}
+        <div style={{
+          display:"flex",justifyContent:"center",gap:8,
+          marginBottom:18,
+        }}>
+          {slides.map((_, i) => (
+            <div key={i} style={{
+              width: i === slide ? 24 : 8,
+              height: 8,
+              borderRadius: 4,
+              background: i === slide ? current.accent : "rgba(71,85,105,0.4)",
+              transition: "all 0.3s",
+            }}/>
+          ))}
+        </div>
+
+        {/* Nav buttons */}
+        <div style={{display:"flex",gap:8}}>
+          {slide > 0 && (
+            <button onClick={()=>setSlide(s=>s-1)} style={{
+              ...ghostBtn,flex:1,
+            }}>{t("onboarding.back")}</button>
+          )}
+          <button onClick={()=>{
+            if (isLast) onDone();
+            else setSlide(s=>s+1);
+          }} style={{
+            ...primaryBtn,flex:slide > 0 ? 2 : 1,
+            background: `linear-gradient(135deg, ${current.accent}, ${current.accent}cc)`,
+            color: current.accent === "#fbbf24" ? "#0a0e1c" : "#fff",
+            boxShadow: `0 6px 18px ${current.accent}44`,
+          }}>
+            {isLast ? t("onboarding.letsGo") : t("onboarding.next")}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── TOAST NOTIFICATIONS: small messages at bottom of screen ────────────────
+const ToastContext = createContext({ showToast: () => {} });
+function useToast() { return useContext(ToastContext); }
+
+function ToastProvider({ children }) {
+  const [toasts, setToasts] = useState([]); // { id, message, type, expiresAt }
+
+  const showToast = (message, type = "info") => {
+    const id = Math.random().toString(36).slice(2, 9);
+    const expiresAt = Date.now() + 3000;
+    setToasts(prev => [...prev, { id, message, type, expiresAt }]);
+    setTimeout(() => {
+      setToasts(prev => prev.filter(t => t.id !== id));
+    }, 3000);
+  };
+
+  return (
+    <ToastContext.Provider value={{ showToast }}>
+      {children}
+      {toasts.length > 0 && (
+        <div style={{
+          position:"fixed",bottom:70,left:"50%",
+          transform:"translateX(-50%)",zIndex:9999,
+          display:"flex",flexDirection:"column",gap:6,
+          maxWidth:"calc(100vw - 32px)",
+          pointerEvents:"none",
+        }}>
+          {toasts.map(t => {
+            const colors = {
+              info: { bg:"rgba(59,130,246,0.95)", border:"#3b82f6", text:"#fff", icon:"ℹ️" },
+              success: { bg:"rgba(34,197,94,0.95)", border:"#22c55e", text:"#fff", icon:"✓" },
+              warning: { bg:"rgba(251,191,36,0.95)", border:"#fbbf24", text:"#0a0e1c", icon:"⚠️" },
+              error: { bg:"rgba(239,68,68,0.95)", border:"#ef4444", text:"#fff", icon:"❌" },
+            };
+            const c = colors[t.type] || colors.info;
+            return (
+              <div key={t.id} style={{
+                background: c.bg,
+                border: `1px solid ${c.border}`,
+                borderRadius: 10,
+                padding: "10px 14px",
+                color: c.text,
+                fontSize: 13,
+                fontWeight: 600,
+                boxShadow: "0 8px 24px rgba(0,0,0,0.4)",
+                animation: "toastIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)",
+                display:"flex",alignItems:"center",gap:8,
+                pointerEvents:"auto",
+                backdropFilter:"blur(4px)",
+              }}>
+                <span style={{fontSize:15}}>{c.icon}</span>
+                <span>{t.message}</span>
+              </div>
+            );
+          })}
+          <style>{`
+            @keyframes toastIn {
+              from { transform: translateY(20px); opacity: 0; }
+              to { transform: translateY(0); opacity: 1; }
+            }
+          `}</style>
+        </div>
+      )}
+    </ToastContext.Provider>
+  );
+}
+
 function ProfileStats({ name, picks, koWinners, actuals, actualKo, winnerPick, topScorerPick, onClose }) {
   const t = useT();
   const stats = useMemo(() => {
@@ -3649,6 +3868,7 @@ function LeagueHub({
   actualWinner, actualTopScorer,
 }) {
   const t = useT();
+  const { showToast } = useToast();
   const [mode, setMode] = useState("home"); // home | creating | joining | active
   const [draftName, setDraftName] = useState("");
   const [draftCode, setDraftCode] = useState("");
@@ -3688,6 +3908,7 @@ function LeagueHub({
       await updateMyPicks(code, userId, name, picks, koWinners);
       setLeagueCode(code);
       setDraftName("");
+      showToast(t("toast.leagueCreated"), "success");
     } catch (e) {
       setErr(e.message || "Couldn't create league. Check Firebase setup.");
     }
@@ -3705,6 +3926,7 @@ function LeagueHub({
       await updateMyPicks(code, userId, name, picks, koWinners);
       setLeagueCode(code);
       setDraftCode("");
+      showToast(t("toast.leagueJoined"), "success");
     } catch (e) {
       setErr(e.message || "Couldn't join. Check the code.");
     }
@@ -3721,7 +3943,11 @@ function LeagueHub({
 
   const copy = async () => {
     const ok = await copyText(leagueCode);
-    if (ok) { setCopied(true); setTimeout(()=>setCopied(false), 2000); }
+    if (ok) {
+      setCopied(true);
+      showToast(t("toast.codeCopied"), "success");
+      setTimeout(()=>setCopied(false), 2000);
+    }
   };
 
   const AVATAR_COLORS = ["#fbbf24","#ef4444","#3b82f6","#22c55e","#a855f7","#ec4899","#14b8a6","#f97316"];
@@ -4175,7 +4401,7 @@ function LeagueHub({
             <div style={{fontSize:11,color:"#f1f5f9",fontWeight:600}}>{t("league.liveResults")}</div>
             <div style={{fontSize:10,color:liveError?"#fca5a5":"#94a3b8"}}>{liveError || fetchedLabel}</div>
           </div>
-          <button onClick={onFetchLive} style={{background:"rgba(251,191,36,0.15)",border:"1px solid rgba(251,191,36,0.4)",color:"#fbbf24",borderRadius:6,padding:"5px 10px",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+          <button onClick={()=>{showToast(t("toast.refreshing"), "info"); onFetchLive();}} style={{background:"rgba(251,191,36,0.15)",border:"1px solid rgba(251,191,36,0.4)",color:"#fbbf24",borderRadius:6,padding:"5px 10px",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
             {t("league.refresh")}
           </button>
         </div>
@@ -5040,6 +5266,14 @@ export default function App() {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [confirmAction, setConfirmAction] = useState(null);
   const [showIntro, setShowIntro] = useState(!saved?.name);
+  // Onboarding: shown once after first welcome
+  const [showOnboarding, setShowOnboarding] = useState(() => {
+    try { return !localStorage.getItem("wc2026_onboarded_v1"); } catch { return true; }
+  });
+  const completeOnboarding = () => {
+    setShowOnboarding(false);
+    try { localStorage.setItem("wc2026_onboarded_v1", "1"); } catch {}
+  };
   const [justSaved, setJustSaved] = useState(false);
   const [toast, setToast] = useState(null); // {emoji, title, sub}
   const [welcomedBack, setWelcomedBack] = useState(false);
@@ -5257,7 +5491,7 @@ export default function App() {
       onConfirm: () => {
         clearState();
         setName(""); setPicks({}); setKoWinners({}); setGroupIdx(0);
-        setFriends([]); setActuals({}); setActualKo({}); setLeagueName(""); setLeagueCode(""); setWinnerPick(null); setTopScorerPick(null); setCelebratedIds(new Set()); setLastSeenGoals(0); setSeenActualIds(new Set()); try { localStorage.removeItem("wc2026_celebrated_v1"); localStorage.removeItem("wc2026_lastseen_goals_v1"); localStorage.removeItem("wc2026_seen_actuals_v1"); } catch {}
+        setFriends([]); setActuals({}); setActualKo({}); setLeagueName(""); setLeagueCode(""); setWinnerPick(null); setTopScorerPick(null); setCelebratedIds(new Set()); setLastSeenGoals(0); setSeenActualIds(new Set()); setShowOnboarding(true); try { localStorage.removeItem("wc2026_celebrated_v1"); localStorage.removeItem("wc2026_lastseen_goals_v1"); localStorage.removeItem("wc2026_seen_actuals_v1"); localStorage.removeItem("wc2026_onboarded_v1"); } catch {}
         setScreen("welcome");
         setShowIntro(false);
       },
@@ -5269,7 +5503,7 @@ export default function App() {
       // No data to worry about, just log out
       clearState();
       setName(""); setPicks({}); setKoWinners({}); setGroupIdx(0);
-      setFriends([]); setActuals({}); setActualKo({}); setLeagueName(""); setLeagueCode(""); setWinnerPick(null); setTopScorerPick(null); setCelebratedIds(new Set()); setLastSeenGoals(0); setSeenActualIds(new Set()); try { localStorage.removeItem("wc2026_celebrated_v1"); localStorage.removeItem("wc2026_lastseen_goals_v1"); localStorage.removeItem("wc2026_seen_actuals_v1"); } catch {}
+      setFriends([]); setActuals({}); setActualKo({}); setLeagueName(""); setLeagueCode(""); setWinnerPick(null); setTopScorerPick(null); setCelebratedIds(new Set()); setLastSeenGoals(0); setSeenActualIds(new Set()); setShowOnboarding(true); try { localStorage.removeItem("wc2026_celebrated_v1"); localStorage.removeItem("wc2026_lastseen_goals_v1"); localStorage.removeItem("wc2026_seen_actuals_v1"); localStorage.removeItem("wc2026_onboarded_v1"); } catch {}
       setScreen("welcome");
       setShowIntro(false);
       return;
@@ -5283,7 +5517,7 @@ export default function App() {
       onConfirm: () => {
         clearState();
         setName(""); setPicks({}); setKoWinners({}); setGroupIdx(0);
-        setFriends([]); setActuals({}); setActualKo({}); setLeagueName(""); setLeagueCode(""); setWinnerPick(null); setTopScorerPick(null); setCelebratedIds(new Set()); setLastSeenGoals(0); setSeenActualIds(new Set()); try { localStorage.removeItem("wc2026_celebrated_v1"); localStorage.removeItem("wc2026_lastseen_goals_v1"); localStorage.removeItem("wc2026_seen_actuals_v1"); } catch {}
+        setFriends([]); setActuals({}); setActualKo({}); setLeagueName(""); setLeagueCode(""); setWinnerPick(null); setTopScorerPick(null); setCelebratedIds(new Set()); setLastSeenGoals(0); setSeenActualIds(new Set()); setShowOnboarding(true); try { localStorage.removeItem("wc2026_celebrated_v1"); localStorage.removeItem("wc2026_lastseen_goals_v1"); localStorage.removeItem("wc2026_seen_actuals_v1"); localStorage.removeItem("wc2026_onboarded_v1"); } catch {}
         setScreen("welcome");
         setShowIntro(false);
       },
@@ -5297,6 +5531,7 @@ export default function App() {
 
   return (
     <LangContext.Provider value={{ lang, setLang }}>
+    <ToastProvider>
     <div style={{minHeight:"100vh",background:"radial-gradient(ellipse at top,#1e1b4b 0%,#0a0e1c 70%)",color:"#f1f5f9",fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif",position:"relative",overflow:"hidden",direction:lang==="he"?"rtl":"ltr"}}>
       {/* Language toggle: top-right corner, always visible */}
       <div style={{
@@ -5515,6 +5750,7 @@ export default function App() {
       )}
 
       {screen === "welcome" && showIntro && <SoccerIntro onDone={()=>setShowIntro(false)} />}
+      {name && showOnboarding && <OnboardingTutorial onDone={completeOnboarding} />}
       {screen === "welcome" && !showIntro && <Welcome onStart={handleStart} onImport={handleImport} />}
 
       {screen === "group" && (
@@ -5660,6 +5896,7 @@ export default function App() {
       <BackToTopButton />
       </div>
     </div>
+    </ToastProvider>
     </LangContext.Provider>
   );
 }
