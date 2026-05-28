@@ -4705,19 +4705,23 @@ export default function App() {
               <span style={{fontSize:11,color:"#94a3b8",letterSpacing:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{name}</span>
               <span style={{fontSize:8,color:"#64748b"}}>▼</span>
             </button>
+
+            {/* ⓘ Scoring rules button — gold pill, clearly visible in both LTR &amp; RTL */}
+            <button onClick={()=>setShowRules(true)} title={TRANSLATIONS[lang]?.["rules.tooltip"] || "Scoring rules"} style={{
+              background:"linear-gradient(135deg,rgba(251,191,36,0.25),rgba(217,119,6,0.15))",
+              border:"1px solid rgba(251,191,36,0.6)",
+              borderRadius:"50%",width:32,height:32,
+              cursor:"pointer",fontFamily:"inherit",
+              fontSize:17,color:"#fbbf24",
+              display:"flex",alignItems:"center",justifyContent:"center",
+              flexShrink:0,fontWeight:900,fontStyle:"italic",
+              boxShadow:"0 2px 8px rgba(251,191,36,0.2)",
+            }}>ⓘ</button>
+
             <div style={{flex:1,height:6,background:"rgba(71,85,105,0.3)",borderRadius:3,overflow:"hidden"}}>
               <div style={{width:`${Math.round((totalPredicted/FIXTURES.length)*100)}%`,height:"100%",background:"linear-gradient(90deg,#fbbf24,#f59e0b)",borderRadius:3,transition:"width 0.4s"}}/>
             </div>
             <span style={{fontSize:10,color:"#fbbf24",fontWeight:700,minWidth:40,textAlign:"right"}}>{totalPredicted}/{FIXTURES.length}</span>
-            <button onClick={()=>setShowRules(true)} title={TRANSLATIONS[lang]?.["rules.tooltip"] || "Scoring rules"} style={{
-              background:"rgba(30,41,59,0.6)",
-              border:"1px solid rgba(71,85,105,0.4)",
-              borderRadius:"50%",width:30,height:30,
-              cursor:"pointer",fontFamily:"inherit",
-              fontSize:14,color:"#94a3b8",
-              display:"flex",alignItems:"center",justifyContent:"center",
-              flexShrink:0,fontWeight:700,fontStyle:"italic",
-            }}>ⓘ</button>
             <button onClick={()=>setShowBackup(true)} title="Backup &amp; Restore" style={{
               background:justSaved?"rgba(34,197,94,0.15)":"rgba(30,41,59,0.6)",
               border:`1px solid ${justSaved?"#22c55e":"rgba(71,85,105,0.4)"}`,
