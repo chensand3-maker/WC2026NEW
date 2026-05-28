@@ -2,7 +2,7 @@
 // ─── Live results fetcher — calls API-Football and maps to our match IDs ──────
 
 // 🔧 PASTE YOUR API-FOOTBALL KEY HERE (see SETUP.md step 3)
-const API_FOOTBALL_KEY = "PASTE_HERE";
+const API_FOOTBALL_KEY = "50b86c6e4ce49b2c24362c4947a7e3d5";
 const API_URL = "https://v3.football.api-sports.io";
 
 // Team name normalization: API-Football names → our internal names
