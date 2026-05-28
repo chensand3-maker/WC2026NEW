@@ -199,6 +199,19 @@ const TRANSLATIONS = {
     "profile.boldestPrediction": "Wildest prediction",
     "profile.close": "Close",
     "profile.menuItem": "📊 My stats",
+    // Scoring rules modal
+    "rules.groupStage": "GROUP STAGE",
+    "rules.knockoutDouble": "KNOCKOUT — DOUBLE POINTS",
+    "rules.advancement": "BRACKET ADVANCEMENT BONUSES",
+    "rules.r16Team": "Team in Round of 16",
+    "rules.qfTeam": "Team in Quarter-final",
+    "rules.sfTeam": "Team in Semi-final",
+    "rules.finalistTeam": "Team in Final",
+    "rules.champion": "Pick the champion",
+    "rules.bonusBets": "BIG BETS",
+    "rules.tournamentWinner": "Tournament Winner (correct)",
+    "rules.topScorerGoal": "Top Scorer — per goal",
+    "rules.tooltip": "Scoring rules",
   },
   he: {
     // Nav
@@ -389,6 +402,19 @@ const TRANSLATIONS = {
     "profile.boldestPrediction": "הניחוש הכי פרוע",
     "profile.close": "סגור",
     "profile.menuItem": "📊 הסטטיסטיקה שלי",
+    // Scoring rules modal
+    "rules.groupStage": "שלב הבתים",
+    "rules.knockoutDouble": "נוקאאוט — נקודות כפול",
+    "rules.advancement": "בונוסים על העברת קבוצות",
+    "rules.r16Team": "קבוצה ב-1/8 הגמר",
+    "rules.qfTeam": "קבוצה ברבע גמר",
+    "rules.sfTeam": "קבוצה בחצי גמר",
+    "rules.finalistTeam": "קבוצה בגמר",
+    "rules.champion": "ניחוש אלוף הגביע",
+    "rules.bonusBets": "הימורים גדולים",
+    "rules.tournamentWinner": "אלוף הטורניר (נכון)",
+    "rules.topScorerGoal": "מלך השערים — לכל שער",
+    "rules.tooltip": "כללי הניקוד",
   },
 };
 
@@ -1702,6 +1728,108 @@ function StatTile({ color, label, value, icon }) {
       <div style={{fontSize:18,marginBottom:2}}>{icon}</div>
       <div style={{fontSize:22,fontWeight:900,color,lineHeight:1}}>{value}</div>
       <div style={{fontSize:9,color:"#94a3b8",letterSpacing:1,marginTop:3,fontWeight:600}}>{label}</div>
+    </div>
+  );
+}
+
+// ─── SCORING RULES: floating info modal accessible from anywhere ──────────────
+function ScoringRulesModal({ onClose }) {
+  const t = useT();
+  return (
+    <div onClick={onClose} style={{
+      position:"fixed",inset:0,zIndex:9000,
+      background:"rgba(0,0,0,0.75)",backdropFilter:"blur(4px)",
+      display:"flex",alignItems:"center",justifyContent:"center",
+      padding:16,animation:"goalFadeIn 0.2s ease-out",
+    }}>
+      <div onClick={e=>e.stopPropagation()} style={{
+        background:"linear-gradient(145deg,#1a1f3a,#0f1424)",
+        border:"1px solid rgba(251,191,36,0.4)",
+        borderRadius:18,padding:"22px 20px",
+        maxWidth:440,width:"100%",maxHeight:"90vh",overflowY:"auto",
+        boxShadow:"0 20px 60px rgba(0,0,0,0.6)",
+      }}>
+        <style>{`
+          @keyframes goalFadeIn { from { opacity: 0; } to { opacity: 1; } }
+        `}</style>
+
+        {/* Header */}
+        <div style={{textAlign:"center",marginBottom:16}}>
+          <div style={{fontSize:32,marginBottom:4}}>🎯</div>
+          <h2 style={{
+            margin:0,fontSize:20,
+            background:"linear-gradient(180deg,#fde68a,#f59e0b)",
+            WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",
+            fontWeight:900,
+          }}>{t("welcome.scoring")}</h2>
+        </div>
+
+        {/* Group stage */}
+        <div style={{background:"rgba(15,20,36,0.6)",border:"1px solid rgba(71,85,105,0.3)",borderRadius:12,padding:"12px 14px",marginBottom:10}}>
+          <div style={{fontSize:10,color:"#94a3b8",letterSpacing:2,marginBottom:8,fontWeight:700}}>⚽ {t("rules.groupStage")}</div>
+          <div style={{display:"flex",justifyContent:"space-between",fontSize:13,color:"#cbd5e1",marginBottom:6}}>
+            <span>{t("welcome.exactScore")}</span>
+            <span style={{color:"#fbbf24",fontWeight:800}}>+5 {t("welcome.pts")}</span>
+          </div>
+          <div style={{display:"flex",justifyContent:"space-between",fontSize:13,color:"#cbd5e1"}}>
+            <span>{t("welcome.rightResultOnly")}</span>
+            <span style={{color:"#22c55e",fontWeight:800}}>+3 {t("welcome.pts")}</span>
+          </div>
+        </div>
+
+        {/* Knockout */}
+        <div style={{background:"linear-gradient(135deg,rgba(168,85,247,0.1),rgba(15,20,36,0.6))",border:"1px solid rgba(168,85,247,0.4)",borderRadius:12,padding:"12px 14px",marginBottom:10}}>
+          <div style={{fontSize:10,color:"#a855f7",letterSpacing:2,marginBottom:8,fontWeight:700}}>🔥 {t("rules.knockoutDouble")}</div>
+          <div style={{display:"flex",justifyContent:"space-between",fontSize:13,color:"#cbd5e1",marginBottom:6}}>
+            <span>{t("welcome.exactScore")}</span>
+            <span style={{color:"#fbbf24",fontWeight:800}}>+10 {t("welcome.pts")}</span>
+          </div>
+          <div style={{display:"flex",justifyContent:"space-between",fontSize:13,color:"#cbd5e1"}}>
+            <span>{t("welcome.rightResultOnly")}</span>
+            <span style={{color:"#22c55e",fontWeight:800}}>+6 {t("welcome.pts")}</span>
+          </div>
+        </div>
+
+        {/* Bracket progression bonuses */}
+        <div style={{background:"rgba(15,20,36,0.6)",border:"1px solid rgba(71,85,105,0.3)",borderRadius:12,padding:"12px 14px",marginBottom:10}}>
+          <div style={{fontSize:10,color:"#94a3b8",letterSpacing:2,marginBottom:8,fontWeight:700}}>🏆 {t("rules.advancement")}</div>
+          <div style={{display:"flex",justifyContent:"space-between",fontSize:12,color:"#cbd5e1",marginBottom:5}}>
+            <span>{t("rules.r16Team")}</span>
+            <span style={{color:"#a78bfa",fontWeight:700}}>+6</span>
+          </div>
+          <div style={{display:"flex",justifyContent:"space-between",fontSize:12,color:"#cbd5e1",marginBottom:5}}>
+            <span>{t("rules.qfTeam")}</span>
+            <span style={{color:"#ec4899",fontWeight:700}}>+10</span>
+          </div>
+          <div style={{display:"flex",justifyContent:"space-between",fontSize:12,color:"#cbd5e1",marginBottom:5}}>
+            <span>{t("rules.sfTeam")}</span>
+            <span style={{color:"#f97316",fontWeight:700}}>+16</span>
+          </div>
+          <div style={{display:"flex",justifyContent:"space-between",fontSize:12,color:"#cbd5e1",marginBottom:5}}>
+            <span>{t("rules.finalistTeam")}</span>
+            <span style={{color:"#fbbf24",fontWeight:700}}>+24</span>
+          </div>
+          <div style={{display:"flex",justifyContent:"space-between",fontSize:13,color:"#fde68a",fontWeight:700,paddingTop:5,borderTop:"1px dashed rgba(71,85,105,0.4)",marginTop:3}}>
+            <span>{t("rules.champion")}</span>
+            <span style={{color:"#fbbf24"}}>+40</span>
+          </div>
+        </div>
+
+        {/* Bonus bets */}
+        <div style={{background:"linear-gradient(135deg,rgba(251,191,36,0.08),rgba(15,20,36,0.6))",border:"1px solid rgba(251,191,36,0.3)",borderRadius:12,padding:"12px 14px",marginBottom:14}}>
+          <div style={{fontSize:10,color:"#fbbf24",letterSpacing:2,marginBottom:8,fontWeight:700}}>⭐ {t("rules.bonusBets")}</div>
+          <div style={{display:"flex",justifyContent:"space-between",fontSize:12,color:"#cbd5e1",marginBottom:5}}>
+            <span>🏆 {t("rules.tournamentWinner")}</span>
+            <span style={{color:"#fbbf24",fontWeight:700}}>+50</span>
+          </div>
+          <div style={{display:"flex",justifyContent:"space-between",fontSize:12,color:"#cbd5e1"}}>
+            <span>👟 {t("rules.topScorerGoal")}</span>
+            <span style={{color:"#a855f7",fontWeight:700}}>+5</span>
+          </div>
+        </div>
+
+        <button onClick={onClose} style={primaryBtn}>{t("profile.close")}</button>
+      </div>
     </div>
   );
 }
@@ -4156,6 +4284,7 @@ export default function App() {
   const [pendingCelebration, setPendingCelebration] = useState(null);
   // Profile modal open?
   const [showProfile, setShowProfile] = useState(false);
+  const [showRules, setShowRules] = useState(false);
   const [lang, setLangState] = useState(() => {
     try { return localStorage.getItem("wc2026_lang") || "en"; } catch { return "en"; }
   });
@@ -4580,7 +4709,16 @@ export default function App() {
               <div style={{width:`${Math.round((totalPredicted/FIXTURES.length)*100)}%`,height:"100%",background:"linear-gradient(90deg,#fbbf24,#f59e0b)",borderRadius:3,transition:"width 0.4s"}}/>
             </div>
             <span style={{fontSize:10,color:"#fbbf24",fontWeight:700,minWidth:40,textAlign:"right"}}>{totalPredicted}/{FIXTURES.length}</span>
-            <button onClick={()=>setShowBackup(true)} title="Backup & Restore" style={{
+            <button onClick={()=>setShowRules(true)} title={TRANSLATIONS[lang]?.["rules.tooltip"] || "Scoring rules"} style={{
+              background:"rgba(30,41,59,0.6)",
+              border:"1px solid rgba(71,85,105,0.4)",
+              borderRadius:"50%",width:30,height:30,
+              cursor:"pointer",fontFamily:"inherit",
+              fontSize:14,color:"#94a3b8",
+              display:"flex",alignItems:"center",justifyContent:"center",
+              flexShrink:0,fontWeight:700,fontStyle:"italic",
+            }}>ⓘ</button>
+            <button onClick={()=>setShowBackup(true)} title="Backup &amp; Restore" style={{
               background:justSaved?"rgba(34,197,94,0.15)":"rgba(30,41,59,0.6)",
               border:`1px solid ${justSaved?"#22c55e":"rgba(71,85,105,0.4)"}`,
               borderRadius:8,padding:"5px 8px",cursor:"pointer",fontFamily:"inherit",
@@ -4750,6 +4888,9 @@ export default function App() {
           onClose={()=>setShowProfile(false)}
         />
       )}
+
+      {/* ⓘ Scoring rules modal */}
+      {showRules && <ScoringRulesModal onClose={()=>setShowRules(false)} />}
       </div>
     </div>
     </LangContext.Provider>
