@@ -35,8 +35,8 @@ const TRANSLATIONS = {
     // Scoring section
     "welcome.scoring": "🎯 SCORING",
     "welcome.exactScore": "🎯 Exact score",
-    "welcome.resultGd": "✓ Result + goal diff",
-    "welcome.rightResultOnly": "✅ Right result only",
+    "welcome.resultGd": "✓ Right winner (deprecated)",
+    "welcome.rightResultOnly": "✅ Correct winner",
     "welcome.knockoutDouble": "🔥 KNOCKOUT — DOUBLE POINTS",
     "welcome.r16Qfsf": "R16 pick · QF · SF",
     "welcome.finalistPick": "🏟️ Finalist pick",
@@ -225,8 +225,8 @@ const TRANSLATIONS = {
     // Scoring
     "welcome.scoring": "🎯 ניקוד",
     "welcome.exactScore": "🎯 תוצאה מדויקת",
-    "welcome.resultGd": "✓ מנצח + הפרש שערים",
-    "welcome.rightResultOnly": "✅ מנצח בלבד",
+    "welcome.resultGd": "✓ מנצח נכון (deprecated)",
+    "welcome.rightResultOnly": "✅ מנצח נכון",
     "welcome.knockoutDouble": "🔥 נוקאאוט — נקודות כפולות",
     "welcome.r16Qfsf": "שמינית · רבע · חצי",
     "welcome.finalistPick": "🏟️ ניחוש פיינליסט",
@@ -610,13 +610,11 @@ function formatKickoff(iso) {
 
 const POINTS = {
   EXACT: 5,         // exact score correct
-  GD: 3,            // correct winner + correct goal difference
-  RESULT: 2,        // correct result (win/draw/loss) only
+  RESULT: 3,        // correct winner only (no half-point for GD anymore)
   WRONG: 0,
   // Knockout: same scoring as group stage but DOUBLED (per round bonus)
   KO_EXACT: 10,     // exact score in a knockout match
-  KO_GD: 6,         // correct goal-diff in a knockout match
-  KO_RESULT: 4,     // correct result only in a knockout match
+  KO_RESULT: 6,     // correct winner only in a knockout match
   R16_PICK: 6,      // each correct R16 team
   QF_PICK: 10,      // each correct QF team
   SF_PICK: 16,      // each correct SF team
@@ -638,17 +636,10 @@ function scoreMatch(predicted, actual) {
   // Exact
   if (ph === ah && pa === aa) return { points: POINTS.EXACT, type: "exact" };
   
-  const predDiff = ph - pa;
-  const actDiff = ah - aa;
-  const predResult = predDiff > 0 ? "h" : predDiff < 0 ? "a" : "d";
-  const actResult = actDiff > 0 ? "h" : actDiff < 0 ? "a" : "d";
+  const predResult = ph > pa ? "h" : ph < pa ? "a" : "d";
+  const actResult = ah > aa ? "h" : ah < aa ? "a" : "d";
   
-  // Correct result + correct goal difference (non-draw)
-  if (predResult === actResult && predDiff === actDiff && predResult !== "d") {
-    return { points: POINTS.GD, type: "gd" };
-  }
-  
-  // Correct result only
+  // Correct result (winner/draw)
   if (predResult === actResult) {
     return { points: POINTS.RESULT, type: "result" };
   }
@@ -658,7 +649,7 @@ function scoreMatch(predicted, actual) {
 
 function totalScore(picks, actuals) {
   let total = 0;
-  let exact = 0, gd = 0, result = 0, wrong = 0, played = 0;
+  let exact = 0, result = 0, wrong = 0, played = 0;
   FIXTURES.forEach(f => {
     const p = picks[f.id];
     const a = actuals[f.id];
@@ -668,11 +659,10 @@ function totalScore(picks, actuals) {
     const s = scoreMatch(p, a);
     total += s.points;
     if (s.type === "exact") exact++;
-    else if (s.type === "gd") gd++;
     else if (s.type === "result") result++;
     else if (s.type === "wrong") wrong++;
   });
-  return { total, exact, gd, result, wrong, played };
+  return { total, exact, gd: 0, result, wrong, played }; // gd kept as 0 for backward compatibility
 }
 
 // ─── STANDINGS ENGINE ─────────────────────────────────────────────────────────
@@ -1642,10 +1632,9 @@ function ProfileStats({ name, picks, koWinners, actuals, actualKo, winnerPick, t
         )}
 
         {/* Breakdown stats grid */}
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:14}}>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:14}}>
           <StatTile color="#fbbf24" label={t("profile.exactPicks")} value={stats.exact} icon="🎯"/>
-          <StatTile color="#22c55e" label={t("profile.goalDiff")} value={stats.gd} icon="✓"/>
-          <StatTile color="#3b82f6" label={t("profile.rightWinner")} value={stats.result} icon="✅"/>
+          <StatTile color="#22c55e" label={t("profile.rightWinner")} value={stats.result} icon="✅"/>
           <StatTile color="#ef4444" label={t("profile.wrongPicks")} value={stats.wrong} icon="💀"/>
         </div>
 
@@ -1944,11 +1933,8 @@ function Welcome({ onStart, onImport }) {
           <div style={{display:"flex",justifyContent:"space-between",fontSize:11,color:"#cbd5e1",marginBottom:3}}>
             <span>{t("welcome.exactScore")}</span><span style={{color:"#fbbf24",fontWeight:700}}>+5 {t("welcome.pts")}</span>
           </div>
-          <div style={{display:"flex",justifyContent:"space-between",fontSize:11,color:"#cbd5e1",marginBottom:3}}>
-            <span>{t("welcome.resultGd")}</span><span style={{color:"#22c55e",fontWeight:700}}>+3 {t("welcome.pts")}</span>
-          </div>
           <div style={{display:"flex",justifyContent:"space-between",fontSize:11,color:"#cbd5e1",marginBottom:6}}>
-            <span>{t("welcome.rightResultOnly")}</span><span style={{color:"#3b82f6",fontWeight:700}}>+2 {t("welcome.pts")}</span>
+            <span>{t("welcome.rightResultOnly")}</span><span style={{color:"#22c55e",fontWeight:700}}>+3 {t("welcome.pts")}</span>
           </div>
           <div style={{
             borderTop:"1px dashed rgba(71,85,105,0.4)",
@@ -2112,8 +2098,7 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
   const score = actual && actual.h !== undefined && actual.h !== "" && hasResult ? scoreMatch(pick, actual) : null;
   const scoreColors = {
     exact: {bg:"rgba(251,191,36,0.15)", border:"#fbbf24", text:"#fbbf24", label:"🎯 EXACT"},
-    gd: {bg:"rgba(34,197,94,0.15)", border:"#22c55e", text:"#22c55e", label:"✓ GD"},
-    result: {bg:"rgba(59,130,246,0.15)", border:"#3b82f6", text:"#3b82f6", label:"✅ RESULT"},
+    result: {bg:"rgba(34,197,94,0.15)", border:"#22c55e", text:"#22c55e", label:"✅ WINNER"},
     wrong: {bg:"rgba(248,113,113,0.1)", border:"#f87171", text:"#f87171", label:"❌ WRONG"},
     none: null,
   };
@@ -2247,8 +2232,7 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
             <div style={{fontSize:9,color:"#64748b",textAlign:"center",marginTop:4,letterSpacing:1}}>
               You picked <strong style={{color:"#cbd5e1"}}>{h}–{a}</strong>
               {score?.type === "exact" && " · perfect call! 🎯"}
-              {score?.type === "gd" && " · right margin ✓"}
-              {score?.type === "result" && " · right result ✅"}
+              {score?.type === "result" && " · right winner ✅"}
               {score?.type === "wrong" && " · missed this one"}
             </div>
           )}
@@ -2923,8 +2907,7 @@ function Leaderboard({ name, picks, koWinners, friends, actuals, actualKo, hasAc
             {/* Breakdown */}
             <div style={{display:"flex",flexWrap:"wrap",gap:6,marginTop:8,paddingTop:8,borderTop:"1px dashed rgba(71,85,105,0.3)"}}>
               {p.matchScore.exact > 0 && <Badge color="#fbbf24">🎯 {p.matchScore.exact} exact</Badge>}
-              {p.matchScore.gd > 0 && <Badge color="#22c55e">✓ {p.matchScore.gd} GD</Badge>}
-              {p.matchScore.result > 0 && <Badge color="#3b82f6">✅ {p.matchScore.result} result</Badge>}
+              {p.matchScore.result > 0 && <Badge color="#22c55e">✅ {p.matchScore.result} winner</Badge>}
               {p.matchScore.wrong > 0 && <Badge color="#f87171">❌ {p.matchScore.wrong} miss</Badge>}
               {p.koScore.breakdown.r16 > 0 && <Badge color="#a855f7">R16 ×{p.koScore.breakdown.r16}</Badge>}
               {p.koScore.breakdown.qf > 0 && <Badge color="#ec4899">QF ×{p.koScore.breakdown.qf}</Badge>}
@@ -3144,8 +3127,7 @@ function LeagueHub({
         const hasActual = actual && actual.h !== undefined && actual.h !== "";
         const score = hasActual && hasPick ? scoreMatch(pick, actual) : null;
         const scoreColor = score?.type === "exact" ? "#fbbf24"
-                         : score?.type === "gd" ? "#22c55e"
-                         : score?.type === "result" ? "#3b82f6"
+                         : score?.type === "result" ? "#22c55e"
                          : score?.type === "wrong" ? "#f87171"
                          : "#475569";
         return (
@@ -3635,7 +3617,6 @@ function LeagueHub({
                 <div style={{fontSize:10,color:"#64748b",marginTop:1}}>
                   {p.predictedCount}/{FIXTURES.length} {t("league.predicted")}
                   {showPoints && p.matchScore.exact>0 && ` · 🎯${p.matchScore.exact} ${t("league.exact")}`}
-                  {showPoints && p.matchScore.gd>0 && ` · ✓${p.matchScore.gd} GD`}
                   {showPoints && p.matchScore.result>0 && ` · ✅${p.matchScore.result}`}
                   {showPoints && p.koScore.breakdown.champion>0 && " · 👑"}
                 </div>
@@ -3847,7 +3828,6 @@ function LeagueView({ name, picks, koWinners, friends, setFriends, leagueName, s
                       <div style={{fontSize:14,color:"#f1f5f9",fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.name}{p.isMe?" (you)":""}</div>
                       <div style={{fontSize:10,color:"#64748b",marginTop:1}}>
                         {p.matchScore.exact>0 && `🎯${p.matchScore.exact} `}
-                        {p.matchScore.gd>0 && `✓${p.matchScore.gd} `}
                         {p.matchScore.result>0 && `✅${p.matchScore.result} `}
                         {p.koScore.breakdown.champion>0 && "👑"}
                       </div>
