@@ -175,6 +175,30 @@ const TRANSLATIONS = {
     "common.skip": "Skip ›",
     "common.goal": "GOAL!",
     "common.matches": "matches",
+    // Goal Celebration
+    "celebration.exactScore": "EXACT SCORE PREDICTED",
+    "celebration.tapToDismiss": "tap anywhere to dismiss",
+    // Profile / Stats
+    "profile.yourStats": "YOUR STATS",
+    "profile.totalPoints": "TOTAL POINTS",
+    "profile.fromMatches": "matches scored",
+    "profile.accuracy": "ACCURACY",
+    "profile.anyHit": "Any correct pick",
+    "profile.exactHits": "Exact-score hits",
+    "profile.exactPicks": "EXACT",
+    "profile.goalDiff": "GOAL DIFF",
+    "profile.rightWinner": "WINNER",
+    "profile.wrongPicks": "WRONG",
+    "profile.predictions": "PREDICTIONS",
+    "profile.groupMatches": "Group matches",
+    "profile.knockoutPicks": "Knockout picks",
+    "profile.championBet": "Champion bet",
+    "profile.topScorerBet": "Top scorer bet",
+    "profile.funFacts": "FUN FACTS",
+    "profile.goalsPredicted": "Total goals predicted",
+    "profile.boldestPrediction": "Wildest prediction",
+    "profile.close": "Close",
+    "profile.menuItem": "📊 My stats",
   },
   he: {
     // Nav
@@ -341,6 +365,30 @@ const TRANSLATIONS = {
     "common.skip": "דלג ›",
     "common.goal": "גול!",
     "common.matches": "משחקים",
+    // Goal Celebration
+    "celebration.exactScore": "ניחוש מדויק!",
+    "celebration.tapToDismiss": "הקש לסגירה",
+    // Profile / Stats
+    "profile.yourStats": "הסטטיסטיקה שלך",
+    "profile.totalPoints": "סך הנקודות",
+    "profile.fromMatches": "משחקים זכו בנקודות",
+    "profile.accuracy": "דיוק",
+    "profile.anyHit": "ניחוש נכון כלשהו",
+    "profile.exactHits": "ניחוש מדויק",
+    "profile.exactPicks": "מדויקים",
+    "profile.goalDiff": "הפרש שערים",
+    "profile.rightWinner": "מנצח נכון",
+    "profile.wrongPicks": "פספוסים",
+    "profile.predictions": "ניחושים",
+    "profile.groupMatches": "משחקי בתים",
+    "profile.knockoutPicks": "ניחושי נוקאאוט",
+    "profile.championBet": "אלוף שהמרת עליו",
+    "profile.topScorerBet": "מלך השערים שלך",
+    "profile.funFacts": "עובדות מעניינות",
+    "profile.goalsPredicted": "סך השערים שניחשת",
+    "profile.boldestPrediction": "הניחוש הכי פרוע",
+    "profile.close": "סגור",
+    "profile.menuItem": "📊 הסטטיסטיקה שלי",
   },
 };
 
@@ -1321,6 +1369,353 @@ const TOP_SCORER_CANDIDATES_RAW = [
 // Runtime filter: only show players from teams actually in the 2026 tournament
 const _qualifiedTeamSet = new Set(ALL_TEAMS.map(t => t.n));
 const TOP_SCORER_CANDIDATES = TOP_SCORER_CANDIDATES_RAW.filter(p => _qualifiedTeamSet.has(p.team));
+
+// Module-level avatar color helper (also used by ProfileStats and others)
+const _AVATAR_COLORS = ["#fbbf24","#ef4444","#3b82f6","#22c55e","#a855f7","#ec4899","#14b8a6","#f97316"];
+function colorFor(n) {
+  if (!n) return _AVATAR_COLORS[0];
+  let h = 0;
+  for (let i = 0; i < n.length; i++) h = (h * 31 + n.charCodeAt(i)) % _AVATAR_COLORS.length;
+  return _AVATAR_COLORS[h];
+}
+
+// ─── GOAL CELEBRATION: full-screen overlay when an exact prediction lands ────
+function GoalCelebration({ fixture, score, onDismiss }) {
+  const t = useT();
+  // Auto-dismiss after 5s
+  useEffect(() => {
+    const id = setTimeout(onDismiss, 5000);
+    return () => clearTimeout(id);
+  }, [onDismiss]);
+
+  if (!fixture) return null;
+  const home = findTeam(fixture.home);
+  const away = findTeam(fixture.away);
+
+  // Generate 30 confetti pieces with random colors/positions
+  const colors = ["#fbbf24","#22c55e","#3b82f6","#a855f7","#ef4444","#ec4899","#06b6d4"];
+  const confetti = Array.from({length: 50}, (_, i) => ({
+    left: Math.random() * 100,
+    delay: Math.random() * 0.5,
+    duration: 2 + Math.random() * 2,
+    color: colors[Math.floor(Math.random() * colors.length)],
+    size: 6 + Math.random() * 8,
+    rotation: Math.random() * 360,
+  }));
+
+  return (
+    <div onClick={onDismiss} style={{
+      position:"fixed",inset:0,zIndex:9999,
+      background:"radial-gradient(ellipse at center, rgba(251,191,36,0.25), rgba(0,0,0,0.85))",
+      backdropFilter:"blur(8px)",
+      display:"flex",alignItems:"center",justifyContent:"center",
+      animation:"goalFadeIn 0.4s ease-out",
+      cursor:"pointer",overflow:"hidden",
+    }}>
+      <style>{`
+        @keyframes goalFadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes goalScaleIn { 
+          0% { transform: scale(0.3) rotate(-10deg); opacity: 0; } 
+          50% { transform: scale(1.2) rotate(5deg); opacity: 1; } 
+          100% { transform: scale(1) rotate(0deg); opacity: 1; } 
+        }
+        @keyframes goalShake {
+          0%, 100% { transform: translateX(0); }
+          25% { transform: translateX(-8px) rotate(-2deg); }
+          75% { transform: translateX(8px) rotate(2deg); }
+        }
+        @keyframes confettiFall {
+          0% { transform: translateY(-100vh) rotate(0deg); opacity: 1; }
+          100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+        }
+        @keyframes goalGlow {
+          0%, 100% { text-shadow: 0 0 20px rgba(251,191,36,0.8), 0 0 40px rgba(251,191,36,0.5); }
+          50% { text-shadow: 0 0 30px rgba(251,191,36,1), 0 0 60px rgba(251,191,36,0.7); }
+        }
+        @keyframes flagPop {
+          0% { transform: scale(0) rotate(-180deg); }
+          60% { transform: scale(1.3) rotate(10deg); }
+          100% { transform: scale(1) rotate(0deg); }
+        }
+      `}</style>
+
+      {/* Confetti rain */}
+      {confetti.map((c, i) => (
+        <div key={i} style={{
+          position:"absolute",
+          top:0,left:`${c.left}%`,
+          width:c.size,height:c.size,
+          background:c.color,
+          borderRadius: i % 2 === 0 ? "50%" : 2,
+          animation:`confettiFall ${c.duration}s linear ${c.delay}s infinite`,
+          transform:`rotate(${c.rotation}deg)`,
+          pointerEvents:"none",
+        }}/>
+      ))}
+
+      {/* Center card */}
+      <div style={{
+        textAlign:"center",padding:"30px 20px",
+        animation:"goalScaleIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)",
+        position:"relative",zIndex:2,maxWidth:380,
+      }}>
+        {/* GOAL! text */}
+        <div style={{
+          fontSize: 64, fontWeight: 900, letterSpacing: 4,
+          color:"#fbbf24",
+          animation:"goalGlow 1.2s ease-in-out infinite",
+          marginBottom: 8,
+          fontStyle:"italic",
+          background:"linear-gradient(180deg,#fde68a,#f59e0b)",
+          WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",
+          filter:"drop-shadow(0 4px 12px rgba(251,191,36,0.7))",
+        }}>GOAL!</div>
+
+        {/* Subtitle */}
+        <div style={{
+          fontSize:13,color:"#fff",letterSpacing:3,marginBottom:20,fontWeight:700,
+        }}>🎯 {t("celebration.exactScore")} 🎯</div>
+
+        {/* Match card */}
+        <div style={{
+          background:"rgba(15,20,36,0.85)",
+          border:"2px solid #fbbf24",
+          borderRadius:16,padding:"18px 20px",
+          boxShadow:"0 0 40px rgba(251,191,36,0.4)",
+          animation:"goalShake 0.5s ease-in-out 0.6s",
+        }}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-around",gap:8}}>
+            {/* Home */}
+            <div style={{textAlign:"center",flex:1,minWidth:0}}>
+              <div style={{fontSize:36,animation:"flagPop 0.6s ease-out 0.3s backwards"}}>{home?.f}</div>
+              <div style={{fontSize:11,color:"#cbd5e1",fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",marginTop:2}}>{home?.n}</div>
+            </div>
+            {/* Score */}
+            <div style={{display:"flex",alignItems:"center",gap:8}}>
+              <div style={{
+                fontSize:42,fontWeight:900,color:"#fbbf24",lineHeight:1,
+                animation:"flagPop 0.6s ease-out 0.5s backwards",
+                fontVariantNumeric:"tabular-nums",
+              }}>{score.h}</div>
+              <div style={{fontSize:18,color:"#64748b"}}>-</div>
+              <div style={{
+                fontSize:42,fontWeight:900,color:"#fbbf24",lineHeight:1,
+                animation:"flagPop 0.6s ease-out 0.7s backwards",
+                fontVariantNumeric:"tabular-nums",
+              }}>{score.a}</div>
+            </div>
+            {/* Away */}
+            <div style={{textAlign:"center",flex:1,minWidth:0}}>
+              <div style={{fontSize:36,animation:"flagPop 0.6s ease-out 0.9s backwards"}}>{away?.f}</div>
+              <div style={{fontSize:11,color:"#cbd5e1",fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",marginTop:2}}>{away?.n}</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Points awarded */}
+        <div style={{marginTop:18,fontSize:24,fontWeight:900,color:"#22c55e",letterSpacing:1}}>
+          +5 {t("welcome.pts").toUpperCase()}
+        </div>
+        <div style={{fontSize:11,color:"#94a3b8",marginTop:6,letterSpacing:1}}>{t("celebration.tapToDismiss")}</div>
+      </div>
+    </div>
+  );
+}
+
+// ─── PROFILE STATS: personal performance dashboard ──────────────────────────
+function ProfileStats({ name, picks, koWinners, actuals, actualKo, winnerPick, topScorerPick, onClose }) {
+  const t = useT();
+  const stats = useMemo(() => {
+    const ms = totalScore(picks, actuals);
+    // Count most-picked team in knockout
+    const teamCounts = {};
+    Object.values(koWinners || {}).forEach(s => {
+      // Skip — koWinners holds 'a'/'b' not team names; skip this metric for now
+    });
+    // Count predictions made in group stage
+    let predicted = 0;
+    let totalGoalsPredicted = 0;
+    let highestPredictedScore = { match: null, total: 0 };
+    let boldestUpset = null;
+    FIXTURES.forEach(f => {
+      const p = picks[f.id];
+      if (!p || p.h === "" || p.h === undefined) return;
+      predicted++;
+      const ph = parseInt(p.h) || 0;
+      const pa = parseInt(p.a) || 0;
+      totalGoalsPredicted += ph + pa;
+      if (ph + pa > highestPredictedScore.total) {
+        highestPredictedScore = { match: f, total: ph + pa, h: ph, a: pa };
+      }
+    });
+
+    // Knockout predictions count
+    const koPredictedCount = Object.keys(koWinners || {}).length;
+
+    // Accuracy %
+    const accuracy = ms.played > 0 ? Math.round(((ms.exact + ms.gd + ms.result) / ms.played) * 100) : 0;
+    const exactAccuracy = ms.played > 0 ? Math.round((ms.exact / ms.played) * 100) : 0;
+
+    return {
+      ...ms,
+      predicted, koPredictedCount,
+      accuracy, exactAccuracy,
+      totalGoalsPredicted,
+      highestPredictedScore,
+    };
+  }, [picks, koWinners, actuals]);
+
+  const lang = useLang().lang;
+
+  return (
+    <div onClick={onClose} style={{
+      position:"fixed",inset:0,zIndex:9000,
+      background:"rgba(0,0,0,0.75)",backdropFilter:"blur(4px)",
+      display:"flex",alignItems:"center",justifyContent:"center",
+      padding:16,animation:"goalFadeIn 0.2s ease-out",
+    }}>
+      <div onClick={e=>e.stopPropagation()} style={{
+        background:"linear-gradient(145deg,#1a1f3a,#0f1424)",
+        border:"1px solid rgba(251,191,36,0.4)",
+        borderRadius:18,padding:"22px 20px",
+        maxWidth:480,width:"100%",maxHeight:"90vh",overflowY:"auto",
+        boxShadow:"0 20px 60px rgba(0,0,0,0.6)",
+      }}>
+        <style>{`
+          @keyframes goalFadeIn { from { opacity: 0; } to { opacity: 1; } }
+        `}</style>
+
+        {/* Header */}
+        <div style={{textAlign:"center",marginBottom:18}}>
+          <div style={{
+            width:64,height:64,borderRadius:"50%",
+            background:`linear-gradient(135deg,${colorFor(name)},${colorFor(name)}aa)`,
+            display:"flex",alignItems:"center",justifyContent:"center",
+            fontSize:28,fontWeight:900,color:"#fff",
+            margin:"0 auto 8px",
+            boxShadow:"0 6px 20px rgba(0,0,0,0.4)",
+          }}>{name[0]?.toUpperCase()}</div>
+          <h2 style={{margin:0,fontSize:18,color:"#f1f5f9"}}>{name}</h2>
+          <div style={{fontSize:10,color:"#64748b",letterSpacing:3,marginTop:2}}>{t("profile.yourStats")}</div>
+        </div>
+
+        {/* Big point total */}
+        <div style={{
+          textAlign:"center",
+          background:"linear-gradient(135deg,rgba(251,191,36,0.15),rgba(15,20,36,0.5))",
+          border:"1px solid rgba(251,191,36,0.4)",
+          borderRadius:14,padding:"14px 12px",marginBottom:14,
+        }}>
+          <div style={{fontSize:11,color:"#fbbf24",letterSpacing:3,marginBottom:4}}>{t("profile.totalPoints")}</div>
+          <div style={{fontSize:48,fontWeight:900,color:"#fbbf24",lineHeight:1}}>{stats.total}</div>
+          <div style={{fontSize:11,color:"#94a3b8",marginTop:4}}>{stats.played} {t("profile.fromMatches")}</div>
+        </div>
+
+        {/* Accuracy block */}
+        {stats.played > 0 && (
+          <div style={{
+            background:"rgba(30,41,59,0.5)",border:"1px solid rgba(71,85,105,0.4)",
+            borderRadius:12,padding:"12px 14px",marginBottom:14,
+          }}>
+            <div style={{fontSize:10,color:"#94a3b8",letterSpacing:2,marginBottom:8,fontWeight:700}}>{t("profile.accuracy")}</div>
+            {/* Bar 1: total accuracy */}
+            <div style={{marginBottom:8}}>
+              <div style={{display:"flex",justifyContent:"space-between",fontSize:11,color:"#cbd5e1",marginBottom:3}}>
+                <span>{t("profile.anyHit")}</span>
+                <span style={{fontWeight:700,color:"#22c55e"}}>{stats.accuracy}%</span>
+              </div>
+              <div style={{height:6,background:"rgba(15,20,36,0.6)",borderRadius:3,overflow:"hidden"}}>
+                <div style={{height:"100%",width:`${stats.accuracy}%`,background:"linear-gradient(90deg,#22c55e,#16a34a)",borderRadius:3,transition:"width 0.6s"}}/>
+              </div>
+            </div>
+            {/* Bar 2: exact */}
+            <div>
+              <div style={{display:"flex",justifyContent:"space-between",fontSize:11,color:"#cbd5e1",marginBottom:3}}>
+                <span>{t("profile.exactHits")}</span>
+                <span style={{fontWeight:700,color:"#fbbf24"}}>{stats.exactAccuracy}%</span>
+              </div>
+              <div style={{height:6,background:"rgba(15,20,36,0.6)",borderRadius:3,overflow:"hidden"}}>
+                <div style={{height:"100%",width:`${stats.exactAccuracy}%`,background:"linear-gradient(90deg,#fbbf24,#d97706)",borderRadius:3,transition:"width 0.6s"}}/>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Breakdown stats grid */}
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:14}}>
+          <StatTile color="#fbbf24" label={t("profile.exactPicks")} value={stats.exact} icon="🎯"/>
+          <StatTile color="#22c55e" label={t("profile.goalDiff")} value={stats.gd} icon="✓"/>
+          <StatTile color="#3b82f6" label={t("profile.rightWinner")} value={stats.result} icon="✅"/>
+          <StatTile color="#ef4444" label={t("profile.wrongPicks")} value={stats.wrong} icon="💀"/>
+        </div>
+
+        {/* Predictions completion */}
+        <div style={{
+          background:"rgba(30,41,59,0.5)",border:"1px solid rgba(71,85,105,0.4)",
+          borderRadius:12,padding:"12px 14px",marginBottom:14,
+        }}>
+          <div style={{fontSize:10,color:"#94a3b8",letterSpacing:2,marginBottom:8,fontWeight:700}}>{t("profile.predictions")}</div>
+          <div style={{display:"flex",justifyContent:"space-between",fontSize:12,color:"#cbd5e1",marginBottom:4}}>
+            <span>⚽ {t("profile.groupMatches")}</span>
+            <span style={{fontWeight:700,color:"#f1f5f9"}}>{stats.predicted}/{FIXTURES.length}</span>
+          </div>
+          <div style={{display:"flex",justifyContent:"space-between",fontSize:12,color:"#cbd5e1",marginBottom:4}}>
+            <span>🏆 {t("profile.knockoutPicks")}</span>
+            <span style={{fontWeight:700,color:"#f1f5f9"}}>{stats.koPredictedCount}/31</span>
+          </div>
+          {winnerPick && (
+            <div style={{display:"flex",justifyContent:"space-between",fontSize:12,color:"#cbd5e1",marginBottom:4}}>
+              <span>👑 {t("profile.championBet")}</span>
+              <span style={{fontWeight:700,color:"#fbbf24"}}>{winnerPick.flag||winnerPick.f} {winnerPick.name||winnerPick.n}</span>
+            </div>
+          )}
+          {topScorerPick && (
+            <div style={{display:"flex",justifyContent:"space-between",fontSize:12,color:"#cbd5e1"}}>
+              <span>👟 {t("profile.topScorerBet")}</span>
+              <span style={{fontWeight:700,color:"#a855f7",overflow:"hidden",textOverflow:"ellipsis",maxWidth:180}}>{topScorerPick.name}</span>
+            </div>
+          )}
+        </div>
+
+        {/* Fun facts */}
+        {stats.predicted > 0 && (
+          <div style={{
+            background:"linear-gradient(135deg,rgba(168,85,247,0.1),rgba(15,20,36,0.5))",
+            border:"1px solid rgba(168,85,247,0.3)",
+            borderRadius:12,padding:"12px 14px",marginBottom:14,
+          }}>
+            <div style={{fontSize:10,color:"#a855f7",letterSpacing:2,marginBottom:8,fontWeight:700}}>{t("profile.funFacts")}</div>
+            <div style={{fontSize:11,color:"#cbd5e1",marginBottom:6}}>
+              ⚽ {t("profile.goalsPredicted")}: <strong style={{color:"#fbbf24"}}>{stats.totalGoalsPredicted}</strong>
+            </div>
+            {stats.highestPredictedScore.match && (
+              <div style={{fontSize:11,color:"#cbd5e1"}}>
+                🎆 {t("profile.boldestPrediction")}: <strong style={{color:"#fbbf24"}}>
+                {stats.highestPredictedScore.match.home} {stats.highestPredictedScore.h}-{stats.highestPredictedScore.a} {stats.highestPredictedScore.match.away}
+                </strong>
+              </div>
+            )}
+          </div>
+        )}
+
+        <button onClick={onClose} style={{...primaryBtn,marginTop:0}}>{t("profile.close")}</button>
+      </div>
+    </div>
+  );
+}
+
+function StatTile({ color, label, value, icon }) {
+  return (
+    <div style={{
+      background:"rgba(30,41,59,0.5)",border:`1px solid ${color}55`,
+      borderRadius:10,padding:"10px 8px",textAlign:"center",
+    }}>
+      <div style={{fontSize:18,marginBottom:2}}>{icon}</div>
+      <div style={{fontSize:22,fontWeight:900,color,lineHeight:1}}>{value}</div>
+      <div style={{fontSize:9,color:"#94a3b8",letterSpacing:1,marginTop:3,fontWeight:600}}>{label}</div>
+    </div>
+  );
+}
 
 function BonusPicks({
   winnerPick, setWinnerPick,
@@ -3770,6 +4165,17 @@ export default function App() {
   const [actuals, setActuals] = useState(saved?.actuals || {});
   const [actualKo, setActualKo] = useState(saved?.actualKo || {});
   const [winnerPick, setWinnerPick] = useState(saved?.winnerPick || null); // {name, flag} of team you bet wins it all
+  // Goal celebration: which exact-prediction fixtures have already been celebrated
+  const [celebratedIds, setCelebratedIds] = useState(() => {
+    try {
+      const raw = localStorage.getItem("wc2026_celebrated_v1");
+      return raw ? new Set(JSON.parse(raw)) : new Set();
+    } catch { return new Set(); }
+  });
+  // Pending celebration to show right now
+  const [pendingCelebration, setPendingCelebration] = useState(null);
+  // Profile modal open?
+  const [showProfile, setShowProfile] = useState(false);
   const [lang, setLangState] = useState(() => {
     try { return localStorage.getItem("wc2026_lang") || "en"; } catch { return "en"; }
   });
@@ -3784,6 +4190,31 @@ export default function App() {
       document.documentElement.lang = lang;
     }
   }, [lang]);
+
+  // ─── GOAL CELEBRATION: detect new exact predictions ──────────────────────
+  // Whenever actuals change, check if any new fixture has an exact-score match
+  // against the user's picks. Show the celebration overlay once per match.
+  useEffect(() => {
+    if (!name) return;
+    if (pendingCelebration) return; // already showing one
+    for (const f of FIXTURES) {
+      const a = actuals[f.id];
+      const p = picks[f.id];
+      if (!a || a.h === undefined || a.h === "" || a.a === undefined || a.a === "") continue;
+      if (!p || p.h === undefined || p.h === "" || p.a === undefined || p.a === "") continue;
+      const ph = parseInt(p.h), pa = parseInt(p.a);
+      const ah = parseInt(a.h), aa2 = parseInt(a.a);
+      if (ph === ah && pa === aa2 && !celebratedIds.has(f.id)) {
+        // EXACT MATCH! Celebrate.
+        setPendingCelebration({ fixture: f, score: { h: ah, a: aa2 } });
+        const newSet = new Set(celebratedIds);
+        newSet.add(f.id);
+        setCelebratedIds(newSet);
+        try { localStorage.setItem("wc2026_celebrated_v1", JSON.stringify([...newSet])); } catch {}
+        break; // one at a time
+      }
+    }
+  }, [actuals, picks, name, pendingCelebration]);
   const [topScorerPick, setTopScorerPick] = useState(saved?.topScorerPick || null); // {name, team}
   const [actualWinner, setActualWinner] = useState(saved?.actualWinner || null);
   const [actualTopScorer, setActualTopScorer] = useState(saved?.actualTopScorer || null); // {name, team, goals}
@@ -3987,7 +4418,7 @@ export default function App() {
       onConfirm: () => {
         clearState();
         setName(""); setPicks({}); setKoWinners({}); setGroupIdx(0);
-        setFriends([]); setActuals({}); setActualKo({}); setLeagueName(""); setLeagueCode(""); setWinnerPick(null); setTopScorerPick(null);
+        setFriends([]); setActuals({}); setActualKo({}); setLeagueName(""); setLeagueCode(""); setWinnerPick(null); setTopScorerPick(null); setCelebratedIds(new Set()); try { localStorage.removeItem("wc2026_celebrated_v1"); } catch {}
         setScreen("welcome");
         setShowIntro(false);
       },
@@ -3999,7 +4430,7 @@ export default function App() {
       // No data to worry about, just log out
       clearState();
       setName(""); setPicks({}); setKoWinners({}); setGroupIdx(0);
-      setFriends([]); setActuals({}); setActualKo({}); setLeagueName(""); setLeagueCode(""); setWinnerPick(null); setTopScorerPick(null);
+      setFriends([]); setActuals({}); setActualKo({}); setLeagueName(""); setLeagueCode(""); setWinnerPick(null); setTopScorerPick(null); setCelebratedIds(new Set()); try { localStorage.removeItem("wc2026_celebrated_v1"); } catch {}
       setScreen("welcome");
       setShowIntro(false);
       return;
@@ -4013,7 +4444,7 @@ export default function App() {
       onConfirm: () => {
         clearState();
         setName(""); setPicks({}); setKoWinners({}); setGroupIdx(0);
-        setFriends([]); setActuals({}); setActualKo({}); setLeagueName(""); setLeagueCode(""); setWinnerPick(null); setTopScorerPick(null);
+        setFriends([]); setActuals({}); setActualKo({}); setLeagueName(""); setLeagueCode(""); setWinnerPick(null); setTopScorerPick(null); setCelebratedIds(new Set()); try { localStorage.removeItem("wc2026_celebrated_v1"); } catch {}
         setScreen("welcome");
         setShowIntro(false);
       },
@@ -4193,6 +4624,9 @@ export default function App() {
                     <div style={{fontSize:9,color:"#64748b",letterSpacing:2,marginBottom:2}}>SIGNED IN AS</div>
                     <div style={{fontSize:14,color:"#fbbf24",fontWeight:700}}>{name}</div>
                   </div>
+                  <button onClick={()=>{setShowUserMenu(false);setShowProfile(true);}} style={menuItemStyle}>
+                    <span style={{fontSize:14,marginRight:8}}>📊</span> {TRANSLATIONS[lang]?.["profile.menuItem"]?.replace(/^📊\s*/, "") || "My stats"}
+                  </button>
                   <button onClick={()=>{setShowUserMenu(false);setShowBackup(true);}} style={menuItemStyle}>
                     <span style={{fontSize:14,marginRight:8}}>💾</span> Backup my progress
                   </button>
@@ -4313,6 +4747,29 @@ export default function App() {
 
       {/* Confirm modal */}
       <ConfirmModal action={confirmAction} onClose={()=>setConfirmAction(null)} />
+
+      {/* 🎉 Goal celebration overlay */}
+      {pendingCelebration && (
+        <GoalCelebration
+          fixture={pendingCelebration.fixture}
+          score={pendingCelebration.score}
+          onDismiss={()=>setPendingCelebration(null)}
+        />
+      )}
+
+      {/* 📊 Profile stats modal */}
+      {showProfile && name && (
+        <ProfileStats
+          name={name}
+          picks={picks}
+          koWinners={koWinners}
+          actuals={actuals}
+          actualKo={actualKo}
+          winnerPick={winnerPick}
+          topScorerPick={topScorerPick}
+          onClose={()=>setShowProfile(false)}
+        />
+      )}
       </div>
     </div>
     </LangContext.Provider>
