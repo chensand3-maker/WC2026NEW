@@ -2127,14 +2127,13 @@ function BonusPicks({
         )}
       </div>
 
-      {/* ─── TOP SCORERS LEADERBOARD ─── */}
-      {(topScorers.length > 0 || topScorerPick) && (
-        <div style={{
-          marginTop:14,
-          background:"linear-gradient(135deg,rgba(168,85,247,0.05),rgba(15,20,36,0.6))",
-          border:"1px solid rgba(168,85,247,0.3)",
-          borderRadius:14,padding:14,
-        }}>
+      {/* ─── TOP SCORERS LEADERBOARD — always visible ─── */}
+      <div style={{
+        marginTop:14,
+        background:"linear-gradient(135deg,rgba(168,85,247,0.05),rgba(15,20,36,0.6))",
+        border:"1px solid rgba(168,85,247,0.3)",
+        borderRadius:14,padding:14,
+      }}>
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
             <div style={{fontSize:11,color:"#a855f7",letterSpacing:2,fontWeight:700}}>📊 {t("bonus.topScorersLive")}</div>
             <div style={{fontSize:9,color:"#64748b"}}>
@@ -2239,7 +2238,6 @@ function BonusPicks({
             </>
           )}
         </div>
-      )}
     </div>
   );
 }
