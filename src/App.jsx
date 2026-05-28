@@ -229,6 +229,19 @@ const TRANSLATIONS = {
     "insights.pick": "pick",
     "insights.picks": "picks",
     "insights.draw": "🤝",
+    // Multi-league
+    "leagues.myLeagues": "My Leagues",
+    "leagues.activeLeague": "active league",
+    "leagues.activeLeagues": "active leagues",
+    "leagues.maxOf": "max of",
+    "leagues.yourRank": "YOUR RANK",
+    "leagues.leader": "Leader",
+    "leagues.noActivity": "No activity yet",
+    "leagues.open": "Open",
+    "leagues.addNew": "Create / Join another league",
+    "leagues.maxReached": "You've reached the max number of leagues",
+    "leagues.alreadyJoined": "You're already in this league",
+    "leagues.allLeagues": "All my leagues",
     // Profile / Stats
     "profile.yourStats": "YOUR STATS",
     "profile.totalPoints": "TOTAL POINTS",
@@ -483,6 +496,19 @@ const TRANSLATIONS = {
     "insights.pick": "ניחוש",
     "insights.picks": "ניחושים",
     "insights.draw": "🤝",
+    // Multi-league
+    "leagues.myLeagues": "הליגות שלי",
+    "leagues.activeLeague": "ליגה פעילה",
+    "leagues.activeLeagues": "ליגות פעילות",
+    "leagues.maxOf": "מקסימום",
+    "leagues.yourRank": "המיקום שלך",
+    "leagues.leader": "מוביל",
+    "leagues.noActivity": "אין פעילות עדיין",
+    "leagues.open": "פתח",
+    "leagues.addNew": "צור / הצטרף לליגה נוספת",
+    "leagues.maxReached": "הגעת למקסימום הליגות",
+    "leagues.alreadyJoined": "אתה כבר בליגה הזו",
+    "leagues.allLeagues": "כל הליגות שלי",
     // Profile / Stats
     "profile.yourStats": "הסטטיסטיקה שלך",
     "profile.totalPoints": "סך הנקודות",
@@ -3957,10 +3983,16 @@ function LeagueHub({
   actuals, hasActuals,
   liveFetchAt, liveError, onFetchLive,
   actualWinner, actualTopScorer,
+  leagueCodes, activeLeagueCode, setActiveLeagueCode, allLeagueData, maxLeagues,
 }) {
   const t = useT();
   const { showToast } = useToast();
-  const [mode, setMode] = useState("home"); // home | creating | joining | active
+  // mode: "list" (overview), "creating", "joining", "active" (viewing one league)
+  const [mode, setMode] = useState(() => {
+    if (leagueCodes && leagueCodes.length === 0) return "creating-or-joining"; // no leagues yet
+    if (activeLeagueCode) return "active";
+    return "list";
+  });
   const [draftName, setDraftName] = useState("");
   const [draftCode, setDraftCode] = useState("");
   const [busy, setBusy] = useState(false);
@@ -3975,13 +4007,24 @@ function LeagueHub({
     return () => window.removeEventListener("resize", onResize);
   }, []);
 
+  // Sync mode when external state changes
   useEffect(() => {
-    setMode(leagueCode ? "active" : "home");
-  }, [leagueCode]);
+    if (!leagueCodes || leagueCodes.length === 0) {
+      setMode("creating-or-joining");
+    } else if (activeLeagueCode) {
+      setMode("active");
+    } else {
+      setMode("list");
+    }
+  }, [activeLeagueCode, leagueCodes?.length]);
 
   // ─── Create league ──
   const handleCreate = async () => {
     if (!draftName.trim()) { setErr("Give your league a name"); return; }
+    if (leagueCodes && leagueCodes.length >= (maxLeagues || 5)) {
+      setErr(t("leagues.maxReached"));
+      return;
+    }
     setBusy(true); setErr("");
     try {
       let attempts = 0, code;
@@ -4010,6 +4053,14 @@ function LeagueHub({
   const handleJoin = async () => {
     const code = draftCode.trim().toUpperCase();
     if (!code) { setErr("Enter a league code"); return; }
+    if (leagueCodes && leagueCodes.includes(code)) {
+      setErr(t("leagues.alreadyJoined"));
+      return;
+    }
+    if (leagueCodes && leagueCodes.length >= (maxLeagues || 5)) {
+      setErr(t("leagues.maxReached"));
+      return;
+    }
     setBusy(true); setErr("");
     try {
       await joinLeague(code);
@@ -4028,8 +4079,8 @@ function LeagueHub({
   const handleLeave = async () => {
     if (!leagueCode) return;
     try { await leaveLeague(leagueCode, userId); } catch {}
-    setLeagueCode("");
-    setMode("home");
+    setLeagueCode(""); // shim handles removing from list + switching to next
+    // After leaving, go back to list (or creating-or-joining handled by useEffect)
   };
 
   const copy = async () => {
@@ -4048,10 +4099,125 @@ function LeagueHub({
     return AVATAR_COLORS[h];
   };
 
-  // ─── HOME (no league yet) ──
-  if (mode === "home") {
+  // ─── LIST MODE: overview of all leagues the user is in ──
+  if (mode === "list") {
+    const myLeagues = (leagueCodes || []).map(code => {
+      const data = allLeagueData?.[code] || null;
+      if (!data) return { code, loading: true };
+      const members = Object.values(data.members || {});
+      // Compute rank for me
+      const ranked = members.map(m => {
+        const ms = m.picks ? totalScore(m.picks, actuals) : { total: 0 };
+        const kt = m.koWinners ? buildKnockoutFromWinners(m.picks ? allStandings(m.picks) : [], findBestThirds(m.picks ? allStandings(m.picks) : []), m.koWinners) : null;
+        // For simplicity, just use match score for ranking on the list screen
+        let bonus = 0;
+        if (actualWinner && m.winnerPick) {
+          const aw = actualWinner.name || actualWinner.n;
+          const mw = m.winnerPick.name || m.winnerPick.n;
+          if (aw && mw && aw === mw) bonus += POINTS.WINNER_BET;
+        }
+        if (actualTopScorer && m.topScorerPick && actualTopScorer.name === m.topScorerPick.name) {
+          bonus += (actualTopScorer.goals || 0) * POINTS.TOP_SCORER_GOAL;
+        }
+        return { uid: m.uid, name: m.name, total: ms.total + bonus };
+      }).sort((a, b) => b.total - a.total);
+      const myEntry = ranked.find(r => r.uid === userId);
+      const myRank = myEntry ? ranked.indexOf(myEntry) + 1 : null;
+      return {
+        code,
+        name: data.name,
+        memberCount: members.length,
+        myRank,
+        myPoints: myEntry?.total ?? 0,
+        topName: ranked[0]?.name,
+        topPoints: ranked[0]?.total ?? 0,
+      };
+    });
+
+    const canAddMore = (leagueCodes?.length || 0) < (maxLeagues || 5);
+
     return (
       <div style={{padding:"16px 14px 40px",maxWidth:480,margin:"0 auto"}}>
+        <div style={{textAlign:"center",marginBottom:20}}>
+          <div style={{fontSize:42,marginBottom:6}}>🏅</div>
+          <h2 style={{margin:"0 0 4px",fontSize:22,background:"linear-gradient(180deg,#fde68a,#f59e0b)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",fontWeight:900}}>{t("leagues.myLeagues")}</h2>
+          <p style={{color:"#94a3b8",fontSize:12,margin:0}}>
+            {leagueCodes.length} {leagueCodes.length === 1 ? t("leagues.activeLeague") : t("leagues.activeLeagues")} · {t("leagues.maxOf")} {maxLeagues || 5}
+          </p>
+        </div>
+
+        {/* League cards */}
+        <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:14}}>
+          {myLeagues.map(L => (
+            <button key={L.code} onClick={() => setActiveLeagueCode(L.code)} style={{
+              textAlign:"start",
+              padding:"14px 16px",
+              background:"linear-gradient(145deg,#1e293b,#0f172a)",
+              border:"1px solid rgba(251,191,36,0.3)",
+              borderRadius:14,
+              cursor:"pointer",fontFamily:"inherit",color:"#f1f5f9",
+              transition:"transform 0.15s, box-shadow 0.15s",
+              display:"flex",flexDirection:"column",gap:4,
+            }} onMouseEnter={e=>e.currentTarget.style.transform="translateY(-2px)"}
+               onMouseLeave={e=>e.currentTarget.style.transform="translateY(0)"}>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8}}>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontSize:15,fontWeight:800,color:"#f1f5f9",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                    {L.loading ? "..." : (L.name || L.code)}
+                  </div>
+                  <div style={{fontSize:11,color:"#94a3b8",marginTop:2}}>
+                    <span style={{color:"#22c55e"}}>●</span> {L.memberCount || 0} {(L.memberCount||0) === 1 ? t("league.member") : t("league.members")}
+                  </div>
+                </div>
+                {L.myRank && (
+                  <div style={{textAlign:"end",flexShrink:0}}>
+                    <div style={{fontSize:10,color:"#94a3b8",letterSpacing:1}}>{t("leagues.yourRank")}</div>
+                    <div style={{
+                      fontSize:18,fontWeight:900,
+                      color: L.myRank === 1 ? "#fbbf24" : L.myRank === 2 ? "#cbd5e1" : L.myRank === 3 ? "#d97706" : "#f1f5f9",
+                    }}>
+                      {L.myRank === 1 ? "🥇" : L.myRank === 2 ? "🥈" : L.myRank === 3 ? "🥉" : `#${L.myRank}`}
+                      <span style={{fontSize:11,color:"#94a3b8",marginLeft:4}}>· {L.myPoints} {t("league.pts")}</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",fontSize:10,color:"#64748b",marginTop:4}}>
+                <span>{L.topName ? `👑 ${t("leagues.leader")}: ${L.topName} (${L.topPoints} ${t("league.pts")})` : t("leagues.noActivity")}</span>
+                <span style={{color:"#fbbf24"}}>{t("leagues.open")} →</span>
+              </div>
+            </button>
+          ))}
+        </div>
+
+        {/* Add new league */}
+        {canAddMore ? (
+          <div style={{display:"flex",gap:8}}>
+            <button onClick={()=>setMode("creating-or-joining")} style={{...primaryBtn,flex:1}}>
+              ✨ {t("leagues.addNew")}
+            </button>
+          </div>
+        ) : (
+          <div style={{padding:"10px 14px",background:"rgba(71,85,105,0.15)",border:"1px dashed rgba(71,85,105,0.4)",borderRadius:10,textAlign:"center",fontSize:11,color:"#94a3b8"}}>
+            {t("leagues.maxReached")} ({maxLeagues || 5} {t("leagues.activeLeagues")})
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // ─── HOME (no league yet, or adding new) ──
+  if (mode === "home" || mode === "creating-or-joining") {
+    return (
+      <div style={{padding:"16px 14px 40px",maxWidth:480,margin:"0 auto"}}>
+        {leagueCodes && leagueCodes.length > 0 && (
+          <button onClick={()=>setMode("list")} style={{
+            background:"transparent",border:"1px solid rgba(71,85,105,0.4)",
+            borderRadius:8,padding:"6px 12px",
+            color:"#94a3b8",fontSize:11,cursor:"pointer",fontFamily:"inherit",
+            marginBottom:14,fontWeight:600,
+          }}>← {t("leagues.allLeagues")}</button>
+        )}
         <div style={{textAlign:"center",marginBottom:20}}>
           <div style={{fontSize:48,marginBottom:6}}>🏆</div>
           <h2 style={{margin:"0 0 4px",fontSize:22,background:"linear-gradient(180deg,#fde68a,#f59e0b)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",fontWeight:900}}>{t("league.playWithFriends")}</h2>
@@ -4463,6 +4629,15 @@ function LeagueHub({
 
     return (
       <div style={{padding:"16px 14px 40px",maxWidth:600,margin:"0 auto"}}>
+        {/* Back to "My Leagues" button (only if user has more than 1 league) */}
+        {leagueCodes && leagueCodes.length > 1 && (
+          <button onClick={()=>setActiveLeagueCode("")} style={{
+            background:"transparent",border:"1px solid rgba(71,85,105,0.4)",
+            borderRadius:8,padding:"6px 12px",
+            color:"#94a3b8",fontSize:11,cursor:"pointer",fontFamily:"inherit",
+            marginBottom:10,fontWeight:600,
+          }}>← {t("leagues.allLeagues")}</button>
+        )}
         {/* League header */}
         <div style={{background:"linear-gradient(135deg,rgba(251,191,36,0.1),rgba(217,119,6,0.05))",border:"1px solid rgba(251,191,36,0.3)",borderRadius:14,padding:14,marginBottom:14}}>
           <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:10}}>
@@ -5003,17 +5178,104 @@ function clearState() {
   try { window.localStorage?.removeItem(STORAGE_KEY); } catch {}
 }
 
+// ─── BACKUP CODE: compact format ─────────────────────────────────────────────
+// WC26|<name>|<groupPicks144>|<koWinners31>|<winner>|<topScorer>|<leagueCodes>
+// - groupPicks: 144 chars, 2 per fixture (h+a). "-" for empty digit. Pipes inside become tildes.
+// - koWinners: 31 chars in fixed order (R32-1..16, R16-0..7, QF-0..3, SF-0,1, FINAL). 'a' | 'b' | '-'
+// - winner / topScorer: name (escaped: | → ~ ). Empty if not picked.
+// - leagueCodes: comma-separated.
+// The old WC26B|... base64 format still works (handled in decodeBackup) for legacy backups.
+
+const KO_BACKUP_ORDER = [
+  ...Array.from({length:16},(_,i)=>`R32-${i+1}`),
+  ...Array.from({length:8},(_,i)=>`R16-${i}`),
+  ...Array.from({length:4},(_,i)=>`QF-${i}`),
+  "SF-0","SF-1","FINAL",
+];
+
+function _esc(s) { return (s || "").replace(/\|/g, "~"); }
+function _unesc(s) { return (s || "").replace(/~/g, "|"); }
+function _digit(v) {
+  if (v === "" || v === undefined || v === null) return "-";
+  const n = parseInt(v);
+  if (isNaN(n) || n < 0 || n > 9) return "-";
+  return String(n);
+}
+
 function encodeBackup(state) {
-  try { return "WC26B|" + btoa(unescape(encodeURIComponent(JSON.stringify(state)))); }
-  catch { return null; }
+  try {
+    // Group picks: 72 fixtures × 2 digits = 144 chars
+    let groupPicks = "";
+    for (const f of FIXTURES) {
+      const p = state.picks?.[f.id];
+      groupPicks += _digit(p?.h) + _digit(p?.a);
+    }
+    // Knockout winners: 31 chars
+    let ko = "";
+    for (const slot of KO_BACKUP_ORDER) {
+      const w = state.koWinners?.[slot];
+      ko += (w === "a" || w === "b") ? w : "-";
+    }
+    // Other bits
+    const winner = state.winnerPick ? _esc(state.winnerPick.name || state.winnerPick.n || "") : "";
+    const scorer = state.topScorerPick ? _esc(state.topScorerPick.name || "") : "";
+    // League codes (array preferred, fallback to single)
+    let codes = "";
+    if (Array.isArray(state.leagueCodes) && state.leagueCodes.length > 0) {
+      codes = state.leagueCodes.join(",");
+    } else if (state.leagueCode) {
+      codes = state.leagueCode;
+    }
+    return `WC26|${_esc(state.name || "")}|${groupPicks}|${ko}|${winner}|${scorer}|${codes}`;
+  } catch { return null; }
 }
 
 function decodeBackup(code) {
-  try {
-    const c = code.trim();
-    if (!c.startsWith("WC26B|")) return null;
-    return JSON.parse(decodeURIComponent(escape(atob(c.slice(6)))));
-  } catch { return null; }
+  if (!code) return null;
+  const c = code.trim();
+  // Legacy format
+  if (c.startsWith("WC26B|")) {
+    try { return JSON.parse(decodeURIComponent(escape(atob(c.slice(6))))); }
+    catch { return null; }
+  }
+  // Compact format
+  if (c.startsWith("WC26|")) {
+    try {
+      const parts = c.slice(5).split("|");
+      const [rawName, groupStr, koStr, winner, scorer, codesStr] = parts;
+      const name = _unesc(rawName || "");
+      // Decode group picks
+      const picks = {};
+      const gp = groupStr || "";
+      FIXTURES.forEach((f, i) => {
+        const h = gp[i*2];
+        const a = gp[i*2 + 1];
+        if (h && h !== "-" && a && a !== "-") {
+          picks[f.id] = { h, a };
+        }
+      });
+      // Decode knockout winners
+      const koWinners = {};
+      const ks = koStr || "";
+      KO_BACKUP_ORDER.forEach((slot, i) => {
+        const v = ks[i];
+        if (v === "a" || v === "b") koWinners[slot] = v;
+      });
+      // Other bits
+      const winnerPick = winner ? { name: _unesc(winner), n: _unesc(winner) } : null;
+      const topScorerPick = scorer ? { name: _unesc(scorer) } : null;
+      // League codes
+      const leagueCodes = codesStr ? codesStr.split(",").filter(Boolean) : [];
+      const leagueCode = leagueCodes[0] || "";
+      return {
+        name, picks, koWinners,
+        winnerPick, topScorerPick,
+        leagueCodes, leagueCode,
+        activeLeagueCode: leagueCode,
+      };
+    } catch { return null; }
+  }
+  return null;
 }
 
 // ─── BACKUP MODAL ─────────────────────────────────────────────────────────────
@@ -5347,9 +5609,49 @@ export default function App() {
   }, [actualTopScorer, topScorerPick, name, pendingTopScorerCeleb, lastSeenGoals]);
 
   const [leagueName, setLeagueName] = useState(saved?.leagueName || "");
-  const [leagueCode, setLeagueCode] = useState(saved?.leagueCode || ""); // joined league code
+  // ─── MULTI-LEAGUE SUPPORT ─────────────────────────────────────────────────
+  // leagueCodes: array of all league codes the user has joined
+  // activeLeagueCode: which league is currently being viewed (for sync)
+  // Migration: if saved has leagueCode (single string), upgrade it to an array
+  const [leagueCodes, setLeagueCodes] = useState(() => {
+    if (Array.isArray(saved?.leagueCodes)) return saved.leagueCodes;
+    if (saved?.leagueCode) return [saved.leagueCode]; // migrate old single code
+    return [];
+  });
+  const [activeLeagueCode, setActiveLeagueCode] = useState(() => {
+    if (Array.isArray(saved?.leagueCodes) && saved.leagueCodes.length > 0) {
+      return saved.activeLeagueCode || saved.leagueCodes[0];
+    }
+    return saved?.leagueCode || "";
+  });
+  // Cache of league data for each league code: { code -> data }
+  const [allLeagueData, setAllLeagueData] = useState({});
+  const MAX_LEAGUES = 5;
   const [userId] = useState(() => saved?.userId || `u_${Date.now()}_${Math.random().toString(36).slice(2,8)}`);
-  const [leagueData, setLeagueData] = useState(null); // live data from Firebase
+  // Backwards-compatibility shims: rest of App.jsx still uses `leagueCode` / `setLeagueCode`
+  // for the *currently active* league. These will continue to work transparently.
+  const leagueCode = activeLeagueCode;
+  const setLeagueCode = (code) => {
+    if (code) {
+      // Joining/creating: add to list if not already there
+      setLeagueCodes(prev => prev.includes(code) ? prev : [...prev, code]);
+      setActiveLeagueCode(code);
+    } else {
+      // Empty string = leaving the currently active league
+      setLeagueCodes(prev => prev.filter(c => c !== activeLeagueCode));
+      // After leaving, switch to another league if available, else empty
+      setActiveLeagueCode(prev => {
+        const remaining = leagueCodes.filter(c => c !== prev);
+        return remaining[0] || "";
+      });
+    }
+  };
+  // The currently-active league's data
+  const leagueData = allLeagueData[activeLeagueCode] || null;
+  const setLeagueData = (data) => {
+    if (!activeLeagueCode) return;
+    setAllLeagueData(prev => ({ ...prev, [activeLeagueCode]: data }));
+  };
   const [leagueError, setLeagueError] = useState("");
   const [liveFetchAt, setLiveFetchAt] = useState(null); // timestamp of last successful fetch
   const [liveError, setLiveError] = useState("");
@@ -5396,44 +5698,52 @@ export default function App() {
   // Auto-save on any change
   useEffect(() => {
     if (!name) return;
-    const ok = saveState({ name, picks, koWinners, groupIdx, friends, actuals, actualKo, leagueName, leagueCode, userId, winnerPick, topScorerPick, actualWinner, actualTopScorer });
+    const ok = saveState({ name, picks, koWinners, groupIdx, friends, actuals, actualKo, leagueName, leagueCode, leagueCodes, activeLeagueCode, userId, winnerPick, topScorerPick, actualWinner, actualTopScorer });
     if (ok) {
       setJustSaved(true);
       const t = setTimeout(()=>setJustSaved(false), 1500);
       return () => clearTimeout(t);
     }
-  }, [name, picks, koWinners, groupIdx, friends, actuals, actualKo, leagueName, leagueCode, winnerPick, topScorerPick, actualWinner, actualTopScorer]);
+  }, [name, picks, koWinners, groupIdx, friends, actuals, actualKo, leagueName, leagueCode, leagueCodes, activeLeagueCode, winnerPick, topScorerPick, actualWinner, actualTopScorer]);
 
   // ─── FIREBASE LEAGUE SYNC ──────────────────────────────────────────────────
-  // When we're in a league, subscribe to real-time updates and push our picks
+  // Subscribe to ALL leagues the user has joined, in real-time
   useEffect(() => {
-    if (!leagueCode) { setLeagueData(null); return; }
-    const unsub = subscribeLeague(
-      leagueCode,
-      (data) => {
-        setLeagueData(data);
-        setLeagueError("");
-        // Pull shared actuals from league (so league commissioner can broadcast)
-        if (data.actuals) setActuals(data.actuals);
-        if (data.actualKo) setActualKo(data.actualKo);
-      },
-      (err) => {
-        console.error("League sync error:", err);
-        setLeagueError(err.message || "Couldn't sync league");
-      }
-    );
-    return () => unsub?.();
-  }, [leagueCode]);
+    if (!leagueCodes || leagueCodes.length === 0) {
+      setAllLeagueData({});
+      return;
+    }
+    const unsubs = [];
+    leagueCodes.forEach(code => {
+      const unsub = subscribeLeague(
+        code,
+        (data) => {
+          setAllLeagueData(prev => ({ ...prev, [code]: data }));
+          // Pull shared actuals from the ACTIVE league only (so commissioner can broadcast)
+          if (code === activeLeagueCode && data.actuals) setActuals(data.actuals);
+          if (code === activeLeagueCode && data.actualKo) setActualKo(data.actualKo);
+        },
+        (err) => {
+          console.error(`League sync error (${code}):`, err);
+          if (code === activeLeagueCode) setLeagueError(err.message || "Couldn't sync league");
+        }
+      );
+      unsubs.push(unsub);
+    });
+    return () => unsubs.forEach(u => u?.());
+  }, [leagueCodes.join("|"), activeLeagueCode]);
 
-  // Push our picks to the league whenever they change (debounced)
+  // Push our picks to ALL leagues the user is in (debounced)
   useEffect(() => {
-    if (!leagueCode || !name) return;
+    if (!leagueCodes.length || !name) return;
     const handle = setTimeout(() => {
-      updateMyPicks(leagueCode, userId, name, picks, koWinners, { winnerPick, topScorerPick })
-        .catch(err => console.error("Failed to push picks:", err));
+      leagueCodes.forEach(code => {
+        updateMyPicks(code, userId, name, picks, koWinners, { winnerPick, topScorerPick })
+          .catch(err => console.error(`Failed to push picks to ${code}:`, err));
+      });
     }, 800);
     return () => clearTimeout(handle);
-  }, [leagueCode, userId, name, picks, koWinners, winnerPick, topScorerPick]);
+  }, [leagueCodes.join("|"), userId, name, picks, koWinners, winnerPick, topScorerPick]);
 
   // ─── LIVE RESULTS AUTO-FETCH ───────────────────────────────────────────────
   // Poll API-Football every 5 min for new match results
@@ -5566,7 +5876,17 @@ export default function App() {
     setActuals(restored.actuals || {});
     setActualKo(restored.actualKo || {});
     setLeagueName(restored.leagueName || "");
-    setLeagueCode(restored.leagueCode || "");
+    // Restore leagues - support both old single-code format and new array format
+    if (Array.isArray(restored.leagueCodes)) {
+      setLeagueCodes(restored.leagueCodes);
+      setActiveLeagueCode(restored.activeLeagueCode || restored.leagueCodes[0] || "");
+    } else if (restored.leagueCode) {
+      setLeagueCodes([restored.leagueCode]);
+      setActiveLeagueCode(restored.leagueCode);
+    } else {
+      setLeagueCodes([]);
+      setActiveLeagueCode("");
+    }
     setWinnerPick(restored.winnerPick || null);
     setTopScorerPick(restored.topScorerPick || null);
     setScreen("group");
@@ -5582,7 +5902,7 @@ export default function App() {
       onConfirm: () => {
         clearState();
         setName(""); setPicks({}); setKoWinners({}); setGroupIdx(0);
-        setFriends([]); setActuals({}); setActualKo({}); setLeagueName(""); setLeagueCode(""); setWinnerPick(null); setTopScorerPick(null); setCelebratedIds(new Set()); setLastSeenGoals(0); setSeenActualIds(new Set()); setShowOnboarding(true); try { localStorage.removeItem("wc2026_celebrated_v1"); localStorage.removeItem("wc2026_lastseen_goals_v1"); localStorage.removeItem("wc2026_seen_actuals_v1"); localStorage.removeItem("wc2026_onboarded_v1"); } catch {}
+        setFriends([]); setActuals({}); setActualKo({}); setLeagueName(""); setLeagueCode(""); setLeagueCodes([]); setActiveLeagueCode(""); setAllLeagueData({}); setWinnerPick(null); setTopScorerPick(null); setCelebratedIds(new Set()); setLastSeenGoals(0); setSeenActualIds(new Set()); setShowOnboarding(true); try { localStorage.removeItem("wc2026_celebrated_v1"); localStorage.removeItem("wc2026_lastseen_goals_v1"); localStorage.removeItem("wc2026_seen_actuals_v1"); localStorage.removeItem("wc2026_onboarded_v1"); } catch {}
         setScreen("welcome");
         setShowIntro(false);
       },
@@ -5594,7 +5914,7 @@ export default function App() {
       // No data to worry about, just log out
       clearState();
       setName(""); setPicks({}); setKoWinners({}); setGroupIdx(0);
-      setFriends([]); setActuals({}); setActualKo({}); setLeagueName(""); setLeagueCode(""); setWinnerPick(null); setTopScorerPick(null); setCelebratedIds(new Set()); setLastSeenGoals(0); setSeenActualIds(new Set()); setShowOnboarding(true); try { localStorage.removeItem("wc2026_celebrated_v1"); localStorage.removeItem("wc2026_lastseen_goals_v1"); localStorage.removeItem("wc2026_seen_actuals_v1"); localStorage.removeItem("wc2026_onboarded_v1"); } catch {}
+      setFriends([]); setActuals({}); setActualKo({}); setLeagueName(""); setLeagueCode(""); setLeagueCodes([]); setActiveLeagueCode(""); setAllLeagueData({}); setWinnerPick(null); setTopScorerPick(null); setCelebratedIds(new Set()); setLastSeenGoals(0); setSeenActualIds(new Set()); setShowOnboarding(true); try { localStorage.removeItem("wc2026_celebrated_v1"); localStorage.removeItem("wc2026_lastseen_goals_v1"); localStorage.removeItem("wc2026_seen_actuals_v1"); localStorage.removeItem("wc2026_onboarded_v1"); } catch {}
       setScreen("welcome");
       setShowIntro(false);
       return;
@@ -5608,7 +5928,7 @@ export default function App() {
       onConfirm: () => {
         clearState();
         setName(""); setPicks({}); setKoWinners({}); setGroupIdx(0);
-        setFriends([]); setActuals({}); setActualKo({}); setLeagueName(""); setLeagueCode(""); setWinnerPick(null); setTopScorerPick(null); setCelebratedIds(new Set()); setLastSeenGoals(0); setSeenActualIds(new Set()); setShowOnboarding(true); try { localStorage.removeItem("wc2026_celebrated_v1"); localStorage.removeItem("wc2026_lastseen_goals_v1"); localStorage.removeItem("wc2026_seen_actuals_v1"); localStorage.removeItem("wc2026_onboarded_v1"); } catch {}
+        setFriends([]); setActuals({}); setActualKo({}); setLeagueName(""); setLeagueCode(""); setLeagueCodes([]); setActiveLeagueCode(""); setAllLeagueData({}); setWinnerPick(null); setTopScorerPick(null); setCelebratedIds(new Set()); setLastSeenGoals(0); setSeenActualIds(new Set()); setShowOnboarding(true); try { localStorage.removeItem("wc2026_celebrated_v1"); localStorage.removeItem("wc2026_lastseen_goals_v1"); localStorage.removeItem("wc2026_seen_actuals_v1"); localStorage.removeItem("wc2026_onboarded_v1"); } catch {}
         setScreen("welcome");
         setShowIntro(false);
       },
@@ -5921,6 +6241,11 @@ export default function App() {
           liveFetchAt={liveFetchAt} liveError={liveError}
           onFetchLive={fetchAndApplyLive}
           actualWinner={actualWinner} actualTopScorer={actualTopScorer}
+          leagueCodes={leagueCodes}
+          activeLeagueCode={activeLeagueCode}
+          setActiveLeagueCode={setActiveLeagueCode}
+          allLeagueData={allLeagueData}
+          maxLeagues={MAX_LEAGUES}
         />
       )}
 
