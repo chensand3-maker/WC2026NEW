@@ -4211,7 +4211,7 @@ function LeagueHub({
     return (
       <div style={{padding:"16px 14px 40px",maxWidth:480,margin:"0 auto"}}>
         {leagueCodes && leagueCodes.length > 0 && (
-          <button onClick={()=>setMode("list")} style={{
+          <button onClick={()=>{setActiveLeagueCode(""); setMode("list");}} style={{
             background:"transparent",border:"1px solid rgba(71,85,105,0.4)",
             borderRadius:8,padding:"6px 12px",
             color:"#94a3b8",fontSize:11,cursor:"pointer",fontFamily:"inherit",
