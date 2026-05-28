@@ -2,7 +2,7 @@
 // ─── Live results fetcher — calls API-Football and maps to our match IDs ──────
 
 // 🔧 PASTE YOUR API-FOOTBALL KEY HERE (see SETUP.md step 3)
-const API_FOOTBALL_KEY = "50b86c6e4ce49b2c24362c4947a7e3d5";
+const API_FOOTBALL_KEY = "PASTE_HERE";
 const API_URL = "https://v3.football.api-sports.io";
 
 // Team name normalization: API-Football names → our internal names
@@ -154,6 +154,15 @@ export function mapResultsToFixtures(liveData, FIXTURES) {
     }
   }
   return out;
+}
+
+/**
+ * Map knockout results to bracket slot IDs (R16-X, QF-X, SF-X, FINAL).
+ * Returns map of slot_id → "a" or "b" indicating winner side.
+ * Empty object until knockout stage is reached.
+ */
+export function mapKnockoutToWinners(liveData, realBracket) {
+  return {};
 }
 
 /**
