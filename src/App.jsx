@@ -224,6 +224,11 @@ const TRANSLATIONS = {
     "toast.refreshing": "Refreshing results...",
     "toast.leagueCreated": "League created! 🎉",
     "toast.leagueJoined": "You're in! Welcome to the league 🏆",
+    // League insights (% pick distribution after kickoff)
+    "insights.yourLeague": "YOUR LEAGUE PICKED",
+    "insights.pick": "pick",
+    "insights.picks": "picks",
+    "insights.draw": "🤝",
     // Profile / Stats
     "profile.yourStats": "YOUR STATS",
     "profile.totalPoints": "TOTAL POINTS",
@@ -473,6 +478,11 @@ const TRANSLATIONS = {
     "toast.refreshing": "מרענן תוצאות...",
     "toast.leagueCreated": "הליגה נוצרה! 🎉",
     "toast.leagueJoined": "הצטרפת! ברוך הבא לליגה 🏆",
+    // League insights (% pick distribution after kickoff)
+    "insights.yourLeague": "הליגה שלך ניחשה",
+    "insights.pick": "ניחוש",
+    "insights.picks": "ניחושים",
+    "insights.draw": "🤝",
     // Profile / Stats
     "profile.yourStats": "הסטטיסטיקה שלך",
     "profile.totalPoints": "סך הנקודות",
@@ -2745,12 +2755,38 @@ function Welcome({ onStart, onImport }) {
   );
 }
 
-function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, awayInputId, nextInputId, lockable = true }) {
+function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, awayInputId, nextInputId, lockable = true, leagueMembers = null }) {
+  const t = useT();
   const home = findTeam(fixture.home);
   const away = findTeam(fixture.away);
   const h = pick?.h ?? "";
   const a = pick?.a ?? "";
   const hasResult = h !== "" && a !== "";
+
+  // ─── LEAGUE INSIGHTS: show % of league picks after match has started ──
+  const insights = useMemo(() => {
+    if (!leagueMembers || !fixture.kickoff) return null;
+    const matchStarted = Date.now() >= new Date(fixture.kickoff).getTime();
+    if (!matchStarted) return null;
+    let homeWin = 0, draw = 0, awayWin = 0, total = 0;
+    for (const m of leagueMembers) {
+      const p = m.picks?.[fixture.id];
+      if (!p || p.h === undefined || p.h === "" || p.a === undefined || p.a === "") continue;
+      const ph = parseInt(p.h), pa = parseInt(p.a);
+      if (isNaN(ph) || isNaN(pa)) continue;
+      total++;
+      if (ph > pa) homeWin++;
+      else if (ph < pa) awayWin++;
+      else draw++;
+    }
+    if (total === 0) return null;
+    return {
+      total,
+      home: Math.round((homeWin / total) * 100),
+      draw: Math.round((draw / total) * 100),
+      away: Math.round((awayWin / total) * 100),
+    };
+  }, [leagueMembers, fixture.id, fixture.kickoff]);
 
   // ─── LOCKOUT: matches lock 1 hour before kickoff ──
   const LOCK_MS = 60 * 60 * 1000; // 1 hour
@@ -2758,8 +2794,8 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
   useEffect(() => {
     if (!lockable) return;
     // Re-check the clock every 30s so we lock automatically as time approaches
-    const t = setInterval(() => setNow(Date.now()), 30 * 1000);
-    return () => clearInterval(t);
+    const intervalId = setInterval(() => setNow(Date.now()), 30 * 1000);
+    return () => clearInterval(intervalId);
   }, [lockable]);
   const kickoffMs = fixture.kickoff ? new Date(fixture.kickoff).getTime() : null;
   const msUntilKickoff = kickoffMs != null ? (kickoffMs - now) : null;
@@ -2994,6 +3030,59 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
           📍 {fixture.venue}
         </div>
       )}
+
+      {/* 🧠 LEAGUE INSIGHTS: % pick distribution, shown after kickoff */}
+      {insights && (
+        <div style={{
+          marginTop:10,padding:"8px 10px",
+          background:"linear-gradient(135deg,rgba(168,85,247,0.08),rgba(15,20,36,0.4))",
+          border:"1px solid rgba(168,85,247,0.25)",
+          borderRadius:8,
+        }}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:6}}>
+            <span style={{fontSize:9,color:"#a855f7",letterSpacing:2,fontWeight:700}}>🧠 {t("insights.yourLeague")}</span>
+            <span style={{fontSize:9,color:"#64748b"}}>{insights.total} {insights.total===1 ? t("insights.pick") : t("insights.picks")}</span>
+          </div>
+          {/* Three-segment bar showing %s */}
+          <div style={{display:"flex",height:8,borderRadius:4,overflow:"hidden",background:"rgba(15,20,36,0.6)",marginBottom:5}}>
+            {insights.home > 0 && (
+              <div style={{
+                width:`${insights.home}%`,
+                background:"linear-gradient(90deg,#22c55e,#16a34a)",
+                transition:"width 0.5s",
+              }}/>
+            )}
+            {insights.draw > 0 && (
+              <div style={{
+                width:`${insights.draw}%`,
+                background:"linear-gradient(90deg,#64748b,#475569)",
+                transition:"width 0.5s",
+              }}/>
+            )}
+            {insights.away > 0 && (
+              <div style={{
+                width:`${insights.away}%`,
+                background:"linear-gradient(90deg,#3b82f6,#2563eb)",
+                transition:"width 0.5s",
+              }}/>
+            )}
+          </div>
+          {/* Three-column legend */}
+          <div style={{display:"flex",justifyContent:"space-between",fontSize:10,fontVariantNumeric:"tabular-nums"}}>
+            <div style={{display:"flex",alignItems:"center",gap:4}}>
+              <span style={{fontSize:11}}>{home?.f}</span>
+              <span style={{color:"#22c55e",fontWeight:700}}>{insights.home}%</span>
+            </div>
+            <div style={{display:"flex",alignItems:"center",gap:4}}>
+              <span style={{color:"#94a3b8",fontWeight:700}}>{t("insights.draw")} {insights.draw}%</span>
+            </div>
+            <div style={{display:"flex",alignItems:"center",gap:4}}>
+              <span style={{color:"#3b82f6",fontWeight:700}}>{insights.away}%</span>
+              <span style={{fontSize:11}}>{away?.f}</span>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -3069,7 +3158,7 @@ function StandingsTable({ group, standings, bestThirds, liveStandings, liveBestT
 }
 
 // ─── TODAY SCREEN: matches happening today/tomorrow ──────────────────────────
-function TodayScreen({ picks, actuals, onPick, onBack, onGoToBracket }) {
+function TodayScreen({ picks, actuals, onPick, onBack, onGoToBracket, leagueMembers = null }) {
   const t = useT();
 
   // Group all fixtures (group + knockout) by date
@@ -3134,6 +3223,7 @@ function TodayScreen({ picks, actuals, onPick, onBack, onGoToBracket }) {
           awayInputId={`today-a-${f.id}`}
           nextInputId={null}
           lockable={true}
+          leagueMembers={leagueMembers}
         />
       );
     }
@@ -3242,7 +3332,7 @@ function TodayScreen({ picks, actuals, onPick, onBack, onGoToBracket }) {
   );
 }
 
-function GroupView({ group, picks, actuals, standings, bestThirds, liveStandings, liveBestThirds, hasActuals, onPick, onNext, onPrev, onJump, isFirst, isLast, showResults, scope = "p" }) {
+function GroupView({ group, picks, actuals, standings, bestThirds, liveStandings, liveBestThirds, hasActuals, onPick, onNext, onPrev, onJump, isFirst, isLast, showResults, scope = "p", leagueMembers = null }) {
   const t = useT();
   const fixtures = FIXTURES.filter(f => f.group === group);
   const color = COLORS[group];
@@ -3339,6 +3429,7 @@ function GroupView({ group, picks, actuals, standings, bestThirds, liveStandings
                 awayInputId={inputId(f.id, "a")}
                 nextInputId={nextId ? inputId(nextId, "h") : null}
                 lockable={scope === "p"}
+                leagueMembers={scope === "p" ? leagueMembers : null}
               />
             );
           })}
@@ -5780,6 +5871,7 @@ export default function App() {
           }}
           isFirst={groupIdx === 0}
           isLast={groupIdx === GROUP_KEYS.length - 1}
+          leagueMembers={leagueData ? Object.values(leagueData.members || {}) : null}
         />
       )}
 
@@ -5790,6 +5882,7 @@ export default function App() {
           onPick={(fid, field, val) => setPicks(p => ({ ...p, [fid]: { ...p[fid], [field]: val } }))}
           onBack={()=>setScreen("group")}
           onGoToBracket={()=>setScreen("bracket")}
+          leagueMembers={leagueData ? Object.values(leagueData.members || {}) : null}
         />
       )}
 
