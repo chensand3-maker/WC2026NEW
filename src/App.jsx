@@ -3987,12 +3987,40 @@ function LeagueHub({
 }) {
   const t = useT();
   const { showToast } = useToast();
-  // mode: "list" (overview), "creating", "joining", "active" (viewing one league)
-  const [mode, setMode] = useState(() => {
-    if (leagueCodes && leagueCodes.length === 0) return "creating-or-joining"; // no leagues yet
+  // ─── MODE LOGIC ──
+  // Instead of a manual mode that fights with props, derive the mode from current state.
+  // The only "user intent" is wantsToAddMore (when they click "Add another league"
+  // even while viewing an active league). This is reset whenever leagueCodes change.
+  const [wantsToAddMore, setWantsToAddMore] = useState(false);
+  // What mode are we actually in?
+  const mode = useMemo(() => {
+    if (wantsToAddMore) return "creating-or-joining";
+    if (!leagueCodes || leagueCodes.length === 0) return "creating-or-joining";
     if (activeLeagueCode) return "active";
     return "list";
-  });
+  }, [wantsToAddMore, leagueCodes?.length, activeLeagueCode]);
+  // Reset wantsToAddMore once they actually join/create (leagueCodes grows)
+  const prevCodesLen = useRef((leagueCodes || []).length);
+  useEffect(() => {
+    const newLen = (leagueCodes || []).length;
+    if (newLen > prevCodesLen.current) {
+      // They successfully added a league — clear the intent
+      setWantsToAddMore(false);
+    }
+    prevCodesLen.current = newLen;
+  }, [leagueCodes?.length]);
+  // Helper: explicitly go to a mode
+  const setMode = (m) => {
+    if (m === "list") {
+      setWantsToAddMore(false);
+      setActiveLeagueCode("");
+    } else if (m === "creating-or-joining") {
+      setWantsToAddMore(true);
+    } else if (m === "active") {
+      setWantsToAddMore(false);
+      // Caller should have already set activeLeagueCode
+    }
+  };
   const [draftName, setDraftName] = useState("");
   const [draftCode, setDraftCode] = useState("");
   const [busy, setBusy] = useState(false);
@@ -4006,17 +4034,6 @@ function LeagueHub({
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
   }, []);
-
-  // Sync mode when external state changes
-  useEffect(() => {
-    if (!leagueCodes || leagueCodes.length === 0) {
-      setMode("creating-or-joining");
-    } else if (activeLeagueCode) {
-      setMode("active");
-    } else {
-      setMode("list");
-    }
-  }, [activeLeagueCode, leagueCodes?.length]);
 
   // ─── Create league ──
   const handleCreate = async () => {
