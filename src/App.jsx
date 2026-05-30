@@ -266,6 +266,14 @@ const TRANSLATIONS = {
     "world.notRankedYet": "You're not ranked yet — start predicting to appear on the world board!",
     "world.noPlayersYet": "No players yet. Be the first!",
     "world.updatedEvery": "Updates every 5 minutes",
+    // Sidebar (hamburger menu)
+    "sidebar.myStats": "My Stats",
+    "sidebar.scoringRules": "Scoring Rules",
+    "sidebar.backup": "Backup My Progress",
+    "sidebar.language": "LANGUAGE",
+    "sidebar.logOut": "Log Out",
+    "sidebar.deleteAll": "Delete Everything",
+    "sidebar.footer": "World Cup 2026 Predictions",
     // Profile / Stats
     "profile.yourStats": "YOUR STATS",
     "profile.totalPoints": "TOTAL POINTS",
@@ -556,6 +564,14 @@ const TRANSLATIONS = {
     "world.notRankedYet": "אתה עדיין לא בדירוג — תתחיל לנחש כדי להופיע בלוח העולמי!",
     "world.noPlayersYet": "אין שחקנים עדיין. תהיה הראשון!",
     "world.updatedEvery": "מתעדכן כל 5 דקות",
+    // Sidebar (hamburger menu)
+    "sidebar.myStats": "הסטטיסטיקה שלי",
+    "sidebar.scoringRules": "כללי הניקוד",
+    "sidebar.backup": "גיבוי הנתונים",
+    "sidebar.language": "שפה",
+    "sidebar.logOut": "התנתק",
+    "sidebar.deleteAll": "מחק הכל",
+    "sidebar.footer": "ניחושי מונדיאל 2026",
     // Profile / Stats
     "profile.yourStats": "הסטטיסטיקה שלך",
     "profile.totalPoints": "סך הנקודות",
@@ -2359,6 +2375,141 @@ function WorldLeaderboard({ userId, name, onClose }) {
         </>
       )}
     </div>
+  );
+}
+
+// ─── SIDEBAR: hamburger menu drawer that slides in from one side ─────────────
+function Sidebar({ open, onClose, name, lang, setLang, onShowProfile, onShowRules, onShowBackup, onLogout, onReset, totalPoints }) {
+  const t = useT();
+  const isRTL = lang === "he";
+
+  return (
+    <>
+      {/* Backdrop */}
+      <div
+        onClick={onClose}
+        style={{
+          position:"fixed",inset:0,zIndex:9998,
+          background:"rgba(0,0,0,0.6)",
+          backdropFilter:"blur(4px)",
+          opacity: open ? 1 : 0,
+          pointerEvents: open ? "auto" : "none",
+          transition:"opacity 0.25s ease-out",
+        }}
+      />
+
+      {/* Drawer */}
+      <div style={{
+        position:"fixed",top:0,bottom:0,
+        [isRTL ? "right" : "left"]: 0,
+        zIndex:9999,width:"82%",maxWidth:320,
+        background:"linear-gradient(180deg,#1a1f3a,#0f1424)",
+        boxShadow: isRTL ? "-8px 0 32px rgba(0,0,0,0.5)" : "8px 0 32px rgba(0,0,0,0.5)",
+        transform: open
+          ? "translateX(0)"
+          : isRTL ? "translateX(100%)" : "translateX(-100%)",
+        transition:"transform 0.3s cubic-bezier(0.32, 0.72, 0, 1)",
+        display:"flex",flexDirection:"column",
+        overflowY:"auto",
+        direction: isRTL ? "rtl" : "ltr",
+      }}>
+        {/* Top: close button + user profile */}
+        <div style={{padding:"18px 20px",borderBottom:"1px solid rgba(71,85,105,0.3)"}}>
+          <button onClick={onClose} aria-label="Close menu" style={{
+            background:"transparent",border:"none",cursor:"pointer",fontFamily:"inherit",
+            fontSize:22,color:"#94a3b8",padding:"4px 8px",
+            marginBottom:14,marginLeft:isRTL?0:-4,marginRight:isRTL?-4:0,
+          }}>✕</button>
+
+          {/* User card */}
+          <div style={{display:"flex",alignItems:"center",gap:12}}>
+            <div style={{
+              width:48,height:48,borderRadius:"50%",
+              background:`linear-gradient(135deg,${colorFor(name)},${colorFor(name)}aa)`,
+              display:"flex",alignItems:"center",justifyContent:"center",
+              fontSize:20,fontWeight:900,color:"#fff",flexShrink:0,
+              boxShadow:"0 4px 12px rgba(0,0,0,0.3)",
+            }}>{name?.[0]?.toUpperCase() || "?"}</div>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{fontSize:16,fontWeight:800,color:"#f1f5f9",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{name}</div>
+              <div style={{fontSize:11,color:"#fbbf24",marginTop:2,fontWeight:700}}>
+                📈 {totalPoints} {t("welcome.pts")}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Menu items */}
+        <div style={{padding:"12px 12px",flex:1}}>
+          <SidebarItem icon="📊" label={t("sidebar.myStats")} onClick={()=>{onClose();onShowProfile();}}/>
+          <SidebarItem icon="ⓘ" label={t("sidebar.scoringRules")} onClick={()=>{onClose();onShowRules();}}/>
+          <SidebarItem icon="💾" label={t("sidebar.backup")} onClick={()=>{onClose();onShowBackup();}}/>
+
+          <div style={{
+            margin:"14px 12px",height:1,background:"rgba(71,85,105,0.3)",
+          }}/>
+
+          {/* Language selector */}
+          <div style={{padding:"4px 12px",marginBottom:10}}>
+            <div style={{fontSize:9,color:"#64748b",letterSpacing:2,marginBottom:6,fontWeight:700}}>
+              🌐 {t("sidebar.language")}
+            </div>
+            <div style={{display:"flex",gap:6}}>
+              <button onClick={()=>setLang("en")} style={{
+                flex:1,padding:"8px 10px",borderRadius:8,
+                background: lang==="en" ? "linear-gradient(135deg,#fbbf24,#d97706)" : "rgba(30,41,59,0.6)",
+                color: lang==="en" ? "#0a0e1c" : "#cbd5e1",
+                border: lang==="en" ? "none" : "1px solid rgba(71,85,105,0.4)",
+                fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"inherit",
+                letterSpacing:1,
+              }}>EN English</button>
+              <button onClick={()=>setLang("he")} style={{
+                flex:1,padding:"8px 10px",borderRadius:8,
+                background: lang==="he" ? "linear-gradient(135deg,#fbbf24,#d97706)" : "rgba(30,41,59,0.6)",
+                color: lang==="he" ? "#0a0e1c" : "#cbd5e1",
+                border: lang==="he" ? "none" : "1px solid rgba(71,85,105,0.4)",
+                fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"inherit",
+                letterSpacing:1,
+              }}>עב עברית</button>
+            </div>
+          </div>
+
+          <div style={{
+            margin:"14px 12px",height:1,background:"rgba(71,85,105,0.3)",
+          }}/>
+
+          <SidebarItem icon="🚪" label={t("sidebar.logOut")} onClick={()=>{onClose();onLogout();}}/>
+          <SidebarItem icon="🗑️" label={t("sidebar.deleteAll")} danger onClick={()=>{onClose();onReset();}}/>
+        </div>
+
+        {/* Footer */}
+        <div style={{padding:"14px 20px",borderTop:"1px solid rgba(71,85,105,0.3)",fontSize:10,color:"#64748b",textAlign:"center"}}>
+          ⚽ {t("sidebar.footer")}
+        </div>
+      </div>
+    </>
+  );
+}
+
+function SidebarItem({ icon, label, onClick, danger }) {
+  return (
+    <button onClick={onClick} style={{
+      display:"flex",alignItems:"center",gap:12,
+      width:"100%",
+      background:"transparent",border:"none",
+      padding:"12px 14px",borderRadius:8,
+      cursor:"pointer",fontFamily:"inherit",
+      color: danger ? "#f87171" : "#cbd5e1",
+      fontSize:14,fontWeight:600,
+      textAlign:"start",
+      transition:"background 0.15s",
+    }}
+    onMouseEnter={e => e.currentTarget.style.background = danger ? "rgba(239,68,68,0.1)" : "rgba(251,191,36,0.08)"}
+    onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+    >
+      <span style={{fontSize:18,minWidth:24,textAlign:"center"}}>{icon}</span>
+      <span style={{flex:1}}>{label}</span>
+    </button>
   );
 }
 
@@ -6028,7 +6179,7 @@ export default function App() {
   const [liveFetchAt, setLiveFetchAt] = useState(null); // timestamp of last successful fetch
   const [liveError, setLiveError] = useState("");
   const [showBackup, setShowBackup] = useState(false);
-  const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showSidebar, setShowSidebar] = useState(false);
   const [confirmAction, setConfirmAction] = useState(null);
   const [showIntro, setShowIntro] = useState(!saved?.name);
   // Onboarding: shown once after first welcome
@@ -6253,6 +6404,23 @@ export default function App() {
   const complete = useMemo(() => allGroupsComplete(picks), [picks]);
   const totalPredicted = Object.keys(picks).filter(k => picks[k]?.h !== undefined && picks[k]?.h !== "").length;
   const hasActuals = Object.keys(actuals).some(k => actuals[k]?.h !== undefined && actuals[k]?.h !== "");
+  // Total points for sidebar display
+  const myTotalPoints = useMemo(() => {
+    let total = 0;
+    try {
+      const ms = totalScore(picks, actuals);
+      total = ms.total;
+    } catch {}
+    if (actualWinner && winnerPick) {
+      const aw = actualWinner.name || actualWinner.n;
+      const mw = winnerPick.name || winnerPick.n;
+      if (aw && mw && aw === mw) total += POINTS.WINNER_BET;
+    }
+    if (actualTopScorer && topScorerPick && actualTopScorer.name === topScorerPick.name) {
+      total += (actualTopScorer.goals || 0) * POINTS.TOP_SCORER_GOAL;
+    }
+    return total;
+  }, [picks, actuals, winnerPick, topScorerPick, actualWinner, actualTopScorer]);
   // Bonus picks (winner + top scorer) lock once the first match has kicked off
   const bonusLocked = (() => {
     const firstKick = Math.min(...FIXTURES.filter(f => f.kickoff).map(f => new Date(f.kickoff).getTime()));
@@ -6343,32 +6511,34 @@ export default function App() {
     <LangContext.Provider value={{ lang, setLang }}>
     <ToastProvider>
     <div style={{minHeight:"100vh",background:"radial-gradient(ellipse at top,#1e1b4b 0%,#0a0e1c 70%)",color:"#f1f5f9",fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif",position:"relative",overflow:"hidden",direction:lang==="he"?"rtl":"ltr"}}>
-      {/* Language toggle: top-right corner, always visible */}
-      <div style={{
-        position:"fixed",
-        top:10,
-        [lang==="he" ? "left" : "right"]:10,
-        zIndex:100,
-        display:"flex",
-        background:"rgba(15,23,42,0.85)",
-        backdropFilter:"blur(8px)",
-        border:"1px solid rgba(71,85,105,0.4)",
-        borderRadius:20,
-        padding:2,
-      }}>
-        <button onClick={()=>setLang("en")} style={{
-          padding:"4px 10px",border:"none",borderRadius:16,cursor:"pointer",fontFamily:"inherit",
-          background: lang==="en" ? "#fbbf24" : "transparent",
-          color: lang==="en" ? "#0a0e1c" : "#94a3b8",
-          fontSize:10,fontWeight:800,letterSpacing:1,
-        }}>EN</button>
-        <button onClick={()=>setLang("he")} style={{
-          padding:"4px 10px",border:"none",borderRadius:16,cursor:"pointer",fontFamily:"inherit",
-          background: lang==="he" ? "#fbbf24" : "transparent",
-          color: lang==="he" ? "#0a0e1c" : "#94a3b8",
-          fontSize:10,fontWeight:800,letterSpacing:1,
-        }}>עב</button>
-      </div>
+      {/* Language toggle: shown only on welcome screen */}
+      {screen === "welcome" && (
+        <div style={{
+          position:"fixed",
+          top:10,
+          [lang==="he" ? "left" : "right"]:10,
+          zIndex:100,
+          display:"flex",
+          background:"rgba(15,23,42,0.85)",
+          backdropFilter:"blur(8px)",
+          border:"1px solid rgba(71,85,105,0.4)",
+          borderRadius:20,
+          padding:2,
+        }}>
+          <button onClick={()=>setLang("en")} style={{
+            padding:"4px 10px",border:"none",borderRadius:16,cursor:"pointer",fontFamily:"inherit",
+            background: lang==="en" ? "#fbbf24" : "transparent",
+            color: lang==="en" ? "#0a0e1c" : "#94a3b8",
+            fontSize:10,fontWeight:800,letterSpacing:1,
+          }}>EN</button>
+          <button onClick={()=>setLang("he")} style={{
+            padding:"4px 10px",border:"none",borderRadius:16,cursor:"pointer",fontFamily:"inherit",
+            background: lang==="he" ? "#fbbf24" : "transparent",
+            color: lang==="he" ? "#0a0e1c" : "#94a3b8",
+            fontSize:10,fontWeight:800,letterSpacing:1,
+          }}>עב</button>
+        </div>
+      )}
       {/* Big World Cup trophy backdrop */}
       <div aria-hidden="true" style={{
         position:"fixed", inset:0, pointerEvents:"none",
@@ -6460,81 +6630,34 @@ export default function App() {
         }
       `}</style>
 
-      {/* Top bar */}
+      {/* Top bar — minimalist */}
       {screen !== "welcome" && screen !== "results" && (
         <div style={{position:"sticky",top:0,zIndex:20,background:"rgba(10,14,28,0.95)",backdropFilter:"blur(10px)",borderBottom:"1px solid rgba(71,85,105,0.3)"}}>
-          <div style={{display:"flex",alignItems:"center",gap:8,maxWidth:560,margin:"0 auto",padding:"8px 14px",position:"relative"}}>
-            <button onClick={()=>setShowUserMenu(s=>!s)} style={{
-              display:"flex",alignItems:"center",gap:6,
-              background:showUserMenu?"rgba(251,191,36,0.15)":"transparent",
-              border:`1px solid ${showUserMenu?"rgba(251,191,36,0.4)":"transparent"}`,
-              borderRadius:8,padding:"4px 8px",cursor:"pointer",fontFamily:"inherit",
-              minWidth:0,maxWidth:130,
+          <div style={{display:"flex",alignItems:"center",gap:10,maxWidth:560,margin:"0 auto",padding:"10px 14px"}}>
+            {/* ☰ Hamburger menu */}
+            <button onClick={()=>setShowSidebar(true)} aria-label="Menu" style={{
+              background:"transparent",border:"none",cursor:"pointer",fontFamily:"inherit",
+              padding:"4px 6px",
+              display:"flex",flexDirection:"column",gap:4,
+              flexShrink:0,
             }}>
-              <span style={{
-                width:22,height:22,borderRadius:"50%",
-                background:"linear-gradient(135deg,#fbbf24,#d97706)",
-                display:"flex",alignItems:"center",justifyContent:"center",
-                fontSize:11,fontWeight:900,color:"#0a0e1c",flexShrink:0,
-              }}>{name[0]?.toUpperCase()||"?"}</span>
-              <span style={{fontSize:11,color:"#94a3b8",letterSpacing:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{name}</span>
-              <span style={{fontSize:8,color:"#64748b"}}>▼</span>
+              <span style={{width:22,height:2.5,background:"#fbbf24",borderRadius:2,display:"block"}}/>
+              <span style={{width:22,height:2.5,background:"#fbbf24",borderRadius:2,display:"block"}}/>
+              <span style={{width:22,height:2.5,background:"#fbbf24",borderRadius:2,display:"block"}}/>
             </button>
 
-            {/* ⓘ Scoring rules button — gold pill, clearly visible in both LTR &amp; RTL */}
-            <button onClick={()=>setShowRules(true)} title={TRANSLATIONS[lang]?.["rules.tooltip"] || "Scoring rules"} style={{
-              background:"linear-gradient(135deg,rgba(251,191,36,0.25),rgba(217,119,6,0.15))",
-              border:"1px solid rgba(251,191,36,0.6)",
-              borderRadius:"50%",width:32,height:32,
-              cursor:"pointer",fontFamily:"inherit",
-              fontSize:17,color:"#fbbf24",
-              display:"flex",alignItems:"center",justifyContent:"center",
-              flexShrink:0,fontWeight:900,fontStyle:"italic",
-              boxShadow:"0 2px 8px rgba(251,191,36,0.2)",
-            }}>ⓘ</button>
-
+            {/* Progress bar */}
             <div style={{flex:1,height:6,background:"rgba(71,85,105,0.3)",borderRadius:3,overflow:"hidden"}}>
               <div style={{width:`${Math.round((totalPredicted/FIXTURES.length)*100)}%`,height:"100%",background:"linear-gradient(90deg,#fbbf24,#f59e0b)",borderRadius:3,transition:"width 0.4s"}}/>
             </div>
-            <span style={{fontSize:10,color:"#fbbf24",fontWeight:700,minWidth:40,textAlign:"right"}}>{totalPredicted}/{FIXTURES.length}</span>
-            <button onClick={()=>setShowBackup(true)} title="Backup &amp; Restore" style={{
-              background:justSaved?"rgba(34,197,94,0.15)":"rgba(30,41,59,0.6)",
-              border:`1px solid ${justSaved?"#22c55e":"rgba(71,85,105,0.4)"}`,
-              borderRadius:8,padding:"5px 8px",cursor:"pointer",fontFamily:"inherit",
-              fontSize:11,color:justSaved?"#22c55e":"#cbd5e1",transition:"all 0.3s",
-              minWidth:38,
-            }}>{justSaved ? "✓" : "💾"}</button>
+            <span style={{fontSize:10,color:"#fbbf24",fontWeight:700,minWidth:42,textAlign:"center",fontVariantNumeric:"tabular-nums"}}>{totalPredicted}/{FIXTURES.length}</span>
 
-            {/* User dropdown menu */}
-            {showUserMenu && (
-              <>
-                <div onClick={()=>setShowUserMenu(false)} style={{position:"fixed",inset:0,zIndex:25}}/>
-                <div style={{
-                  position:"absolute",top:"calc(100% + 4px)",left:14,zIndex:26,
-                  background:"linear-gradient(145deg,#1a1f3a,#0f1424)",
-                  border:"1px solid rgba(251,191,36,0.3)",
-                  borderRadius:12,padding:6,minWidth:220,
-                  boxShadow:"0 10px 30px rgba(0,0,0,0.6)",
-                  animation:"fadeUp 0.2s ease-out",
-                }}>
-                  <div style={{padding:"8px 12px 10px",borderBottom:"1px solid rgba(71,85,105,0.3)",marginBottom:4}}>
-                    <div style={{fontSize:9,color:"#64748b",letterSpacing:2,marginBottom:2}}>SIGNED IN AS</div>
-                    <div style={{fontSize:14,color:"#fbbf24",fontWeight:700}}>{name}</div>
-                  </div>
-                  <button onClick={()=>{setShowUserMenu(false);setShowProfile(true);}} style={menuItemStyle}>
-                    <span style={{fontSize:14,marginRight:8}}>📊</span> {TRANSLATIONS[lang]?.["profile.menuItem"]?.replace(/^📊\s*/, "") || "My stats"}
-                  </button>
-                  <button onClick={()=>{setShowUserMenu(false);setShowBackup(true);}} style={menuItemStyle}>
-                    <span style={{fontSize:14,marginRight:8}}>💾</span> Backup my progress
-                  </button>
-                  <button onClick={()=>{setShowUserMenu(false);handleLogout();}} style={menuItemStyle}>
-                    <span style={{fontSize:14,marginRight:8}}>🚪</span> Log out
-                  </button>
-                  <button onClick={()=>{setShowUserMenu(false);handleReset();}} style={{...menuItemStyle,color:"#f87171"}}>
-                    <span style={{fontSize:14,marginRight:8}}>🗑️</span> Delete all & start over
-                  </button>
-                </div>
-              </>
+            {/* Just-saved indicator (small green check) */}
+            {justSaved && (
+              <span style={{
+                color:"#22c55e",fontSize:14,fontWeight:900,
+                animation:"fadeUp 0.3s ease-out",
+              }}>✓</span>
             )}
           </div>
           {/* Bottom nav */}
@@ -6720,6 +6843,21 @@ export default function App() {
 
       {/* ⬆ Back to top floating button */}
       <BackToTopButton />
+
+      {/* 🍔 Sidebar drawer */}
+      <Sidebar
+        open={showSidebar}
+        onClose={()=>setShowSidebar(false)}
+        name={name}
+        lang={lang}
+        setLang={setLang}
+        totalPoints={myTotalPoints}
+        onShowProfile={()=>setShowProfile(true)}
+        onShowRules={()=>setShowRules(true)}
+        onShowBackup={()=>setShowBackup(true)}
+        onLogout={handleLogout}
+        onReset={handleReset}
+      />
       </div>
     </div>
     </ToastProvider>
