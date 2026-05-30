@@ -9,12 +9,12 @@ import {
 
 // 🔧 PASTE YOUR FIREBASE CONFIG HERE (see SETUP.md step 2)
 const firebaseConfig = {
-  apiKey: "PASTE_HERE",
-  authDomain: "PASTE_HERE",
-  projectId: "PASTE_HERE",
-  storageBucket: "PASTE_HERE",
-  messagingSenderId: "PASTE_HERE",
-  appId: "PASTE_HERE",
+  apiKey: "AIzaSyD4HwvAZZCNwgVMh_h6zsyZ17lzl69_OrM",
+  authDomain: "wc-2026-8b41e.firebaseapp.com",
+  projectId: "wc-2026-8b41e",
+  storageBucket: "wc-2026-8b41e.firebasestorage.app",
+  messagingSenderId: "141406397194",
+  appId: "1:141406397194:web:a0139af6eb261cc2bf50f3",
 };
 
 const app = initializeApp(firebaseConfig);
