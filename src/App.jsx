@@ -215,11 +215,23 @@ const TRANSLATIONS = {
     "onboarding.back": "← Back",
     "onboarding.letsGo": "Let's go! 🚀",
     "onboarding.slide1Title": "Predict every match",
-    "onboarding.slide1Body": "Type a score for each match in the group stage. Exact score = +5 pts. Right winner = +3 pts. Tap a team in the bracket to pick who advances.",
-    "onboarding.slide2Title": "Make big bets",
-    "onboarding.slide2Body": "In the ⭐ Bonus tab, pick the tournament winner (+20 pts) and the Golden Boot top scorer (+2 per goal). All bonus picks lock when the tournament starts.",
-    "onboarding.slide3Title": "Compete with friends",
-    "onboarding.slide3Body": "Create a league and share the code with friends. Watch the live standings, see who's nailing the predictions, and celebrate every win together.",
+    "onboarding.slide2Title": "Big bets",
+    "onboarding.slide3Title": "Leagues & friends",
+    "onboarding.exact": "Exact score",
+    "onboarding.winner": "Correct winner",
+    "onboarding.wrong": "Wrong",
+    "onboarding.koDouble": "Double points in the knockout stage (+10 / +6)",
+    "onboarding.lockHour": "Each match locks 1 hour before kickoff",
+    "onboarding.champion": "TOURNAMENT CHAMPION",
+    "onboarding.topScorer": "TOP SCORER",
+    "onboarding.goal": "goal",
+    "onboarding.lockAtKickoff": "Both lock when the first match kicks off",
+    "onboarding.findInBonus": "Find them in the ⭐ Bonus tab",
+    "onboarding.step1": "Create a league",
+    "onboarding.step2": "Share the code with friends",
+    "onboarding.step3": "Watch who nails the predictions",
+    "onboarding.whatsappTip": "One-tap WhatsApp share to invite friends",
+    "onboarding.worldTip": "There's a worldwide leaderboard too!",
     // Toast notifications
     "toast.codeCopied": "League code copied! 📋",
     "toast.refreshing": "Refreshing results...",
@@ -514,11 +526,23 @@ const TRANSLATIONS = {
     "onboarding.back": "→ חזור",
     "onboarding.letsGo": "יאללה! 🚀",
     "onboarding.slide1Title": "נחש כל משחק",
-    "onboarding.slide1Body": "אתה רואה משחק. אתה מקליד תוצאה. חלאס. ניחשת בול? 🎯 קח +5. רק את המנצח? ✅ +3. פספסת? יאללה, יש עוד 71 משחקים. בנוקאאוט אותו דבר — תקליד תוצאה — רק שהנקודות כפולות (10 ו-6). 💪",
     "onboarding.slide2Title": "הימורים גדולים",
-    "onboarding.slide2Body": "רוצה לעוף גבוה? נחש את אלוף הטורניר (+20) ואת מלך השערים (+2 לכל שער שהוא יבקיע). תחליט עכשיו — הימורים ננעלים עם שריקת הפתיחה. 💪",
-    "onboarding.slide3Title": "התחרה עם חברים",
-    "onboarding.slide3Body": "תכל'ס, לנחש לבד זה משעמם. תזמין את החבר'ה. צור ליגה, שלח את הקוד בקבוצה, ותראה מי באמת מבין כדורגל ומי סתם פוצץ הבטחות. הדירוג חי — אז כל ניצחון = כיוף, כל פספוס = בושות. 🏆",
+    "onboarding.slide3Title": "ליגות וחברים",
+    "onboarding.exact": "תוצאה מדויקת",
+    "onboarding.winner": "מנצח נכון",
+    "onboarding.wrong": "פספסת",
+    "onboarding.koDouble": "בנוקאאוט הנקודות כפולות (+10 / +6)",
+    "onboarding.lockHour": "כל משחק ננעל שעה לפני שריקת הפתיחה",
+    "onboarding.champion": "אלוף הטורניר",
+    "onboarding.topScorer": "מלך השערים",
+    "onboarding.goal": "שער",
+    "onboarding.lockAtKickoff": "שניהם ננעלים בשריקת הפתיחה הראשונה",
+    "onboarding.findInBonus": "תמצא אותם בטאב ⭐ בונוס",
+    "onboarding.step1": "צור ליגה",
+    "onboarding.step2": "שתף את הקוד עם חברים",
+    "onboarding.step3": "תראה מי קולע הכי טוב",
+    "onboarding.whatsappTip": "כפתור שיתוף ישיר בוואטסאפ",
+    "onboarding.worldTip": "יש גם דירוג עולמי לכל המשתמשים!",
     // Toast notifications
     "toast.codeCopied": "קוד הליגה הועתק! 📋",
     "toast.refreshing": "מרענן תוצאות...",
@@ -1851,20 +1875,130 @@ function OnboardingTutorial({ onDone }) {
     {
       emoji: "🎯",
       title: t("onboarding.slide1Title"),
-      body: t("onboarding.slide1Body"),
       accent: "#fbbf24",
+      content: (
+        <div>
+          {/* Example match card */}
+          <div style={{
+            background:"linear-gradient(135deg,rgba(251,191,36,0.1),rgba(15,20,36,0.5))",
+            border:"1px solid rgba(251,191,36,0.3)",
+            borderRadius:14,padding:"14px 16px",marginBottom:18,
+          }}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-around",gap:8}}>
+              <div style={{textAlign:"center",flex:1}}>
+                <div style={{fontSize:28}}>🇧🇷</div>
+                <div style={{fontSize:11,color:"#cbd5e1",fontWeight:700,marginTop:2}}>Brazil</div>
+              </div>
+              <div style={{display:"flex",alignItems:"center",gap:6}}>
+                <div style={{fontSize:28,fontWeight:900,color:"#fbbf24",fontVariantNumeric:"tabular-nums"}}>2</div>
+                <div style={{fontSize:14,color:"#64748b"}}>-</div>
+                <div style={{fontSize:28,fontWeight:900,color:"#fbbf24",fontVariantNumeric:"tabular-nums"}}>1</div>
+              </div>
+              <div style={{textAlign:"center",flex:1}}>
+                <div style={{fontSize:28}}>🇫🇷</div>
+                <div style={{fontSize:11,color:"#cbd5e1",fontWeight:700,marginTop:2}}>France</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Scoring rows */}
+          <div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:14}}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 12px",background:"rgba(251,191,36,0.08)",borderRadius:8,border:"1px solid rgba(251,191,36,0.2)"}}>
+              <span style={{fontSize:13,color:"#cbd5e1"}}>🎯 {t("onboarding.exact")}</span>
+              <span style={{fontSize:14,fontWeight:900,color:"#fbbf24"}}>+5</span>
+            </div>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 12px",background:"rgba(34,197,94,0.08)",borderRadius:8,border:"1px solid rgba(34,197,94,0.2)"}}>
+              <span style={{fontSize:13,color:"#cbd5e1"}}>✅ {t("onboarding.winner")}</span>
+              <span style={{fontSize:14,fontWeight:900,color:"#22c55e"}}>+3</span>
+            </div>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 12px",background:"rgba(71,85,105,0.15)",borderRadius:8,border:"1px solid rgba(71,85,105,0.3)"}}>
+              <span style={{fontSize:13,color:"#94a3b8"}}>❌ {t("onboarding.wrong")}</span>
+              <span style={{fontSize:14,fontWeight:900,color:"#64748b"}}>0</span>
+            </div>
+          </div>
+
+          {/* Tips */}
+          <div style={{fontSize:11,color:"#94a3b8",lineHeight:1.6,padding:"0 4px"}}>
+            🔥 {t("onboarding.koDouble")}<br/>
+            🔒 {t("onboarding.lockHour")}
+          </div>
+        </div>
+      ),
     },
     {
       emoji: "⭐",
       title: t("onboarding.slide2Title"),
-      body: t("onboarding.slide2Body"),
       accent: "#a855f7",
+      content: (
+        <div>
+          {/* Two big bet cards side by side */}
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:18}}>
+            <div style={{
+              background:"linear-gradient(135deg,rgba(251,191,36,0.12),rgba(15,20,36,0.5))",
+              border:"1px solid rgba(251,191,36,0.4)",
+              borderRadius:12,padding:"14px 10px",textAlign:"center",
+            }}>
+              <div style={{fontSize:36,marginBottom:4}}>🏆</div>
+              <div style={{fontSize:11,color:"#cbd5e1",fontWeight:700,marginBottom:6,letterSpacing:1}}>{t("onboarding.champion")}</div>
+              <div style={{fontSize:22,fontWeight:900,color:"#fbbf24"}}>+20</div>
+            </div>
+            <div style={{
+              background:"linear-gradient(135deg,rgba(168,85,247,0.12),rgba(15,20,36,0.5))",
+              border:"1px solid rgba(168,85,247,0.4)",
+              borderRadius:12,padding:"14px 10px",textAlign:"center",
+            }}>
+              <div style={{fontSize:36,marginBottom:4}}>👟</div>
+              <div style={{fontSize:11,color:"#cbd5e1",fontWeight:700,marginBottom:6,letterSpacing:1}}>{t("onboarding.topScorer")}</div>
+              <div style={{fontSize:18,fontWeight:900,color:"#a855f7"}}>+2 / {t("onboarding.goal")}</div>
+            </div>
+          </div>
+
+          {/* Tips */}
+          <div style={{fontSize:12,color:"#94a3b8",lineHeight:1.7,padding:"0 4px"}}>
+            💡 {t("onboarding.lockAtKickoff")}<br/>
+            📍 {t("onboarding.findInBonus")}
+          </div>
+        </div>
+      ),
     },
     {
-      emoji: "🏅",
+      emoji: "👥",
       title: t("onboarding.slide3Title"),
-      body: t("onboarding.slide3Body"),
       accent: "#22c55e",
+      content: (
+        <div>
+          {/* Three steps */}
+          <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:18}}>
+            {[
+              { n: "1", text: t("onboarding.step1") },
+              { n: "2", text: t("onboarding.step2") },
+              { n: "3", text: t("onboarding.step3") },
+            ].map(step => (
+              <div key={step.n} style={{
+                display:"flex",alignItems:"center",gap:12,
+                padding:"10px 14px",
+                background:"rgba(34,197,94,0.08)",
+                border:"1px solid rgba(34,197,94,0.25)",
+                borderRadius:10,
+              }}>
+                <div style={{
+                  width:28,height:28,borderRadius:"50%",
+                  background:"linear-gradient(135deg,#22c55e,#16a34a)",
+                  display:"flex",alignItems:"center",justifyContent:"center",
+                  fontSize:14,fontWeight:900,color:"#fff",flexShrink:0,
+                }}>{step.n}</div>
+                <span style={{fontSize:13,color:"#cbd5e1",fontWeight:600}}>{step.text}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Tips */}
+          <div style={{fontSize:12,color:"#94a3b8",lineHeight:1.7,padding:"0 4px"}}>
+            💬 {t("onboarding.whatsappTip")}<br/>
+            🌍 {t("onboarding.worldTip")}
+          </div>
+        </div>
+      ),
     },
   ];
 
@@ -1906,20 +2040,17 @@ function OnboardingTutorial({ onDone }) {
         {/* Slide content */}
         <div key={slide} style={{textAlign:"center",animation:"slideIn 0.4s ease-out"}}>
           <div style={{
-            fontSize:72,marginBottom:8,
+            fontSize:56,marginBottom:8,
             filter:`drop-shadow(0 4px 16px ${current.accent}66)`,
           }}>{current.emoji}</div>
 
           <h2 style={{
-            fontSize:22,margin:"0 0 12px",
+            fontSize:20,margin:"0 0 16px",
             color:current.accent,fontWeight:900,
             letterSpacing:0.5,
           }}>{current.title}</h2>
 
-          <p style={{
-            fontSize:14,color:"#cbd5e1",
-            lineHeight:1.6,margin:"0 0 24px",
-          }}>{current.body}</p>
+          <div style={{textAlign:"start",marginBottom:18}}>{current.content}</div>
         </div>
 
         {/* Progress dots */}
