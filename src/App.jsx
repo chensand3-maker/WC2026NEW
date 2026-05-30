@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect, useRef, createContext, useContext } from 
 import {
   generateLeagueCode, createLeague, joinLeague,
   updateMyPicks, leaveLeague, subscribeLeague, updateActualResults,
+  updateMyGlobalProfile, fetchGlobalLeaderboard,
 } from "./firebase";
 import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, fetchTopScorers } from "./liveResults";
 
@@ -251,6 +252,20 @@ const TRANSLATIONS = {
     "league.shareMessage": "Hey! 🏆⚽ I started a 2026 World Cup prediction league called \"{name}\".\n\nJoin with this code: {code}\n\n{url}",
     "league.copyTooltip": "Copy code",
     "toast.invitationCopied": "Invitation copied to clipboard! 📋",
+    // Worldwide leaderboard
+    "world.openButton": "World Leaderboard",
+    "world.title": "World Leaderboard",
+    "world.subtitle": "Where do you stand globally?",
+    "world.back": "Back",
+    "world.loading": "Loading the world...",
+    "world.tryAgain": "Try again",
+    "world.yourRank": "YOUR RANK",
+    "world.outOf": "of",
+    "world.topPercent": "Top {p}% worldwide",
+    "world.topTen": "TOP 10 GLOBALLY",
+    "world.notRankedYet": "You're not ranked yet — start predicting to appear on the world board!",
+    "world.noPlayersYet": "No players yet. Be the first!",
+    "world.updatedEvery": "Updates every 5 minutes",
     // Profile / Stats
     "profile.yourStats": "YOUR STATS",
     "profile.totalPoints": "TOTAL POINTS",
@@ -527,6 +542,20 @@ const TRANSLATIONS = {
     "league.shareMessage": "היי! 🏆⚽ פתחתי ליגת ניחושים למונדיאל 2026 בשם \"{name}\".\n\nהצטרפו עם הקוד הזה: {code}\n\n{url}",
     "league.copyTooltip": "העתק קוד",
     "toast.invitationCopied": "ההזמנה הועתקה ללוח! 📋",
+    // Worldwide leaderboard
+    "world.openButton": "דירוג עולמי",
+    "world.title": "דירוג עולמי",
+    "world.subtitle": "איפה אתה ביחס לעולם?",
+    "world.back": "חזור",
+    "world.loading": "טוען את העולם...",
+    "world.tryAgain": "נסה שוב",
+    "world.yourRank": "המיקום שלך",
+    "world.outOf": "מתוך",
+    "world.topPercent": "ב-{p}% העליונים בעולם",
+    "world.topTen": "טופ 10 עולמי",
+    "world.notRankedYet": "אתה עדיין לא בדירוג — תתחיל לנחש כדי להופיע בלוח העולמי!",
+    "world.noPlayersYet": "אין שחקנים עדיין. תהיה הראשון!",
+    "world.updatedEvery": "מתעדכן כל 5 דקות",
     // Profile / Stats
     "profile.yourStats": "הסטטיסטיקה שלך",
     "profile.totalPoints": "סך הנקודות",
@@ -2176,6 +2205,163 @@ function StatTile({ color, label, value, icon }) {
 }
 
 // ─── BACK TO TOP: floating button that appears after scrolling 400px ─────────
+// ─── WORLD LEADERBOARD: global ranking across all users worldwide ───────────
+function WorldLeaderboard({ userId, name, onClose }) {
+  const t = useT();
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const load = async () => {
+    setLoading(true); setError(null);
+    try {
+      // Check cache first (5 min)
+      const cached = (() => {
+        try {
+          const raw = localStorage.getItem("wc2026_world_v1");
+          if (!raw) return null;
+          const parsed = JSON.parse(raw);
+          if (Date.now() - parsed.fetchedAt > 5 * 60 * 1000) return null;
+          return parsed;
+        } catch { return null; }
+      })();
+      if (cached) {
+        setData(cached);
+        setLoading(false);
+        return;
+      }
+      const result = await fetchGlobalLeaderboard(10, userId);
+      try { localStorage.setItem("wc2026_world_v1", JSON.stringify(result)); } catch {}
+      setData(result);
+    } catch (e) {
+      console.error("World leaderboard failed:", e);
+      setError(e.message || "Couldn't fetch world leaderboard");
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => { load(); }, []);
+
+  // Percentile calc
+  const percentile = (data && data.myRank && data.totalUsers)
+    ? Math.round(((data.totalUsers - data.myRank + 1) / data.totalUsers) * 100)
+    : null;
+
+  return (
+    <div style={{padding:"16px 14px 60px",maxWidth:480,margin:"0 auto"}}>
+      <button onClick={onClose} style={{...ghostBtn,width:"auto",padding:"7px 14px",marginBottom:14}}>
+        ← {t("world.back")}
+      </button>
+
+      {/* Header */}
+      <div style={{textAlign:"center",marginBottom:18}}>
+        <div style={{fontSize:42,marginBottom:6}}>🌍</div>
+        <h2 style={{
+          margin:"0 0 4px",fontSize:22,
+          background:"linear-gradient(180deg,#fde68a,#f59e0b)",
+          WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",
+          fontWeight:900,
+        }}>{t("world.title")}</h2>
+        <p style={{color:"#94a3b8",fontSize:12,margin:0}}>{t("world.subtitle")}</p>
+      </div>
+
+      {loading && (
+        <div style={{textAlign:"center",padding:"30px 0",color:"#94a3b8",fontSize:13}}>
+          <div style={{fontSize:32,marginBottom:8,animation:"pulse 1.5s infinite"}}>🌐</div>
+          {t("world.loading")}
+        </div>
+      )}
+
+      {error && (
+        <div style={{background:"rgba(239,68,68,0.1)",border:"1px solid rgba(239,68,68,0.4)",borderRadius:10,padding:14,textAlign:"center",fontSize:12,color:"#fca5a5"}}>
+          ⚠️ {error}
+          <button onClick={load} style={{...ghostBtn,marginTop:10,padding:"6px 14px",width:"auto"}}>
+            {t("world.tryAgain")}
+          </button>
+        </div>
+      )}
+
+      {data && !loading && (
+        <>
+          {/* My rank summary */}
+          {data.myRank ? (
+            <div style={{
+              background:"linear-gradient(135deg,rgba(251,191,36,0.18),rgba(217,119,6,0.08))",
+              border:"1px solid rgba(251,191,36,0.5)",
+              borderRadius:14,padding:"16px 14px",marginBottom:16,textAlign:"center",
+            }}>
+              <div style={{fontSize:10,color:"#fbbf24",letterSpacing:3,marginBottom:6,fontWeight:700}}>
+                {t("world.yourRank")}
+              </div>
+              <div style={{fontSize:36,fontWeight:900,color:"#fbbf24",lineHeight:1}}>
+                #{data.myRank}
+                <span style={{fontSize:14,color:"#94a3b8",marginLeft:6}}>
+                  {t("world.outOf")} {data.totalUsers}
+                </span>
+              </div>
+              <div style={{fontSize:11,color:"#cbd5e1",marginTop:8}}>
+                {data.myPoints} {t("welcome.pts")} · {t("world.topPercent").replace("{p}", percentile)}
+              </div>
+            </div>
+          ) : (
+            <div style={{
+              background:"rgba(30,41,59,0.5)",
+              border:"1px dashed rgba(71,85,105,0.4)",
+              borderRadius:12,padding:"14px 16px",marginBottom:16,textAlign:"center",
+              fontSize:12,color:"#94a3b8",lineHeight:1.5,
+            }}>
+              {t("world.notRankedYet")}
+            </div>
+          )}
+
+          {/* Top 10 */}
+          <div style={{fontSize:11,color:"#94a3b8",letterSpacing:3,marginBottom:10,textAlign:"center",fontWeight:700}}>
+            🏆 {t("world.topTen")}
+          </div>
+
+          <div style={{display:"flex",flexDirection:"column",gap:6}}>
+            {data.top.length === 0 && (
+              <div style={{textAlign:"center",padding:"20px 0",fontSize:12,color:"#64748b",fontStyle:"italic"}}>
+                {t("world.noPlayersYet")}
+              </div>
+            )}
+            {data.top.map((u, i) => {
+              const isMe = u.uid === userId;
+              const rankColor = u.rank === 1 ? "#fbbf24" : u.rank === 2 ? "#cbd5e1" : u.rank === 3 ? "#d97706" : "#64748b";
+              const rankIcon = u.rank === 1 ? "🥇" : u.rank === 2 ? "🥈" : u.rank === 3 ? "🥉" : `#${u.rank}`;
+              return (
+                <div key={u.uid} style={{
+                  display:"flex",alignItems:"center",gap:10,
+                  padding:"10px 12px",
+                  background: isMe ? "linear-gradient(135deg,rgba(251,191,36,0.18),rgba(15,20,36,0.5))" : "rgba(30,41,59,0.5)",
+                  border: isMe ? "1px solid rgba(251,191,36,0.5)" : "1px solid rgba(71,85,105,0.3)",
+                  borderRadius:10,
+                }}>
+                  <span style={{fontSize:14,color:rankColor,fontWeight:800,minWidth:28,textAlign:"center"}}>{rankIcon}</span>
+                  <div style={{
+                    width:30,height:30,borderRadius:"50%",
+                    background:`linear-gradient(135deg,${colorFor(u.name)},${colorFor(u.name)}aa)`,
+                    display:"flex",alignItems:"center",justifyContent:"center",
+                    fontSize:13,fontWeight:900,color:"#fff",flexShrink:0,
+                  }}>{u.name?.[0]?.toUpperCase()}</div>
+                  <div style={{flex:1,minWidth:0,fontSize:13,fontWeight:isMe?800:600,color:"#f1f5f9",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                    {u.name}{isMe && <span style={{fontSize:10,color:"#fbbf24",marginLeft:6,letterSpacing:1}}>({t("league.you").trim()})</span>}
+                  </div>
+                  <div style={{fontSize:16,fontWeight:900,color:"#fbbf24"}}>{u.totalPoints || 0}</div>
+                </div>
+              );
+            })}
+          </div>
+
+          <p style={{fontSize:9,color:"#64748b",textAlign:"center",marginTop:16}}>
+            {t("world.updatedEvery")}
+          </p>
+        </>
+      )}
+    </div>
+  );
+}
+
 function BackToTopButton() {
   const [visible, setVisible] = useState(false);
   useEffect(() => {
@@ -4002,6 +4188,7 @@ function LeagueHub({
   liveFetchAt, liveError, onFetchLive,
   actualWinner, actualTopScorer,
   leagueCodes, activeLeagueCode, setActiveLeagueCode, allLeagueData, maxLeagues,
+  onShowWorld,
 }) {
   const t = useT();
   const { showToast } = useToast();
@@ -4251,6 +4438,21 @@ function LeagueHub({
             {t("leagues.maxReached")} ({maxLeagues || 5} {t("leagues.activeLeagues")})
           </div>
         )}
+
+        {/* World leaderboard link */}
+        {onShowWorld && (
+          <button onClick={onShowWorld} style={{
+            marginTop:12,width:"100%",
+            background:"linear-gradient(135deg,rgba(59,130,246,0.18),rgba(15,20,36,0.5))",
+            border:"1px solid rgba(59,130,246,0.4)",
+            color:"#93c5fd",
+            borderRadius:12,padding:"12px 14px",
+            fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"inherit",
+            display:"flex",alignItems:"center",justifyContent:"center",gap:8,
+          }}>
+            🌍 {t("world.openButton")}
+          </button>
+        )}
       </div>
     );
   }
@@ -4304,6 +4506,21 @@ function LeagueHub({
           <div style={{background:"rgba(239,68,68,0.1)",border:"1px solid rgba(239,68,68,0.4)",borderRadius:8,padding:"10px 12px",marginTop:14,fontSize:12,color:"#fca5a5"}}>
             ⚠️ {err}
           </div>
+        )}
+
+        {/* World leaderboard — visible to non-league users too */}
+        {onShowWorld && (
+          <button onClick={onShowWorld} style={{
+            marginTop:18,width:"100%",
+            background:"linear-gradient(135deg,rgba(59,130,246,0.15),rgba(15,20,36,0.5))",
+            border:"1px solid rgba(59,130,246,0.4)",
+            color:"#93c5fd",
+            borderRadius:12,padding:"12px 14px",
+            fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"inherit",
+            display:"flex",alignItems:"center",justifyContent:"center",gap:8,
+          }}>
+            🌍 {t("world.openButton")}
+          </button>
         )}
       </div>
     );
@@ -4951,7 +5168,7 @@ function LeagueHub({
           );
         })}
 
-        {/* Leave league + Add another league */}
+        {/* Leave league + Add another league + World */}
         <div style={{marginTop:24,display:"flex",flexDirection:"column",alignItems:"center",gap:10}}>
           {leagueCodes && leagueCodes.length < (maxLeagues || 5) && (
             <button onClick={()=>setMode("creating-or-joining")} style={{
@@ -4961,6 +5178,15 @@ function LeagueHub({
               padding:"8px 16px",borderRadius:10,
               cursor:"pointer",fontFamily:"inherit",
             }}>✨ {t("leagues.addNew")}</button>
+          )}
+          {onShowWorld && (
+            <button onClick={onShowWorld} style={{
+              background:"linear-gradient(135deg,rgba(59,130,246,0.15),rgba(15,20,36,0.5))",
+              border:"1px solid rgba(59,130,246,0.4)",
+              color:"#93c5fd",fontSize:12,fontWeight:700,
+              padding:"8px 16px",borderRadius:10,
+              cursor:"pointer",fontFamily:"inherit",
+            }}>🌍 {t("world.openButton")}</button>
           )}
           <button onClick={requestLeave} style={{background:"transparent",border:"none",color:"#64748b",fontSize:12,cursor:"pointer",fontFamily:"inherit",textDecoration:"underline"}}>{t("league.leaveLeague")}</button>
         </div>
@@ -5891,6 +6117,33 @@ export default function App() {
     return () => clearTimeout(handle);
   }, [leagueCodes.join("|"), userId, name, picks, koWinners, winnerPick, topScorerPick]);
 
+  // ─── GLOBAL PROFILE: push to the worldwide leaderboard (every user) ──────
+  // Independent of league membership — everyone is on the global board.
+  useEffect(() => {
+    if (!name) return;
+    const handle = setTimeout(() => {
+      // Compute total points: match score + bonus
+      let total = 0;
+      try {
+        const ms = totalScore(picks, actuals);
+        total = ms.total;
+      } catch (e) {}
+      // Bonus picks
+      if (actualWinner && winnerPick) {
+        const aw = actualWinner.name || actualWinner.n;
+        const mw = winnerPick.name || winnerPick.n;
+        if (aw && mw && aw === mw) total += POINTS.WINNER_BET;
+      }
+      if (actualTopScorer && topScorerPick && actualTopScorer.name === topScorerPick.name) {
+        total += (actualTopScorer.goals || 0) * POINTS.TOP_SCORER_GOAL;
+      }
+      updateMyGlobalProfile(userId, name, picks, koWinners, {
+        winnerPick, topScorerPick, totalPoints: total,
+      }).catch(err => console.error("Failed to push global profile:", err));
+    }, 1200);
+    return () => clearTimeout(handle);
+  }, [userId, name, picks, koWinners, winnerPick, topScorerPick, actuals, actualWinner, actualTopScorer]);
+
   // ─── LIVE RESULTS AUTO-FETCH ───────────────────────────────────────────────
   // Poll API-Football every 5 min for new match results
   const fetchAndApplyLive = async () => {
@@ -6048,7 +6301,7 @@ export default function App() {
       onConfirm: () => {
         clearState();
         setName(""); setPicks({}); setKoWinners({}); setGroupIdx(0);
-        setFriends([]); setActuals({}); setActualKo({}); setLeagueName(""); setLeagueCode(""); setLeagueCodes([]); setActiveLeagueCode(""); setAllLeagueData({}); setWinnerPick(null); setTopScorerPick(null); setCelebratedIds(new Set()); setLastSeenGoals(0); setSeenActualIds(new Set()); setShowOnboarding(true); try { localStorage.removeItem("wc2026_celebrated_v1"); localStorage.removeItem("wc2026_lastseen_goals_v1"); localStorage.removeItem("wc2026_seen_actuals_v1"); localStorage.removeItem("wc2026_onboarded_v1"); } catch {}
+        setFriends([]); setActuals({}); setActualKo({}); setLeagueName(""); setLeagueCode(""); setLeagueCodes([]); setActiveLeagueCode(""); setAllLeagueData({}); setWinnerPick(null); setTopScorerPick(null); setCelebratedIds(new Set()); setLastSeenGoals(0); setSeenActualIds(new Set()); setShowOnboarding(true); try { localStorage.removeItem("wc2026_celebrated_v1"); localStorage.removeItem("wc2026_lastseen_goals_v1"); localStorage.removeItem("wc2026_seen_actuals_v1"); localStorage.removeItem("wc2026_onboarded_v1"); localStorage.removeItem("wc2026_world_v1"); } catch {}
         setScreen("welcome");
         setShowIntro(false);
       },
@@ -6060,7 +6313,7 @@ export default function App() {
       // No data to worry about, just log out
       clearState();
       setName(""); setPicks({}); setKoWinners({}); setGroupIdx(0);
-      setFriends([]); setActuals({}); setActualKo({}); setLeagueName(""); setLeagueCode(""); setLeagueCodes([]); setActiveLeagueCode(""); setAllLeagueData({}); setWinnerPick(null); setTopScorerPick(null); setCelebratedIds(new Set()); setLastSeenGoals(0); setSeenActualIds(new Set()); setShowOnboarding(true); try { localStorage.removeItem("wc2026_celebrated_v1"); localStorage.removeItem("wc2026_lastseen_goals_v1"); localStorage.removeItem("wc2026_seen_actuals_v1"); localStorage.removeItem("wc2026_onboarded_v1"); } catch {}
+      setFriends([]); setActuals({}); setActualKo({}); setLeagueName(""); setLeagueCode(""); setLeagueCodes([]); setActiveLeagueCode(""); setAllLeagueData({}); setWinnerPick(null); setTopScorerPick(null); setCelebratedIds(new Set()); setLastSeenGoals(0); setSeenActualIds(new Set()); setShowOnboarding(true); try { localStorage.removeItem("wc2026_celebrated_v1"); localStorage.removeItem("wc2026_lastseen_goals_v1"); localStorage.removeItem("wc2026_seen_actuals_v1"); localStorage.removeItem("wc2026_onboarded_v1"); localStorage.removeItem("wc2026_world_v1"); } catch {}
       setScreen("welcome");
       setShowIntro(false);
       return;
@@ -6074,7 +6327,7 @@ export default function App() {
       onConfirm: () => {
         clearState();
         setName(""); setPicks({}); setKoWinners({}); setGroupIdx(0);
-        setFriends([]); setActuals({}); setActualKo({}); setLeagueName(""); setLeagueCode(""); setLeagueCodes([]); setActiveLeagueCode(""); setAllLeagueData({}); setWinnerPick(null); setTopScorerPick(null); setCelebratedIds(new Set()); setLastSeenGoals(0); setSeenActualIds(new Set()); setShowOnboarding(true); try { localStorage.removeItem("wc2026_celebrated_v1"); localStorage.removeItem("wc2026_lastseen_goals_v1"); localStorage.removeItem("wc2026_seen_actuals_v1"); localStorage.removeItem("wc2026_onboarded_v1"); } catch {}
+        setFriends([]); setActuals({}); setActualKo({}); setLeagueName(""); setLeagueCode(""); setLeagueCodes([]); setActiveLeagueCode(""); setAllLeagueData({}); setWinnerPick(null); setTopScorerPick(null); setCelebratedIds(new Set()); setLastSeenGoals(0); setSeenActualIds(new Set()); setShowOnboarding(true); try { localStorage.removeItem("wc2026_celebrated_v1"); localStorage.removeItem("wc2026_lastseen_goals_v1"); localStorage.removeItem("wc2026_seen_actuals_v1"); localStorage.removeItem("wc2026_onboarded_v1"); localStorage.removeItem("wc2026_world_v1"); } catch {}
         setScreen("welcome");
         setShowIntro(false);
       },
@@ -6392,6 +6645,15 @@ export default function App() {
           setActiveLeagueCode={setActiveLeagueCode}
           allLeagueData={allLeagueData}
           maxLeagues={MAX_LEAGUES}
+          onShowWorld={()=>setScreen("world")}
+        />
+      )}
+
+      {screen === "world" && (
+        <WorldLeaderboard
+          userId={userId}
+          name={name}
+          onClose={()=>setScreen("league")}
         />
       )}
 
