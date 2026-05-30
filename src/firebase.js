@@ -7,14 +7,14 @@ import {
   collection, getDoc, serverTimestamp, deleteField,
 } from "firebase/firestore";
 
-// 🔧 Firebase config
+// 🔧 PASTE YOUR FIREBASE CONFIG HERE (see SETUP.md step 2)
 const firebaseConfig = {
-  apiKey: "AIzaSyD4HwvAZZCNwgVMh_h6zsyZ17lzl69_OrM",
-  authDomain: "wc-2026-8b41e.firebaseapp.com",
-  projectId: "wc-2026-8b41e",
-  storageBucket: "wc-2026-8b41e.firebasestorage.app",
-  messagingSenderId: "141406397194",
-  appId: "1:141406397194:web:a0139af6eb261cc2bf50f3",
+  apiKey: "PASTE_HERE",
+  authDomain: "PASTE_HERE",
+  projectId: "PASTE_HERE",
+  storageBucket: "PASTE_HERE",
+  messagingSenderId: "PASTE_HERE",
+  appId: "PASTE_HERE",
 };
 
 const app = initializeApp(firebaseConfig);
@@ -41,7 +41,7 @@ export async function createLeague(code, leagueName, creator) {
     name: leagueName,
     createdBy: creator,
     createdAt: serverTimestamp(),
-    members: {},
+    members: {}, // { userId: { name, picks, koWinners, updatedAt } }
   });
   return code;
 }
@@ -53,7 +53,6 @@ export async function joinLeague(code) {
   return { code, ...snap.data() };
 }
 
-// Updated to accept extras (e.g. winnerPick, topScorerPick) so bonus picks sync
 export async function updateMyPicks(code, userId, name, picks, koWinners, extras = {}) {
   const ref = doc(db, "leagues", code);
   await updateDoc(ref, {
@@ -61,7 +60,7 @@ export async function updateMyPicks(code, userId, name, picks, koWinners, extras
       name,
       picks,
       koWinners,
-      ...extras,
+      ...extras, // e.g. winnerPick, topScorerPick
       updatedAt: Date.now(),
     },
   });
@@ -96,4 +95,50 @@ export async function updateActualResults(code, actuals, actualKo) {
     actualKo,
     resultsUpdatedAt: Date.now(),
   });
+}
+
+// ─── GLOBAL LEADERBOARD: every user across the whole world ─────────────────
+// Each user has a doc in /users/{userId} with their picks + total points.
+// This is updated every time the user makes a pick (debounced via the App).
+
+export async function updateMyGlobalProfile(userId, name, picks, koWinners, extras = {}) {
+  const ref = doc(db, "users", userId);
+  await setDoc(ref, {
+    name,
+    picks,
+    koWinners,
+    ...extras, // winnerPick, topScorerPick, totalPoints
+    updatedAt: Date.now(),
+  }, { merge: true });
+}
+
+// Fetch the top N users by total points + the requesting user's rank
+// Returns: { top: [...users], myRank, totalUsers, fetchedAt }
+import { query, orderBy, limit, getDocs } from "firebase/firestore";
+
+export async function fetchGlobalLeaderboard(topN = 10, myUserId = null) {
+  const usersRef = collection(db, "users");
+  // Get top N by totalPoints
+  const topQuery = query(usersRef, orderBy("totalPoints", "desc"), limit(topN));
+  const topSnap = await getDocs(topQuery);
+  const top = topSnap.docs.map((d, i) => ({ uid: d.id, rank: i + 1, ...d.data() }));
+
+  // Get total user count + my rank (one big fetch — okay because we cache 5min)
+  let totalUsers = 0;
+  let myRank = null;
+  let myPoints = 0;
+  if (myUserId) {
+    // Get all users sorted by totalPoints. Limit to 5000 to keep payload reasonable.
+    const allQuery = query(usersRef, orderBy("totalPoints", "desc"), limit(5000));
+    const allSnap = await getDocs(allQuery);
+    totalUsers = allSnap.size;
+    allSnap.docs.forEach((d, i) => {
+      if (d.id === myUserId) {
+        myRank = i + 1;
+        myPoints = d.data().totalPoints || 0;
+      }
+    });
+  }
+
+  return { top, myRank, myPoints, totalUsers, fetchedAt: Date.now() };
 }
