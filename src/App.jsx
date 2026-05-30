@@ -268,6 +268,7 @@ const TRANSLATIONS = {
     "world.updatedEvery": "Updates every 5 minutes",
     // Sidebar (hamburger menu)
     "sidebar.myStats": "My Stats",
+    "sidebar.tutorial": "How to Play",
     "sidebar.scoringRules": "Scoring Rules",
     "sidebar.backup": "Backup My Progress",
     "sidebar.language": "LANGUAGE",
@@ -566,6 +567,7 @@ const TRANSLATIONS = {
     "world.updatedEvery": "מתעדכן כל 5 דקות",
     // Sidebar (hamburger menu)
     "sidebar.myStats": "הסטטיסטיקה שלי",
+    "sidebar.tutorial": "איך משחקים?",
     "sidebar.scoringRules": "כללי הניקוד",
     "sidebar.backup": "גיבוי הנתונים",
     "sidebar.language": "שפה",
@@ -2379,7 +2381,7 @@ function WorldLeaderboard({ userId, name, onClose }) {
 }
 
 // ─── SIDEBAR: hamburger menu drawer that slides in from one side ─────────────
-function Sidebar({ open, onClose, name, lang, setLang, onShowProfile, onShowRules, onShowBackup, onLogout, onReset, totalPoints }) {
+function Sidebar({ open, onClose, name, lang, setLang, onShowProfile, onShowRules, onShowBackup, onShowTutorial, onLogout, onReset, totalPoints }) {
   const t = useT();
   const isRTL = lang === "he";
 
@@ -2442,6 +2444,7 @@ function Sidebar({ open, onClose, name, lang, setLang, onShowProfile, onShowRule
         {/* Menu items */}
         <div style={{padding:"12px 12px",flex:1}}>
           <SidebarItem icon="📊" label={t("sidebar.myStats")} onClick={()=>{onClose();onShowProfile();}}/>
+          <SidebarItem icon="🎓" label={t("sidebar.tutorial")} onClick={()=>{onClose();onShowTutorial();}}/>
           <SidebarItem icon="ⓘ" label={t("sidebar.scoringRules")} onClick={()=>{onClose();onShowRules();}}/>
           <SidebarItem icon="💾" label={t("sidebar.backup")} onClick={()=>{onClose();onShowBackup();}}/>
 
@@ -6855,6 +6858,7 @@ export default function App() {
         onShowProfile={()=>setShowProfile(true)}
         onShowRules={()=>setShowRules(true)}
         onShowBackup={()=>setShowBackup(true)}
+        onShowTutorial={()=>setShowOnboarding(true)}
         onLogout={handleLogout}
         onReset={handleReset}
       />
