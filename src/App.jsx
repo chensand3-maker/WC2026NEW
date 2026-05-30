@@ -6,6 +6,10 @@ import {
 } from "./firebase";
 import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, fetchTopScorers } from "./liveResults";
 
+// ─── APP VERSION ──────────────────────────────────────────────────────────────
+// Bump this manually before each deploy. Shown in the sidebar footer.
+const APP_VERSION = "1.0.0";
+
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
 // Use t("key") inside components — falls back to English if a Hebrew key is missing.
@@ -2619,6 +2623,9 @@ function Sidebar({ open, onClose, name, lang, setLang, onShowProfile, onShowRule
         {/* Footer */}
         <div style={{padding:"14px 20px",borderTop:"1px solid rgba(71,85,105,0.3)",fontSize:10,color:"#64748b",textAlign:"center"}}>
           ⚽ {t("sidebar.footer")}
+          <div style={{fontSize:9,color:"#475569",marginTop:4,letterSpacing:1,fontFamily:"monospace"}}>
+            v{APP_VERSION}
+          </div>
         </div>
       </div>
     </>
