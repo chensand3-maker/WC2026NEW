@@ -8,7 +8,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "2.1.0";
+const APP_VERSION = "2.3.0";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -359,6 +359,44 @@ const TRANSLATIONS = {
     "achv.all_in.desc": "Place both bonus bets (champion + top scorer)",
     "achv.first_place.name": "Champion",
     "achv.first_place.desc": "Reach #1 in any league",
+    "achv.perfectionist.name": "Perfectionist",
+    "achv.perfectionist.desc": "15 exact predictions in the tournament",
+    "achv.diamond.name": "Diamond",
+    "achv.diamond.desc": "25 exact predictions in the tournament",
+    "achv.jackpot.name": "Jackpot",
+    "achv.jackpot.desc": "Predict exact score with 3+ goal difference (e.g. 4-1)",
+    "achv.drama.name": "Drama King",
+    "achv.drama.desc": "Predict an exact score with 6+ total goals",
+    "achv.goalfest.name": "Goalfest",
+    "achv.goalfest.desc": "Predict an exact score with 7+ total goals",
+    "achv.goalkeeper.name": "Goalkeeper",
+    "achv.goalkeeper.desc": "Predict 3 matches as 0-0 correctly",
+    "achv.bold.name": "Bold",
+    "achv.bold.desc": "Predict a 4+ goal margin win — and your winner was right",
+    "achv.ko_sniper.name": "Knockout Sniper",
+    "achv.ko_sniper.desc": "3 exact predictions in the knockout stage",
+    "achv.bracket_genius.name": "Bracket Genius",
+    "achv.bracket_genius.desc": "5 exact predictions in the knockout stage",
+    "achv.final_predictor.name": "Final Oracle",
+    "achv.final_predictor.desc": "Predict the exact score of the World Cup Final",
+    "achv.strong.name": "Strong",
+    "achv.strong.desc": "Earn 75 points",
+    "achv.star.name": "Star",
+    "achv.star.desc": "Earn 150 points",
+    "achv.king.name": "King",
+    "achv.king.desc": "Earn 300 points",
+    "achv.night_owl.name": "Night Owl",
+    "achv.night_owl.desc": "Made a pick after 1:00 AM",
+    "achv.early_bird.name": "Early Bird",
+    "achv.early_bird.desc": "Made a pick before 7:00 AM",
+    "achv.last_place.name": "Rock Bottom",
+    "achv.last_place.desc": "Finish last in a league (3+ players)",
+    "achv.hall_of_fame.name": "Hall of Fame",
+    "achv.hall_of_fame.desc": "Reach #1 in the world leaderboard",
+    "achv.lucky_7.name": "Lucky 7",
+    "achv.lucky_7.desc": "Have exactly 7 exact predictions",
+    "achv.clown.name": "The Clown",
+    "achv.clown.desc": "5 wrong predictions in a row 🤡",
     // Profile / Stats
     "profile.yourStats": "YOUR STATS",
     "profile.totalPoints": "TOTAL POINTS",
@@ -738,6 +776,44 @@ const TRANSLATIONS = {
     "achv.all_in.desc": "הנח את שני הימורי הבונוס (אלוף + מלך השערים)",
     "achv.first_place.name": "אלוף",
     "achv.first_place.desc": "הגע למקום ראשון בכל ליגה",
+    "achv.perfectionist.name": "פרפקציוניסט",
+    "achv.perfectionist.desc": "15 ניחושים מדויקים בכל הטורניר",
+    "achv.diamond.name": "יהלום",
+    "achv.diamond.desc": "25 ניחושים מדויקים בכל הטורניר",
+    "achv.jackpot.name": "ג'קפוט",
+    "achv.jackpot.desc": "נחש תוצאה מדויקת עם הפרש 3+ שערים (למשל 4-1)",
+    "achv.drama.name": "מלך הדרמה",
+    "achv.drama.desc": "נחש תוצאה מדויקת עם 6+ שערים בסה\"כ",
+    "achv.goalfest.name": "חגיגת שערים",
+    "achv.goalfest.desc": "נחש תוצאה מדויקת עם 7+ שערים בסה\"כ",
+    "achv.goalkeeper.name": "שוער",
+    "achv.goalkeeper.desc": "נחש 3 משחקי 0-0 נכון",
+    "achv.bold.name": "אמיץ",
+    "achv.bold.desc": "ניחשת ניצחון בהפרש 4+ שערים — והמנצח היה נכון",
+    "achv.ko_sniper.name": "צלף נוקאאוט",
+    "achv.ko_sniper.desc": "3 ניחושים מדויקים בשלב הנוקאאוט",
+    "achv.bracket_genius.name": "גאון הברקט",
+    "achv.bracket_genius.desc": "5 ניחושים מדויקים בשלב הנוקאאוט",
+    "achv.final_predictor.name": "אורקל הגמר",
+    "achv.final_predictor.desc": "נחש את התוצאה המדויקת של גמר המונדיאל",
+    "achv.strong.name": "חזק",
+    "achv.strong.desc": "צבור 75 נקודות",
+    "achv.star.name": "כוכב",
+    "achv.star.desc": "צבור 150 נקודות",
+    "achv.king.name": "מלך",
+    "achv.king.desc": "צבור 300 נקודות",
+    "achv.night_owl.name": "ינשוף לילה",
+    "achv.night_owl.desc": "ניחשת אחרי 1:00 בלילה",
+    "achv.early_bird.name": "ציפור השחר",
+    "achv.early_bird.desc": "ניחשת לפני 7:00 בבוקר",
+    "achv.last_place.name": "תחתית",
+    "achv.last_place.desc": "סיים במקום אחרון בליגה (3+ שחקנים)",
+    "achv.hall_of_fame.name": "אגדה",
+    "achv.hall_of_fame.desc": "הגע למקום #1 בדירוג העולמי",
+    "achv.lucky_7.name": "מספר 7 ברכה",
+    "achv.lucky_7.desc": "ניחשת בדיוק 7 ניחושים מדויקים",
+    "achv.clown.name": "הליצן",
+    "achv.clown.desc": "5 פספוסים ברצף 🤡",
     // Profile / Stats
     "profile.yourStats": "הסטטיסטיקה שלך",
     "profile.totalPoints": "סך הנקודות",
@@ -1125,6 +1201,141 @@ const ACHIEVEMENTS = [
   // Champion
   { id: "first_place", icon: "👑", color: "#fbbf24",
     check: ({ myRank }) => myRank === 1 },
+
+  // ─── NEW: Advanced accuracy ──
+  { id: "perfectionist", icon: "🏹", color: "#fbbf24",
+    check: ({ picks, actuals }) => {
+      let count = 0;
+      for (const f of FIXTURES) {
+        const p = picks[f.id], a = actuals[f.id];
+        if (p && a && p.h !== "" && p.h !== undefined && p.h === a.h && p.a === a.a) count++;
+      }
+      return count >= 15;
+    } },
+  { id: "diamond", icon: "💎", color: "#3b82f6",
+    check: ({ picks, actuals }) => {
+      let count = 0;
+      for (const f of FIXTURES) {
+        const p = picks[f.id], a = actuals[f.id];
+        if (p && a && p.h !== "" && p.h !== undefined && p.h === a.h && p.a === a.a) count++;
+      }
+      return count >= 25;
+    } },
+
+  // ─── NEW: Lucky / unique ──
+  { id: "jackpot", icon: "🎰", color: "#a855f7",
+    check: ({ picks, actuals }) => FIXTURES.some(f => {
+      const p = picks[f.id], a = actuals[f.id];
+      if (!p || !a) return false;
+      const ph = parseInt(p.h), pa = parseInt(p.a), ah = parseInt(a.h), aa = parseInt(a.a);
+      if (isNaN(ph) || isNaN(pa) || isNaN(ah) || isNaN(aa)) return false;
+      return ph === ah && pa === aa && Math.abs(ah - aa) >= 3;
+    }) },
+  { id: "drama", icon: "🎭", color: "#ef4444",
+    check: ({ picks, actuals }) => FIXTURES.some(f => {
+      const p = picks[f.id], a = actuals[f.id];
+      if (!p || !a) return false;
+      const ph = parseInt(p.h), pa = parseInt(p.a), ah = parseInt(a.h), aa = parseInt(a.a);
+      if (isNaN(ph) || isNaN(pa) || isNaN(ah) || isNaN(aa)) return false;
+      return ph === ah && pa === aa && (ah + aa) >= 6;
+    }) },
+  { id: "goalfest", icon: "⚽", color: "#a855f7",
+    check: ({ picks, actuals }) => FIXTURES.some(f => {
+      const p = picks[f.id], a = actuals[f.id];
+      if (!p || !a) return false;
+      const ph = parseInt(p.h), pa = parseInt(p.a), ah = parseInt(a.h), aa = parseInt(a.a);
+      if (isNaN(ph) || isNaN(pa) || isNaN(ah) || isNaN(aa)) return false;
+      return ph === ah && pa === aa && (ah + aa) >= 7;
+    }) },
+  { id: "goalkeeper", icon: "🥅", color: "#22c55e",
+    check: ({ picks, actuals }) => {
+      let count = 0;
+      for (const f of FIXTURES) {
+        const p = picks[f.id], a = actuals[f.id];
+        if (!p || !a) continue;
+        if (p.h === "0" && p.a === "0" && a.h === "0" && a.a === "0") count++;
+      }
+      return count >= 3;
+    } },
+  { id: "bold", icon: "🎲", color: "#ef4444",
+    check: ({ picks, actuals }) => FIXTURES.some(f => {
+      const p = picks[f.id], a = actuals[f.id];
+      if (!p || !a) return false;
+      const ph = parseInt(p.h), pa = parseInt(p.a), ah = parseInt(a.h), aa = parseInt(a.a);
+      if (isNaN(ph) || isNaN(pa) || isNaN(ah) || isNaN(aa)) return false;
+      // Predicted a one-sided win (4+ goal diff, scoreless other side) and got the winner right
+      const predDiff = Math.abs(ph - pa);
+      const actDiff = Math.abs(ah - aa);
+      const predWinner = ph > pa ? "h" : ph < pa ? "a" : "d";
+      const actWinner = ah > aa ? "h" : ah < aa ? "a" : "d";
+      return predDiff >= 4 && actDiff >= 1 && predWinner === actWinner && predWinner !== "d";
+    }) },
+
+  // ─── NEW: Knockout specialists ──
+  { id: "ko_sniper", icon: "🎯", color: "#fbbf24",
+    check: ({ koPicks, actualKoScores }) => {
+      let count = 0;
+      Object.keys(actualKoScores || {}).forEach(id => {
+        const p = koPicks?.[id], a = actualKoScores[id];
+        if (p && a && p.h !== "" && p.h !== undefined && p.h === a.h && p.a === a.a) count++;
+      });
+      return count >= 3;
+    } },
+  { id: "bracket_genius", icon: "🔥", color: "#ef4444",
+    check: ({ koPicks, actualKoScores }) => {
+      let count = 0;
+      Object.keys(actualKoScores || {}).forEach(id => {
+        const p = koPicks?.[id], a = actualKoScores[id];
+        if (p && a && p.h !== "" && p.h !== undefined && p.h === a.h && p.a === a.a) count++;
+      });
+      return count >= 5;
+    } },
+  { id: "final_predictor", icon: "👑", color: "#fbbf24",
+    check: ({ koPicks, actualKoScores }) => {
+      const p = koPicks?.["FINAL"], a = actualKoScores?.["FINAL"];
+      return p && a && p.h !== "" && p.h !== undefined && p.h === a.h && p.a === a.a;
+    } },
+
+  // ─── NEW: Points milestones ──
+  { id: "strong", icon: "💪", color: "#22c55e",
+    check: ({ totalPoints }) => totalPoints >= 75 },
+  { id: "star", icon: "🌟", color: "#fbbf24",
+    check: ({ totalPoints }) => totalPoints >= 150 },
+  { id: "king", icon: "👑", color: "#a855f7",
+    check: ({ totalPoints }) => totalPoints >= 300 },
+
+  // ─── NEW (v2.3): Fun / quirky ──
+  { id: "night_owl", icon: "🌙", color: "#3b82f6",
+    check: ({ pickedAtHours }) => pickedAtHours?.some?.(h => h >= 1 && h < 5) },
+  { id: "early_bird", icon: "☀️", color: "#fbbf24",
+    check: ({ pickedAtHours }) => pickedAtHours?.some?.(h => h >= 5 && h < 7) },
+  { id: "last_place", icon: "☠️", color: "#64748b",
+    check: ({ myRank, leagueSize }) => myRank && leagueSize && myRank === leagueSize && leagueSize >= 3 },
+  { id: "hall_of_fame", icon: "🎖️", color: "#fbbf24",
+    check: ({ globalRank }) => globalRank === 1 },
+  { id: "lucky_7", icon: "🍀", color: "#22c55e",
+    check: ({ picks, actuals }) => {
+      let count = 0;
+      for (const f of FIXTURES) {
+        const p = picks[f.id], a = actuals[f.id];
+        if (p && a && p.h !== "" && p.h !== undefined && p.h === a.h && p.a === a.a) count++;
+      }
+      return count === 7;
+    } },
+  { id: "clown", icon: "🤡", color: "#ef4444",
+    check: ({ picks, actuals }) => {
+      // 5 wrong predictions in a row (predicted, real result exists, but wrong winner)
+      let streak = 0;
+      for (const f of FIXTURES) {
+        const p = picks[f.id], a = actuals[f.id];
+        if (!a || a.h === "" || a.h === undefined) continue;
+        if (!p || p.h === "" || p.h === undefined) continue;
+        const s = scoreMatch(p, a);
+        if (s.type === "wrong") { streak++; if (streak >= 5) return true; }
+        else streak = 0;
+      }
+      return false;
+    } },
 ];
 
 function checkAchievements(ctx) {
@@ -6936,6 +7147,30 @@ export default function App() {
     } catch {}
     return new Set();
   });
+  // Track the local hours at which the user makes picks (for night_owl / early_bird badges)
+  const [pickedAtHours, setPickedAtHours] = useState(() => {
+    try {
+      const raw = localStorage.getItem("wc2026_pickhours_v1");
+      if (raw) return JSON.parse(raw);
+    } catch {}
+    return [];
+  });
+  // Record the current local hour whenever picks change (debounced)
+  const prevPicksRef = useRef(picks);
+  useEffect(() => {
+    if (prevPicksRef.current === picks) return;
+    prevPicksRef.current = picks;
+    const handle = setTimeout(() => {
+      const hour = new Date().getHours();
+      setPickedAtHours(prev => {
+        if (prev.includes(hour)) return prev;
+        const next = [...prev, hour];
+        try { localStorage.setItem("wc2026_pickhours_v1", JSON.stringify(next)); } catch {}
+        return next;
+      });
+    }, 500);
+    return () => clearTimeout(handle);
+  }, [picks, koPicks]);
   // Queue of newly unlocked badges to show as popups
   const [newBadgeQueue, setNewBadgeQueue] = useState([]);
   const [lang, setLangState] = useState(() => {
@@ -7353,8 +7588,9 @@ export default function App() {
   // Whenever relevant state changes, recompute which badges should be unlocked.
   // New unlocks go into a queue that pops up one at a time.
   useEffect(() => {
-    // Compute my rank from any active league
+    // Compute my rank from any active league + how many people in it
     let myRank = null;
+    let leagueSize = 0;
     if (leagueData?.members) {
       const ranked = Object.values(leagueData.members).map(m => {
         let total = 0;
@@ -7369,15 +7605,26 @@ export default function App() {
         }
         return { uid: m.uid, total };
       }).sort((a, b) => b.total - a.total);
+      leagueSize = ranked.length;
       const idx = ranked.findIndex(r => r.uid === userId);
       if (idx >= 0) myRank = idx + 1;
     }
+    // Global rank from cached world leaderboard (if available)
+    let globalRank = null;
+    try {
+      const raw = localStorage.getItem("wc2026_world_v1");
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed.myRank) globalRank = parsed.myRank;
+      }
+    } catch {}
     const ctx = {
-      picks, actuals, koWinners,
+      picks, actuals, koWinners, koPicks, actualKoScores,
       winnerPick, topScorerPick,
       actualWinner, actualTopScorer,
       totalPoints: myTotalPoints,
-      leagueCodes, myRank,
+      leagueCodes, myRank, leagueSize, globalRank,
+      pickedAtHours,
     };
     const nowUnlocked = checkAchievements(ctx);
     // Find genuinely new badges
@@ -7394,7 +7641,7 @@ export default function App() {
       try { localStorage.setItem("wc2026_achv_v1", JSON.stringify([...merged])); } catch {}
       setNewBadgeQueue(q => [...q, ...newOnes]);
     }
-  }, [picks, actuals, koWinners, winnerPick, topScorerPick, actualWinner, actualTopScorer, myTotalPoints, leagueCodes.join("|"), leagueData]);
+  }, [picks, actuals, koWinners, koPicks, actualKoScores, winnerPick, topScorerPick, actualWinner, actualTopScorer, myTotalPoints, leagueCodes.join("|"), leagueData, pickedAtHours]);
   // Bonus picks (winner + top scorer) lock once the first match has kicked off
   const bonusLocked = (() => {
     const firstKick = Math.min(...FIXTURES.filter(f => f.kickoff).map(f => new Date(f.kickoff).getTime()));
@@ -7444,7 +7691,7 @@ export default function App() {
       onConfirm: () => {
         clearState();
         setName(""); setPicks({}); setKoWinners({}); setKoPicks({}); setGroupIdx(0);
-        setFriends([]); setActuals({}); setActualKo({}); setActualKoScores({}); setLeagueName(""); setLeagueCode(""); setLeagueCodes([]); setActiveLeagueCode(""); setAllLeagueData({}); setWinnerPick(null); setTopScorerPick(null); setCelebratedIds(new Set()); setLastSeenGoals(0); setSeenActualIds(new Set()); setShowOnboarding(true); try { localStorage.removeItem("wc2026_celebrated_v1"); localStorage.removeItem("wc2026_lastseen_goals_v1"); localStorage.removeItem("wc2026_seen_actuals_v1"); localStorage.removeItem("wc2026_onboarded_v1"); localStorage.removeItem("wc2026_world_v1"); localStorage.removeItem("wc2026_achv_v1"); } catch {}
+        setFriends([]); setActuals({}); setActualKo({}); setActualKoScores({}); setLeagueName(""); setLeagueCode(""); setLeagueCodes([]); setActiveLeagueCode(""); setAllLeagueData({}); setWinnerPick(null); setTopScorerPick(null); setCelebratedIds(new Set()); setLastSeenGoals(0); setSeenActualIds(new Set()); setShowOnboarding(true); try { localStorage.removeItem("wc2026_celebrated_v1"); localStorage.removeItem("wc2026_lastseen_goals_v1"); localStorage.removeItem("wc2026_seen_actuals_v1"); localStorage.removeItem("wc2026_onboarded_v1"); localStorage.removeItem("wc2026_world_v1"); localStorage.removeItem("wc2026_achv_v1"); localStorage.removeItem("wc2026_pickhours_v1"); } catch {}
         setScreen("welcome");
         setShowIntro(false);
       },
@@ -7456,7 +7703,7 @@ export default function App() {
       // No data to worry about, just log out
       clearState();
       setName(""); setPicks({}); setKoWinners({}); setKoPicks({}); setGroupIdx(0);
-      setFriends([]); setActuals({}); setActualKo({}); setActualKoScores({}); setLeagueName(""); setLeagueCode(""); setLeagueCodes([]); setActiveLeagueCode(""); setAllLeagueData({}); setWinnerPick(null); setTopScorerPick(null); setCelebratedIds(new Set()); setLastSeenGoals(0); setSeenActualIds(new Set()); setShowOnboarding(true); try { localStorage.removeItem("wc2026_celebrated_v1"); localStorage.removeItem("wc2026_lastseen_goals_v1"); localStorage.removeItem("wc2026_seen_actuals_v1"); localStorage.removeItem("wc2026_onboarded_v1"); localStorage.removeItem("wc2026_world_v1"); localStorage.removeItem("wc2026_achv_v1"); } catch {}
+      setFriends([]); setActuals({}); setActualKo({}); setActualKoScores({}); setLeagueName(""); setLeagueCode(""); setLeagueCodes([]); setActiveLeagueCode(""); setAllLeagueData({}); setWinnerPick(null); setTopScorerPick(null); setCelebratedIds(new Set()); setLastSeenGoals(0); setSeenActualIds(new Set()); setShowOnboarding(true); try { localStorage.removeItem("wc2026_celebrated_v1"); localStorage.removeItem("wc2026_lastseen_goals_v1"); localStorage.removeItem("wc2026_seen_actuals_v1"); localStorage.removeItem("wc2026_onboarded_v1"); localStorage.removeItem("wc2026_world_v1"); localStorage.removeItem("wc2026_achv_v1"); localStorage.removeItem("wc2026_pickhours_v1"); } catch {}
       setScreen("welcome");
       setShowIntro(false);
       return;
@@ -7470,7 +7717,7 @@ export default function App() {
       onConfirm: () => {
         clearState();
         setName(""); setPicks({}); setKoWinners({}); setKoPicks({}); setGroupIdx(0);
-        setFriends([]); setActuals({}); setActualKo({}); setActualKoScores({}); setLeagueName(""); setLeagueCode(""); setLeagueCodes([]); setActiveLeagueCode(""); setAllLeagueData({}); setWinnerPick(null); setTopScorerPick(null); setCelebratedIds(new Set()); setLastSeenGoals(0); setSeenActualIds(new Set()); setShowOnboarding(true); try { localStorage.removeItem("wc2026_celebrated_v1"); localStorage.removeItem("wc2026_lastseen_goals_v1"); localStorage.removeItem("wc2026_seen_actuals_v1"); localStorage.removeItem("wc2026_onboarded_v1"); localStorage.removeItem("wc2026_world_v1"); localStorage.removeItem("wc2026_achv_v1"); } catch {}
+        setFriends([]); setActuals({}); setActualKo({}); setActualKoScores({}); setLeagueName(""); setLeagueCode(""); setLeagueCodes([]); setActiveLeagueCode(""); setAllLeagueData({}); setWinnerPick(null); setTopScorerPick(null); setCelebratedIds(new Set()); setLastSeenGoals(0); setSeenActualIds(new Set()); setShowOnboarding(true); try { localStorage.removeItem("wc2026_celebrated_v1"); localStorage.removeItem("wc2026_lastseen_goals_v1"); localStorage.removeItem("wc2026_seen_actuals_v1"); localStorage.removeItem("wc2026_onboarded_v1"); localStorage.removeItem("wc2026_world_v1"); localStorage.removeItem("wc2026_achv_v1"); localStorage.removeItem("wc2026_pickhours_v1"); } catch {}
         setScreen("welcome");
         setShowIntro(false);
       },
