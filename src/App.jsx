@@ -8,7 +8,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, fetchTopS
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "1.0.0";
+const APP_VERSION = "1.1.0";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -291,6 +291,12 @@ const TRANSLATIONS = {
     "sidebar.logOut": "Log Out",
     "sidebar.deleteAll": "Delete Everything",
     "sidebar.footer": "World Cup 2026 Predictions",
+    // Countdown to kickoff
+    "countdown.title": "WORLD CUP STARTS IN",
+    "countdown.days": "DAYS",
+    "countdown.hours": "HRS",
+    "countdown.minutes": "MIN",
+    "countdown.seconds": "SEC",
     // Profile / Stats
     "profile.yourStats": "YOUR STATS",
     "profile.totalPoints": "TOTAL POINTS",
@@ -602,6 +608,12 @@ const TRANSLATIONS = {
     "sidebar.logOut": "התנתק",
     "sidebar.deleteAll": "מחק הכל",
     "sidebar.footer": "ניחושי מונדיאל 2026",
+    // Countdown to kickoff
+    "countdown.title": "המונדיאל מתחיל בעוד",
+    "countdown.days": "ימים",
+    "countdown.hours": "שעות",
+    "countdown.minutes": "דק'",
+    "countdown.seconds": "שנ'",
     // Profile / Stats
     "profile.yourStats": "הסטטיסטיקה שלך",
     "profile.totalPoints": "סך הנקודות",
@@ -2651,6 +2663,75 @@ function SidebarItem({ icon, label, onClick, danger }) {
       <span style={{fontSize:18,minWidth:24,textAlign:"center"}}>{icon}</span>
       <span style={{flex:1}}>{label}</span>
     </button>
+  );
+}
+
+// ─── COUNTDOWN BAR: time until first match kickoff ──────────────────────────
+function CountdownBar() {
+  const t = useT();
+  const [now, setNow] = useState(Date.now());
+
+  // Find the first match kickoff
+  const firstKickoff = useMemo(() => {
+    const times = FIXTURES.filter(f => f.kickoff).map(f => new Date(f.kickoff).getTime());
+    if (times.length === 0) return null;
+    return Math.min(...times);
+  }, []);
+
+  useEffect(() => {
+    // Tick every second for the seconds display
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  if (!firstKickoff) return null;
+  const msLeft = firstKickoff - now;
+  if (msLeft <= 0) return null; // Tournament has started — hide
+
+  // Calculate days/hours/minutes/seconds
+  const totalSec = Math.floor(msLeft / 1000);
+  const days = Math.floor(totalSec / 86400);
+  const hours = Math.floor((totalSec % 86400) / 3600);
+  const minutes = Math.floor((totalSec % 3600) / 60);
+  const seconds = totalSec % 60;
+
+  const Cell = ({ value, label }) => (
+    <div style={{
+      display:"flex",flexDirection:"column",alignItems:"center",
+      minWidth:38,
+    }}>
+      <div style={{
+        fontSize:18,fontWeight:900,color:"#fbbf24",
+        lineHeight:1,fontVariantNumeric:"tabular-nums",
+        textShadow:"0 0 8px rgba(251,191,36,0.4)",
+      }}>{String(value).padStart(2,"0")}</div>
+      <div style={{fontSize:8,color:"#94a3b8",marginTop:3,letterSpacing:1,fontWeight:700}}>
+        {label}
+      </div>
+    </div>
+  );
+
+  return (
+    <div style={{
+      background:"linear-gradient(90deg, rgba(251,191,36,0.05), rgba(168,85,247,0.05), rgba(251,191,36,0.05))",
+      borderTop:"1px solid rgba(71,85,105,0.2)",
+      borderBottom:"1px solid rgba(71,85,105,0.2)",
+      padding:"8px 14px",
+      display:"flex",alignItems:"center",justifyContent:"center",gap:14,
+    }}>
+      <div style={{fontSize:10,color:"#fbbf24",letterSpacing:1,fontWeight:700,whiteSpace:"nowrap"}}>
+        🏆 {t("countdown.title")}
+      </div>
+      <div style={{display:"flex",alignItems:"center",gap:8}}>
+        <Cell value={days} label={t("countdown.days")}/>
+        <span style={{color:"#475569",fontSize:14,marginTop:-8}}>:</span>
+        <Cell value={hours} label={t("countdown.hours")}/>
+        <span style={{color:"#475569",fontSize:14,marginTop:-8}}>:</span>
+        <Cell value={minutes} label={t("countdown.minutes")}/>
+        <span style={{color:"#475569",fontSize:14,marginTop:-8}}>:</span>
+        <Cell value={seconds} label={t("countdown.seconds")}/>
+      </div>
+    </div>
   );
 }
 
@@ -6801,6 +6882,10 @@ export default function App() {
               }}>✓</span>
             )}
           </div>
+
+          {/* 🏆 Countdown to first match — disappears when tournament starts */}
+          <CountdownBar />
+
           {/* Bottom nav */}
           {(screen === "group" || screen === "today" || screen === "bracket" || screen === "bonus" || screen === "league") && (
             <div style={{display:"flex",justifyContent:"center",borderTop:"1px solid rgba(71,85,105,0.3)"}}>
