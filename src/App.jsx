@@ -8,7 +8,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, fetchTopS
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "1.3.0";
+const APP_VERSION = "1.4.0";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -271,6 +271,10 @@ const TRANSLATIONS = {
     "league.nameRequired": "Please enter a name",
     "league.nameTooLong": "Name is too long (max 40 chars)",
     "toast.leagueRenamed": "League renamed! 🎉",
+    "league.hiddenPick": "PICK HIDDEN",
+    "league.hiddenUntilKickoff": "Revealed when the match starts",
+    "league.bracketHidden": "Bracket hidden until kickoff",
+    "league.standingsHidden": "Standings hidden until kickoff",
     "league.shareWhatsapp": "Share via WhatsApp",
     "league.shareMessage": "Hey! 🏆⚽ I started a 2026 World Cup prediction league called \"{name}\".\n\nJoin with this code: {code}\n\n{url}",
     "league.copyTooltip": "Copy code",
@@ -646,6 +650,10 @@ const TRANSLATIONS = {
     "league.nameRequired": "אנא הזן שם",
     "league.nameTooLong": "השם ארוך מדי (עד 40 תווים)",
     "toast.leagueRenamed": "שם הליגה שונה! 🎉",
+    "league.hiddenPick": "ניחוש מוסתר",
+    "league.hiddenUntilKickoff": "ייחשף כשהמשחק יתחיל",
+    "league.bracketHidden": "הברקט מוסתר עד תחילת המונדיאל",
+    "league.standingsHidden": "הטבלאות מוסתרות עד תחילת המונדיאל",
     "league.shareWhatsapp": "שלח בוואטסאפ",
     "league.shareMessage": "היי! 🏆⚽ פתחתי ליגת ניחושים למונדיאל 2026 בשם \"{name}\".\n\nהצטרפו עם הקוד הזה: {code}\n\n{url}",
     "league.copyTooltip": "העתק קוד",
@@ -5401,6 +5409,11 @@ function LeagueHub({
       const m = members.find(x => x.uid === viewing);
       if (!m) { setViewing(null); return null; }
       const champ = m.knockout?.champion;
+      const isMyOwn = m.uid === userId;
+      // ─── FAIR PLAY: bonus/bracket picks reveal only when tournament starts ──
+      const firstKick = Math.min(...FIXTURES.filter(f => f.kickoff).map(f => new Date(f.kickoff).getTime()));
+      const tournamentStarted = Number.isFinite(firstKick) && Date.now() >= firstKick;
+      const showChamp = isMyOwn || tournamentStarted;
 
       // Show predicted match results, grouped by group + matchday
       const renderMatchRow = (f) => {
@@ -5410,6 +5423,10 @@ function LeagueHub({
         const hasPick = pick && pick.h !== undefined && pick.h !== "" && pick.a !== undefined && pick.a !== "";
         const actual = actuals?.[f.id];
         const hasActual = actual && actual.h !== undefined && actual.h !== "";
+        // ─── FAIR PLAY: hide other members' picks until match has started ──
+        const isMyOwn = m.uid === userId;
+        const matchStarted = f.kickoff ? Date.now() >= new Date(f.kickoff).getTime() : false;
+        const showPick = isMyOwn || matchStarted;
         const score = hasActual && hasPick ? scoreMatch(pick, actual) : null;
         const scoreColor = score?.type === "exact" ? "#fbbf24"
                          : score?.type === "result" ? "#22c55e"
@@ -5427,11 +5444,13 @@ function LeagueHub({
             </div>
             <div style={{
               display:"flex",alignItems:"center",gap:3,
-              background:hasPick?"#0a0e1c":"transparent",border:`1px solid ${hasPick?scoreColor:"rgba(71,85,105,0.3)"}`,
+              background:hasPick?"#0a0e1c":"transparent",
+              border:`1px solid ${hasPick && showPick ? scoreColor : "rgba(71,85,105,0.3)"}`,
               borderRadius:6,padding:"3px 8px",minWidth:48,justifyContent:"center",
-              color:hasPick?(score?scoreColor:"#f1f5f9"):"#64748b",fontWeight:800,fontSize:13,
+              color: !showPick && hasPick ? "#64748b" : (hasPick ? (score?scoreColor:"#f1f5f9") : "#64748b"),
+              fontWeight:800,fontSize:13,
             }}>
-              {hasPick ? `${pick.h} - ${pick.a}` : "—"}
+              {!showPick && hasPick ? "🔒" : (hasPick ? `${pick.h} - ${pick.a}` : "—")}
             </div>
             <div style={{color:"#cbd5e1",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
               {away?.f} {away?.n}
@@ -5439,7 +5458,7 @@ function LeagueHub({
             {hasActual && (
               <div style={{gridColumn:"1 / -1",textAlign:"center",fontSize:9,color:"#64748b",marginTop:2}}>
                 Actual: <span style={{color:"#f1f5f9"}}>{actual.h}–{actual.a}</span>
-                {score && <span style={{color:scoreColor,marginLeft:6,fontWeight:700}}>+{score.points}</span>}
+                {score && showPick && <span style={{color:scoreColor,marginLeft:6,fontWeight:700}}>+{score.points}</span>}
               </div>
             )}
             {f.kickoff && (() => {
@@ -5522,11 +5541,21 @@ function LeagueHub({
           </div>
 
           {/* Champion banner — always at top */}
-          {champ && (
+          {champ && showChamp && (
             <div style={{background:"linear-gradient(135deg,#fbbf24,#d97706)",borderRadius:12,padding:12,marginBottom:14,textAlign:"center"}}>
               <div style={{fontSize:10,letterSpacing:3,color:"#0a0e1c",fontWeight:800}}>🏆 PREDICTED CHAMPION</div>
               <div style={{fontSize:26,margin:"2px 0"}}>{champ.flag||champ.f}</div>
               <div style={{fontSize:15,color:"#0a0e1c",fontWeight:900}}>{champ.name||champ.n}</div>
+            </div>
+          )}
+          {champ && !showChamp && (
+            <div style={{
+              background:"linear-gradient(135deg,rgba(71,85,105,0.3),rgba(15,20,36,0.5))",
+              border:"1px dashed rgba(71,85,105,0.5)",
+              borderRadius:12,padding:12,marginBottom:14,textAlign:"center",
+            }}>
+              <div style={{fontSize:10,letterSpacing:3,color:"#94a3b8",fontWeight:800}}>🔒 {t("league.hiddenPick")}</div>
+              <div style={{fontSize:11,color:"#64748b",marginTop:4}}>{t("league.hiddenUntilKickoff")}</div>
             </div>
           )}
 
@@ -5570,7 +5599,18 @@ function LeagueHub({
           )}
 
           {/* TAB: STANDINGS — calculated group standings */}
-          {viewTab === "standings" && (
+          {viewTab === "standings" && !showChamp && (
+            <div style={{
+              background:"linear-gradient(135deg,rgba(71,85,105,0.3),rgba(15,20,36,0.5))",
+              border:"1px dashed rgba(71,85,105,0.5)",
+              borderRadius:12,padding:"24px 16px",textAlign:"center",
+            }}>
+              <div style={{fontSize:36,marginBottom:8}}>🔒</div>
+              <div style={{fontSize:13,color:"#cbd5e1",fontWeight:700,marginBottom:4}}>{t("league.standingsHidden")}</div>
+              <div style={{fontSize:11,color:"#94a3b8"}}>{t("league.hiddenUntilKickoff")}</div>
+            </div>
+          )}
+          {viewTab === "standings" && showChamp && (
             <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(170px,1fr))",gap:8}}>
               {GROUP_KEYS.map(g => {
                 const tbl = m.standings[g];
@@ -5596,7 +5636,18 @@ function LeagueHub({
           )}
 
           {/* TAB: BRACKET — knockout view */}
-          {viewTab === "bracket" && memberBracket && (() => {
+          {viewTab === "bracket" && !showChamp && (
+            <div style={{
+              background:"linear-gradient(135deg,rgba(71,85,105,0.3),rgba(15,20,36,0.5))",
+              border:"1px dashed rgba(71,85,105,0.5)",
+              borderRadius:12,padding:"24px 16px",textAlign:"center",
+            }}>
+              <div style={{fontSize:36,marginBottom:8}}>🔒</div>
+              <div style={{fontSize:13,color:"#cbd5e1",fontWeight:700,marginBottom:4}}>{t("league.bracketHidden")}</div>
+              <div style={{fontSize:11,color:"#94a3b8"}}>{t("league.hiddenUntilKickoff")}</div>
+            </div>
+          )}
+          {viewTab === "bracket" && showChamp && memberBracket && (() => {
             const koH = {fontSize:9,color:"#94a3b8",letterSpacing:2,fontWeight:700,textAlign:"center",marginBottom:6,padding:"3px 0",borderBottom:"1px solid rgba(71,85,105,0.3)"};
             const koHFinal = {...koH, color:"#fbbf24"};
             const ko = m.koWinners || {};
@@ -5689,7 +5740,7 @@ function LeagueHub({
               </div>
             );
           })()}
-          {viewTab === "bracket" && !memberBracket && (
+          {viewTab === "bracket" && showChamp && !memberBracket && (
             <div style={{background:"rgba(30,41,59,0.4)",border:"1px dashed rgba(71,85,105,0.4)",borderRadius:10,padding:"20px",textAlign:"center",fontSize:12,color:"#94a3b8"}}>
               {m.isMe?"You haven't":"They haven't"} finished the group stage yet, so the bracket isn't built.
             </div>
