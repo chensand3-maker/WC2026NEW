@@ -4,11 +4,11 @@ import {
   updateMyPicks, leaveLeague, subscribeLeague, updateActualResults,
   updateMyGlobalProfile, fetchGlobalLeaderboard, renameLeague,
 } from "./firebase";
-import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, fetchTopScorers } from "./liveResults";
+import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnockoutToBracket, fetchTopScorers } from "./liveResults";
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "2.0.0";
+const APP_VERSION = "2.1.0";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -5041,9 +5041,10 @@ function Badge({ children, color }) {
 // ─── LEAGUE HUB (Firebase-powered) ────────────────────────────────────────────
 
 function LeagueHub({
-  name, userId, picks, koWinners,
+  name, userId, picks, koWinners, koPicks,
   leagueCode, setLeagueCode, leagueData, leagueError,
-  actuals, hasActuals,
+  actuals, actualKo, actualKoScores, hasActuals,
+  liveStandings, liveBestThirds,
   liveFetchAt, liveError, onFetchLive,
   actualWinner, actualTopScorer,
   leagueCodes, activeLeagueCode, setActiveLeagueCode, allLeagueData, maxLeagues,
@@ -5120,7 +5121,7 @@ function LeagueHub({
         }
       }
       // Push our picks immediately
-      await updateMyPicks(code, userId, name, picks, koWinners);
+      await updateMyPicks(code, userId, name, picks, koWinners, { koPicks });
       setLeagueCode(code);
       setDraftName("");
       showToast(t("toast.leagueCreated"), "success");
@@ -5146,7 +5147,7 @@ function LeagueHub({
     try {
       await joinLeague(code);
       // Push our picks
-      await updateMyPicks(code, userId, name, picks, koWinners);
+      await updateMyPicks(code, userId, name, picks, koWinners, { koPicks });
       setLeagueCode(code);
       setDraftCode("");
       showToast(t("toast.leagueJoined"), "success");
@@ -5533,53 +5534,91 @@ function LeagueHub({
         );
       };
 
-      // Build bracket for member: their R32 → R16 → QF → SF → Final
-      const memberR32 = buildR32(m.standings, m.bestThirds);
+      // Build bracket using REAL results (actual standings + actualKo), not the member's predictions.
+      // The bracket structure shows who really advanced; the member's koPicks (score predictions) sit alongside.
+      const realStandings = liveStandings && hasActuals ? liveStandings : null;
+      const realThirds = liveBestThirds && hasActuals ? liveBestThirds : null;
+      const memberR32 = realStandings ? buildR32(realStandings, realThirds) : buildR32({}, []);
       const buildMemberBracket = () => {
         if (!memberR32) return null;
-        const ko = m.koWinners || {};
-        const r32Winners = memberR32.map(mt => ko[mt.id] === "a" ? mt.a : ko[mt.id] === "b" ? mt.b : null);
+        const ako = actuals && Object.keys(actuals).length > 0 ? (window?.actualKo || {}) : {};
+        // We can't access actualKo from this scope easily — actually we can, it's passed as prop. Use it.
+        return null; // placeholder, replaced below
+      };
+      // Build using actualKo passed as prop
+      const buildBracketRounds = () => {
+        if (!memberR32) return null;
+        const ako = actualKo || {};
+        const r32Winners = memberR32.map(mt => ako[mt.id] === "a" ? mt.a : ako[mt.id] === "b" ? mt.b : null);
         const r16 = [];
         for (let i=0;i<16;i+=2) r16.push({id:`R16-${i/2}`,a:r32Winners[i],b:r32Winners[i+1]});
-        const r16Winners = r16.map(mt => ko[mt.id]==="a"?mt.a:ko[mt.id]==="b"?mt.b:null);
+        const r16Winners = r16.map(mt => ako[mt.id]==="a"?mt.a:ako[mt.id]==="b"?mt.b:null);
         const qf = [];
         for (let i=0;i<8;i+=2) qf.push({id:`QF-${i/2}`,a:r16Winners[i],b:r16Winners[i+1]});
-        const qfWinners = qf.map(mt => ko[mt.id]==="a"?mt.a:ko[mt.id]==="b"?mt.b:null);
+        const qfWinners = qf.map(mt => ako[mt.id]==="a"?mt.a:ako[mt.id]==="b"?mt.b:null);
         const sf = [];
         for (let i=0;i<4;i+=2) sf.push({id:`SF-${i/2}`,a:qfWinners[i],b:qfWinners[i+1]});
-        const sfWinners = sf.map(mt => ko[mt.id]==="a"?mt.a:ko[mt.id]==="b"?mt.b:null);
+        const sfWinners = sf.map(mt => ako[mt.id]==="a"?mt.a:ako[mt.id]==="b"?mt.b:null);
         const finalM = { id:"FINAL", a:sfWinners[0], b:sfWinners[1] };
         return { r32: memberR32, r16, qf, sf, final: finalM };
       };
-      const memberBracket = buildMemberBracket();
+      const memberBracket = buildBracketRounds();
+      // The member's score predictions per KO match
+      const memberKoPicks = m.koPicks || {};
+      // Real KO scores (for scoring badges)
+      const realKoScores = actualKoScores || {};
 
-      const renderKoMatch = (mt, koWinners) => {
-        const winner = koWinners[mt.id];
-        const aSel = winner === "a", bSel = winner === "b";
+      const renderKoMatch = (mt) => {
+        const ready = mt.a && mt.b;
+        const memberPick = memberKoPicks[mt.id];
+        const hasMemberPick = memberPick && memberPick.h !== "" && memberPick.h !== undefined;
+        // Fair-play: show pick only if it's me, or the KO match has a real result already
+        const realResult = realKoScores[mt.id];
+        const hasRealResult = realResult && realResult.h !== "" && realResult.h !== undefined;
+        const showPick = m.isMe || hasRealResult;
+        // Score this prediction if we have real result
+        const koScore = (hasMemberPick && hasRealResult) ? scoreKoMatch(memberPick, realResult) : null;
+        const scoreColor = koScore?.type === "exact" ? "#fbbf24"
+                         : koScore?.type === "result" ? "#22c55e"
+                         : koScore?.type === "wrong" ? "#f87171"
+                         : "rgba(71,85,105,0.5)";
         return (
           <div key={mt.id} style={{
-            background:mt.a&&mt.b?"rgba(30,41,59,0.6)":"rgba(15,20,36,0.4)",
-            border:`1px solid ${winner?"rgba(251,191,36,0.4)":"rgba(71,85,105,0.3)"}`,
-            borderRadius:8,padding:"5px 7px",marginBottom:5,
-            opacity:mt.a&&mt.b?1:0.5,fontSize:11,
+            background:ready?"rgba(30,41,59,0.6)":"rgba(15,20,36,0.4)",
+            border:`1px solid ${hasMemberPick && showPick ? scoreColor : "rgba(71,85,105,0.3)"}`,
+            borderRadius:8,padding:"6px 8px",marginBottom:5,
+            opacity:ready?1:0.5,fontSize:11,
           }}>
-            {[mt.a, mt.b].map((team, idx) => {
-              const sel = idx === 0 ? aSel : bSel;
-              const dim = winner && ((idx===0&&!aSel) || (idx===1&&!bSel));
-              return (
-                <div key={idx} style={{
-                  display:"flex",alignItems:"center",gap:6,padding:"3px 4px",
-                  background:sel?"rgba(251,191,36,0.18)":"transparent",
-                  borderRadius:4,marginBottom:idx===0?2:0,
-                  opacity:dim?0.4:1,
-                  color:sel?"#fbbf24":"#cbd5e1",fontWeight:sel?700:500,
-                }}>
-                  <span>{team?.flag || team?.f || "?"}</span>
-                  <span style={{flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{team?.name || team?.n || "TBD"}</span>
-                  {sel && <span style={{fontSize:10}}>✓</span>}
-                </div>
-              );
-            })}
+            <div style={{display:"grid",gridTemplateColumns:"1fr auto 1fr",alignItems:"center",gap:4,direction:"ltr"}}>
+              {/* Home team */}
+              <div style={{display:"flex",alignItems:"center",gap:4,minWidth:0,justifyContent:"flex-end"}}>
+                <span style={{fontSize:11,color:"#cbd5e1",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",textAlign:"right"}}>{mt.a?.name||mt.a?.n||"TBD"}</span>
+                <span style={{fontSize:14,flexShrink:0}}>{mt.a?.flag||mt.a?.f||"❓"}</span>
+              </div>
+              {/* Score (member's pick or lock) */}
+              <div style={{
+                display:"flex",alignItems:"center",gap:2,
+                padding:"2px 7px",borderRadius:5,
+                background: hasMemberPick && showPick ? "#0a0e1c" : "transparent",
+                border: `1px solid ${hasMemberPick && showPick ? scoreColor : "transparent"}`,
+                color: hasMemberPick && showPick ? (koScore?scoreColor:"#f1f5f9") : "#64748b",
+                fontWeight:800,fontSize:12,minWidth:38,justifyContent:"center",
+              }}>
+                {!showPick && hasMemberPick ? "🔒" : hasMemberPick ? `${memberPick.h}-${memberPick.a}` : "—"}
+              </div>
+              {/* Away team */}
+              <div style={{display:"flex",alignItems:"center",gap:4,minWidth:0}}>
+                <span style={{fontSize:14,flexShrink:0}}>{mt.b?.flag||mt.b?.f||"❓"}</span>
+                <span style={{fontSize:11,color:"#cbd5e1",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{mt.b?.name||mt.b?.n||"TBD"}</span>
+              </div>
+            </div>
+            {/* Real result + points badge */}
+            {hasRealResult && (
+              <div style={{textAlign:"center",fontSize:9,color:"#64748b",marginTop:3}}>
+                Actual: <span style={{color:"#f1f5f9"}}>{realResult.h}–{realResult.a}</span>
+                {koScore && showPick && <span style={{color:scoreColor,marginLeft:6,fontWeight:700}}>+{koScore.points}</span>}
+              </div>
+            )}
           </div>
         );
       };
@@ -5710,7 +5749,6 @@ function LeagueHub({
           {viewTab === "bracket" && showChamp && memberBracket && (() => {
             const koH = {fontSize:9,color:"#94a3b8",letterSpacing:2,fontWeight:700,textAlign:"center",marginBottom:6,padding:"3px 0",borderBottom:"1px solid rgba(71,85,105,0.3)"};
             const koHFinal = {...koH, color:"#fbbf24"};
-            const ko = m.koWinners || {};
             if (isNarrow) {
               return (
                 <div style={{display:"flex",flexDirection:"column",gap:12}}>
@@ -5720,30 +5758,30 @@ function LeagueHub({
                       <div style={{fontSize:22,filter:"drop-shadow(0 0 6px rgba(251,191,36,0.6))"}}>🏆</div>
                       <div style={{fontSize:10,color:"#fbbf24",letterSpacing:3,fontWeight:800}}>FINAL</div>
                     </div>
-                    {renderKoMatch(memberBracket.final, ko)}
+                    {renderKoMatch(memberBracket.final)}
                   </div>
                   <div>
                     <div style={{fontSize:9,color:"#94a3b8",letterSpacing:3,fontWeight:700,textAlign:"center",marginBottom:5}}>SEMI-FINALS</div>
                     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:5}}>
-                      {memberBracket.sf.map(mt => renderKoMatch(mt, ko))}
+                      {memberBracket.sf.map(mt => renderKoMatch(mt))}
                     </div>
                   </div>
                   <div>
                     <div style={{fontSize:9,color:"#94a3b8",letterSpacing:3,fontWeight:700,textAlign:"center",marginBottom:5}}>QUARTER-FINALS</div>
                     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:5}}>
-                      {memberBracket.qf.map(mt => renderKoMatch(mt, ko))}
+                      {memberBracket.qf.map(mt => renderKoMatch(mt))}
                     </div>
                   </div>
                   <div>
                     <div style={{fontSize:9,color:"#94a3b8",letterSpacing:3,fontWeight:700,textAlign:"center",marginBottom:5}}>ROUND OF 16</div>
                     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:5}}>
-                      {memberBracket.r16.map(mt => renderKoMatch(mt, ko))}
+                      {memberBracket.r16.map(mt => renderKoMatch(mt))}
                     </div>
                   </div>
                   <div>
                     <div style={{fontSize:9,color:"#94a3b8",letterSpacing:3,fontWeight:700,textAlign:"center",marginBottom:5}}>ROUND OF 32</div>
                     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:5}}>
-                      {memberBracket.r32.map(mt => renderKoMatch(mt, ko))}
+                      {memberBracket.r32.map(mt => renderKoMatch(mt))}
                     </div>
                   </div>
                 </div>
@@ -5758,44 +5796,44 @@ function LeagueHub({
                 {/* LEFT SIDE */}
                 <div style={{display:"flex",flexDirection:"column",justifyContent:"space-around"}}>
                   <div style={koH}>R32</div>
-                  {memberBracket.r32.slice(0, 8).map(mt => renderKoMatch(mt, ko))}
+                  {memberBracket.r32.slice(0, 8).map(mt => renderKoMatch(mt))}
                 </div>
                 <div style={{display:"flex",flexDirection:"column",justifyContent:"space-around"}}>
                   <div style={koH}>R16</div>
-                  {memberBracket.r16.slice(0, 4).map(mt => renderKoMatch(mt, ko))}
+                  {memberBracket.r16.slice(0, 4).map(mt => renderKoMatch(mt))}
                 </div>
                 <div style={{display:"flex",flexDirection:"column",justifyContent:"space-around"}}>
                   <div style={koH}>QF</div>
-                  {memberBracket.qf.slice(0, 2).map(mt => renderKoMatch(mt, ko))}
+                  {memberBracket.qf.slice(0, 2).map(mt => renderKoMatch(mt))}
                 </div>
                 <div style={{display:"flex",flexDirection:"column",justifyContent:"space-around"}}>
                   <div style={koH}>SF</div>
-                  {renderKoMatch(memberBracket.sf[0], ko)}
+                  {renderKoMatch(memberBracket.sf[0])}
                 </div>
 
                 {/* CENTER: FINAL */}
                 <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"}}>
                   <div style={koHFinal}>FINAL</div>
                   <div style={{fontSize:24,marginBottom:3,filter:"drop-shadow(0 0 6px rgba(251,191,36,0.6))"}}>🏆</div>
-                  {renderKoMatch(memberBracket.final, ko)}
+                  {renderKoMatch(memberBracket.final)}
                 </div>
 
                 {/* RIGHT SIDE */}
                 <div style={{display:"flex",flexDirection:"column",justifyContent:"space-around"}}>
                   <div style={koH}>SF</div>
-                  {renderKoMatch(memberBracket.sf[1], ko)}
+                  {renderKoMatch(memberBracket.sf[1])}
                 </div>
                 <div style={{display:"flex",flexDirection:"column",justifyContent:"space-around"}}>
                   <div style={koH}>QF</div>
-                  {memberBracket.qf.slice(2, 4).map(mt => renderKoMatch(mt, ko))}
+                  {memberBracket.qf.slice(2, 4).map(mt => renderKoMatch(mt))}
                 </div>
                 <div style={{display:"flex",flexDirection:"column",justifyContent:"space-around"}}>
                   <div style={koH}>R16</div>
-                  {memberBracket.r16.slice(4, 8).map(mt => renderKoMatch(mt, ko))}
+                  {memberBracket.r16.slice(4, 8).map(mt => renderKoMatch(mt))}
                 </div>
                 <div style={{display:"flex",flexDirection:"column",justifyContent:"space-around"}}>
                   <div style={koH}>R32</div>
-                  {memberBracket.r32.slice(8, 16).map(mt => renderKoMatch(mt, ko))}
+                  {memberBracket.r32.slice(8, 16).map(mt => renderKoMatch(mt))}
                 </div>
               </div>
             );
@@ -6570,11 +6608,11 @@ function encodeBackup(state) {
       const p = state.picks?.[f.id];
       groupPicks += _digit(p?.h) + _digit(p?.a);
     }
-    // Knockout winners: 31 chars
-    let ko = "";
+    // KO score predictions: 31 matches × 2 digits = 62 chars
+    let koScores = "";
     for (const slot of KO_BACKUP_ORDER) {
-      const w = state.koWinners?.[slot];
-      ko += (w === "a" || w === "b") ? w : "-";
+      const p = state.koPicks?.[slot];
+      koScores += _digit(p?.h) + _digit(p?.a);
     }
     // Other bits
     const winner = state.winnerPick ? _esc(state.winnerPick.name || state.winnerPick.n || "") : "";
@@ -6586,14 +6624,14 @@ function encodeBackup(state) {
     } else if (state.leagueCode) {
       codes = state.leagueCode;
     }
-    return `WC26|${_esc(state.name || "")}|${groupPicks}|${ko}|${winner}|${scorer}|${codes}`;
+    return `WC26|${_esc(state.name || "")}|${groupPicks}|${koScores}|${winner}|${scorer}|${codes}`;
   } catch { return null; }
 }
 
 function decodeBackup(code) {
   if (!code) return null;
   const c = code.trim();
-  // Legacy format
+  // Legacy Base64 format
   if (c.startsWith("WC26B|")) {
     try { return JSON.parse(decodeURIComponent(escape(atob(c.slice(6))))); }
     catch { return null; }
@@ -6614,13 +6652,28 @@ function decodeBackup(code) {
           picks[f.id] = { h, a };
         }
       });
-      // Decode knockout winners
+      // Decode KO data — auto-detect format:
+      //  - 31 chars of "a"/"b"/"-": old single-letter winners format (legacy v1.x backups)
+      //  - 62 chars of digits/-: new score predictions format (v2.0+)
+      const koPicks = {};
       const koWinners = {};
       const ks = koStr || "";
-      KO_BACKUP_ORDER.forEach((slot, i) => {
-        const v = ks[i];
-        if (v === "a" || v === "b") koWinners[slot] = v;
-      });
+      if (ks.length >= 62) {
+        // New format: scores
+        KO_BACKUP_ORDER.forEach((slot, i) => {
+          const h = ks[i*2];
+          const a = ks[i*2 + 1];
+          if (h && h !== "-" && a && a !== "-") {
+            koPicks[slot] = { h, a };
+          }
+        });
+      } else {
+        // Legacy format: just winners (no scores)
+        KO_BACKUP_ORDER.forEach((slot, i) => {
+          const v = ks[i];
+          if (v === "a" || v === "b") koWinners[slot] = v;
+        });
+      }
       // Other bits
       const winnerPick = winner ? { name: _unesc(winner), n: _unesc(winner) } : null;
       const topScorerPick = scorer ? { name: _unesc(scorer) } : null;
@@ -6628,7 +6681,7 @@ function decodeBackup(code) {
       const leagueCodes = codesStr ? codesStr.split(",").filter(Boolean) : [];
       const leagueCode = leagueCodes[0] || "";
       return {
-        name, picks, koWinners,
+        name, picks, koWinners, koPicks,
         winnerPick, topScorerPick,
         leagueCodes, leagueCode,
         activeLeagueCode: leagueCode,
@@ -7115,7 +7168,7 @@ export default function App() {
     if (!leagueCodes.length || !name) return;
     const handle = setTimeout(() => {
       leagueCodes.forEach(code => {
-        updateMyPicks(code, userId, name, picks, koWinners, { winnerPick, topScorerPick })
+        updateMyPicks(code, userId, name, picks, koWinners, { winnerPick, topScorerPick, koPicks })
           .catch(err => console.error(`Failed to push picks to ${code}:`, err));
       });
     }, 800);
@@ -7127,11 +7180,15 @@ export default function App() {
   useEffect(() => {
     if (!name) return;
     const handle = setTimeout(() => {
-      // Compute total points: match score + bonus
+      // Compute total points: group score + KO score + bonus
       let total = 0;
       try {
         const ms = totalScore(picks, actuals);
         total = ms.total;
+      } catch (e) {}
+      try {
+        const ks = totalKoScore(koPicks, actualKoScores);
+        total += ks.total;
       } catch (e) {}
       // Bonus picks
       if (actualWinner && winnerPick) {
@@ -7143,11 +7200,11 @@ export default function App() {
         total += (actualTopScorer.goals || 0) * POINTS.TOP_SCORER_GOAL;
       }
       updateMyGlobalProfile(userId, name, picks, koWinners, {
-        winnerPick, topScorerPick, totalPoints: total,
+        winnerPick, topScorerPick, koPicks, totalPoints: total,
       }).catch(err => console.error("Failed to push global profile:", err));
     }, 1200);
     return () => clearTimeout(handle);
-  }, [userId, name, picks, koWinners, winnerPick, topScorerPick, actuals, actualWinner, actualTopScorer]);
+  }, [userId, name, picks, koWinners, koPicks, winnerPick, topScorerPick, actuals, actualKoScores, actualWinner, actualTopScorer]);
 
   // ─── LIVE RESULTS AUTO-FETCH ───────────────────────────────────────────────
   // Poll API-Football every 5 min for new match results
@@ -7184,18 +7241,29 @@ export default function App() {
             return { r32: realR32, r16, qf, sf, final };
           };
 
-          // Iteratively resolve: each round needs the previous round's winners filled in
+          // Iteratively resolve: each round needs the previous round's winners filled in.
+          // Each pass also extracts the actual KO scores from API (for scoring user predictions).
           let workingKo = { ...actualKo };
+          let workingKoScores = { ...actualKoScores };
           for (let pass = 0; pass < 5; pass++) {
             const realBracket = buildRealBracket(workingKo);
-            const fromApi = mapKnockoutToWinners(data, realBracket);
-            const merged = { ...workingKo, ...fromApi };
-            if (JSON.stringify(merged) === JSON.stringify(workingKo)) break;
-            workingKo = merged;
+            // Flatten all rounds into one list of matches to look up
+            const allRounds = [...realBracket.r32, ...realBracket.r16, ...realBracket.qf, ...realBracket.sf, realBracket.final];
+            const { winners: koWinners, scores: koScores } = mapKnockoutToBracket(data, allRounds);
+            const mergedKo = { ...workingKo, ...koWinners };
+            const mergedScores = { ...workingKoScores, ...koScores };
+            const koChanged = JSON.stringify(mergedKo) !== JSON.stringify(workingKo);
+            const scoresChanged = JSON.stringify(mergedScores) !== JSON.stringify(workingKoScores);
+            if (!koChanged && !scoresChanged) break;
+            workingKo = mergedKo;
+            workingKoScores = mergedScores;
           }
           if (JSON.stringify(workingKo) !== JSON.stringify(actualKo)) {
             newActualKo = workingKo;
             setActualKo(workingKo);
+          }
+          if (JSON.stringify(workingKoScores) !== JSON.stringify(actualKoScores)) {
+            setActualKoScores(workingKoScores);
           }
         }
       } catch (e) {
@@ -7344,6 +7412,7 @@ export default function App() {
     setName(restored.name || "");
     setPicks(restored.picks || {});
     setKoWinners(restored.koWinners || {});
+    setKoPicks(restored.koPicks || {});
     setGroupIdx(restored.groupIdx || 0);
     setFriends(restored.friends || []);
     setActuals(restored.actuals || {});
@@ -7411,7 +7480,7 @@ export default function App() {
 
   const currentGroup = GROUP_KEYS[groupIdx];
 
-  const fullState = { name, picks, koWinners, groupIdx, friends, actuals, actualKo, leagueName, leagueCode, userId };
+  const fullState = { name, picks, koWinners, koPicks, groupIdx, friends, actuals, actualKo, leagueName, leagueCode, leagueCodes, activeLeagueCode, winnerPick, topScorerPick, userId };
 
   return (
     <LangContext.Provider value={{ lang, setLang }}>
@@ -7672,10 +7741,11 @@ export default function App() {
       {screen === "league" && (
         <LeagueHub
           name={name} userId={userId}
-          picks={picks} koWinners={koWinners}
+          picks={picks} koWinners={koWinners} koPicks={koPicks}
           leagueCode={leagueCode} setLeagueCode={setLeagueCode}
           leagueData={leagueData} leagueError={leagueError}
-          actuals={actuals} hasActuals={hasActuals}
+          actuals={actuals} actualKo={actualKo} actualKoScores={actualKoScores} hasActuals={hasActuals}
+          liveStandings={liveStandings} liveBestThirds={liveBestThirds}
           liveFetchAt={liveFetchAt} liveError={liveError}
           onFetchLive={fetchAndApplyLive}
           actualWinner={actualWinner} actualTopScorer={actualTopScorer}
