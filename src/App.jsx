@@ -8,7 +8,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, fetchTopS
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "1.5.0";
+const APP_VERSION = "2.0.0";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -76,7 +76,7 @@ const TRANSLATIONS = {
     // Bracket
     "bracket.knockoutStage": "KNOCKOUT STAGE",
     "bracket.title": "🏆 The Bracket",
-    "bracket.tapToAdvance": "Tap a team to advance them.",
+    "bracket.tapToAdvance": "Type your score predictions. Teams advance based on real results.",
     "bracket.doublePoints": "🔥 DOUBLE POINTS PER MATCH",
     "bracket.r16": "R16",
     "bracket.qf": "QF",
@@ -455,7 +455,7 @@ const TRANSLATIONS = {
     // Bracket
     "bracket.knockoutStage": "שלב הנוקאאוט",
     "bracket.title": "🏆 העץ",
-    "bracket.tapToAdvance": "הקש על קבוצה כדי להעבירה הלאה.",
+    "bracket.tapToAdvance": "הקלד תוצאות. הקבוצות עולות לפי התוצאות האמיתיות.",
     "bracket.doublePoints": "🔥 נקודות כפולות · עד 40 נק' לבחירה",
     "bracket.r16": "שמינית",
     "bracket.qf": "רבע",
@@ -1158,6 +1158,43 @@ function scoreMatch(predicted, actual) {
   }
   
   return { points: POINTS.WRONG, type: "wrong" };
+}
+
+function scoreKoMatch(predicted, actual) {
+  // Same logic as scoreMatch but with KO_EXACT / KO_RESULT (doubled points)
+  if (!predicted || !actual) return { points: 0, type: "none" };
+  if (predicted.h === "" || predicted.a === "" || predicted.h === undefined) return { points: 0, type: "none" };
+  if (actual.h === "" || actual.a === "" || actual.h === undefined) return { points: 0, type: "none" };
+  const ph = parseInt(predicted.h), pa = parseInt(predicted.a);
+  const ah = parseInt(actual.h), aa = parseInt(actual.a);
+  if (isNaN(ph) || isNaN(pa) || isNaN(ah) || isNaN(aa)) return { points: 0, type: "none" };
+  if (ph === ah && pa === aa) return { points: POINTS.KO_EXACT, type: "exact" };
+  const predResult = ph > pa ? "h" : ph < pa ? "a" : "d";
+  const actResult = ah > aa ? "h" : ah < aa ? "a" : "d";
+  if (predResult === actResult && predResult !== "d") {
+    // Correct winner. (Draws don't qualify here — if you predicted draw and it was draw, that's "exact".)
+    return { points: POINTS.KO_RESULT, type: "result" };
+  }
+  return { points: POINTS.WRONG, type: "wrong" };
+}
+
+// Score all KO predictions given the user's koPicks and the actualKoScores.
+// actualKoScores format: { "R32-1": { h: 2, a: 1 }, ... }
+function totalKoScore(koPicks, actualKoScores) {
+  let total = 0, exact = 0, result = 0, wrong = 0, played = 0;
+  Object.keys(actualKoScores || {}).forEach(matchId => {
+    const a = actualKoScores[matchId];
+    const p = koPicks?.[matchId];
+    if (!a || a.h === undefined || a.h === "") return;
+    if (!p || p.h === undefined || p.h === "") return;
+    played++;
+    const s = scoreKoMatch(p, a);
+    total += s.points;
+    if (s.type === "exact") exact++;
+    else if (s.type === "result") result++;
+    else if (s.type === "wrong") wrong++;
+  });
+  return { total, exact, result, wrong, played };
 }
 
 function totalScore(picks, actuals) {
@@ -4477,9 +4514,18 @@ function GroupView({ group, picks, actuals, standings, bestThirds, liveStandings
 
 // ─── KNOCKOUT BRACKET ─────────────────────────────────────────────────────────
 
-function KnockoutBracket({ standings, bestThirds, koWinners, setKoWinners, koPicks = {}, setKoPicks = ()=>{}, onBack, onShare, complete, onChampionPicked }) {
+function KnockoutBracket({ standings, bestThirds, liveStandings, liveBestThirds, hasActuals, actualKo = {}, koWinners, setKoWinners, koPicks = {}, setKoPicks = ()=>{}, onBack, onShare, complete, onChampionPicked }) {
   const t = useT();
-  const r32 = useMemo(() => buildR32(standings, bestThirds), [standings, bestThirds]);
+  // The bracket is now built from REAL results, not predictions.
+  // R32 teams come from the actual group standings (liveStandings).
+  // R16/QF/SF/FINAL fill in only when actualKo says who won each match.
+  // If actuals aren't there yet, slots stay as null (TBD).
+  const actualStandings = liveStandings && hasActuals ? liveStandings : null;
+  const actualThirds = liveBestThirds && hasActuals ? liveBestThirds : null;
+  const r32 = useMemo(
+    () => actualStandings ? buildR32(actualStandings, actualThirds) : buildR32({}, []),
+    [actualStandings, actualThirds]
+  );
   const [confettiKey, setConfettiKey] = useState(0);
 
   // Responsive: stack vertically on narrow phones
@@ -4502,58 +4548,21 @@ function KnockoutBracket({ standings, bestThirds, koWinners, setKoWinners, koPic
     );
   }
 
-  const r32Winners = r32.map(m => koWinners[m.id] === "a" ? m.a : koWinners[m.id] === "b" ? m.b : null);
+  // Each round's winners come from `actualKo` (real results from the API), NOT from user picks.
+  // Before a result is in, the slot stays null (TBD).
+  const r32Winners = r32.map(m => actualKo[m.id] === "a" ? m.a : actualKo[m.id] === "b" ? m.b : null);
   const r16 = []; for (let i=0;i<16;i+=2) r16.push({id:`R16-${i/2}`,a:r32Winners[i],b:r32Winners[i+1]});
-  const r16Winners = r16.map(m => koWinners[m.id] === "a" ? m.a : koWinners[m.id] === "b" ? m.b : null);
+  const r16Winners = r16.map(m => actualKo[m.id] === "a" ? m.a : actualKo[m.id] === "b" ? m.b : null);
   const qf = []; for (let i=0;i<8;i+=2) qf.push({id:`QF-${i/2}`,a:r16Winners[i],b:r16Winners[i+1]});
-  const qfWinners = qf.map(m => koWinners[m.id] === "a" ? m.a : koWinners[m.id] === "b" ? m.b : null);
+  const qfWinners = qf.map(m => actualKo[m.id] === "a" ? m.a : actualKo[m.id] === "b" ? m.b : null);
   const sf = []; for (let i=0;i<4;i+=2) sf.push({id:`SF-${i/2}`,a:qfWinners[i],b:qfWinners[i+1]});
-  const sfWinners = sf.map(m => koWinners[m.id] === "a" ? m.a : koWinners[m.id] === "b" ? m.b : null);
+  const sfWinners = sf.map(m => actualKo[m.id] === "a" ? m.a : actualKo[m.id] === "b" ? m.b : null);
   const final = { id:"FINAL", a:sfWinners[0], b:sfWinners[1] };
-  const champion = koWinners[final.id]==="a"?final.a:koWinners[final.id]==="b"?final.b:null;
+  const champion = actualKo[final.id]==="a"?final.a:actualKo[final.id]==="b"?final.b:null;
 
-  const pickWinner = (id, side) => {
-    setKoWinners(prev => {
-      const next = { ...prev };
-      const wasSelected = next[id] === side;
-      if (wasSelected) {
-        delete next[id];
-      } else {
-        next[id] = side;
-        // Haptic feedback
-        try { navigator.vibrate?.(15); } catch {}
-        // Champion celebration!
-        if (id === "FINAL") {
-          setConfettiKey(k => k + 1);
-          try { navigator.vibrate?.([15, 50, 30, 50, 80]); } catch {}
-          if (onChampionPicked) {
-            // Pass back the winner via callback after a frame
-            setTimeout(() => {
-              const r32x = buildR32(standings, bestThirds);
-              if (!r32x) return;
-              let cur = r32x.map(m => next[m.id]==="a"?m.a:next[m.id]==="b"?m.b:null);
-              const advance = (arr, prefix, count) => {
-                const out = [];
-                for (let i = 0; i < count; i += 2) {
-                  const mid = `${prefix}-${i/2}`;
-                  const w = next[mid];
-                  out.push(w==="a"?arr[i]:w==="b"?arr[i+1]:null);
-                }
-                return out;
-              };
-              cur = advance(cur, "R16", 16);
-              cur = advance(cur, "QF", 8);
-              cur = advance(cur, "SF", 4);
-              const w = next["FINAL"];
-              const champ = w==="a"?cur[0]:w==="b"?cur[1]:null;
-              if (champ) onChampionPicked(champ);
-            }, 0);
-          }
-        }
-      }
-      return next;
-    });
-  };
+  // Old "pick winner" function — no longer used since we removed the buttons.
+  // Kept as a no-op so any leftover references don't crash.
+  const pickWinner = (id, side) => {};
 
   // Lock knockout picks 1 hour before kickoff (same window as group matches).
   // Re-check every 30s so locks engage smoothly.
@@ -4566,15 +4575,14 @@ function KnockoutBracket({ standings, bestThirds, koWinners, setKoWinners, koPic
 
   const renderMatch = (m) => {
     const ready = m.a && m.b;
-    const winner = koWinners[m.id];
     const sched = KO_SCHEDULE[m.id];
     const k = sched ? formatKickoff(sched.kickoff) : null;
     const kickMs = sched ? new Date(sched.kickoff).getTime() : null;
     const isLocked = kickMs != null && (kickMs - nowTs) < LOCK_MS;
-    // Score prediction for this match
     const kp = koPicks[m.id] || { h: "", a: "" };
+    const hasPick = kp.h !== "" && kp.a !== "";
+
     const handleKoScoreChange = (side, val) => {
-      // Only digits 0-9; clear if empty
       const cleaned = val.replace(/\D/g, "").slice(0, 1);
       setKoPicks(prev => ({
         ...prev,
@@ -4585,82 +4593,78 @@ function KnockoutBracket({ standings, bestThirds, koWinners, setKoWinners, koPic
     return (
       <div key={m.id} style={{
         background: ready ? "rgba(30,41,59,0.6)" : "rgba(15,20,36,0.4)",
-        border: `1px solid ${winner ? "rgba(251,191,36,0.4)" : "rgba(71,85,105,0.3)"}`,
-        borderRadius: 10, padding: "7px 9px", marginBottom: 6,
+        border: `1px solid ${hasPick ? "rgba(251,191,36,0.4)" : "rgba(71,85,105,0.3)"}`,
+        borderRadius: 10, padding: "9px 10px", marginBottom: 8,
         opacity: ready ? 1 : 0.5,
       }}>
         {k && (
           <div style={{
             display:"flex",alignItems:"center",justifyContent:"space-between",
             fontSize:9,color: isLocked ? "#f87171" : "#64748b",letterSpacing:1,
-            marginBottom:4,fontWeight:600,
+            marginBottom:6,fontWeight:600,
           }}>
             <span style={{whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",flex:1}}>📅 {k.day} · {k.time}</span>
             {isLocked && <span style={{marginLeft:4,whiteSpace:"nowrap"}}>🔒</span>}
           </div>
         )}
-        {[m.a,m.b].map((team,idx) => {
-          const side = idx === 0 ? "a" : "b";
-          const selected = winner === side;
-          const otherSelected = winner && winner !== side;
-          const canPick = ready && !isLocked;
-          return (
-            <button key={idx} onClick={()=>canPick&&pickWinner(m.id,side)} disabled={!canPick}
-              style={{width:"100%",display:"flex",alignItems:"center",gap:8,padding:"5px 7px",marginBottom:idx===0?3:0,background:selected?"rgba(251,191,36,0.18)":"transparent",border:`1px solid ${selected?"#fbbf24":"transparent"}`,borderRadius:6,cursor:canPick?"pointer":"not-allowed",fontFamily:"inherit",opacity:otherSelected?0.4:1}}>
-              <span style={{fontSize:16}}>{team?.flag||team?.f||"?"}</span>
-              <span style={{flex:1,textAlign:"left",fontSize:12,color:selected?"#fbbf24":"#f1f5f9",fontWeight:selected?700:500}}>{team?.name||team?.n||"TBD"}</span>
-              {selected && <span style={{fontSize:12,color:"#fbbf24"}}>✓</span>}
-            </button>
-          );
-        })}
 
-        {/* Score prediction inputs (Stage 1 - new) */}
-        {ready && (
-          <div style={{
-            display:"flex",alignItems:"center",justifyContent:"center",gap:6,
-            marginTop:6,paddingTop:6,
-            borderTop:"1px dashed rgba(71,85,105,0.3)",
-            direction:"ltr",
-          }}>
-            <span style={{fontSize:9,color:"#64748b",letterSpacing:1,marginRight:4}}>SCORE:</span>
+        {/* Match row: home team | score inputs | away team */}
+        <div style={{
+          display:"grid",gridTemplateColumns:"1fr auto 1fr",alignItems:"center",gap:6,
+          direction:"ltr",
+        }}>
+          {/* Home team (left) */}
+          <div style={{display:"flex",alignItems:"center",gap:6,minWidth:0,justifyContent:"flex-end"}}>
+            <span style={{fontSize:11,color:"#f1f5f9",fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",textAlign:"right"}}>{m.a?.name||m.a?.n||"TBD"}</span>
+            <span style={{fontSize:18,flexShrink:0}}>{m.a?.flag||m.a?.f||"❓"}</span>
+          </div>
+
+          {/* Score inputs */}
+          <div style={{display:"flex",alignItems:"center",gap:4}}>
             <input
               type="text"
               inputMode="numeric"
               value={kp.h}
               onChange={e=>handleKoScoreChange("h", e.target.value)}
               onFocus={e=>e.target.select()}
-              readOnly={isLocked}
-              placeholder={isLocked ? "·" : "—"}
+              readOnly={isLocked || !ready}
+              placeholder={ready ? (isLocked ? "·" : "—") : ""}
               style={{
-                width:26,height:26,textAlign:"center",
-                background: isLocked ? "rgba(71,85,105,0.2)" : "#0a0e1c",
-                border: `1px solid ${isLocked ? "rgba(71,85,105,0.4)" : "rgba(71,85,105,0.5)"}`,
-                borderRadius:5,color: isLocked ? "#64748b" : "#f1f5f9",
-                fontSize:13,fontWeight:800,fontFamily:"inherit",outline:"none",
+                width:30,height:30,textAlign:"center",
+                background: (isLocked || !ready) ? "rgba(71,85,105,0.2)" : "#0a0e1c",
+                border: `1px solid ${hasPick ? "#fbbf24" : "rgba(71,85,105,0.5)"}`,
+                borderRadius:6,color: (isLocked || !ready) ? "#64748b" : "#f1f5f9",
+                fontSize:14,fontWeight:800,fontFamily:"inherit",outline:"none",
               }}
             />
-            <span style={{color:"#475569",fontSize:11}}>:</span>
+            <span style={{color:"#475569",fontSize:13,fontWeight:700}}>:</span>
             <input
               type="text"
               inputMode="numeric"
               value={kp.a}
               onChange={e=>handleKoScoreChange("a", e.target.value)}
               onFocus={e=>e.target.select()}
-              readOnly={isLocked}
-              placeholder={isLocked ? "·" : "—"}
+              readOnly={isLocked || !ready}
+              placeholder={ready ? (isLocked ? "·" : "—") : ""}
               style={{
-                width:26,height:26,textAlign:"center",
-                background: isLocked ? "rgba(71,85,105,0.2)" : "#0a0e1c",
-                border: `1px solid ${isLocked ? "rgba(71,85,105,0.4)" : "rgba(71,85,105,0.5)"}`,
-                borderRadius:5,color: isLocked ? "#64748b" : "#f1f5f9",
-                fontSize:13,fontWeight:800,fontFamily:"inherit",outline:"none",
+                width:30,height:30,textAlign:"center",
+                background: (isLocked || !ready) ? "rgba(71,85,105,0.2)" : "#0a0e1c",
+                border: `1px solid ${hasPick ? "#fbbf24" : "rgba(71,85,105,0.5)"}`,
+                borderRadius:6,color: (isLocked || !ready) ? "#64748b" : "#f1f5f9",
+                fontSize:14,fontWeight:800,fontFamily:"inherit",outline:"none",
               }}
             />
           </div>
-        )}
+
+          {/* Away team (right) */}
+          <div style={{display:"flex",alignItems:"center",gap:6,minWidth:0}}>
+            <span style={{fontSize:18,flexShrink:0}}>{m.b?.flag||m.b?.f||"❓"}</span>
+            <span style={{fontSize:11,color:"#f1f5f9",fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{m.b?.name||m.b?.n||"TBD"}</span>
+          </div>
+        </div>
 
         {sched?.venue && (
-          <div style={{fontSize:8,color:"#475569",marginTop:3,textAlign:"center",letterSpacing:0.5,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+          <div style={{fontSize:8,color:"#475569",marginTop:5,textAlign:"center",letterSpacing:0.5,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
             📍 {sched.venue}
           </div>
         )}
@@ -6841,6 +6845,9 @@ export default function App() {
   const [friends, setFriends] = useState(saved?.friends || []);
   const [actuals, setActuals] = useState(saved?.actuals || {});
   const [actualKo, setActualKo] = useState(saved?.actualKo || {});
+  // NEW: actual scores for knockout matches (parallel to actualKo which is just a/b winner)
+  // Format: { "R32-1": { h: "2", a: "1" }, ... }
+  const [actualKoScores, setActualKoScores] = useState(saved?.actualKoScores || {});
   const [winnerPick, setWinnerPick] = useState(saved?.winnerPick || null); // {name, flag} of team you bet wins it all
   // Goal celebration: which exact-prediction fixtures have already been celebrated
   const [celebratedIds, setCelebratedIds] = useState(() => {
@@ -7068,13 +7075,13 @@ export default function App() {
   // Auto-save on any change
   useEffect(() => {
     if (!name) return;
-    const ok = saveState({ name, picks, koWinners, koPicks, groupIdx, friends, actuals, actualKo, leagueName, leagueCode, leagueCodes, activeLeagueCode, userId, winnerPick, topScorerPick, actualWinner, actualTopScorer });
+    const ok = saveState({ name, picks, koWinners, koPicks, groupIdx, friends, actuals, actualKo, actualKoScores, leagueName, leagueCode, leagueCodes, activeLeagueCode, userId, winnerPick, topScorerPick, actualWinner, actualTopScorer });
     if (ok) {
       setJustSaved(true);
       const t = setTimeout(()=>setJustSaved(false), 1500);
       return () => clearTimeout(t);
     }
-  }, [name, picks, koWinners, koPicks, groupIdx, friends, actuals, actualKo, leagueName, leagueCode, leagueCodes, activeLeagueCode, winnerPick, topScorerPick, actualWinner, actualTopScorer]);
+  }, [name, picks, koWinners, koPicks, groupIdx, friends, actuals, actualKo, actualKoScores, leagueName, leagueCode, leagueCodes, activeLeagueCode, winnerPick, topScorerPick, actualWinner, actualTopScorer]);
 
   // ─── FIREBASE LEAGUE SYNC ──────────────────────────────────────────────────
   // Subscribe to ALL leagues the user has joined, in real-time
@@ -7258,6 +7265,11 @@ export default function App() {
       const ms = totalScore(picks, actuals);
       total = ms.total;
     } catch {}
+    // KO predictions
+    try {
+      const ks = totalKoScore(koPicks, actualKoScores);
+      total += ks.total;
+    } catch {}
     if (actualWinner && winnerPick) {
       const aw = actualWinner.name || actualWinner.n;
       const mw = winnerPick.name || winnerPick.n;
@@ -7267,7 +7279,7 @@ export default function App() {
       total += (actualTopScorer.goals || 0) * POINTS.TOP_SCORER_GOAL;
     }
     return total;
-  }, [picks, actuals, winnerPick, topScorerPick, actualWinner, actualTopScorer]);
+  }, [picks, actuals, koPicks, actualKoScores, winnerPick, topScorerPick, actualWinner, actualTopScorer]);
 
   // ─── ACHIEVEMENTS CHECK ──────────────────────────────────────────────────
   // Whenever relevant state changes, recompute which badges should be unlocked.
@@ -7363,7 +7375,7 @@ export default function App() {
       onConfirm: () => {
         clearState();
         setName(""); setPicks({}); setKoWinners({}); setKoPicks({}); setGroupIdx(0);
-        setFriends([]); setActuals({}); setActualKo({}); setLeagueName(""); setLeagueCode(""); setLeagueCodes([]); setActiveLeagueCode(""); setAllLeagueData({}); setWinnerPick(null); setTopScorerPick(null); setCelebratedIds(new Set()); setLastSeenGoals(0); setSeenActualIds(new Set()); setShowOnboarding(true); try { localStorage.removeItem("wc2026_celebrated_v1"); localStorage.removeItem("wc2026_lastseen_goals_v1"); localStorage.removeItem("wc2026_seen_actuals_v1"); localStorage.removeItem("wc2026_onboarded_v1"); localStorage.removeItem("wc2026_world_v1"); localStorage.removeItem("wc2026_achv_v1"); } catch {}
+        setFriends([]); setActuals({}); setActualKo({}); setActualKoScores({}); setLeagueName(""); setLeagueCode(""); setLeagueCodes([]); setActiveLeagueCode(""); setAllLeagueData({}); setWinnerPick(null); setTopScorerPick(null); setCelebratedIds(new Set()); setLastSeenGoals(0); setSeenActualIds(new Set()); setShowOnboarding(true); try { localStorage.removeItem("wc2026_celebrated_v1"); localStorage.removeItem("wc2026_lastseen_goals_v1"); localStorage.removeItem("wc2026_seen_actuals_v1"); localStorage.removeItem("wc2026_onboarded_v1"); localStorage.removeItem("wc2026_world_v1"); localStorage.removeItem("wc2026_achv_v1"); } catch {}
         setScreen("welcome");
         setShowIntro(false);
       },
@@ -7375,7 +7387,7 @@ export default function App() {
       // No data to worry about, just log out
       clearState();
       setName(""); setPicks({}); setKoWinners({}); setKoPicks({}); setGroupIdx(0);
-      setFriends([]); setActuals({}); setActualKo({}); setLeagueName(""); setLeagueCode(""); setLeagueCodes([]); setActiveLeagueCode(""); setAllLeagueData({}); setWinnerPick(null); setTopScorerPick(null); setCelebratedIds(new Set()); setLastSeenGoals(0); setSeenActualIds(new Set()); setShowOnboarding(true); try { localStorage.removeItem("wc2026_celebrated_v1"); localStorage.removeItem("wc2026_lastseen_goals_v1"); localStorage.removeItem("wc2026_seen_actuals_v1"); localStorage.removeItem("wc2026_onboarded_v1"); localStorage.removeItem("wc2026_world_v1"); localStorage.removeItem("wc2026_achv_v1"); } catch {}
+      setFriends([]); setActuals({}); setActualKo({}); setActualKoScores({}); setLeagueName(""); setLeagueCode(""); setLeagueCodes([]); setActiveLeagueCode(""); setAllLeagueData({}); setWinnerPick(null); setTopScorerPick(null); setCelebratedIds(new Set()); setLastSeenGoals(0); setSeenActualIds(new Set()); setShowOnboarding(true); try { localStorage.removeItem("wc2026_celebrated_v1"); localStorage.removeItem("wc2026_lastseen_goals_v1"); localStorage.removeItem("wc2026_seen_actuals_v1"); localStorage.removeItem("wc2026_onboarded_v1"); localStorage.removeItem("wc2026_world_v1"); localStorage.removeItem("wc2026_achv_v1"); } catch {}
       setScreen("welcome");
       setShowIntro(false);
       return;
@@ -7389,7 +7401,7 @@ export default function App() {
       onConfirm: () => {
         clearState();
         setName(""); setPicks({}); setKoWinners({}); setKoPicks({}); setGroupIdx(0);
-        setFriends([]); setActuals({}); setActualKo({}); setLeagueName(""); setLeagueCode(""); setLeagueCodes([]); setActiveLeagueCode(""); setAllLeagueData({}); setWinnerPick(null); setTopScorerPick(null); setCelebratedIds(new Set()); setLastSeenGoals(0); setSeenActualIds(new Set()); setShowOnboarding(true); try { localStorage.removeItem("wc2026_celebrated_v1"); localStorage.removeItem("wc2026_lastseen_goals_v1"); localStorage.removeItem("wc2026_seen_actuals_v1"); localStorage.removeItem("wc2026_onboarded_v1"); localStorage.removeItem("wc2026_world_v1"); localStorage.removeItem("wc2026_achv_v1"); } catch {}
+        setFriends([]); setActuals({}); setActualKo({}); setActualKoScores({}); setLeagueName(""); setLeagueCode(""); setLeagueCodes([]); setActiveLeagueCode(""); setAllLeagueData({}); setWinnerPick(null); setTopScorerPick(null); setCelebratedIds(new Set()); setLastSeenGoals(0); setSeenActualIds(new Set()); setShowOnboarding(true); try { localStorage.removeItem("wc2026_celebrated_v1"); localStorage.removeItem("wc2026_lastseen_goals_v1"); localStorage.removeItem("wc2026_seen_actuals_v1"); localStorage.removeItem("wc2026_onboarded_v1"); localStorage.removeItem("wc2026_world_v1"); localStorage.removeItem("wc2026_achv_v1"); } catch {}
         setScreen("welcome");
         setShowIntro(false);
       },
@@ -7630,6 +7642,10 @@ export default function App() {
         <KnockoutBracket
           standings={standings}
           bestThirds={bestThirds}
+          liveStandings={liveStandings}
+          liveBestThirds={liveBestThirds}
+          hasActuals={hasActuals}
+          actualKo={actualKo}
           koWinners={koWinners}
           setKoWinners={setKoWinners}
           koPicks={koPicks}
