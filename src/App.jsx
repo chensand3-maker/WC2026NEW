@@ -2722,7 +2722,7 @@ function CountdownBar() {
       <div style={{fontSize:10,color:"#fbbf24",letterSpacing:1,fontWeight:700,whiteSpace:"nowrap"}}>
         🏆 {t("countdown.title")}
       </div>
-      <div style={{display:"flex",alignItems:"center",gap:8}}>
+      <div style={{display:"flex",alignItems:"center",gap:8,direction:"ltr"}}>
         <Cell value={days} label={t("countdown.days")}/>
         <span style={{color:"#475569",fontSize:14,marginTop:-8}}>:</span>
         <Cell value={hours} label={t("countdown.hours")}/>
