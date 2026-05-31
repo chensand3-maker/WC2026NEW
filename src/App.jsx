@@ -3544,7 +3544,7 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
         {sc && <span style={{color:sc.text,fontWeight:700,whiteSpace:"nowrap"}}>{sc.label} +{score.points}</span>}
         {!sc && !isLocked && hasResult && <span style={{color:"#22c55e"}}>✓</span>}
       </div>
-      <div style={{display:"grid",gridTemplateColumns:"1fr auto 1fr",alignItems:"center",gap:8}}>
+      <div style={{display:"grid",gridTemplateColumns:"1fr auto 1fr",alignItems:"center",gap:8,direction:"ltr"}}>
         <div style={{display:"flex",alignItems:"center",gap:8,justifyContent:"flex-end",opacity:result==="away"?0.5:1}}>
           <span style={{fontSize:13,fontWeight:result==="home"?800:500,color:"#f1f5f9",textAlign:"right"}}>{home.n}</span>
           <span style={{fontSize:22}}>{home.f}</span>
@@ -3592,7 +3592,7 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
         }}>
           <div style={{
             display:"grid",gridTemplateColumns:"1fr auto 1fr",alignItems:"center",gap:8,
-            padding:"6px 4px",
+            padding:"6px 4px",direction:"ltr",
             background: sc?.bg || "rgba(15,20,36,0.5)",
             borderRadius:8,
             border: `1px solid ${sc?.border || "rgba(71,85,105,0.4)"}`,
@@ -3960,7 +3960,7 @@ function GroupView({ group, picks, actuals, standings, bestThirds, liveStandings
       {/* Group selector pills */}
       <div style={{
         display:"grid",gridTemplateColumns:"repeat(6, 1fr)",
-        gap:6,marginBottom:14,
+        gap:6,marginBottom:14,direction:"ltr",
       }}>
         {GROUP_KEYS.map(g => {
           const isCurrent = g === group;
