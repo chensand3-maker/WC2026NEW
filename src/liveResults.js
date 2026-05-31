@@ -2,7 +2,7 @@
 // ─── Live results fetcher — calls API-Football and maps to our match IDs ──────
 
 // 🔧 PASTE YOUR API-FOOTBALL KEY HERE (see SETUP.md step 3)
-const API_FOOTBALL_KEY = "50b86c6e4ce49b2c24362c4947a7e3d5";
+const API_FOOTBALL_KEY = "PASTE_HERE";
 const API_URL = "https://v3.football.api-sports.io";
 
 // Team name normalization: API-Football names → our internal names
@@ -72,7 +72,7 @@ function normalizeTeam(name) {
 }
 
 // In-memory cache to avoid hammering the API (free tier: 100 req/day)
-const CACHE_KEY = "wc2026_live_cache_v1";
+const CACHE_KEY = "wc2026_live_cache_v3";
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
 function getCache() {
@@ -92,8 +92,13 @@ function setCache(data) {
 }
 
 /**
- * Fetch all completed matches for the World Cup 2026 group stage.
- * Returns { byTeamPair: { "TeamA|TeamB": {h, a} }, fetchedAt }
+ * Fetch all matches for the World Cup 2026 (group + knockout).
+ * Returns:
+ *   {
+ *     byTeamPair: { "TeamA|TeamB": {h, a, status} } — for group-stage lookups
+ *     knockout:   { "TeamA|TeamB": {h, a, winnerName, status, round} } — for KO lookups
+ *     fetchedAt
+ *   }
  */
 export async function fetchLiveResults() {
   // Check cache first
@@ -114,6 +119,12 @@ export async function fetchLiveResults() {
   if (!json.response) throw new Error("Unexpected API response");
 
   const byTeamPair = {};
+  const knockout = {};
+
+  // Knockout round names returned by API-Football for FIFA World Cup
+  // We treat anything containing these keywords as a knockout match
+  const KO_KEYWORDS = ["Round of 32", "Round of 16", "Quarter", "Semi", "3rd Place", "Final"];
+
   for (const fixture of json.response) {
     const status = fixture.fixture?.status?.short;
     // FT = full time, AET = after extra time, PEN = penalties (all finished)
@@ -125,11 +136,25 @@ export async function fetchLiveResults() {
     const aGoals = fixture.goals?.away;
     if (home == null || away == null || hGoals == null || aGoals == null) continue;
 
-    // Store both orderings so we can match regardless of home/away order in our fixtures
-    byTeamPair[`${home}|${away}`] = { h: hGoals, a: aGoals, status, originalHome: home };
+    const round = fixture.league?.round || "";
+    const isKnockout = KO_KEYWORDS.some(k => round.includes(k));
+
+    if (isKnockout) {
+      // For KO matches we also need to know who actually advanced (won on penalties or extra time)
+      // API gives winner via teams.home.winner / teams.away.winner (true/false/null).
+      const homeWon = fixture.teams?.home?.winner === true;
+      const awayWon = fixture.teams?.away?.winner === true;
+      const winnerName = homeWon ? home : awayWon ? away : null;
+      knockout[`${home}|${away}`] = {
+        h: hGoals, a: aGoals, status, round, winnerName, originalHome: home,
+      };
+    } else {
+      // Group-stage: just store the score, both orderings handled by mapResultsToFixtures
+      byTeamPair[`${home}|${away}`] = { h: hGoals, a: aGoals, status, originalHome: home };
+    }
   }
 
-  const data = { byTeamPair, fetchedAt: Date.now() };
+  const data = { byTeamPair, knockout, fetchedAt: Date.now() };
   setCache(data);
   return data;
 }
@@ -157,21 +182,65 @@ export function mapResultsToFixtures(liveData, FIXTURES) {
 }
 
 /**
- * Map knockout results to bracket slot IDs (R16-X, QF-X, SF-X, FINAL).
- * Returns map of slot_id → "a" or "b" indicating winner side.
- * Empty object until knockout stage is reached.
+ * Map knockout results to our bracket slot IDs.
+ * Given the REAL bracket (built from real standings + actualKo for previous rounds),
+ * we look for matches in the API where both teams match our slot's teams.
+ *
+ * Returns:
+ *   {
+ *     winners: { "R32-1": "a"|"b", ... } — which side won
+ *     scores:  { "R32-1": {h, a}, ... } — the actual 90-min score (used for scoring predictions)
+ *   }
  */
+export function mapKnockoutToBracket(liveData, bracketMatches) {
+  // bracketMatches: array of { id, a: {name}, b: {name} } from buildR32/r16/etc
+  const winners = {};
+  const scores = {};
+  if (!liveData?.knockout || !bracketMatches) return { winners, scores };
+
+  for (const m of bracketMatches) {
+    if (!m.a || !m.b) continue; // slot not filled yet
+    const aName = m.a.name || m.a.n;
+    const bName = m.b.name || m.b.n;
+    const direct = liveData.knockout[`${aName}|${bName}`];
+    const reverse = liveData.knockout[`${bName}|${aName}`];
+    let result = null;
+    let swapped = false;
+    if (direct) {
+      result = direct;
+    } else if (reverse) {
+      result = reverse;
+      swapped = true;
+    }
+    if (!result) continue;
+
+    // Score: store in the order of OUR bracket (a, b)
+    if (swapped) {
+      scores[m.id] = { h: String(result.a), a: String(result.h) };
+    } else {
+      scores[m.id] = { h: String(result.h), a: String(result.a) };
+    }
+
+    // Winner side
+    if (result.winnerName) {
+      if (result.winnerName === aName) winners[m.id] = "a";
+      else if (result.winnerName === bName) winners[m.id] = "b";
+    }
+  }
+  return { winners, scores };
+}
+
+// Backward-compatibility export (old name, no longer used)
 export function mapKnockoutToWinners(liveData, realBracket) {
-  return {};
+  if (!realBracket) return {};
+  const { winners } = mapKnockoutToBracket(liveData, realBracket);
+  return winners;
 }
 
 /**
- * Fetch & return knockout match results (R16 → Final).
- * Returns map of fixture-id-style → winner names.
- * Not used in v1 (group stage only) but stub here for later.
+ * Stub — not used directly (mapKnockoutToBracket is the new one).
  */
 export async function fetchKnockoutResults() {
-  // TODO: implement once group stage is done — would map to our R32/R16/QF/SF/FINAL IDs
   return {};
 }
 
