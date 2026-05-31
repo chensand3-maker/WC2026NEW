@@ -2,13 +2,13 @@ import { useState, useMemo, useEffect, useRef, createContext, useContext } from 
 import {
   generateLeagueCode, createLeague, joinLeague,
   updateMyPicks, leaveLeague, subscribeLeague, updateActualResults,
-  updateMyGlobalProfile, fetchGlobalLeaderboard,
+  updateMyGlobalProfile, fetchGlobalLeaderboard, renameLeague,
 } from "./firebase";
 import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, fetchTopScorers } from "./liveResults";
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "1.2.0";
+const APP_VERSION = "1.3.0";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -264,6 +264,13 @@ const TRANSLATIONS = {
     "leagueConfirm.message": "You'll lose access to \"{name}\" and stop seeing its standings. You can always rejoin with the league code later.",
     "leagueConfirm.confirm": "Yes, leave league",
     "leagueConfirm.cancel": "Stay",
+    "league.editName": "Edit league name",
+    "league.renameTitle": "Rename League",
+    "league.renameSubtitle": "Choose a new name for your league. All members will see it.",
+    "league.renameConfirm": "Save",
+    "league.nameRequired": "Please enter a name",
+    "league.nameTooLong": "Name is too long (max 40 chars)",
+    "toast.leagueRenamed": "League renamed! 🎉",
     "league.shareWhatsapp": "Share via WhatsApp",
     "league.shareMessage": "Hey! 🏆⚽ I started a 2026 World Cup prediction league called \"{name}\".\n\nJoin with this code: {code}\n\n{url}",
     "league.copyTooltip": "Copy code",
@@ -632,6 +639,13 @@ const TRANSLATIONS = {
     "leagueConfirm.message": "תאבד גישה ל\"{name}\" ולא תראה יותר את הדירוג שלה. תמיד אפשר להצטרף שוב עם קוד הליגה בעתיד.",
     "leagueConfirm.confirm": "כן, עזוב את הליגה",
     "leagueConfirm.cancel": "תישאר",
+    "league.editName": "ערוך שם ליגה",
+    "league.renameTitle": "שינוי שם הליגה",
+    "league.renameSubtitle": "בחר שם חדש לליגה שלך. כל החברים יראו אותו.",
+    "league.renameConfirm": "שמור",
+    "league.nameRequired": "אנא הזן שם",
+    "league.nameTooLong": "השם ארוך מדי (עד 40 תווים)",
+    "toast.leagueRenamed": "שם הליגה שונה! 🎉",
     "league.shareWhatsapp": "שלח בוואטסאפ",
     "league.shareMessage": "היי! 🏆⚽ פתחתי ליגת ניחושים למונדיאל 2026 בשם \"{name}\".\n\nהצטרפו עם הקוד הזה: {code}\n\n{url}",
     "league.copyTooltip": "העתק קוד",
@@ -5076,6 +5090,26 @@ function LeagueHub({
 
   // ─── Leave league ──
   const [confirmLeave, setConfirmLeave] = useState(false);
+  const [showRename, setShowRename] = useState(false);
+  const [renameDraft, setRenameDraft] = useState("");
+  const [renameBusy, setRenameBusy] = useState(false);
+  const [renameErr, setRenameErr] = useState("");
+
+  const handleRename = async () => {
+    const newName = renameDraft.trim();
+    if (!newName) { setRenameErr(t("league.nameRequired")); return; }
+    if (newName.length > 40) { setRenameErr(t("league.nameTooLong")); return; }
+    if (newName === leagueData?.name) { setShowRename(false); return; }
+    setRenameBusy(true); setRenameErr("");
+    try {
+      await renameLeague(leagueCode, newName);
+      showToast(t("toast.leagueRenamed"), "success");
+      setShowRename(false);
+    } catch (e) {
+      setRenameErr(e.message || "Couldn't rename");
+    }
+    setRenameBusy(false);
+  };
 
   const handleLeave = async () => {
     if (!leagueCode) return;
@@ -5687,7 +5721,18 @@ function LeagueHub({
             <div style={{fontSize:32}}>🏆</div>
             <div style={{flex:1,minWidth:0}}>
               <div style={{fontSize:10,color:"#fbbf24",letterSpacing:2,marginBottom:2}}>{t("league.yourLeague")}</div>
-              <h2 style={{margin:0,fontSize:17,color:"#f1f5f9",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{leagueData.name}</h2>
+              <div style={{display:"flex",alignItems:"center",gap:6}}>
+                <h2 style={{margin:0,fontSize:17,color:"#f1f5f9",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",flex:1,minWidth:0}}>{leagueData.name}</h2>
+                {leagueData.createdBy === name && (
+                  <button onClick={()=>{setRenameDraft(leagueData.name);setShowRename(true);}}
+                    title={t("league.editName")}
+                    style={{
+                      background:"transparent",border:"none",cursor:"pointer",fontFamily:"inherit",
+                      fontSize:14,color:"#fbbf24",padding:"4px 6px",borderRadius:6,
+                      flexShrink:0,
+                    }}>✏️</button>
+                )}
+              </div>
               <div style={{fontSize:11,color:"#94a3b8",marginTop:2}}>
                 <span style={{color:"#22c55e"}}>●</span> {t("league.liveSync")} · {members.length} {members.length===1?t("league.member"):t("league.members")}
               </div>
@@ -5967,6 +6012,61 @@ function LeagueHub({
           )}
           <button onClick={requestLeave} style={{background:"transparent",border:"none",color:"#64748b",fontSize:12,cursor:"pointer",fontFamily:"inherit",textDecoration:"underline"}}>{t("league.leaveLeague")}</button>
         </div>
+
+        {/* Rename league modal */}
+        {showRename && (
+          <div onClick={()=>!renameBusy && setShowRename(false)} style={{
+            position:"fixed",inset:0,background:"rgba(0,0,0,0.85)",zIndex:200,
+            display:"flex",alignItems:"center",justifyContent:"center",padding:20,
+            backdropFilter:"blur(8px)",
+          }}>
+            <div onClick={e=>e.stopPropagation()} style={{
+              background:"linear-gradient(145deg,#1a1f3a,#0f1424)",
+              border:"1px solid rgba(251,191,36,0.5)",
+              borderRadius:18,padding:"24px 22px",maxWidth:380,width:"100%",
+              boxShadow:"0 20px 60px rgba(0,0,0,0.6)",
+            }}>
+              <div style={{fontSize:34,textAlign:"center",marginBottom:8}}>✏️</div>
+              <h2 style={{margin:"0 0 10px",fontSize:18,textAlign:"center",color:"#fbbf24"}}>
+                {t("league.renameTitle")}
+              </h2>
+              <p style={{fontSize:12,color:"#94a3b8",textAlign:"center",margin:"0 0 16px"}}>
+                {t("league.renameSubtitle")}
+              </p>
+              <input
+                type="text"
+                value={renameDraft}
+                onChange={e=>setRenameDraft(e.target.value)}
+                onKeyDown={e=>{if(e.key==="Enter")handleRename();}}
+                maxLength={40}
+                autoFocus
+                style={{
+                  width:"100%",boxSizing:"border-box",
+                  padding:"10px 12px",fontSize:14,
+                  background:"#0a0e1c",border:"1px solid rgba(251,191,36,0.4)",
+                  borderRadius:8,color:"#f1f5f9",fontFamily:"inherit",outline:"none",
+                  marginBottom:12,
+                }}
+              />
+              {renameErr && (
+                <div style={{fontSize:11,color:"#fca5a5",marginBottom:10,textAlign:"center"}}>
+                  ⚠️ {renameErr}
+                </div>
+              )}
+              <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                <button onClick={handleRename} disabled={renameBusy} style={{
+                  ...primaryBtn,opacity:renameBusy?0.5:1,
+                }}>
+                  {renameBusy ? "..." : t("league.renameConfirm")}
+                </button>
+                <button onClick={()=>setShowRename(false)} disabled={renameBusy} style={{
+                  background:"transparent",border:"none",color:"#94a3b8",
+                  fontSize:12,padding:"8px 0",cursor:"pointer",fontFamily:"inherit",
+                }}>{t("leagueConfirm.cancel")}</button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Leave confirmation modal */}
         {confirmLeave && (
