@@ -9,12 +9,12 @@ import {
 
 // 🔧 PASTE YOUR FIREBASE CONFIG HERE (see SETUP.md step 2)
 const firebaseConfig = {
-  apiKey: "AIzaSyD4HwvAZZCNwgVMh_h6zsyZ17lzl69_OrM",
-  authDomain: "wc-2026-8b41e.firebaseapp.com",
-  projectId: "wc-2026-8b41e",
-  storageBucket: "wc-2026-8b41e.firebasestorage.app",
-  messagingSenderId: "141406397194",
-  appId: "1:141406397194:web:a0139af6eb261cc2bf50f3",
+  apiKey: "PASTE_HERE",
+  authDomain: "PASTE_HERE",
+  projectId: "PASTE_HERE",
+  storageBucket: "PASTE_HERE",
+  messagingSenderId: "PASTE_HERE",
+  appId: "PASTE_HERE",
 };
 
 const app = initializeApp(firebaseConfig);
@@ -64,6 +64,11 @@ export async function updateMyPicks(code, userId, name, picks, koWinners, extras
       updatedAt: Date.now(),
     },
   });
+}
+
+export async function renameLeague(code, newName) {
+  const ref = doc(db, "leagues", code);
+  await updateDoc(ref, { name: newName });
 }
 
 export async function leaveLeague(code, userId) {
