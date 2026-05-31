@@ -8,7 +8,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, fetchTopS
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "1.4.0";
+const APP_VERSION = "1.5.0";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -4477,7 +4477,7 @@ function GroupView({ group, picks, actuals, standings, bestThirds, liveStandings
 
 // ─── KNOCKOUT BRACKET ─────────────────────────────────────────────────────────
 
-function KnockoutBracket({ standings, bestThirds, koWinners, setKoWinners, onBack, onShare, complete, onChampionPicked }) {
+function KnockoutBracket({ standings, bestThirds, koWinners, setKoWinners, koPicks = {}, setKoPicks = ()=>{}, onBack, onShare, complete, onChampionPicked }) {
   const t = useT();
   const r32 = useMemo(() => buildR32(standings, bestThirds), [standings, bestThirds]);
   const [confettiKey, setConfettiKey] = useState(0);
@@ -4571,6 +4571,16 @@ function KnockoutBracket({ standings, bestThirds, koWinners, setKoWinners, onBac
     const k = sched ? formatKickoff(sched.kickoff) : null;
     const kickMs = sched ? new Date(sched.kickoff).getTime() : null;
     const isLocked = kickMs != null && (kickMs - nowTs) < LOCK_MS;
+    // Score prediction for this match
+    const kp = koPicks[m.id] || { h: "", a: "" };
+    const handleKoScoreChange = (side, val) => {
+      // Only digits 0-9; clear if empty
+      const cleaned = val.replace(/\D/g, "").slice(0, 1);
+      setKoPicks(prev => ({
+        ...prev,
+        [m.id]: { ...(prev[m.id] || { h: "", a: "" }), [side]: cleaned },
+      }));
+    };
 
     return (
       <div key={m.id} style={{
@@ -4603,6 +4613,52 @@ function KnockoutBracket({ standings, bestThirds, koWinners, setKoWinners, onBac
             </button>
           );
         })}
+
+        {/* Score prediction inputs (Stage 1 - new) */}
+        {ready && (
+          <div style={{
+            display:"flex",alignItems:"center",justifyContent:"center",gap:6,
+            marginTop:6,paddingTop:6,
+            borderTop:"1px dashed rgba(71,85,105,0.3)",
+            direction:"ltr",
+          }}>
+            <span style={{fontSize:9,color:"#64748b",letterSpacing:1,marginRight:4}}>SCORE:</span>
+            <input
+              type="text"
+              inputMode="numeric"
+              value={kp.h}
+              onChange={e=>handleKoScoreChange("h", e.target.value)}
+              onFocus={e=>e.target.select()}
+              readOnly={isLocked}
+              placeholder={isLocked ? "·" : "—"}
+              style={{
+                width:26,height:26,textAlign:"center",
+                background: isLocked ? "rgba(71,85,105,0.2)" : "#0a0e1c",
+                border: `1px solid ${isLocked ? "rgba(71,85,105,0.4)" : "rgba(71,85,105,0.5)"}`,
+                borderRadius:5,color: isLocked ? "#64748b" : "#f1f5f9",
+                fontSize:13,fontWeight:800,fontFamily:"inherit",outline:"none",
+              }}
+            />
+            <span style={{color:"#475569",fontSize:11}}>:</span>
+            <input
+              type="text"
+              inputMode="numeric"
+              value={kp.a}
+              onChange={e=>handleKoScoreChange("a", e.target.value)}
+              onFocus={e=>e.target.select()}
+              readOnly={isLocked}
+              placeholder={isLocked ? "·" : "—"}
+              style={{
+                width:26,height:26,textAlign:"center",
+                background: isLocked ? "rgba(71,85,105,0.2)" : "#0a0e1c",
+                border: `1px solid ${isLocked ? "rgba(71,85,105,0.4)" : "rgba(71,85,105,0.5)"}`,
+                borderRadius:5,color: isLocked ? "#64748b" : "#f1f5f9",
+                fontSize:13,fontWeight:800,fontFamily:"inherit",outline:"none",
+              }}
+            />
+          </div>
+        )}
+
         {sched?.venue && (
           <div style={{fontSize:8,color:"#475569",marginTop:3,textAlign:"center",letterSpacing:0.5,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
             📍 {sched.venue}
@@ -6778,6 +6834,9 @@ export default function App() {
   const [name, setName] = useState(saved?.name || "");
   const [picks, setPicks] = useState(saved?.picks || {});
   const [koWinners, setKoWinners] = useState(saved?.koWinners || {});
+  // NEW (Stage 1): koPicks holds score predictions for each knockout match.
+  // Format: { "R32-1": { h: "2", a: "1" }, ... }. Parallel to `picks` for groups.
+  const [koPicks, setKoPicks] = useState(saved?.koPicks || {});
   const [groupIdx, setGroupIdx] = useState(saved?.groupIdx || 0);
   const [friends, setFriends] = useState(saved?.friends || []);
   const [actuals, setActuals] = useState(saved?.actuals || {});
@@ -7009,13 +7068,13 @@ export default function App() {
   // Auto-save on any change
   useEffect(() => {
     if (!name) return;
-    const ok = saveState({ name, picks, koWinners, groupIdx, friends, actuals, actualKo, leagueName, leagueCode, leagueCodes, activeLeagueCode, userId, winnerPick, topScorerPick, actualWinner, actualTopScorer });
+    const ok = saveState({ name, picks, koWinners, koPicks, groupIdx, friends, actuals, actualKo, leagueName, leagueCode, leagueCodes, activeLeagueCode, userId, winnerPick, topScorerPick, actualWinner, actualTopScorer });
     if (ok) {
       setJustSaved(true);
       const t = setTimeout(()=>setJustSaved(false), 1500);
       return () => clearTimeout(t);
     }
-  }, [name, picks, koWinners, groupIdx, friends, actuals, actualKo, leagueName, leagueCode, leagueCodes, activeLeagueCode, winnerPick, topScorerPick, actualWinner, actualTopScorer]);
+  }, [name, picks, koWinners, koPicks, groupIdx, friends, actuals, actualKo, leagueName, leagueCode, leagueCodes, activeLeagueCode, winnerPick, topScorerPick, actualWinner, actualTopScorer]);
 
   // ─── FIREBASE LEAGUE SYNC ──────────────────────────────────────────────────
   // Subscribe to ALL leagues the user has joined, in real-time
@@ -7303,7 +7362,7 @@ export default function App() {
       typePrompt: name ? `Type your name ("${name}") to confirm:` : `Type "DELETE" to confirm:`,
       onConfirm: () => {
         clearState();
-        setName(""); setPicks({}); setKoWinners({}); setGroupIdx(0);
+        setName(""); setPicks({}); setKoWinners({}); setKoPicks({}); setGroupIdx(0);
         setFriends([]); setActuals({}); setActualKo({}); setLeagueName(""); setLeagueCode(""); setLeagueCodes([]); setActiveLeagueCode(""); setAllLeagueData({}); setWinnerPick(null); setTopScorerPick(null); setCelebratedIds(new Set()); setLastSeenGoals(0); setSeenActualIds(new Set()); setShowOnboarding(true); try { localStorage.removeItem("wc2026_celebrated_v1"); localStorage.removeItem("wc2026_lastseen_goals_v1"); localStorage.removeItem("wc2026_seen_actuals_v1"); localStorage.removeItem("wc2026_onboarded_v1"); localStorage.removeItem("wc2026_world_v1"); localStorage.removeItem("wc2026_achv_v1"); } catch {}
         setScreen("welcome");
         setShowIntro(false);
@@ -7315,7 +7374,7 @@ export default function App() {
     if (!hasData) {
       // No data to worry about, just log out
       clearState();
-      setName(""); setPicks({}); setKoWinners({}); setGroupIdx(0);
+      setName(""); setPicks({}); setKoWinners({}); setKoPicks({}); setGroupIdx(0);
       setFriends([]); setActuals({}); setActualKo({}); setLeagueName(""); setLeagueCode(""); setLeagueCodes([]); setActiveLeagueCode(""); setAllLeagueData({}); setWinnerPick(null); setTopScorerPick(null); setCelebratedIds(new Set()); setLastSeenGoals(0); setSeenActualIds(new Set()); setShowOnboarding(true); try { localStorage.removeItem("wc2026_celebrated_v1"); localStorage.removeItem("wc2026_lastseen_goals_v1"); localStorage.removeItem("wc2026_seen_actuals_v1"); localStorage.removeItem("wc2026_onboarded_v1"); localStorage.removeItem("wc2026_world_v1"); localStorage.removeItem("wc2026_achv_v1"); } catch {}
       setScreen("welcome");
       setShowIntro(false);
@@ -7329,7 +7388,7 @@ export default function App() {
       onSecondary: () => setShowBackup(true),
       onConfirm: () => {
         clearState();
-        setName(""); setPicks({}); setKoWinners({}); setGroupIdx(0);
+        setName(""); setPicks({}); setKoWinners({}); setKoPicks({}); setGroupIdx(0);
         setFriends([]); setActuals({}); setActualKo({}); setLeagueName(""); setLeagueCode(""); setLeagueCodes([]); setActiveLeagueCode(""); setAllLeagueData({}); setWinnerPick(null); setTopScorerPick(null); setCelebratedIds(new Set()); setLastSeenGoals(0); setSeenActualIds(new Set()); setShowOnboarding(true); try { localStorage.removeItem("wc2026_celebrated_v1"); localStorage.removeItem("wc2026_lastseen_goals_v1"); localStorage.removeItem("wc2026_seen_actuals_v1"); localStorage.removeItem("wc2026_onboarded_v1"); localStorage.removeItem("wc2026_world_v1"); localStorage.removeItem("wc2026_achv_v1"); } catch {}
         setScreen("welcome");
         setShowIntro(false);
@@ -7573,6 +7632,8 @@ export default function App() {
           bestThirds={bestThirds}
           koWinners={koWinners}
           setKoWinners={setKoWinners}
+          koPicks={koPicks}
+          setKoPicks={setKoPicks}
           onBack={()=>setScreen("group")}
           onShare={()=>setScreen("league")}
           complete={complete}
