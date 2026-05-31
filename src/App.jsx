@@ -8,7 +8,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, fetchTopS
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "1.1.0";
+const APP_VERSION = "1.2.0";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -284,6 +284,7 @@ const TRANSLATIONS = {
     "world.updatedEvery": "Updates every 5 minutes",
     // Sidebar (hamburger menu)
     "sidebar.myStats": "My Stats",
+    "sidebar.achievements": "Achievements",
     "sidebar.tutorial": "How to Play",
     "sidebar.scoringRules": "Scoring Rules",
     "sidebar.backup": "Backup My Progress",
@@ -297,6 +298,56 @@ const TRANSLATIONS = {
     "countdown.hours": "HRS",
     "countdown.minutes": "MIN",
     "countdown.seconds": "SEC",
+    // Achievements
+    "achv.title": "Achievements",
+    "achv.subtitle": "Unlock badges as you predict",
+    "achv.unlocked": "Unlocked",
+    "achv.locked": "Locked",
+    "achv.newBadge": "🎉 New Badge!",
+    "achv.first_exact.name": "First Bullseye",
+    "achv.first_exact.desc": "Predict your first exact score",
+    "achv.sniper.name": "Sniper",
+    "achv.sniper.desc": "3 exact predictions in a row",
+    "achv.on_fire.name": "On Fire",
+    "achv.on_fire.desc": "5 exact predictions in a row",
+    "achv.legend.name": "Legend",
+    "achv.legend.desc": "10 exact predictions in the tournament",
+    "achv.solid.name": "Solid",
+    "achv.solid.desc": "20 correct winners",
+    "achv.long_shot.name": "Long Shot",
+    "achv.long_shot.desc": "Predict a high-scoring match exactly (4+ goals)",
+    "achv.oracle.name": "Oracle",
+    "achv.oracle.desc": "Predict the tournament champion",
+    "achv.scorer_king.name": "Golden Boot",
+    "achv.scorer_king.desc": "Predict the top scorer",
+    "achv.half_way.name": "Halfway There",
+    "achv.half_way.desc": "Predict half the group matches",
+    "achv.committed.name": "Committed",
+    "achv.committed.desc": "Predict every group-stage match",
+    "achv.bracket_filled.name": "Bracket Master",
+    "achv.bracket_filled.desc": "Fill out the round of 16",
+    "achv.full_bracket.name": "Full Bracket",
+    "achv.full_bracket.desc": "Pick all the way to the final",
+    "achv.first_blood.name": "First Points",
+    "achv.first_blood.desc": "Score your first points",
+    "achv.ten_points.name": "On the Board",
+    "achv.ten_points.desc": "Earn 10 points",
+    "achv.fifty_points.name": "Climbing",
+    "achv.fifty_points.desc": "Earn 50 points",
+    "achv.centurion.name": "Centurion",
+    "achv.centurion.desc": "Earn 100 points",
+    "achv.double_century.name": "Elite",
+    "achv.double_century.desc": "Earn 200 points",
+    "achv.organizer.name": "Organizer",
+    "achv.organizer.desc": "Create or join a league",
+    "achv.connector.name": "Connector",
+    "achv.connector.desc": "Join 3 leagues",
+    "achv.global.name": "Worldwide",
+    "achv.global.desc": "Appear on the world leaderboard",
+    "achv.all_in.name": "All In",
+    "achv.all_in.desc": "Place both bonus bets (champion + top scorer)",
+    "achv.first_place.name": "Champion",
+    "achv.first_place.desc": "Reach #1 in any league",
     // Profile / Stats
     "profile.yourStats": "YOUR STATS",
     "profile.totalPoints": "TOTAL POINTS",
@@ -601,6 +652,7 @@ const TRANSLATIONS = {
     "world.updatedEvery": "מתעדכן כל 5 דקות",
     // Sidebar (hamburger menu)
     "sidebar.myStats": "הסטטיסטיקה שלי",
+    "sidebar.achievements": "הישגים",
     "sidebar.tutorial": "איך משחקים?",
     "sidebar.scoringRules": "כללי הניקוד",
     "sidebar.backup": "גיבוי הנתונים",
@@ -614,6 +666,56 @@ const TRANSLATIONS = {
     "countdown.hours": "שעות",
     "countdown.minutes": "דק'",
     "countdown.seconds": "שנ'",
+    // Achievements
+    "achv.title": "הישגים",
+    "achv.subtitle": "פתח באדג'ים תוך כדי הניחושים",
+    "achv.unlocked": "פתוח",
+    "achv.locked": "נעול",
+    "achv.newBadge": "🎉 הישג חדש!",
+    "achv.first_exact.name": "פגיעה ראשונה",
+    "achv.first_exact.desc": "נחש את התוצאה המדויקת הראשונה שלך",
+    "achv.sniper.name": "צלף",
+    "achv.sniper.desc": "3 ניחושים מדויקים ברצף",
+    "achv.on_fire.name": "באש",
+    "achv.on_fire.desc": "5 ניחושים מדויקים ברצף",
+    "achv.legend.name": "אגדה",
+    "achv.legend.desc": "10 ניחושים מדויקים בכל הטורניר",
+    "achv.solid.name": "יציב",
+    "achv.solid.desc": "20 ניחושי מנצח נכונים",
+    "achv.long_shot.name": "ירייה רחוקה",
+    "achv.long_shot.desc": "ניחוש מדויק של משחק עתיר שערים (4+)",
+    "achv.oracle.name": "אורקל",
+    "achv.oracle.desc": "ניחשת את אלוף הטורניר",
+    "achv.scorer_king.name": "מלך השערים",
+    "achv.scorer_king.desc": "ניחשת את מלך השערים",
+    "achv.half_way.name": "חצי הדרך",
+    "achv.half_way.desc": "נחש את חצי ממשחקי שלב הבתים",
+    "achv.committed.name": "מחויב",
+    "achv.committed.desc": "נחש את כל משחקי שלב הבתים",
+    "achv.bracket_filled.name": "מאסטר ברקט",
+    "achv.bracket_filled.desc": "מלא את כל שלב 16",
+    "achv.full_bracket.name": "ברקט מלא",
+    "achv.full_bracket.desc": "ניחשת עד הגמר",
+    "achv.first_blood.name": "נקודות ראשונות",
+    "achv.first_blood.desc": "צבור את הנקודות הראשונות שלך",
+    "achv.ten_points.name": "על הלוח",
+    "achv.ten_points.desc": "צבור 10 נקודות",
+    "achv.fifty_points.name": "מטפס",
+    "achv.fifty_points.desc": "צבור 50 נקודות",
+    "achv.centurion.name": "סנטוריון",
+    "achv.centurion.desc": "צבור 100 נקודות",
+    "achv.double_century.name": "אליטה",
+    "achv.double_century.desc": "צבור 200 נקודות",
+    "achv.organizer.name": "מארגן",
+    "achv.organizer.desc": "צור או הצטרף לליגה",
+    "achv.connector.name": "מקשר",
+    "achv.connector.desc": "הצטרף ל-3 ליגות",
+    "achv.global.name": "עולמי",
+    "achv.global.desc": "הופע בדירוג העולמי",
+    "achv.all_in.name": "הכל על הקופה",
+    "achv.all_in.desc": "הנח את שני הימורי הבונוס (אלוף + מלך השערים)",
+    "achv.first_place.name": "אלוף",
+    "achv.first_place.desc": "הגע למקום ראשון בכל ליגה",
     // Profile / Stats
     "profile.yourStats": "הסטטיסטיקה שלך",
     "profile.totalPoints": "סך הנקודות",
@@ -884,6 +986,134 @@ const POINTS = {
   WINNER_BET: 20,   // flat bonus for picking the tournament winner correctly
   TOP_SCORER_GOAL: 2, // each goal scored by your top-scorer pick — celebrated in real-time
 };
+
+// ─── ACHIEVEMENTS ────────────────────────────────────────────────────────────
+// 20+ badges users can unlock. Each has an id, icon, color, and a `check(ctx)`
+// function returning true when the badge is unlocked.
+// ctx = { picks, actuals, koWinners, winnerPick, topScorerPick,
+//         actualWinner, actualTopScorer, totalPoints, leagueCodes, myRank }
+
+const ACHIEVEMENTS = [
+  // Accuracy
+  { id: "first_exact", icon: "🎯", color: "#fbbf24",
+    check: ({ picks, actuals }) => FIXTURES.some(f => {
+      const p = picks[f.id], a = actuals[f.id];
+      return p && a && p.h !== "" && p.h !== undefined && p.h === a.h && p.a === a.a;
+    }) },
+  { id: "sniper", icon: "🎯", color: "#fbbf24",
+    check: ({ picks, actuals }) => {
+      let streak = 0;
+      for (const f of FIXTURES) {
+        const p = picks[f.id], a = actuals[f.id];
+        if (!a || a.h === "" || a.h === undefined) continue;
+        if (p && p.h === a.h && p.a === a.a) { streak++; if (streak >= 3) return true; }
+        else streak = 0;
+      }
+      return false;
+    } },
+  { id: "on_fire", icon: "🔥", color: "#ef4444",
+    check: ({ picks, actuals }) => {
+      let streak = 0;
+      for (const f of FIXTURES) {
+        const p = picks[f.id], a = actuals[f.id];
+        if (!a || a.h === "" || a.h === undefined) continue;
+        if (p && p.h === a.h && p.a === a.a) { streak++; if (streak >= 5) return true; }
+        else streak = 0;
+      }
+      return false;
+    } },
+  { id: "legend", icon: "💎", color: "#3b82f6",
+    check: ({ picks, actuals }) => {
+      let count = 0;
+      for (const f of FIXTURES) {
+        const p = picks[f.id], a = actuals[f.id];
+        if (p && a && p.h !== "" && p.h !== undefined && p.h === a.h && p.a === a.a) count++;
+      }
+      return count >= 10;
+    } },
+  { id: "solid", icon: "✅", color: "#22c55e",
+    check: ({ picks, actuals }) => {
+      let count = 0;
+      for (const f of FIXTURES) {
+        const p = picks[f.id], a = actuals[f.id];
+        if (!p || !a || p.h === "" || p.h === undefined || a.h === "" || a.h === undefined) continue;
+        const ph = parseInt(p.h), pa = parseInt(p.a), ah = parseInt(a.h), aa = parseInt(a.a);
+        const pw = ph > pa ? "h" : ph < pa ? "a" : "d";
+        const aw = ah > aa ? "h" : ah < aa ? "a" : "d";
+        if (pw === aw) count++;
+      }
+      return count >= 20;
+    } },
+
+  // Rarity
+  { id: "long_shot", icon: "🎰", color: "#a855f7",
+    check: ({ picks, actuals }) => FIXTURES.some(f => {
+      const p = picks[f.id], a = actuals[f.id];
+      if (!p || !a) return false;
+      const ph = parseInt(p.h), pa = parseInt(p.a), ah = parseInt(a.h), aa = parseInt(a.a);
+      if (isNaN(ph) || isNaN(pa) || isNaN(ah) || isNaN(aa)) return false;
+      return ph === ah && pa === aa && (ah + aa) >= 4;
+    }) },
+  { id: "oracle", icon: "🔮", color: "#a855f7",
+    check: ({ winnerPick, actualWinner }) => {
+      if (!winnerPick || !actualWinner) return false;
+      const w = actualWinner.name || actualWinner.n;
+      const p = winnerPick.name || winnerPick.n;
+      return w && p && w === p;
+    } },
+  { id: "scorer_king", icon: "👟", color: "#a855f7",
+    check: ({ topScorerPick, actualTopScorer }) => {
+      return topScorerPick && actualTopScorer && topScorerPick.name === actualTopScorer.name;
+    } },
+
+  // Completion
+  { id: "half_way", icon: "📈", color: "#fbbf24",
+    check: ({ picks }) => Object.values(picks).filter(p => p?.h !== "" && p?.h !== undefined).length >= Math.floor(FIXTURES.length / 2) },
+  { id: "committed", icon: "💪", color: "#22c55e",
+    check: ({ picks }) => Object.values(picks).filter(p => p?.h !== "" && p?.h !== undefined).length >= FIXTURES.length },
+  { id: "bracket_filled", icon: "🏆", color: "#fbbf24",
+    check: ({ koWinners }) => Object.keys(koWinners || {}).filter(k => k.startsWith("R16-")).length >= 8 },
+  { id: "full_bracket", icon: "🥇", color: "#fbbf24",
+    check: ({ koWinners }) => koWinners && koWinners["FINAL"] !== undefined },
+
+  // Points milestones
+  { id: "first_blood", icon: "🩸", color: "#ef4444",
+    check: ({ totalPoints }) => totalPoints > 0 },
+  { id: "ten_points", icon: "🔟", color: "#22c55e",
+    check: ({ totalPoints }) => totalPoints >= 10 },
+  { id: "fifty_points", icon: "🚀", color: "#3b82f6",
+    check: ({ totalPoints }) => totalPoints >= 50 },
+  { id: "centurion", icon: "💯", color: "#fbbf24",
+    check: ({ totalPoints }) => totalPoints >= 100 },
+  { id: "double_century", icon: "🏅", color: "#a855f7",
+    check: ({ totalPoints }) => totalPoints >= 200 },
+
+  // Social / leagues
+  { id: "organizer", icon: "👋", color: "#3b82f6",
+    check: ({ leagueCodes }) => (leagueCodes?.length || 0) >= 1 },
+  { id: "connector", icon: "👥", color: "#3b82f6",
+    check: ({ leagueCodes }) => (leagueCodes?.length || 0) >= 3 },
+  { id: "global", icon: "🌍", color: "#22c55e",
+    check: ({ myRank }) => myRank !== null && myRank !== undefined },
+
+  // Bonus picks
+  { id: "all_in", icon: "⭐", color: "#a855f7",
+    check: ({ winnerPick, topScorerPick }) => Boolean(winnerPick && topScorerPick) },
+
+  // Champion
+  { id: "first_place", icon: "👑", color: "#fbbf24",
+    check: ({ myRank }) => myRank === 1 },
+];
+
+function checkAchievements(ctx) {
+  const unlocked = new Set();
+  for (const a of ACHIEVEMENTS) {
+    try {
+      if (a.check(ctx)) unlocked.add(a.id);
+    } catch {}
+  }
+  return unlocked;
+}
 
 function scoreMatch(predicted, actual) {
   if (!predicted || !actual) return { points: 0, type: "none" };
@@ -2528,7 +2758,7 @@ function WorldLeaderboard({ userId, name, onClose }) {
 }
 
 // ─── SIDEBAR: hamburger menu drawer that slides in from one side ─────────────
-function Sidebar({ open, onClose, name, lang, setLang, onShowProfile, onShowRules, onShowBackup, onShowTutorial, onLogout, onReset, totalPoints }) {
+function Sidebar({ open, onClose, name, lang, setLang, onShowProfile, onShowRules, onShowBackup, onShowTutorial, onShowAchievements, onLogout, onReset, totalPoints, unlockedCount }) {
   const t = useT();
   const isRTL = lang === "he";
 
@@ -2591,6 +2821,11 @@ function Sidebar({ open, onClose, name, lang, setLang, onShowProfile, onShowRule
         {/* Menu items */}
         <div style={{padding:"12px 12px",flex:1}}>
           <SidebarItem icon="📊" label={t("sidebar.myStats")} onClick={()=>{onClose();onShowProfile();}}/>
+          <SidebarItem
+            icon="🏅"
+            label={`${t("sidebar.achievements")}${unlockedCount ? ` (${unlockedCount})` : ""}`}
+            onClick={()=>{onClose();onShowAchievements();}}
+          />
           <SidebarItem icon="🎓" label={t("sidebar.tutorial")} onClick={()=>{onClose();onShowTutorial();}}/>
           <SidebarItem icon="ⓘ" label={t("sidebar.scoringRules")} onClick={()=>{onClose();onShowRules();}}/>
           <SidebarItem icon="💾" label={t("sidebar.backup")} onClick={()=>{onClose();onShowBackup();}}/>
@@ -2667,6 +2902,175 @@ function SidebarItem({ icon, label, onClick, danger }) {
 }
 
 // ─── COUNTDOWN BAR: time until first match kickoff ──────────────────────────
+// ─── ACHIEVEMENTS MODAL: shows all badges, locked + unlocked ──────────────
+function AchievementsModal({ unlockedIds, onClose }) {
+  const t = useT();
+  const unlockedCount = unlockedIds.size;
+  const total = ACHIEVEMENTS.length;
+  const pct = Math.round((unlockedCount / total) * 100);
+
+  return (
+    <div onClick={onClose} style={{
+      position:"fixed",inset:0,zIndex:9000,
+      background:"rgba(0,0,0,0.85)",
+      backdropFilter:"blur(8px)",
+      display:"flex",alignItems:"center",justifyContent:"center",
+      padding:14,animation:"goalFadeIn 0.3s ease-out",
+    }}>
+      <div onClick={e=>e.stopPropagation()} style={{
+        maxWidth:480,width:"100%",maxHeight:"90vh",overflowY:"auto",
+        background:"linear-gradient(180deg,#1a1f3a,#0f1424)",
+        border:"1px solid rgba(251,191,36,0.3)",
+        borderRadius:18,padding:"22px 18px",
+        boxShadow:"0 20px 60px rgba(0,0,0,0.6)",
+      }}>
+        {/* Header */}
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
+          <h2 style={{margin:0,fontSize:20,color:"#fbbf24",fontWeight:900}}>
+            🏅 {t("achv.title")}
+          </h2>
+          <button onClick={onClose} style={{
+            background:"transparent",border:"none",color:"#94a3b8",fontSize:22,
+            cursor:"pointer",fontFamily:"inherit",padding:"4px 8px",
+          }}>✕</button>
+        </div>
+
+        <p style={{fontSize:12,color:"#94a3b8",margin:"0 0 16px"}}>
+          {t("achv.subtitle")}
+        </p>
+
+        {/* Progress bar */}
+        <div style={{
+          background:"rgba(71,85,105,0.3)",borderRadius:8,
+          padding:"10px 14px",marginBottom:18,
+        }}>
+          <div style={{display:"flex",justifyContent:"space-between",fontSize:11,color:"#cbd5e1",fontWeight:700,marginBottom:6}}>
+            <span>{unlockedCount} / {total}</span>
+            <span>{pct}%</span>
+          </div>
+          <div style={{height:6,background:"rgba(15,20,36,0.5)",borderRadius:3,overflow:"hidden"}}>
+            <div style={{
+              width:`${pct}%`,height:"100%",
+              background:"linear-gradient(90deg,#fbbf24,#f59e0b)",
+              borderRadius:3,transition:"width 0.4s",
+            }}/>
+          </div>
+        </div>
+
+        {/* Badges grid */}
+        <div style={{display:"grid",gridTemplateColumns:"repeat(2, 1fr)",gap:10}}>
+          {ACHIEVEMENTS.map(a => {
+            const unlocked = unlockedIds.has(a.id);
+            return (
+              <div key={a.id} style={{
+                padding:"12px 10px",
+                background: unlocked
+                  ? `linear-gradient(135deg, ${a.color}22, rgba(15,20,36,0.5))`
+                  : "rgba(15,20,36,0.5)",
+                border: `1px solid ${unlocked ? a.color + "66" : "rgba(71,85,105,0.3)"}`,
+                borderRadius:12,
+                opacity: unlocked ? 1 : 0.5,
+                position:"relative",
+              }}>
+                <div style={{display:"flex",alignItems:"start",gap:8}}>
+                  <div style={{
+                    fontSize:30,
+                    filter: unlocked ? `drop-shadow(0 0 8px ${a.color}66)` : "grayscale(1)",
+                    flexShrink:0,
+                  }}>{a.icon}</div>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontSize:12,fontWeight:800,color: unlocked ? a.color : "#94a3b8",lineHeight:1.2,marginBottom:3}}>
+                      {t(`achv.${a.id}.name`)}
+                    </div>
+                    <div style={{fontSize:10,color:"#94a3b8",lineHeight:1.3}}>
+                      {t(`achv.${a.id}.desc`)}
+                    </div>
+                  </div>
+                </div>
+                {!unlocked && (
+                  <div style={{position:"absolute",top:6,insetInlineEnd:8,fontSize:10}}>🔒</div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── NEW BADGE POPUP: pops up when a new badge is unlocked ────────────────
+function NewBadgePopup({ achievement, onClose }) {
+  const t = useT();
+  useEffect(() => {
+    if (!achievement) return;
+    const id = setTimeout(onClose, 4000);
+    return () => clearTimeout(id);
+  }, [achievement]);
+  if (!achievement) return null;
+
+  return (
+    <div style={{
+      position:"fixed",bottom:80,insetInline:14,zIndex:9500,
+      display:"flex",justifyContent:"center",
+      pointerEvents:"none",
+    }}>
+      <style>{`
+        @keyframes badgeSlideIn {
+          from { transform: translateY(100px); opacity: 0; }
+          to { transform: translateY(0); opacity: 1; }
+        }
+        @keyframes confettiFall {
+          0% { transform: translateY(-20px) rotate(0deg); opacity: 1; }
+          100% { transform: translateY(140px) rotate(540deg); opacity: 0; }
+        }
+      `}</style>
+
+      <div style={{
+        background:"linear-gradient(135deg,#1a1f3a,#0f1424)",
+        border:`2px solid ${achievement.color}`,
+        borderRadius:16,padding:"14px 18px",maxWidth:360,
+        boxShadow:`0 12px 32px rgba(0,0,0,0.5), 0 0 24px ${achievement.color}44`,
+        animation:"badgeSlideIn 0.5s cubic-bezier(0.2, 0.9, 0.3, 1.2)",
+        display:"flex",alignItems:"center",gap:12,
+        pointerEvents:"auto",cursor:"pointer",
+        position:"relative",overflow:"hidden",
+      }} onClick={onClose}>
+        {/* Confetti */}
+        {[...Array(12)].map((_, i) => (
+          <div key={i} style={{
+            position:"absolute",
+            left:`${Math.random() * 100}%`,
+            top:"-10px",
+            width:6,height:6,
+            background: [achievement.color, "#fbbf24", "#22c55e", "#a855f7", "#ef4444"][i % 5],
+            borderRadius: i % 2 ? "50%" : "2px",
+            animation:`confettiFall ${1 + Math.random() * 1.2}s ease-in ${Math.random() * 0.5}s forwards`,
+            pointerEvents:"none",
+          }}/>
+        ))}
+
+        <div style={{
+          fontSize:38,
+          filter: `drop-shadow(0 0 8px ${achievement.color}99)`,
+          flexShrink:0,
+        }}>{achievement.icon}</div>
+        <div style={{flex:1,minWidth:0}}>
+          <div style={{fontSize:9,color:achievement.color,letterSpacing:2,fontWeight:800,marginBottom:2}}>
+            {t("achv.newBadge")}
+          </div>
+          <div style={{fontSize:14,color:"#f1f5f9",fontWeight:800,lineHeight:1.2,marginBottom:2}}>
+            {t(`achv.${achievement.id}.name`)}
+          </div>
+          <div style={{fontSize:10,color:"#94a3b8",lineHeight:1.3}}>
+            {t(`achv.${achievement.id}.desc`)}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function CountdownBar() {
   const t = useT();
   const [now, setNow] = useState(Date.now());
@@ -6253,6 +6657,17 @@ export default function App() {
   // Profile modal open?
   const [showProfile, setShowProfile] = useState(false);
   const [showRules, setShowRules] = useState(false);
+  const [showAchievements, setShowAchievements] = useState(false);
+  // Track unlocked badge IDs (persisted in localStorage)
+  const [unlockedAchievements, setUnlockedAchievements] = useState(() => {
+    try {
+      const raw = localStorage.getItem("wc2026_achv_v1");
+      if (raw) return new Set(JSON.parse(raw));
+    } catch {}
+    return new Set();
+  });
+  // Queue of newly unlocked badges to show as popups
+  const [newBadgeQueue, setNewBadgeQueue] = useState([]);
   const [lang, setLangState] = useState(() => {
     try { return localStorage.getItem("wc2026_lang") || "en"; } catch { return "en"; }
   });
@@ -6643,6 +7058,53 @@ export default function App() {
     }
     return total;
   }, [picks, actuals, winnerPick, topScorerPick, actualWinner, actualTopScorer]);
+
+  // ─── ACHIEVEMENTS CHECK ──────────────────────────────────────────────────
+  // Whenever relevant state changes, recompute which badges should be unlocked.
+  // New unlocks go into a queue that pops up one at a time.
+  useEffect(() => {
+    // Compute my rank from any active league
+    let myRank = null;
+    if (leagueData?.members) {
+      const ranked = Object.values(leagueData.members).map(m => {
+        let total = 0;
+        try { total = totalScore(m.picks || {}, actuals).total; } catch {}
+        if (actualWinner && m.winnerPick) {
+          const aw = actualWinner.name || actualWinner.n;
+          const mw = m.winnerPick.name || m.winnerPick.n;
+          if (aw && mw && aw === mw) total += POINTS.WINNER_BET;
+        }
+        if (actualTopScorer && m.topScorerPick && actualTopScorer.name === m.topScorerPick.name) {
+          total += (actualTopScorer.goals || 0) * POINTS.TOP_SCORER_GOAL;
+        }
+        return { uid: m.uid, total };
+      }).sort((a, b) => b.total - a.total);
+      const idx = ranked.findIndex(r => r.uid === userId);
+      if (idx >= 0) myRank = idx + 1;
+    }
+    const ctx = {
+      picks, actuals, koWinners,
+      winnerPick, topScorerPick,
+      actualWinner, actualTopScorer,
+      totalPoints: myTotalPoints,
+      leagueCodes, myRank,
+    };
+    const nowUnlocked = checkAchievements(ctx);
+    // Find genuinely new badges
+    const newOnes = [];
+    nowUnlocked.forEach(id => {
+      if (!unlockedAchievements.has(id)) {
+        const achv = ACHIEVEMENTS.find(a => a.id === id);
+        if (achv) newOnes.push(achv);
+      }
+    });
+    if (newOnes.length > 0) {
+      const merged = new Set([...unlockedAchievements, ...nowUnlocked]);
+      setUnlockedAchievements(merged);
+      try { localStorage.setItem("wc2026_achv_v1", JSON.stringify([...merged])); } catch {}
+      setNewBadgeQueue(q => [...q, ...newOnes]);
+    }
+  }, [picks, actuals, koWinners, winnerPick, topScorerPick, actualWinner, actualTopScorer, myTotalPoints, leagueCodes.join("|"), leagueData]);
   // Bonus picks (winner + top scorer) lock once the first match has kicked off
   const bonusLocked = (() => {
     const firstKick = Math.min(...FIXTURES.filter(f => f.kickoff).map(f => new Date(f.kickoff).getTime()));
@@ -6691,7 +7153,7 @@ export default function App() {
       onConfirm: () => {
         clearState();
         setName(""); setPicks({}); setKoWinners({}); setGroupIdx(0);
-        setFriends([]); setActuals({}); setActualKo({}); setLeagueName(""); setLeagueCode(""); setLeagueCodes([]); setActiveLeagueCode(""); setAllLeagueData({}); setWinnerPick(null); setTopScorerPick(null); setCelebratedIds(new Set()); setLastSeenGoals(0); setSeenActualIds(new Set()); setShowOnboarding(true); try { localStorage.removeItem("wc2026_celebrated_v1"); localStorage.removeItem("wc2026_lastseen_goals_v1"); localStorage.removeItem("wc2026_seen_actuals_v1"); localStorage.removeItem("wc2026_onboarded_v1"); localStorage.removeItem("wc2026_world_v1"); } catch {}
+        setFriends([]); setActuals({}); setActualKo({}); setLeagueName(""); setLeagueCode(""); setLeagueCodes([]); setActiveLeagueCode(""); setAllLeagueData({}); setWinnerPick(null); setTopScorerPick(null); setCelebratedIds(new Set()); setLastSeenGoals(0); setSeenActualIds(new Set()); setShowOnboarding(true); try { localStorage.removeItem("wc2026_celebrated_v1"); localStorage.removeItem("wc2026_lastseen_goals_v1"); localStorage.removeItem("wc2026_seen_actuals_v1"); localStorage.removeItem("wc2026_onboarded_v1"); localStorage.removeItem("wc2026_world_v1"); localStorage.removeItem("wc2026_achv_v1"); } catch {}
         setScreen("welcome");
         setShowIntro(false);
       },
@@ -6703,7 +7165,7 @@ export default function App() {
       // No data to worry about, just log out
       clearState();
       setName(""); setPicks({}); setKoWinners({}); setGroupIdx(0);
-      setFriends([]); setActuals({}); setActualKo({}); setLeagueName(""); setLeagueCode(""); setLeagueCodes([]); setActiveLeagueCode(""); setAllLeagueData({}); setWinnerPick(null); setTopScorerPick(null); setCelebratedIds(new Set()); setLastSeenGoals(0); setSeenActualIds(new Set()); setShowOnboarding(true); try { localStorage.removeItem("wc2026_celebrated_v1"); localStorage.removeItem("wc2026_lastseen_goals_v1"); localStorage.removeItem("wc2026_seen_actuals_v1"); localStorage.removeItem("wc2026_onboarded_v1"); localStorage.removeItem("wc2026_world_v1"); } catch {}
+      setFriends([]); setActuals({}); setActualKo({}); setLeagueName(""); setLeagueCode(""); setLeagueCodes([]); setActiveLeagueCode(""); setAllLeagueData({}); setWinnerPick(null); setTopScorerPick(null); setCelebratedIds(new Set()); setLastSeenGoals(0); setSeenActualIds(new Set()); setShowOnboarding(true); try { localStorage.removeItem("wc2026_celebrated_v1"); localStorage.removeItem("wc2026_lastseen_goals_v1"); localStorage.removeItem("wc2026_seen_actuals_v1"); localStorage.removeItem("wc2026_onboarded_v1"); localStorage.removeItem("wc2026_world_v1"); localStorage.removeItem("wc2026_achv_v1"); } catch {}
       setScreen("welcome");
       setShowIntro(false);
       return;
@@ -6717,7 +7179,7 @@ export default function App() {
       onConfirm: () => {
         clearState();
         setName(""); setPicks({}); setKoWinners({}); setGroupIdx(0);
-        setFriends([]); setActuals({}); setActualKo({}); setLeagueName(""); setLeagueCode(""); setLeagueCodes([]); setActiveLeagueCode(""); setAllLeagueData({}); setWinnerPick(null); setTopScorerPick(null); setCelebratedIds(new Set()); setLastSeenGoals(0); setSeenActualIds(new Set()); setShowOnboarding(true); try { localStorage.removeItem("wc2026_celebrated_v1"); localStorage.removeItem("wc2026_lastseen_goals_v1"); localStorage.removeItem("wc2026_seen_actuals_v1"); localStorage.removeItem("wc2026_onboarded_v1"); localStorage.removeItem("wc2026_world_v1"); } catch {}
+        setFriends([]); setActuals({}); setActualKo({}); setLeagueName(""); setLeagueCode(""); setLeagueCodes([]); setActiveLeagueCode(""); setAllLeagueData({}); setWinnerPick(null); setTopScorerPick(null); setCelebratedIds(new Set()); setLastSeenGoals(0); setSeenActualIds(new Set()); setShowOnboarding(true); try { localStorage.removeItem("wc2026_celebrated_v1"); localStorage.removeItem("wc2026_lastseen_goals_v1"); localStorage.removeItem("wc2026_seen_actuals_v1"); localStorage.removeItem("wc2026_onboarded_v1"); localStorage.removeItem("wc2026_world_v1"); localStorage.removeItem("wc2026_achv_v1"); } catch {}
         setScreen("welcome");
         setShowIntro(false);
       },
@@ -7078,13 +7540,31 @@ export default function App() {
         lang={lang}
         setLang={setLang}
         totalPoints={myTotalPoints}
+        unlockedCount={unlockedAchievements.size}
         onShowProfile={()=>setShowProfile(true)}
         onShowRules={()=>setShowRules(true)}
         onShowBackup={()=>setShowBackup(true)}
         onShowTutorial={()=>setShowOnboarding(true)}
+        onShowAchievements={()=>setShowAchievements(true)}
         onLogout={handleLogout}
         onReset={handleReset}
       />
+
+      {/* 🏅 Achievements modal */}
+      {showAchievements && (
+        <AchievementsModal
+          unlockedIds={unlockedAchievements}
+          onClose={()=>setShowAchievements(false)}
+        />
+      )}
+
+      {/* 🎉 New badge popup (one at a time, auto-dismisses) */}
+      {newBadgeQueue.length > 0 && (
+        <NewBadgePopup
+          achievement={newBadgeQueue[0]}
+          onClose={()=>setNewBadgeQueue(q => q.slice(1))}
+        />
+      )}
       </div>
     </div>
     </ToastProvider>
