@@ -8,7 +8,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "1.9.2";
+const APP_VERSION = "1.9.3";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -3826,7 +3826,7 @@ function NewBadgePopup({ achievement, onClose }) {
 }
 
 // ─── 🎰 ROULETTE MODAL ────────────────────────────────────────────────────
-function RouletteModal({ coins, isSpinning, onSpin, onClose, onShowCollection }) {
+function RouletteModal({ coins, isSpinning, pendingCard, onSpin, onClose, onShowCollection }) {
   const t = useT();
   const canSpin = coins.balance >= COINS.SPIN && !isSpinning;
 
@@ -3887,7 +3887,7 @@ function RouletteModal({ coins, isSpinning, onSpin, onClose, onShowCollection })
           }}>🎰 {t("roulette.spinTitle")}</h2>
         </div>
 
-        {/* 🎰 SLOT MACHINE — 3 reels of emojis */}
+        {/* 🎰 SLOT MACHINE — 3 reels: country (1.5s), position (3s), rarity (5s) */}
         <div style={{
           display:"flex",justifyContent:"center",gap:6,
           margin:"24px 0",padding:"14px 10px",
@@ -3896,9 +3896,24 @@ function RouletteModal({ coins, isSpinning, onSpin, onClose, onShowCollection })
           borderRadius:14,
           animation: isSpinning ? "neonPulse 0.6s ease-in-out infinite" : "none",
         }}>
-          {[0, 1, 2].map((reelIdx) => (
-            <SlotReel key={reelIdx} spinning={isSpinning} delay={reelIdx * 0.3} />
-          ))}
+          <SlotReel
+            type="flag"
+            spinning={isSpinning}
+            stopAt={1500}
+            finalValue={pendingCard?.flag}
+          />
+          <SlotReel
+            type="position"
+            spinning={isSpinning}
+            stopAt={3000}
+            finalValue={pendingCard?.pos}
+          />
+          <SlotReel
+            type="rarity"
+            spinning={isSpinning}
+            stopAt={5000}
+            finalValue={pendingCard?.rarity}
+          />
         </div>
 
         {/* Rarity legend */}
@@ -3966,30 +3981,99 @@ function RouletteModal({ coins, isSpinning, onSpin, onClose, onShowCollection })
   );
 }
 
-// One spinning reel of the slot machine. Cycles through flag/icon emojis.
-function SlotReel({ spinning, delay = 0 }) {
-  // Stable random pick that resets each spin
-  const [stoppedIcon, setStoppedIcon] = useState("⚽");
-  const icons = ["⚽","🏆","🎯","⭐","🔥","💎","👟","🥇","🇧🇷","🇫🇷","🇦🇷","🇪🇸","🇩🇪","🇵🇹","🇬🇧","🇮🇹"];
+// One reel of the slot machine. Type determines what it cycles through.
+// - "flag": all 48 WC team flags → stops at 1.5s
+// - "position": GK/D/M/F → stops at 3s
+// - "rarity": Common→Legendary labels → stops at 5s (the climax!)
+function SlotReel({ type, spinning, stopAt, finalValue }) {
+  const [stopped, setStopped] = useState(false);
+  const [displayValue, setDisplayValue] = useState(null);
+
+  // Choose the icon pool based on reel type
+  const ICONS = useMemo(() => {
+    if (type === "flag") {
+      // All 48 WC team flags
+      return ALL_TEAMS.map(t => t.f);
+    }
+    if (type === "position") {
+      return ["GK", "D", "M", "F"];
+    }
+    if (type === "rarity") {
+      // Show rarity colored badges, mostly common, with rare legendary teases
+      return ["C", "C", "U", "C", "R", "U", "C", "E", "U", "C", "L", "R", "U", "C", "E"];
+    }
+    return ["?"];
+  }, [type]);
+
   useEffect(() => {
     if (spinning) {
-      // Pick a final icon when this reel "stops"
-      const finalDelay = (delay + 0.3) * 1000;
-      const id = setTimeout(() => {
-        setStoppedIcon(icons[Math.floor(Math.random() * icons.length)]);
-      }, finalDelay);
-      return () => clearTimeout(id);
+      setStopped(false);
+      // Cycle through icons while spinning
+      let i = 0;
+      const tick = setInterval(() => {
+        i = (i + 1) % ICONS.length;
+        setDisplayValue(ICONS[i]);
+      }, 80);
+      // Stop at stopAt ms
+      const stop = setTimeout(() => {
+        clearInterval(tick);
+        setDisplayValue(finalValue);
+        setStopped(true);
+      }, stopAt);
+      return () => { clearInterval(tick); clearTimeout(stop); };
+    } else {
+      setStopped(false);
+      setDisplayValue(null);
     }
-  }, [spinning, delay]);
+  }, [spinning, stopAt, finalValue, ICONS]);
+
+  // Render content based on type + value
+  const renderContent = (v) => {
+    if (!v) return <span style={{color:"#475569"}}>?</span>;
+    if (type === "flag") {
+      return <span style={{fontSize:34}}>{v}</span>;
+    }
+    if (type === "position") {
+      const label = { GK: "GK", D: "DEF", M: "MID", F: "FWD" }[v] || v;
+      const color = { GK: "#fbbf24", D: "#3b82f6", M: "#22c55e", F: "#ef4444" }[v] || "#94a3b8";
+      return <span style={{fontSize:18,fontWeight:900,color,letterSpacing:1}}>{label}</span>;
+    }
+    if (type === "rarity") {
+      const cfg = RARITY_CONFIG[v];
+      if (!cfg) return <span>?</span>;
+      return (
+        <span style={{
+          fontSize:11,fontWeight:900,letterSpacing:1,
+          color:cfg.color,
+          textShadow: stopped && (v === "L" || v === "E") ? `0 0 12px ${cfg.glow}` : "none",
+        }}>
+          {cfg.label.slice(0, 4)}
+        </span>
+      );
+    }
+    return <span>?</span>;
+  };
+
+  // Glow border once stopped on a special rarity
+  const isLegendaryStop = stopped && type === "rarity" && finalValue === "L";
+  const isEpicStop = stopped && type === "rarity" && finalValue === "E";
+  const borderGlow = isLegendaryStop
+    ? `0 0 24px ${RARITY_CONFIG.L.glow}, inset 0 0 12px ${RARITY_CONFIG.L.glow}`
+    : isEpicStop
+    ? `0 0 16px ${RARITY_CONFIG.E.glow}`
+    : "none";
 
   return (
     <div style={{
       width:64,height:80,
       background:"linear-gradient(180deg,#0a0e1c,#1a1f3a)",
-      border:"2px solid rgba(251,191,36,0.3)",
+      border:`2px solid ${stopped ? "#fbbf24" : "rgba(251,191,36,0.3)"}`,
       borderRadius:8,
       overflow:"hidden",position:"relative",
       display:"flex",alignItems:"center",justifyContent:"center",
+      transition:"border-color 0.3s",
+      boxShadow: borderGlow,
+      animation: stopped ? "slotReelEnd 0.4s ease-out" : "none",
     }}>
       {/* Inset glow */}
       <div style={{
@@ -3997,22 +4081,7 @@ function SlotReel({ spinning, delay = 0 }) {
         background:"radial-gradient(circle at center, transparent 30%, rgba(0,0,0,0.6))",
         pointerEvents:"none",
       }}/>
-      {spinning ? (
-        <div style={{
-          display:"flex",flexDirection:"column",alignItems:"center",
-          animation: `slotReel 0.15s linear infinite`,
-          animationDelay: `${delay}s`,
-        }}>
-          {icons.map((ic, i) => (
-            <div key={i} style={{fontSize:34,height:80,display:"flex",alignItems:"center"}}>{ic}</div>
-          ))}
-        </div>
-      ) : (
-        <div style={{
-          fontSize:38,
-          animation: "slotReelEnd 0.4s ease-out",
-        }}>{stoppedIcon}</div>
-      )}
+      {renderContent(displayValue)}
     </div>
   );
 }
@@ -8256,11 +8325,15 @@ export default function App() {
   const [showRoulette, setShowRoulette] = useState(false);  // is the roulette screen open?
   const [spinResult, setSpinResult] = useState(null);       // the card just won
   const [isSpinning, setIsSpinning] = useState(false);      // animation playing
+  const [pendingCard, setPendingCard] = useState(null);     // card chosen upfront; reels stop on it
   const [showCollection, setShowCollection] = useState(false); // collection viewer
 
   // Spend coins, roll a card, save to collection
   const handleSpin = () => {
     if (coins.balance < COINS.SPIN || isSpinning) return;
+    // Roll the card UPFRONT — the reels need to know what to stop on
+    const card = rollOneCard();
+    setPendingCard(card);
     setIsSpinning(true);
     setSpinResult(null);
     // Deduct coins immediately
@@ -8268,9 +8341,8 @@ export default function App() {
     const updatedCoins = { ...coins, balance: newBalance };
     setCoins(updatedCoins);
     try { localStorage.setItem("wc2026_coins_v2", JSON.stringify(updatedCoins)); } catch {}
-    // Roll after a delay (lets the animation play)
+    // After all reels have stopped (5 seconds total), reveal the card
     setTimeout(() => {
-      const card = rollOneCard();
       const isDuplicate = (cardCollection[card.id] || 0) > 0;
       // Add to collection (or increment count for duplicates)
       const newCollection = { ...cardCollection, [card.id]: (cardCollection[card.id] || 0) + 1 };
@@ -8287,13 +8359,14 @@ export default function App() {
       }
       setSpinResult({ card, isDuplicate, refund });
       setIsSpinning(false);
+      setPendingCard(null);
       // Haptic feedback by rarity
       try {
         if (card.rarity === "L") navigator.vibrate?.([30, 50, 30, 50, 80, 50, 120]);
         else if (card.rarity === "E") navigator.vibrate?.([20, 40, 50]);
         else navigator.vibrate?.(20);
       } catch {}
-    }, 3000);
+    }, 5000);
   };
 
   const closeSpinResult = () => {
@@ -9336,6 +9409,7 @@ export default function App() {
         <RouletteModal
           coins={coins}
           isSpinning={isSpinning}
+          pendingCard={pendingCard}
           onSpin={handleSpin}
           onClose={()=>setShowRoulette(false)}
           onShowCollection={()=>setShowCollection(true)}
