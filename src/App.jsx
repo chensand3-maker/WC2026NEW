@@ -8,7 +8,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "1.9.1";
+const APP_VERSION = "1.9.2";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -3842,17 +3842,22 @@ function RouletteModal({ coins, isSpinning, onSpin, onClose, onShowCollection })
           from { transform: scale(0.92); opacity: 0; }
           to { transform: scale(1); opacity: 1; }
         }
-        @keyframes rouletteSpinSlow {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(720deg); }
+        @keyframes slotReel {
+          0% { transform: translateY(0); }
+          100% { transform: translateY(-720px); }
         }
-        @keyframes rouletteSpinFast {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(3600deg); }
+        @keyframes slotReelEnd {
+          0% { transform: translateY(0); }
+          70% { transform: translateY(-20px); }
+          100% { transform: translateY(0); }
         }
         @keyframes coinShimmer {
           0%, 100% { transform: translateY(0) rotate(0deg); }
           50% { transform: translateY(-4px) rotate(10deg); }
+        }
+        @keyframes neonPulse {
+          0%, 100% { box-shadow: 0 0 12px rgba(251,191,36,0.5), inset 0 0 12px rgba(251,191,36,0.3); }
+          50% { box-shadow: 0 0 24px rgba(251,191,36,0.8), inset 0 0 20px rgba(251,191,36,0.5); }
         }
       `}</style>
       <div onClick={e => e.stopPropagation()} style={{
@@ -3882,37 +3887,18 @@ function RouletteModal({ coins, isSpinning, onSpin, onClose, onShowCollection })
           }}>🎰 {t("roulette.spinTitle")}</h2>
         </div>
 
-        {/* Big spinning wheel */}
+        {/* 🎰 SLOT MACHINE — 3 reels of emojis */}
         <div style={{
-          display:"flex",justifyContent:"center",alignItems:"center",
-          margin:"24px 0",
+          display:"flex",justifyContent:"center",gap:6,
+          margin:"24px 0",padding:"14px 10px",
+          background:"linear-gradient(180deg,#1a1f3a,#0a0e1c)",
+          border:"3px solid #fbbf24",
+          borderRadius:14,
+          animation: isSpinning ? "neonPulse 0.6s ease-in-out infinite" : "none",
         }}>
-          <div style={{
-            width:180,height:180,borderRadius:"50%",
-            background: "conic-gradient(#ef4444 0% 3%, #a855f7 3% 15%, #fbbf24 15% 37%, #3b82f6 37% 65%, #94a3b8 65% 100%)",
-            border:"4px solid #fbbf24",
-            boxShadow:"0 0 40px rgba(251,191,36,0.4), inset 0 0 30px rgba(0,0,0,0.3)",
-            position:"relative",
-            animation: isSpinning ? "rouletteSpinFast 3s cubic-bezier(0.2, 0.05, 0.2, 1)" : "rouletteSpinSlow 8s linear infinite",
-            display:"flex",alignItems:"center",justifyContent:"center",
-          }}>
-            <div style={{
-              width:50,height:50,borderRadius:"50%",
-              background:"linear-gradient(135deg,#0a0e1c,#1a1f3a)",
-              border:"2px solid #fbbf24",
-              display:"flex",alignItems:"center",justifyContent:"center",
-              fontSize:24,
-              boxShadow:"0 0 20px rgba(251,191,36,0.5)",
-            }}>🎰</div>
-          </div>
-          {/* Pointer */}
-          <div style={{
-            position:"absolute",
-            marginTop:-105,
-            fontSize:24,
-            filter:"drop-shadow(0 2px 4px rgba(0,0,0,0.5))",
-            zIndex:2,
-          }}>▼</div>
+          {[0, 1, 2].map((reelIdx) => (
+            <SlotReel key={reelIdx} spinning={isSpinning} delay={reelIdx * 0.3} />
+          ))}
         </div>
 
         {/* Rarity legend */}
@@ -3976,6 +3962,57 @@ function RouletteModal({ coins, isSpinning, onSpin, onClose, onShowCollection })
           🃏 {t("roulette.viewCollection")}
         </button>
       </div>
+    </div>
+  );
+}
+
+// One spinning reel of the slot machine. Cycles through flag/icon emojis.
+function SlotReel({ spinning, delay = 0 }) {
+  // Stable random pick that resets each spin
+  const [stoppedIcon, setStoppedIcon] = useState("⚽");
+  const icons = ["⚽","🏆","🎯","⭐","🔥","💎","👟","🥇","🇧🇷","🇫🇷","🇦🇷","🇪🇸","🇩🇪","🇵🇹","🇬🇧","🇮🇹"];
+  useEffect(() => {
+    if (spinning) {
+      // Pick a final icon when this reel "stops"
+      const finalDelay = (delay + 0.3) * 1000;
+      const id = setTimeout(() => {
+        setStoppedIcon(icons[Math.floor(Math.random() * icons.length)]);
+      }, finalDelay);
+      return () => clearTimeout(id);
+    }
+  }, [spinning, delay]);
+
+  return (
+    <div style={{
+      width:64,height:80,
+      background:"linear-gradient(180deg,#0a0e1c,#1a1f3a)",
+      border:"2px solid rgba(251,191,36,0.3)",
+      borderRadius:8,
+      overflow:"hidden",position:"relative",
+      display:"flex",alignItems:"center",justifyContent:"center",
+    }}>
+      {/* Inset glow */}
+      <div style={{
+        position:"absolute",inset:0,
+        background:"radial-gradient(circle at center, transparent 30%, rgba(0,0,0,0.6))",
+        pointerEvents:"none",
+      }}/>
+      {spinning ? (
+        <div style={{
+          display:"flex",flexDirection:"column",alignItems:"center",
+          animation: `slotReel 0.15s linear infinite`,
+          animationDelay: `${delay}s`,
+        }}>
+          {icons.map((ic, i) => (
+            <div key={i} style={{fontSize:34,height:80,display:"flex",alignItems:"center"}}>{ic}</div>
+          ))}
+        </div>
+      ) : (
+        <div style={{
+          fontSize:38,
+          animation: "slotReelEnd 0.4s ease-out",
+        }}>{stoppedIcon}</div>
+      )}
     </div>
   );
 }
@@ -8186,13 +8223,13 @@ export default function App() {
   // Format: { balance, earnedFromIds, gotStartingBonus }
   const [coins, setCoins] = useState(() => {
     try {
-      const raw = localStorage.getItem("wc2026_coins_v1");
+      const raw = localStorage.getItem("wc2026_coins_v2");
       if (raw) {
         const parsed = JSON.parse(raw);
         // Grant the starting bonus to users who upgraded from an earlier version
         if (!parsed.gotStartingBonus) {
           const updated = { ...parsed, balance: (parsed.balance || 0) + COINS.STARTING_BONUS, gotStartingBonus: true };
-          try { localStorage.setItem("wc2026_coins_v1", JSON.stringify(updated)); } catch {}
+          try { localStorage.setItem("wc2026_coins_v2", JSON.stringify(updated)); } catch {}
           return updated;
         }
         return parsed;
@@ -8200,7 +8237,7 @@ export default function App() {
     } catch {}
     // Brand-new user: starts with the bonus
     const initial = { balance: COINS.STARTING_BONUS, earnedFromIds: {}, gotStartingBonus: true };
-    try { localStorage.setItem("wc2026_coins_v1", JSON.stringify(initial)); } catch {}
+    try { localStorage.setItem("wc2026_coins_v2", JSON.stringify(initial)); } catch {}
     return initial;
   });
   // Pop-up notification for newly earned coins
@@ -8230,7 +8267,7 @@ export default function App() {
     const newBalance = coins.balance - COINS.SPIN;
     const updatedCoins = { ...coins, balance: newBalance };
     setCoins(updatedCoins);
-    try { localStorage.setItem("wc2026_coins_v1", JSON.stringify(updatedCoins)); } catch {}
+    try { localStorage.setItem("wc2026_coins_v2", JSON.stringify(updatedCoins)); } catch {}
     // Roll after a delay (lets the animation play)
     setTimeout(() => {
       const card = rollOneCard();
@@ -8246,7 +8283,7 @@ export default function App() {
         const refundedBalance = newBalance + refund;
         const withRefund = { ...updatedCoins, balance: refundedBalance };
         setCoins(withRefund);
-        try { localStorage.setItem("wc2026_coins_v1", JSON.stringify(withRefund)); } catch {}
+        try { localStorage.setItem("wc2026_coins_v2", JSON.stringify(withRefund)); } catch {}
       }
       setSpinResult({ card, isDuplicate, refund });
       setIsSpinning(false);
@@ -8803,7 +8840,7 @@ export default function App() {
     if (totalNew > 0) {
       const updated = { balance: coins.balance + totalNew, earnedFromIds: newEarned };
       setCoins(updated);
-      try { localStorage.setItem("wc2026_coins_v1", JSON.stringify(updated)); } catch {}
+      try { localStorage.setItem("wc2026_coins_v2", JSON.stringify(updated)); } catch {}
       setCoinFlash({ amount: totalNew, type: newType, key: Date.now() });
     }
   }, [picks, actuals, koPicks, actualKoScores]);
@@ -8871,7 +8908,7 @@ export default function App() {
         ]).catch(() => {});
         clearState();
         setName(""); setPicks({}); setKoWinners({}); setKoPicks({}); setCoins({ balance: COINS.STARTING_BONUS, earnedFromIds: {}, gotStartingBonus: true }); setCardCollection({}); setGroupIdx(0);
-        setFriends([]); setActuals({}); setActualKo({}); setActualKoScores({}); setLeagueName(""); setLeagueCode(""); setLeagueCodes([]); setActiveLeagueCode(""); setAllLeagueData({}); setWinnerPick(null); setTopScorerPick(null); setCelebratedIds(new Set()); setLastSeenGoals(0); setSeenActualIds(new Set()); setShowOnboarding(true); try { localStorage.removeItem("wc2026_celebrated_v1"); localStorage.removeItem("wc2026_lastseen_goals_v1"); localStorage.removeItem("wc2026_seen_actuals_v1"); localStorage.removeItem("wc2026_onboarded_v1"); localStorage.removeItem("wc2026_world_v2"); localStorage.removeItem("wc2026_achv_v1"); localStorage.removeItem("wc2026_pickhours_v1"); localStorage.removeItem("wc2026_coins_v1"); localStorage.removeItem("wc2026_cards_v1"); } catch {}
+        setFriends([]); setActuals({}); setActualKo({}); setActualKoScores({}); setLeagueName(""); setLeagueCode(""); setLeagueCodes([]); setActiveLeagueCode(""); setAllLeagueData({}); setWinnerPick(null); setTopScorerPick(null); setCelebratedIds(new Set()); setLastSeenGoals(0); setSeenActualIds(new Set()); setShowOnboarding(true); try { localStorage.removeItem("wc2026_celebrated_v1"); localStorage.removeItem("wc2026_lastseen_goals_v1"); localStorage.removeItem("wc2026_seen_actuals_v1"); localStorage.removeItem("wc2026_onboarded_v1"); localStorage.removeItem("wc2026_world_v2"); localStorage.removeItem("wc2026_achv_v1"); localStorage.removeItem("wc2026_pickhours_v1"); localStorage.removeItem("wc2026_coins_v2"); localStorage.removeItem("wc2026_cards_v1"); } catch {}
         setScreen("welcome");
         setShowIntro(false);
       },
@@ -8883,7 +8920,7 @@ export default function App() {
       // No data to worry about, just log out locally — keep Firebase intact in case they restore
       clearState();
       setName(""); setPicks({}); setKoWinners({}); setKoPicks({}); setCoins({ balance: COINS.STARTING_BONUS, earnedFromIds: {}, gotStartingBonus: true }); setCardCollection({}); setGroupIdx(0);
-      setFriends([]); setActuals({}); setActualKo({}); setActualKoScores({}); setLeagueName(""); setLeagueCode(""); setLeagueCodes([]); setActiveLeagueCode(""); setAllLeagueData({}); setWinnerPick(null); setTopScorerPick(null); setCelebratedIds(new Set()); setLastSeenGoals(0); setSeenActualIds(new Set()); setShowOnboarding(true); try { localStorage.removeItem("wc2026_celebrated_v1"); localStorage.removeItem("wc2026_lastseen_goals_v1"); localStorage.removeItem("wc2026_seen_actuals_v1"); localStorage.removeItem("wc2026_onboarded_v1"); localStorage.removeItem("wc2026_world_v2"); localStorage.removeItem("wc2026_achv_v1"); localStorage.removeItem("wc2026_pickhours_v1"); localStorage.removeItem("wc2026_coins_v1"); localStorage.removeItem("wc2026_cards_v1"); } catch {}
+      setFriends([]); setActuals({}); setActualKo({}); setActualKoScores({}); setLeagueName(""); setLeagueCode(""); setLeagueCodes([]); setActiveLeagueCode(""); setAllLeagueData({}); setWinnerPick(null); setTopScorerPick(null); setCelebratedIds(new Set()); setLastSeenGoals(0); setSeenActualIds(new Set()); setShowOnboarding(true); try { localStorage.removeItem("wc2026_celebrated_v1"); localStorage.removeItem("wc2026_lastseen_goals_v1"); localStorage.removeItem("wc2026_seen_actuals_v1"); localStorage.removeItem("wc2026_onboarded_v1"); localStorage.removeItem("wc2026_world_v2"); localStorage.removeItem("wc2026_achv_v1"); localStorage.removeItem("wc2026_pickhours_v1"); localStorage.removeItem("wc2026_coins_v2"); localStorage.removeItem("wc2026_cards_v1"); } catch {}
       setScreen("welcome");
       setShowIntro(false);
       return;
@@ -8899,7 +8936,7 @@ export default function App() {
         // so the user can restore their progress later with a backup code.
         clearState();
         setName(""); setPicks({}); setKoWinners({}); setKoPicks({}); setCoins({ balance: COINS.STARTING_BONUS, earnedFromIds: {}, gotStartingBonus: true }); setCardCollection({}); setGroupIdx(0);
-        setFriends([]); setActuals({}); setActualKo({}); setActualKoScores({}); setLeagueName(""); setLeagueCode(""); setLeagueCodes([]); setActiveLeagueCode(""); setAllLeagueData({}); setWinnerPick(null); setTopScorerPick(null); setCelebratedIds(new Set()); setLastSeenGoals(0); setSeenActualIds(new Set()); setShowOnboarding(true); try { localStorage.removeItem("wc2026_celebrated_v1"); localStorage.removeItem("wc2026_lastseen_goals_v1"); localStorage.removeItem("wc2026_seen_actuals_v1"); localStorage.removeItem("wc2026_onboarded_v1"); localStorage.removeItem("wc2026_world_v2"); localStorage.removeItem("wc2026_achv_v1"); localStorage.removeItem("wc2026_pickhours_v1"); localStorage.removeItem("wc2026_coins_v1"); localStorage.removeItem("wc2026_cards_v1"); } catch {}
+        setFriends([]); setActuals({}); setActualKo({}); setActualKoScores({}); setLeagueName(""); setLeagueCode(""); setLeagueCodes([]); setActiveLeagueCode(""); setAllLeagueData({}); setWinnerPick(null); setTopScorerPick(null); setCelebratedIds(new Set()); setLastSeenGoals(0); setSeenActualIds(new Set()); setShowOnboarding(true); try { localStorage.removeItem("wc2026_celebrated_v1"); localStorage.removeItem("wc2026_lastseen_goals_v1"); localStorage.removeItem("wc2026_seen_actuals_v1"); localStorage.removeItem("wc2026_onboarded_v1"); localStorage.removeItem("wc2026_world_v2"); localStorage.removeItem("wc2026_achv_v1"); localStorage.removeItem("wc2026_pickhours_v1"); localStorage.removeItem("wc2026_coins_v2"); localStorage.removeItem("wc2026_cards_v1"); } catch {}
         setScreen("welcome");
         setShowIntro(false);
       },
