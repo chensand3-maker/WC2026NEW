@@ -8,7 +8,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "1.9.3";
+const APP_VERSION = "1.9.4";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -2574,11 +2574,11 @@ const RARITY_ODDS = { L: 3, E: 12, R: 22, U: 28, C: 35 };
 
 // Visual config per rarity tier — used by the card UI later
 const RARITY_CONFIG = {
-  L: { label: "LEGENDARY", color: "#ef4444", bgGrad: "linear-gradient(135deg,#7f1d1d,#dc2626,#7f1d1d)", glow: "rgba(239,68,68,0.6)", coins: 1000 },
-  E: { label: "EPIC",      color: "#a855f7", bgGrad: "linear-gradient(135deg,#581c87,#9333ea,#581c87)", glow: "rgba(168,85,247,0.5)", coins: 300 },
-  R: { label: "RARE",      color: "#fbbf24", bgGrad: "linear-gradient(135deg,#78350f,#d97706,#78350f)", glow: "rgba(251,191,36,0.5)", coins: 100 },
-  U: { label: "UNCOMMON",  color: "#3b82f6", bgGrad: "linear-gradient(135deg,#1e3a8a,#2563eb,#1e3a8a)", glow: "rgba(59,130,246,0.4)", coins: 50 },
-  C: { label: "COMMON",    color: "#94a3b8", bgGrad: "linear-gradient(135deg,#334155,#64748b,#334155)", glow: "rgba(148,163,184,0.3)", coins: 20 },
+  L: { label: "LEGENDARY", color: "#fbbf24", bgGrad: "linear-gradient(135deg,#78350f,#fbbf24,#fde68a,#fbbf24,#78350f)", glow: "rgba(251,191,36,0.8)", emoji: "🏆", coins: 1000 },
+  E: { label: "EPIC",      color: "#a855f7", bgGrad: "linear-gradient(135deg,#581c87,#9333ea,#581c87)", glow: "rgba(168,85,247,0.5)", emoji: "💎", coins: 300 },
+  R: { label: "RARE",      color: "#ef4444", bgGrad: "linear-gradient(135deg,#7f1d1d,#dc2626,#7f1d1d)", glow: "rgba(239,68,68,0.5)", emoji: "🔥", coins: 100 },
+  U: { label: "UNCOMMON",  color: "#3b82f6", bgGrad: "linear-gradient(135deg,#1e3a8a,#2563eb,#1e3a8a)", glow: "rgba(59,130,246,0.4)", emoji: "💧", coins: 50 },
+  C: { label: "COMMON",    color: "#94a3b8", bgGrad: "linear-gradient(135deg,#334155,#64748b,#334155)", glow: "rgba(148,163,184,0.3)", emoji: "⚪", coins: 20 },
 };
 
 // Pull one card at random based on rarity odds
@@ -3899,19 +3899,19 @@ function RouletteModal({ coins, isSpinning, pendingCard, onSpin, onClose, onShow
           <SlotReel
             type="flag"
             spinning={isSpinning}
-            stopAt={1500}
+            stopAt={2000}
             finalValue={pendingCard?.flag}
           />
           <SlotReel
             type="position"
             spinning={isSpinning}
-            stopAt={3000}
+            stopAt={4000}
             finalValue={pendingCard?.pos}
           />
           <SlotReel
             type="rarity"
             spinning={isSpinning}
-            stopAt={5000}
+            stopAt={7000}
             finalValue={pendingCard?.rarity}
           />
         </div>
@@ -3999,8 +3999,8 @@ function SlotReel({ type, spinning, stopAt, finalValue }) {
       return ["GK", "D", "M", "F"];
     }
     if (type === "rarity") {
-      // Show rarity colored badges, mostly common, with rare legendary teases
-      return ["C", "C", "U", "C", "R", "U", "C", "E", "U", "C", "L", "R", "U", "C", "E"];
+      // Show rarity emojis weighted toward common (so legendary feels rare)
+      return ["⚪","💧","⚪","🔥","💧","⚪","💎","💧","⚪","🏆","🔥","⚪","💧","💎","⚪","🔥","💧","⚪","🏆","💧"];
     }
     return ["?"];
   }, [type]);
@@ -4008,16 +4008,22 @@ function SlotReel({ type, spinning, stopAt, finalValue }) {
   useEffect(() => {
     if (spinning) {
       setStopped(false);
-      // Cycle through icons while spinning
+      // Cycle through icons while spinning — rarity reel cycles SLOWER to build tension
+      const cycleSpeed = type === "rarity" ? 140 : 80;
       let i = 0;
       const tick = setInterval(() => {
         i = (i + 1) % ICONS.length;
         setDisplayValue(ICONS[i]);
-      }, 80);
+      }, cycleSpeed);
       // Stop at stopAt ms
       const stop = setTimeout(() => {
         clearInterval(tick);
-        setDisplayValue(finalValue);
+        // For rarity, show the emoji of the actual rarity (not whatever was rolling)
+        if (type === "rarity") {
+          setDisplayValue(RARITY_CONFIG[finalValue]?.emoji || "?");
+        } else {
+          setDisplayValue(finalValue);
+        }
         setStopped(true);
       }, stopAt);
       return () => { clearInterval(tick); clearTimeout(stop); };
@@ -4025,7 +4031,7 @@ function SlotReel({ type, spinning, stopAt, finalValue }) {
       setStopped(false);
       setDisplayValue(null);
     }
-  }, [spinning, stopAt, finalValue, ICONS]);
+  }, [spinning, stopAt, finalValue, ICONS, type]);
 
   // Render content based on type + value
   const renderContent = (v) => {
@@ -4039,17 +4045,11 @@ function SlotReel({ type, spinning, stopAt, finalValue }) {
       return <span style={{fontSize:18,fontWeight:900,color,letterSpacing:1}}>{label}</span>;
     }
     if (type === "rarity") {
-      const cfg = RARITY_CONFIG[v];
-      if (!cfg) return <span>?</span>;
-      return (
-        <span style={{
-          fontSize:11,fontWeight:900,letterSpacing:1,
-          color:cfg.color,
-          textShadow: stopped && (v === "L" || v === "E") ? `0 0 12px ${cfg.glow}` : "none",
-        }}>
-          {cfg.label.slice(0, 4)}
-        </span>
-      );
+      // Rarity reel just shows emojis (🏆💎🔥💧⚪)
+      return <span style={{
+        fontSize:34,
+        filter: stopped && finalValue === "L" ? `drop-shadow(0 0 12px ${RARITY_CONFIG.L.glow})` : "none",
+      }}>{v}</span>;
     }
     return <span>?</span>;
   };
@@ -4181,6 +4181,8 @@ function CardRevealModal({ result, onClose }) {
   const { card, isDuplicate, refund } = result;
   const cfg = RARITY_CONFIG[card.rarity];
   const isLegendary = card.rarity === "L";
+  const isEpic = card.rarity === "E";
+  const isRare = card.rarity === "R";
 
   return (
     <div onClick={onClose} style={{
@@ -4189,6 +4191,7 @@ function CardRevealModal({ result, onClose }) {
       backdropFilter:"blur(12px)",
       display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",
       padding:14,
+      overflow:"hidden",
     }}>
       <style>{`
         @keyframes cardReveal {
@@ -4206,33 +4209,123 @@ function CardRevealModal({ result, onClose }) {
         }
         @keyframes legendaryGlow {
           0%, 100% { box-shadow: 0 0 60px ${cfg.glow}, 0 0 0 0 ${cfg.glow}; }
-          50% { box-shadow: 0 0 80px ${cfg.glow}, 0 0 30px 10px ${cfg.glow}; }
+          50% { box-shadow: 0 0 100px ${cfg.glow}, 0 0 40px 15px ${cfg.glow}; }
         }
         @keyframes confettiBurst {
           0% { transform: translate(0,0) rotate(0deg); opacity: 1; }
           100% { transform: translate(var(--tx), var(--ty)) rotate(720deg); opacity: 0; }
         }
+        @keyframes smokeRise {
+          0% { transform: translateY(0) translateX(0) scale(0.5); opacity: 0.8; }
+          100% { transform: translateY(-300px) translateX(var(--drift)) scale(2.5); opacity: 0; }
+        }
+        @keyframes fireFlicker {
+          0%, 100% { transform: translateY(0) scale(1); opacity: 0.9; filter: blur(0px); }
+          50% { transform: translateY(-30px) scale(1.3); opacity: 0.5; filter: blur(2px); }
+        }
+        @keyframes lightBeam {
+          0% { transform: translateY(100vh) rotate(0deg); opacity: 0; }
+          50% { opacity: 0.6; }
+          100% { transform: translateY(-100vh) rotate(360deg); opacity: 0; }
+        }
+        @keyframes goldRain {
+          0% { transform: translateY(-50px) rotate(0deg); opacity: 1; }
+          100% { transform: translateY(120vh) rotate(720deg); opacity: 0; }
+        }
       `}</style>
 
-      {/* Legendary confetti burst */}
+      {/* 🏆 LEGENDARY — Gold rain + light beams + sparkles + confetti */}
       {isLegendary && (
-        <div style={{position:"absolute",top:"50%",left:"50%",pointerEvents:"none"}}>
-          {[...Array(30)].map((_, i) => {
-            const angle = (i / 30) * Math.PI * 2;
-            const dist = 200 + Math.random() * 150;
-            return (
-              <div key={i} style={{
-                position:"absolute",
-                width:8,height:8,
-                background:["#fbbf24","#ef4444","#a855f7","#22c55e","#3b82f6"][i%5],
-                borderRadius: i%2 ? "50%" : "2px",
-                "--tx": `${Math.cos(angle) * dist}px`,
-                "--ty": `${Math.sin(angle) * dist}px`,
-                animation: `confettiBurst 2s ease-out forwards ${Math.random()*0.3}s`,
-              }}/>
-            );
-          })}
-        </div>
+        <>
+          {/* Light beams behind */}
+          {[...Array(8)].map((_, i) => (
+            <div key={`beam-${i}`} style={{
+              position:"absolute",
+              top:"50%",left:"50%",
+              width:4,height:"200vh",
+              background:`linear-gradient(180deg, transparent, ${cfg.color}66, transparent)`,
+              transformOrigin:"top center",
+              transform:`translate(-50%,-50%) rotate(${i * 45}deg)`,
+              animation:`lightBeam 3s ease-out infinite`,
+              animationDelay:`${i * 0.2}s`,
+              pointerEvents:"none",
+            }}/>
+          ))}
+          {/* Gold particles raining down */}
+          {[...Array(40)].map((_, i) => (
+            <div key={`gold-${i}`} style={{
+              position:"absolute",
+              top:"-20px",
+              left:`${Math.random() * 100}%`,
+              width:8,height:8,
+              background:["#fbbf24","#fde68a","#f59e0b"][i%3],
+              borderRadius: i%2 ? "50%" : "2px",
+              animation:`goldRain ${2 + Math.random() * 2}s linear infinite`,
+              animationDelay:`${Math.random() * 1.5}s`,
+              pointerEvents:"none",
+              boxShadow:`0 0 8px ${cfg.color}`,
+            }}/>
+          ))}
+          {/* Confetti burst from center */}
+          <div style={{position:"absolute",top:"50%",left:"50%",pointerEvents:"none"}}>
+            {[...Array(40)].map((_, i) => {
+              const angle = (i / 40) * Math.PI * 2;
+              const dist = 250 + Math.random() * 200;
+              return (
+                <div key={i} style={{
+                  position:"absolute",
+                  width:8,height:8,
+                  background:["#fbbf24","#fde68a","#f59e0b","#ef4444","#a855f7"][i%5],
+                  borderRadius: i%2 ? "50%" : "2px",
+                  "--tx": `${Math.cos(angle) * dist}px`,
+                  "--ty": `${Math.sin(angle) * dist}px`,
+                  animation: `confettiBurst 2.5s ease-out forwards ${Math.random()*0.3}s`,
+                }}/>
+              );
+            })}
+          </div>
+        </>
+      )}
+
+      {/* 💎 EPIC — Purple smoke rising */}
+      {isEpic && (
+        <>
+          {[...Array(15)].map((_, i) => (
+            <div key={`smoke-${i}`} style={{
+              position:"absolute",
+              bottom:"30%",
+              left:`${20 + Math.random() * 60}%`,
+              width:60,height:60,
+              borderRadius:"50%",
+              background:`radial-gradient(circle, ${cfg.glow} 0%, transparent 70%)`,
+              "--drift": `${(Math.random() - 0.5) * 100}px`,
+              animation:`smokeRise ${2 + Math.random() * 1.5}s ease-out infinite`,
+              animationDelay:`${Math.random() * 1.5}s`,
+              pointerEvents:"none",
+            }}/>
+          ))}
+        </>
+      )}
+
+      {/* 🔥 RARE — Red fire/embers */}
+      {isRare && (
+        <>
+          {[...Array(12)].map((_, i) => (
+            <div key={`fire-${i}`} style={{
+              position:"absolute",
+              bottom:"35%",
+              left:`${30 + Math.random() * 40}%`,
+              width:14,height:30,
+              borderRadius:"50% 50% 20% 20%",
+              background:`linear-gradient(180deg, #fbbf24, #ef4444, #7f1d1d)`,
+              filter:"blur(2px)",
+              animation:`fireFlicker ${0.4 + Math.random() * 0.5}s ease-in-out infinite`,
+              animationDelay:`${Math.random() * 0.8}s`,
+              pointerEvents:"none",
+              opacity:0.7,
+            }}/>
+          ))}
+        </>
       )}
 
       {/* Tier announcement */}
@@ -4244,14 +4337,16 @@ function CardRevealModal({ result, onClose }) {
         marginBottom:20,
         letterSpacing:isLegendary ? 6 : 3,
         animation:"cardReveal 0.8s ease-out",
+        zIndex:2,
       }}>
-        {isLegendary ? "⚡ LEGENDARY ⚡" : `✨ ${cfg.label}!`}
+        {isLegendary ? "🏆 LEGENDARY 🏆" : `${cfg.emoji} ${cfg.label}!`}
       </div>
 
       {/* The card itself */}
       <div style={{
         animation: `cardReveal 0.9s cubic-bezier(0.34, 1.56, 0.64, 1)${isLegendary ? ", legendaryGlow 2s ease-in-out infinite 1s" : ""}`,
         borderRadius:16,
+        zIndex:2,
       }}>
         <PlayerCard card={card} size="L" animated={true} />
       </div>
@@ -4266,6 +4361,7 @@ function CardRevealModal({ result, onClose }) {
           borderRadius:10,
           color:"#fbbf24",fontSize:13,fontWeight:700,
           display:"flex",alignItems:"center",gap:8,
+          zIndex:2,
         }}>
           <span>🔁</span>
           <span>{t("roulette.duplicate")} · +{refund} 🪙</span>
@@ -4277,6 +4373,7 @@ function CardRevealModal({ result, onClose }) {
         marginTop:24,
         fontSize:11,color:"#64748b",letterSpacing:2,
         opacity:0.6,
+        zIndex:2,
       }}>
         {t("roulette.tapToClose")}
       </div>
@@ -8366,7 +8463,7 @@ export default function App() {
         else if (card.rarity === "E") navigator.vibrate?.([20, 40, 50]);
         else navigator.vibrate?.(20);
       } catch {}
-    }, 5000);
+    }, 7000);
   };
 
   const closeSpinResult = () => {
