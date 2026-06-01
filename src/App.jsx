@@ -8,7 +8,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "1.8.1";
+const APP_VERSION = "1.9.0";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -301,7 +301,23 @@ const TRANSLATIONS = {
     // Sidebar (hamburger menu)
     "sidebar.myStats": "My Stats",
     "sidebar.achievements": "Achievements",
+    "sidebar.roulette": "Roulette",
     "sidebar.tutorial": "How to Play",
+    "roulette.title": "PLAYER CARDS",
+    "roulette.spinTitle": "Spin to Win",
+    "roulette.yourBalance": "BALANCE",
+    "roulette.spinCost": "COST",
+    "roulette.spinBtn": "SPIN!",
+    "roulette.spinning": "SPINNING...",
+    "roulette.notEnough": "NOT ENOUGH COINS",
+    "roulette.viewCollection": "View My Collection",
+    "roulette.duplicate": "Duplicate! Coins refunded",
+    "roulette.tapToClose": "TAP ANYWHERE TO CLOSE",
+    "collection.title": "My Collection",
+    "collection.collected": "collected",
+    "collection.all": "All",
+    "collection.owned": "Owned",
+    "collection.missing": "Missing",
     "sidebar.scoringRules": "Scoring Rules",
     "sidebar.backup": "Backup My Progress",
     "sidebar.language": "LANGUAGE",
@@ -723,7 +739,23 @@ const TRANSLATIONS = {
     // Sidebar (hamburger menu)
     "sidebar.myStats": "הסטטיסטיקה שלי",
     "sidebar.achievements": "הישגים",
+    "sidebar.roulette": "רולטה",
     "sidebar.tutorial": "איך משחקים?",
+    "roulette.title": "קלפי שחקנים",
+    "roulette.spinTitle": "סובב לזכייה",
+    "roulette.yourBalance": "יתרה",
+    "roulette.spinCost": "מחיר",
+    "roulette.spinBtn": "סובב!",
+    "roulette.spinning": "מסתובב...",
+    "roulette.notEnough": "אין מספיק מטבעות",
+    "roulette.viewCollection": "צפה באוסף שלי",
+    "roulette.duplicate": "כפילות! מטבעות הוחזרו",
+    "roulette.tapToClose": "הקש בכל מקום לסגירה",
+    "collection.title": "האוסף שלי",
+    "collection.collected": "נאספו",
+    "collection.all": "הכל",
+    "collection.owned": "ברשותי",
+    "collection.missing": "חסרים",
     "sidebar.scoringRules": "כללי הניקוד",
     "sidebar.backup": "גיבוי הנתונים",
     "sidebar.language": "שפה",
@@ -3475,7 +3507,7 @@ function WorldLeaderboard({ userId, name, onClose }) {
 }
 
 // ─── SIDEBAR: hamburger menu drawer that slides in from one side ─────────────
-function Sidebar({ open, onClose, name, lang, setLang, onShowProfile, onShowRules, onShowBackup, onShowTutorial, onShowAchievements, onLogout, onReset, totalPoints, unlockedCount }) {
+function Sidebar({ open, onClose, name, lang, setLang, onShowProfile, onShowRules, onShowBackup, onShowTutorial, onShowAchievements, onShowRoulette, onLogout, onReset, totalPoints, unlockedCount, coinBalance }) {
   const t = useT();
   const isRTL = lang === "he";
 
@@ -3542,6 +3574,11 @@ function Sidebar({ open, onClose, name, lang, setLang, onShowProfile, onShowRule
             icon="🏅"
             label={`${t("sidebar.achievements")}${unlockedCount ? ` (${unlockedCount})` : ""}`}
             onClick={()=>{onClose();onShowAchievements();}}
+          />
+          <SidebarItem
+            icon="🎰"
+            label={`${t("sidebar.roulette")}${coinBalance ? ` · 🪙 ${coinBalance}` : ""}`}
+            onClick={()=>{onClose();onShowRoulette();}}
           />
           <SidebarItem icon="🎓" label={t("sidebar.tutorial")} onClick={()=>{onClose();onShowTutorial();}}/>
           <SidebarItem icon="ⓘ" label={t("sidebar.scoringRules")} onClick={()=>{onClose();onShowRules();}}/>
@@ -3782,6 +3819,483 @@ function NewBadgePopup({ achievement, onClose }) {
           <div style={{fontSize:10,color:"#94a3b8",lineHeight:1.3}}>
             {t(`achv.${achievement.id}.desc`)}
           </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── 🎰 ROULETTE MODAL ────────────────────────────────────────────────────
+function RouletteModal({ coins, isSpinning, onSpin, onClose, onShowCollection }) {
+  const t = useT();
+  const canSpin = coins.balance >= COINS.SPIN && !isSpinning;
+
+  return (
+    <div onClick={() => !isSpinning && onClose()} style={{
+      position:"fixed",inset:0,zIndex:9000,
+      background:"radial-gradient(circle at center, rgba(15,20,36,0.95), rgba(0,0,0,0.98))",
+      display:"flex",alignItems:"center",justifyContent:"center",
+      padding:14,
+    }}>
+      <style>{`
+        @keyframes rouletteSpinIn {
+          from { transform: scale(0.5) rotate(-180deg); opacity: 0; }
+          to { transform: scale(1) rotate(0deg); opacity: 1; }
+        }
+        @keyframes rouletteSpinSlow {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(720deg); }
+        }
+        @keyframes rouletteSpinFast {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(3600deg); }
+        }
+        @keyframes coinShimmer {
+          0%, 100% { transform: translateY(0) rotate(0deg); }
+          50% { transform: translateY(-4px) rotate(10deg); }
+        }
+      `}</style>
+      <div onClick={e => e.stopPropagation()} style={{
+        maxWidth:420,width:"100%",
+        background:"linear-gradient(180deg, rgba(30,41,59,0.6), rgba(15,20,36,0.9))",
+        border:"1px solid rgba(251,191,36,0.3)",
+        borderRadius:24,padding:"24px 20px",
+        boxShadow:"0 20px 80px rgba(251,191,36,0.2)",
+        animation:"rouletteSpinIn 0.5s ease-out",
+        position:"relative",
+      }}>
+        {/* Close button */}
+        {!isSpinning && (
+          <button onClick={onClose} style={{
+            position:"absolute",top:12,insetInlineEnd:12,
+            background:"transparent",border:"none",color:"#94a3b8",fontSize:20,
+            cursor:"pointer",fontFamily:"inherit",padding:"4px 8px",
+          }}>✕</button>
+        )}
+
+        {/* Title */}
+        <div style={{textAlign:"center",marginBottom:18}}>
+          <div style={{fontSize:11,color:"#fbbf24",letterSpacing:4,fontWeight:800,marginBottom:4}}>{t("roulette.title")}</div>
+          <h2 style={{margin:0,fontSize:26,fontWeight:900,
+            background:"linear-gradient(180deg,#fde68a,#f59e0b)",
+            WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",
+          }}>🎰 {t("roulette.spinTitle")}</h2>
+        </div>
+
+        {/* Big spinning wheel */}
+        <div style={{
+          display:"flex",justifyContent:"center",alignItems:"center",
+          margin:"24px 0",
+        }}>
+          <div style={{
+            width:180,height:180,borderRadius:"50%",
+            background: "conic-gradient(#ef4444 0% 5%, #a855f7 5% 18%, #fbbf24 18% 38%, #3b82f6 38% 66%, #94a3b8 66% 100%)",
+            border:"4px solid #fbbf24",
+            boxShadow:"0 0 40px rgba(251,191,36,0.4), inset 0 0 30px rgba(0,0,0,0.3)",
+            position:"relative",
+            animation: isSpinning ? "rouletteSpinFast 1.8s cubic-bezier(0.3, 0.1, 0.3, 1)" : "rouletteSpinSlow 8s linear infinite",
+            display:"flex",alignItems:"center",justifyContent:"center",
+          }}>
+            <div style={{
+              width:50,height:50,borderRadius:"50%",
+              background:"linear-gradient(135deg,#0a0e1c,#1a1f3a)",
+              border:"2px solid #fbbf24",
+              display:"flex",alignItems:"center",justifyContent:"center",
+              fontSize:24,
+              boxShadow:"0 0 20px rgba(251,191,36,0.5)",
+            }}>🎰</div>
+          </div>
+          {/* Pointer */}
+          <div style={{
+            position:"absolute",
+            marginTop:-105,
+            fontSize:24,
+            filter:"drop-shadow(0 2px 4px rgba(0,0,0,0.5))",
+            zIndex:2,
+          }}>▼</div>
+        </div>
+
+        {/* Rarity legend */}
+        <div style={{display:"grid",gridTemplateColumns:"repeat(5, 1fr)",gap:4,marginBottom:18}}>
+          {Object.entries(RARITY_ODDS).map(([r, pct]) => {
+            const cfg = RARITY_CONFIG[r];
+            return (
+              <div key={r} style={{
+                textAlign:"center",
+                padding:"4px 2px",borderRadius:6,
+                background:`${cfg.color}11`,
+                border:`1px solid ${cfg.color}44`,
+              }}>
+                <div style={{fontSize:8,color:cfg.color,fontWeight:800,letterSpacing:0.5,marginBottom:2}}>{cfg.label.slice(0,4)}</div>
+                <div style={{fontSize:11,color:"#f1f5f9",fontWeight:700}}>{pct}%</div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Balance + spin button */}
+        <div style={{
+          background:"#0a0e1c",
+          borderRadius:12,padding:"12px 14px",marginBottom:12,
+          display:"flex",alignItems:"center",justifyContent:"space-between",
+          border:"1px solid rgba(251,191,36,0.2)",
+        }}>
+          <div>
+            <div style={{fontSize:9,color:"#64748b",letterSpacing:1,marginBottom:2}}>{t("roulette.yourBalance")}</div>
+            <div style={{fontSize:20,color:"#fbbf24",fontWeight:900,display:"flex",alignItems:"center",gap:5}}>
+              <span style={{fontSize:18,animation:"coinShimmer 2s ease-in-out infinite"}}>🪙</span>
+              {coins.balance}
+            </div>
+          </div>
+          <div style={{textAlign:"end"}}>
+            <div style={{fontSize:9,color:"#64748b",letterSpacing:1,marginBottom:2}}>{t("roulette.spinCost")}</div>
+            <div style={{fontSize:14,color:"#cbd5e1",fontWeight:700}}>🪙 {COINS.SPIN}</div>
+          </div>
+        </div>
+
+        <button onClick={onSpin} disabled={!canSpin} style={{
+          width:"100%",padding:"14px",borderRadius:12,
+          background: canSpin ? "linear-gradient(135deg,#fbbf24,#f59e0b)" : "rgba(71,85,105,0.4)",
+          color: canSpin ? "#0a0e1c" : "#64748b",
+          border:"none",fontSize:16,fontWeight:900,
+          fontFamily:"inherit",cursor: canSpin ? "pointer" : "not-allowed",
+          boxShadow: canSpin ? "0 8px 24px rgba(251,191,36,0.4)" : "none",
+          letterSpacing:1,
+        }}>
+          {isSpinning ? `🎰 ${t("roulette.spinning")}` : canSpin ? `🎰 ${t("roulette.spinBtn")}` : `🪙 ${t("roulette.notEnough")}`}
+        </button>
+
+        <button onClick={onShowCollection} style={{
+          width:"100%",marginTop:8,padding:"10px",borderRadius:10,
+          background:"rgba(30,41,59,0.5)",
+          color:"#cbd5e1",
+          border:"1px solid rgba(71,85,105,0.4)",
+          fontSize:12,fontWeight:700,
+          fontFamily:"inherit",cursor:"pointer",
+        }}>
+          🃏 {t("roulette.viewCollection")}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── 🃏 PLAYER CARD COMPONENT ──────────────────────────────────────────────
+// Shared card display used in the reveal + collection. Animates by rarity.
+function PlayerCard({ card, size = "L", animated = false }) {
+  const cfg = RARITY_CONFIG[card.rarity];
+  const isLegendary = card.rarity === "L";
+  const isEpic = card.rarity === "E";
+  const isRare = card.rarity === "R";
+  const isAnimated = animated && (isLegendary || isEpic || isRare);
+
+  const dims = size === "L" ? { w: 240, h: 340, font: 18, flag: 56 }
+             : size === "M" ? { w: 140, h: 200, font: 13, flag: 32 }
+             : { w: 90, h: 130, font: 10, flag: 22 };
+
+  return (
+    <div style={{
+      width: dims.w, height: dims.h,
+      background: cfg.bgGrad,
+      backgroundSize: isAnimated ? "200% 200%" : "100% 100%",
+      animation: isAnimated ? "cardShimmer 3s ease-in-out infinite" : "none",
+      border: `2px solid ${cfg.color}`,
+      borderRadius: 16,
+      padding: 12,
+      display: "flex", flexDirection: "column", alignItems: "center",
+      justifyContent: "space-between",
+      boxShadow: animated
+        ? `0 0 40px ${cfg.glow}, 0 8px 24px rgba(0,0,0,0.5)`
+        : `0 4px 12px rgba(0,0,0,0.3)`,
+      position: "relative",
+      overflow: "hidden",
+    }}>
+      {/* Legendary sparkles */}
+      {isLegendary && animated && (
+        <>
+          <div style={{position:"absolute",top:6,left:6,fontSize:14,animation:"sparkle 1.5s ease-in-out infinite"}}>✨</div>
+          <div style={{position:"absolute",top:6,right:6,fontSize:14,animation:"sparkle 1.5s ease-in-out infinite 0.5s"}}>✨</div>
+          <div style={{position:"absolute",bottom:6,left:6,fontSize:14,animation:"sparkle 1.5s ease-in-out infinite 1s"}}>✨</div>
+          <div style={{position:"absolute",bottom:6,right:6,fontSize:14,animation:"sparkle 1.5s ease-in-out infinite 0.7s"}}>✨</div>
+        </>
+      )}
+
+      {/* Rarity label */}
+      <div style={{
+        fontSize: size === "L" ? 10 : 8,
+        color: "#fff",fontWeight:900,letterSpacing: size === "L" ? 3 : 1.5,
+        textShadow: `0 0 8px ${cfg.color}`,
+        marginTop: isLegendary && animated ? 8 : 0,
+      }}>
+        {cfg.label}
+      </div>
+
+      {/* Flag big */}
+      <div style={{
+        fontSize: dims.flag,
+        filter: animated ? `drop-shadow(0 4px 12px ${cfg.glow})` : "none",
+      }}>{card.flag}</div>
+
+      {/* Name */}
+      <div style={{textAlign:"center",width:"100%"}}>
+        <div style={{
+          fontSize: dims.font, color:"#fff",fontWeight:900,lineHeight:1.1,
+          textShadow:"0 2px 4px rgba(0,0,0,0.5)",
+          marginBottom: 4,
+          overflow:"hidden",textOverflow:"ellipsis",
+        }}>
+          {card.name}
+        </div>
+        <div style={{
+          fontSize: size === "L" ? 11 : 9,
+          color:"#fff",opacity:0.85,fontWeight:600,letterSpacing:0.5,
+        }}>
+          {card.team}
+        </div>
+      </div>
+
+      {/* Position badge */}
+      <div style={{
+        background:"rgba(0,0,0,0.4)",
+        border:"1px solid rgba(255,255,255,0.2)",
+        borderRadius:6,
+        padding: size === "L" ? "3px 10px" : "2px 6px",
+        fontSize: size === "L" ? 11 : 9,
+        color:"#fff",fontWeight:700,letterSpacing:1,
+      }}>
+        {card.pos}
+      </div>
+    </div>
+  );
+}
+
+// ─── 🎉 CARD REVEAL MODAL ──────────────────────────────────────────────────
+function CardRevealModal({ result, onClose }) {
+  const t = useT();
+  const { card, isDuplicate, refund } = result;
+  const cfg = RARITY_CONFIG[card.rarity];
+  const isLegendary = card.rarity === "L";
+
+  return (
+    <div onClick={onClose} style={{
+      position:"fixed",inset:0,zIndex:9500,
+      background:"rgba(0,0,0,0.9)",
+      backdropFilter:"blur(12px)",
+      display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",
+      padding:14,
+    }}>
+      <style>{`
+        @keyframes cardReveal {
+          0% { transform: scale(0.3) rotateY(180deg); opacity: 0; }
+          60% { transform: scale(1.1) rotateY(0deg); opacity: 1; }
+          100% { transform: scale(1) rotateY(0deg); opacity: 1; }
+        }
+        @keyframes cardShimmer {
+          0%, 100% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+        }
+        @keyframes sparkle {
+          0%, 100% { transform: scale(0.6); opacity: 0.5; }
+          50% { transform: scale(1.3); opacity: 1; }
+        }
+        @keyframes legendaryGlow {
+          0%, 100% { box-shadow: 0 0 60px ${cfg.glow}, 0 0 0 0 ${cfg.glow}; }
+          50% { box-shadow: 0 0 80px ${cfg.glow}, 0 0 30px 10px ${cfg.glow}; }
+        }
+        @keyframes confettiBurst {
+          0% { transform: translate(0,0) rotate(0deg); opacity: 1; }
+          100% { transform: translate(var(--tx), var(--ty)) rotate(720deg); opacity: 0; }
+        }
+      `}</style>
+
+      {/* Legendary confetti burst */}
+      {isLegendary && (
+        <div style={{position:"absolute",top:"50%",left:"50%",pointerEvents:"none"}}>
+          {[...Array(30)].map((_, i) => {
+            const angle = (i / 30) * Math.PI * 2;
+            const dist = 200 + Math.random() * 150;
+            return (
+              <div key={i} style={{
+                position:"absolute",
+                width:8,height:8,
+                background:["#fbbf24","#ef4444","#a855f7","#22c55e","#3b82f6"][i%5],
+                borderRadius: i%2 ? "50%" : "2px",
+                "--tx": `${Math.cos(angle) * dist}px`,
+                "--ty": `${Math.sin(angle) * dist}px`,
+                animation: `confettiBurst 2s ease-out forwards ${Math.random()*0.3}s`,
+              }}/>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Tier announcement */}
+      <div style={{
+        fontSize: isLegendary ? 32 : 20,
+        fontWeight:900,
+        color: cfg.color,
+        textShadow:`0 0 20px ${cfg.glow}`,
+        marginBottom:20,
+        letterSpacing:isLegendary ? 6 : 3,
+        animation:"cardReveal 0.8s ease-out",
+      }}>
+        {isLegendary ? "⚡ LEGENDARY ⚡" : `✨ ${cfg.label}!`}
+      </div>
+
+      {/* The card itself */}
+      <div style={{
+        animation: `cardReveal 0.9s cubic-bezier(0.34, 1.56, 0.64, 1)${isLegendary ? ", legendaryGlow 2s ease-in-out infinite 1s" : ""}`,
+        borderRadius:16,
+      }}>
+        <PlayerCard card={card} size="L" animated={true} />
+      </div>
+
+      {/* Duplicate info */}
+      {isDuplicate && (
+        <div style={{
+          marginTop:20,
+          padding:"10px 18px",
+          background:"rgba(251,191,36,0.15)",
+          border:"1px solid rgba(251,191,36,0.4)",
+          borderRadius:10,
+          color:"#fbbf24",fontSize:13,fontWeight:700,
+          display:"flex",alignItems:"center",gap:8,
+        }}>
+          <span>🔁</span>
+          <span>{t("roulette.duplicate")} · +{refund} 🪙</span>
+        </div>
+      )}
+
+      {/* Tap to close */}
+      <div style={{
+        marginTop:24,
+        fontSize:11,color:"#64748b",letterSpacing:2,
+        opacity:0.6,
+      }}>
+        {t("roulette.tapToClose")}
+      </div>
+    </div>
+  );
+}
+
+// ─── 🃏 COLLECTION VIEWER ──────────────────────────────────────────────────
+function CollectionModal({ collection, onClose }) {
+  const t = useT();
+  const [filter, setFilter] = useState("all");
+
+  const filteredCards = useMemo(() => {
+    if (filter === "all") return CARDS;
+    if (filter === "owned") return CARDS.filter(c => (collection[c.id] || 0) > 0);
+    if (filter === "missing") return CARDS.filter(c => (collection[c.id] || 0) === 0);
+    return CARDS.filter(c => c.rarity === filter);
+  }, [filter, collection]);
+
+  const ownedCount = CARDS.filter(c => (collection[c.id] || 0) > 0).length;
+  const totalCount = CARDS.length;
+  const pct = Math.round((ownedCount / totalCount) * 100);
+
+  return (
+    <div onClick={onClose} style={{
+      position:"fixed",inset:0,zIndex:9000,
+      background:"rgba(0,0,0,0.92)",
+      backdropFilter:"blur(8px)",
+      display:"flex",alignItems:"center",justifyContent:"center",
+      padding:14,
+    }}>
+      <div onClick={e => e.stopPropagation()} style={{
+        maxWidth:520,width:"100%",maxHeight:"92vh",
+        background:"linear-gradient(180deg,#1a1f3a,#0f1424)",
+        border:"1px solid rgba(251,191,36,0.3)",
+        borderRadius:18,padding:"20px 16px",
+        boxShadow:"0 20px 60px rgba(0,0,0,0.6)",
+        display:"flex",flexDirection:"column",overflow:"hidden",
+      }}>
+        {/* Header */}
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
+          <div>
+            <div style={{fontSize:9,color:"#fbbf24",letterSpacing:3,fontWeight:800}}>{t("roulette.title")}</div>
+            <h2 style={{margin:"2px 0 0",fontSize:18,color:"#f1f5f9",fontWeight:900}}>🃏 {t("collection.title")}</h2>
+          </div>
+          <button onClick={onClose} style={{
+            background:"transparent",border:"none",color:"#94a3b8",fontSize:22,
+            cursor:"pointer",fontFamily:"inherit",padding:"4px 8px",
+          }}>✕</button>
+        </div>
+
+        {/* Progress */}
+        <div style={{background:"rgba(15,20,36,0.6)",borderRadius:10,padding:"10px 14px",marginBottom:12}}>
+          <div style={{display:"flex",justifyContent:"space-between",fontSize:11,marginBottom:6}}>
+            <span style={{color:"#cbd5e1",fontWeight:700}}>{ownedCount} / {totalCount} {t("collection.collected")}</span>
+            <span style={{color:"#fbbf24",fontWeight:800}}>{pct}%</span>
+          </div>
+          <div style={{height:6,background:"rgba(71,85,105,0.3)",borderRadius:3,overflow:"hidden"}}>
+            <div style={{width:`${pct}%`,height:"100%",background:"linear-gradient(90deg,#fbbf24,#f59e0b)",borderRadius:3,transition:"width 0.4s"}}/>
+          </div>
+        </div>
+
+        {/* Filter pills */}
+        <div style={{display:"flex",gap:5,marginBottom:10,overflowX:"auto",paddingBottom:4}}>
+          {[
+            { id: "all", label: t("collection.all") },
+            { id: "owned", label: `✓ ${t("collection.owned")}` },
+            { id: "missing", label: `🔒 ${t("collection.missing")}` },
+            { id: "L", label: RARITY_CONFIG.L.label, color: RARITY_CONFIG.L.color },
+            { id: "E", label: RARITY_CONFIG.E.label, color: RARITY_CONFIG.E.color },
+            { id: "R", label: RARITY_CONFIG.R.label, color: RARITY_CONFIG.R.color },
+            { id: "U", label: RARITY_CONFIG.U.label, color: RARITY_CONFIG.U.color },
+            { id: "C", label: RARITY_CONFIG.C.label, color: RARITY_CONFIG.C.color },
+          ].map(f => {
+            const active = filter === f.id;
+            return (
+              <button key={f.id} onClick={()=>setFilter(f.id)} style={{
+                flexShrink:0,
+                padding:"5px 10px",borderRadius:14,
+                background: active ? (f.color ? `${f.color}22` : "rgba(251,191,36,0.18)") : "transparent",
+                color: active ? (f.color || "#fbbf24") : "#94a3b8",
+                border:`1px solid ${active ? (f.color || "#fbbf24") : "rgba(71,85,105,0.3)"}`,
+                fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit",
+                whiteSpace:"nowrap",letterSpacing:0.5,
+              }}>{f.label}</button>
+            );
+          })}
+        </div>
+
+        {/* Cards grid */}
+        <div style={{
+          flex:1,overflowY:"auto",
+          display:"grid",
+          gridTemplateColumns:"repeat(auto-fill, minmax(95px, 1fr))",
+          gap:8,padding:"4px",
+        }}>
+          {filteredCards.map(card => {
+            const count = collection[card.id] || 0;
+            const owned = count > 0;
+            return (
+              <div key={card.id} style={{
+                position:"relative",
+                opacity: owned ? 1 : 0.3,
+                filter: owned ? "none" : "grayscale(1)",
+              }}>
+                <PlayerCard card={card} size="S" animated={owned} />
+                {!owned && (
+                  <div style={{
+                    position:"absolute",top:0,left:0,right:0,bottom:0,
+                    display:"flex",alignItems:"center",justifyContent:"center",
+                    fontSize:24,
+                  }}>🔒</div>
+                )}
+                {count > 1 && (
+                  <div style={{
+                    position:"absolute",top:4,right:4,
+                    background:"#fbbf24",color:"#0a0e1c",
+                    fontSize:9,fontWeight:900,
+                    borderRadius:8,padding:"2px 5px",
+                    border:"1px solid #0a0e1c",
+                  }}>×{count}</div>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>
@@ -7692,6 +8206,63 @@ export default function App() {
   // Pop-up notification for newly earned coins
   const [coinFlash, setCoinFlash] = useState(null); // { amount, type, key }
 
+  // 🃏 Card collection — stores which cards the user owns (and counts of duplicates)
+  // Format: { [cardId]: count }
+  const [cardCollection, setCardCollection] = useState(() => {
+    try {
+      const raw = localStorage.getItem("wc2026_cards_v1");
+      if (raw) return JSON.parse(raw);
+    } catch {}
+    return {};
+  });
+  // 🎰 Roulette UI state
+  const [showRoulette, setShowRoulette] = useState(false);  // is the roulette screen open?
+  const [spinResult, setSpinResult] = useState(null);       // the card just won
+  const [isSpinning, setIsSpinning] = useState(false);      // animation playing
+  const [showCollection, setShowCollection] = useState(false); // collection viewer
+
+  // Spend coins, roll a card, save to collection
+  const handleSpin = () => {
+    if (coins.balance < COINS.SPIN || isSpinning) return;
+    setIsSpinning(true);
+    setSpinResult(null);
+    // Deduct coins immediately
+    const newBalance = coins.balance - COINS.SPIN;
+    const updatedCoins = { ...coins, balance: newBalance };
+    setCoins(updatedCoins);
+    try { localStorage.setItem("wc2026_coins_v1", JSON.stringify(updatedCoins)); } catch {}
+    // Roll after a delay (lets the animation play)
+    setTimeout(() => {
+      const card = rollOneCard();
+      const isDuplicate = (cardCollection[card.id] || 0) > 0;
+      // Add to collection (or increment count for duplicates)
+      const newCollection = { ...cardCollection, [card.id]: (cardCollection[card.id] || 0) + 1 };
+      setCardCollection(newCollection);
+      try { localStorage.setItem("wc2026_cards_v1", JSON.stringify(newCollection)); } catch {}
+      // If duplicate, refund coins based on rarity
+      let refund = 0;
+      if (isDuplicate) {
+        refund = RARITY_CONFIG[card.rarity]?.coins || 0;
+        const refundedBalance = newBalance + refund;
+        const withRefund = { ...updatedCoins, balance: refundedBalance };
+        setCoins(withRefund);
+        try { localStorage.setItem("wc2026_coins_v1", JSON.stringify(withRefund)); } catch {}
+      }
+      setSpinResult({ card, isDuplicate, refund });
+      setIsSpinning(false);
+      // Haptic feedback by rarity
+      try {
+        if (card.rarity === "L") navigator.vibrate?.([30, 50, 30, 50, 80, 50, 120]);
+        else if (card.rarity === "E") navigator.vibrate?.([20, 40, 50]);
+        else navigator.vibrate?.(20);
+      } catch {}
+    }, 1800);
+  };
+
+  const closeSpinResult = () => {
+    setSpinResult(null);
+  };
+
   const [unlockedAchievements, setUnlockedAchievements] = useState(() => {
     try {
       const raw = localStorage.getItem("wc2026_achv_v1");
@@ -8299,8 +8870,8 @@ export default function App() {
           ...codesToLeave.map(c => leaveLeague(c, myUid).catch(() => {})),
         ]).catch(() => {});
         clearState();
-        setName(""); setPicks({}); setKoWinners({}); setKoPicks({}); setCoins({ balance: COINS.STARTING_BONUS, earnedFromIds: {}, gotStartingBonus: true }); setGroupIdx(0);
-        setFriends([]); setActuals({}); setActualKo({}); setActualKoScores({}); setLeagueName(""); setLeagueCode(""); setLeagueCodes([]); setActiveLeagueCode(""); setAllLeagueData({}); setWinnerPick(null); setTopScorerPick(null); setCelebratedIds(new Set()); setLastSeenGoals(0); setSeenActualIds(new Set()); setShowOnboarding(true); try { localStorage.removeItem("wc2026_celebrated_v1"); localStorage.removeItem("wc2026_lastseen_goals_v1"); localStorage.removeItem("wc2026_seen_actuals_v1"); localStorage.removeItem("wc2026_onboarded_v1"); localStorage.removeItem("wc2026_world_v2"); localStorage.removeItem("wc2026_achv_v1"); localStorage.removeItem("wc2026_pickhours_v1"); localStorage.removeItem("wc2026_coins_v1"); } catch {}
+        setName(""); setPicks({}); setKoWinners({}); setKoPicks({}); setCoins({ balance: COINS.STARTING_BONUS, earnedFromIds: {}, gotStartingBonus: true }); setCardCollection({}); setGroupIdx(0);
+        setFriends([]); setActuals({}); setActualKo({}); setActualKoScores({}); setLeagueName(""); setLeagueCode(""); setLeagueCodes([]); setActiveLeagueCode(""); setAllLeagueData({}); setWinnerPick(null); setTopScorerPick(null); setCelebratedIds(new Set()); setLastSeenGoals(0); setSeenActualIds(new Set()); setShowOnboarding(true); try { localStorage.removeItem("wc2026_celebrated_v1"); localStorage.removeItem("wc2026_lastseen_goals_v1"); localStorage.removeItem("wc2026_seen_actuals_v1"); localStorage.removeItem("wc2026_onboarded_v1"); localStorage.removeItem("wc2026_world_v2"); localStorage.removeItem("wc2026_achv_v1"); localStorage.removeItem("wc2026_pickhours_v1"); localStorage.removeItem("wc2026_coins_v1"); localStorage.removeItem("wc2026_cards_v1"); } catch {}
         setScreen("welcome");
         setShowIntro(false);
       },
@@ -8311,8 +8882,8 @@ export default function App() {
     if (!hasData) {
       // No data to worry about, just log out locally — keep Firebase intact in case they restore
       clearState();
-      setName(""); setPicks({}); setKoWinners({}); setKoPicks({}); setCoins({ balance: COINS.STARTING_BONUS, earnedFromIds: {}, gotStartingBonus: true }); setGroupIdx(0);
-      setFriends([]); setActuals({}); setActualKo({}); setActualKoScores({}); setLeagueName(""); setLeagueCode(""); setLeagueCodes([]); setActiveLeagueCode(""); setAllLeagueData({}); setWinnerPick(null); setTopScorerPick(null); setCelebratedIds(new Set()); setLastSeenGoals(0); setSeenActualIds(new Set()); setShowOnboarding(true); try { localStorage.removeItem("wc2026_celebrated_v1"); localStorage.removeItem("wc2026_lastseen_goals_v1"); localStorage.removeItem("wc2026_seen_actuals_v1"); localStorage.removeItem("wc2026_onboarded_v1"); localStorage.removeItem("wc2026_world_v2"); localStorage.removeItem("wc2026_achv_v1"); localStorage.removeItem("wc2026_pickhours_v1"); localStorage.removeItem("wc2026_coins_v1"); } catch {}
+      setName(""); setPicks({}); setKoWinners({}); setKoPicks({}); setCoins({ balance: COINS.STARTING_BONUS, earnedFromIds: {}, gotStartingBonus: true }); setCardCollection({}); setGroupIdx(0);
+      setFriends([]); setActuals({}); setActualKo({}); setActualKoScores({}); setLeagueName(""); setLeagueCode(""); setLeagueCodes([]); setActiveLeagueCode(""); setAllLeagueData({}); setWinnerPick(null); setTopScorerPick(null); setCelebratedIds(new Set()); setLastSeenGoals(0); setSeenActualIds(new Set()); setShowOnboarding(true); try { localStorage.removeItem("wc2026_celebrated_v1"); localStorage.removeItem("wc2026_lastseen_goals_v1"); localStorage.removeItem("wc2026_seen_actuals_v1"); localStorage.removeItem("wc2026_onboarded_v1"); localStorage.removeItem("wc2026_world_v2"); localStorage.removeItem("wc2026_achv_v1"); localStorage.removeItem("wc2026_pickhours_v1"); localStorage.removeItem("wc2026_coins_v1"); localStorage.removeItem("wc2026_cards_v1"); } catch {}
       setScreen("welcome");
       setShowIntro(false);
       return;
@@ -8327,8 +8898,8 @@ export default function App() {
         // Logout is local-only — Firebase profile + league memberships stay intact
         // so the user can restore their progress later with a backup code.
         clearState();
-        setName(""); setPicks({}); setKoWinners({}); setKoPicks({}); setCoins({ balance: COINS.STARTING_BONUS, earnedFromIds: {}, gotStartingBonus: true }); setGroupIdx(0);
-        setFriends([]); setActuals({}); setActualKo({}); setActualKoScores({}); setLeagueName(""); setLeagueCode(""); setLeagueCodes([]); setActiveLeagueCode(""); setAllLeagueData({}); setWinnerPick(null); setTopScorerPick(null); setCelebratedIds(new Set()); setLastSeenGoals(0); setSeenActualIds(new Set()); setShowOnboarding(true); try { localStorage.removeItem("wc2026_celebrated_v1"); localStorage.removeItem("wc2026_lastseen_goals_v1"); localStorage.removeItem("wc2026_seen_actuals_v1"); localStorage.removeItem("wc2026_onboarded_v1"); localStorage.removeItem("wc2026_world_v2"); localStorage.removeItem("wc2026_achv_v1"); localStorage.removeItem("wc2026_pickhours_v1"); localStorage.removeItem("wc2026_coins_v1"); } catch {}
+        setName(""); setPicks({}); setKoWinners({}); setKoPicks({}); setCoins({ balance: COINS.STARTING_BONUS, earnedFromIds: {}, gotStartingBonus: true }); setCardCollection({}); setGroupIdx(0);
+        setFriends([]); setActuals({}); setActualKo({}); setActualKoScores({}); setLeagueName(""); setLeagueCode(""); setLeagueCodes([]); setActiveLeagueCode(""); setAllLeagueData({}); setWinnerPick(null); setTopScorerPick(null); setCelebratedIds(new Set()); setLastSeenGoals(0); setSeenActualIds(new Set()); setShowOnboarding(true); try { localStorage.removeItem("wc2026_celebrated_v1"); localStorage.removeItem("wc2026_lastseen_goals_v1"); localStorage.removeItem("wc2026_seen_actuals_v1"); localStorage.removeItem("wc2026_onboarded_v1"); localStorage.removeItem("wc2026_world_v2"); localStorage.removeItem("wc2026_achv_v1"); localStorage.removeItem("wc2026_pickhours_v1"); localStorage.removeItem("wc2026_coins_v1"); localStorage.removeItem("wc2026_cards_v1"); } catch {}
         setScreen("welcome");
         setShowIntro(false);
       },
@@ -8712,14 +9283,43 @@ export default function App() {
         setLang={setLang}
         totalPoints={myTotalPoints}
         unlockedCount={unlockedAchievements.size}
+        coinBalance={coins.balance}
         onShowProfile={()=>setShowProfile(true)}
         onShowRules={()=>setShowRules(true)}
         onShowBackup={()=>setShowBackup(true)}
         onShowTutorial={()=>setShowOnboarding(true)}
         onShowAchievements={()=>setShowAchievements(true)}
+        onShowRoulette={()=>setShowRoulette(true)}
         onLogout={handleLogout}
         onReset={handleReset}
       />
+
+      {/* 🎰 Roulette */}
+      {showRoulette && !spinResult && (
+        <RouletteModal
+          coins={coins}
+          isSpinning={isSpinning}
+          onSpin={handleSpin}
+          onClose={()=>setShowRoulette(false)}
+          onShowCollection={()=>setShowCollection(true)}
+        />
+      )}
+
+      {/* 🎉 Card reveal — appears OVER the roulette */}
+      {spinResult && (
+        <CardRevealModal
+          result={spinResult}
+          onClose={closeSpinResult}
+        />
+      )}
+
+      {/* 🃏 Collection viewer */}
+      {showCollection && (
+        <CollectionModal
+          collection={cardCollection}
+          onClose={()=>setShowCollection(false)}
+        />
+      )}
 
       {/* 🏅 Achievements modal */}
       {showAchievements && (
