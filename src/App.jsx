@@ -8,7 +8,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "1.9.0";
+const APP_VERSION = "1.9.1";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -2569,8 +2569,8 @@ const CARDS_BY_RARITY = {
   C: CARDS.filter(c => c.rarity === "C"),
 };
 
-// Rarity probabilities (must sum to 100)
-const RARITY_ODDS = { L: 5, E: 13, R: 20, U: 28, C: 34 };
+// Rarity probabilities (must sum to 100) — Legendary intentionally very rare
+const RARITY_ODDS = { L: 3, E: 12, R: 22, U: 28, C: 35 };
 
 // Visual config per rarity tier — used by the card UI later
 const RARITY_CONFIG = {
@@ -3839,8 +3839,8 @@ function RouletteModal({ coins, isSpinning, onSpin, onClose, onShowCollection })
     }}>
       <style>{`
         @keyframes rouletteSpinIn {
-          from { transform: scale(0.5) rotate(-180deg); opacity: 0; }
-          to { transform: scale(1) rotate(0deg); opacity: 1; }
+          from { transform: scale(0.92); opacity: 0; }
+          to { transform: scale(1); opacity: 1; }
         }
         @keyframes rouletteSpinSlow {
           from { transform: rotate(0deg); }
@@ -3889,11 +3889,11 @@ function RouletteModal({ coins, isSpinning, onSpin, onClose, onShowCollection })
         }}>
           <div style={{
             width:180,height:180,borderRadius:"50%",
-            background: "conic-gradient(#ef4444 0% 5%, #a855f7 5% 18%, #fbbf24 18% 38%, #3b82f6 38% 66%, #94a3b8 66% 100%)",
+            background: "conic-gradient(#ef4444 0% 3%, #a855f7 3% 15%, #fbbf24 15% 37%, #3b82f6 37% 65%, #94a3b8 65% 100%)",
             border:"4px solid #fbbf24",
             boxShadow:"0 0 40px rgba(251,191,36,0.4), inset 0 0 30px rgba(0,0,0,0.3)",
             position:"relative",
-            animation: isSpinning ? "rouletteSpinFast 1.8s cubic-bezier(0.3, 0.1, 0.3, 1)" : "rouletteSpinSlow 8s linear infinite",
+            animation: isSpinning ? "rouletteSpinFast 3s cubic-bezier(0.2, 0.05, 0.2, 1)" : "rouletteSpinSlow 8s linear infinite",
             display:"flex",alignItems:"center",justifyContent:"center",
           }}>
             <div style={{
@@ -8256,7 +8256,7 @@ export default function App() {
         else if (card.rarity === "E") navigator.vibrate?.([20, 40, 50]);
         else navigator.vibrate?.(20);
       } catch {}
-    }, 1800);
+    }, 3000);
   };
 
   const closeSpinResult = () => {
