@@ -2,13 +2,13 @@ import { useState, useMemo, useEffect, useRef, createContext, useContext } from 
 import {
   generateLeagueCode, createLeague, joinLeague,
   updateMyPicks, leaveLeague, subscribeLeague, updateActualResults,
-  updateMyGlobalProfile, fetchGlobalLeaderboard, renameLeague,
+  updateMyGlobalProfile, deleteMyGlobalProfile, fetchGlobalLeaderboard, renameLeague,
 } from "./firebase";
 import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnockoutToBracket, fetchTopScorers } from "./liveResults";
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "1.6.1";
+const APP_VERSION = "1.6.4";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -887,6 +887,24 @@ const GROUPS = {
 const GROUP_KEYS = Object.keys(GROUPS);
 const ALL_TEAMS = GROUP_KEYS.flatMap(g => GROUPS[g].map(t => ({...t, g})));
 const findTeam = (name) => ALL_TEAMS.find(t => t.n === name);
+
+// FIFA World Rankings (approximate, late-2025 snapshot — static, won't auto-update)
+// Used purely for display next to team names in the group stage.
+const FIFA_RANK = {
+  "Argentina": 1, "Spain": 2, "France": 3, "England": 4, "Brazil": 5,
+  "Netherlands": 6, "Portugal": 7, "Belgium": 8, "Italy": 9, "Croatia": 10,
+  "Germany": 11, "Morocco": 12, "Colombia": 13, "Uruguay": 14, "USA": 15,
+  "Switzerland": 16, "Senegal": 17, "Japan": 18, "Mexico": 19, "Iran": 20,
+  "Denmark": 21, "Austria": 22, "Australia": 23, "South Korea": 24, "Ukraine": 25,
+  "Ecuador": 26, "Sweden": 27, "Türkiye": 28, "Wales": 29, "Hungary": 30,
+  "Egypt": 31, "Algeria": 32, "Czechia": 33, "Norway": 34, "Panama": 35,
+  "Côte d'Ivoire": 36, "Tunisia": 37, "Romania": 38, "Slovakia": 39, "Russia": 40,
+  "Scotland": 41, "Paraguay": 42, "Saudi Arabia": 56, "Qatar": 58, "Iraq": 59,
+  "Cabo Verde": 64, "DR Congo": 65, "Uzbekistan": 66, "Jordan": 70, "Bosnia": 71,
+  "Canada": 31, "Haiti": 83, "Ghana": 76, "South Africa": 58, "Curaçao": 89,
+  "New Zealand": 87, "Algeria": 32,
+};
+const fifaRank = (teamName) => FIFA_RANK[teamName] || null;
 
 const COLORS = {
   A:"#ef4444",B:"#f97316",C:"#eab308",D:"#22c55e",
@@ -2893,7 +2911,7 @@ function WorldLeaderboard({ userId, name, onClose }) {
       // Check cache first (5 min)
       const cached = (() => {
         try {
-          const raw = localStorage.getItem("wc2026_world_v1");
+          const raw = localStorage.getItem("wc2026_world_v2");
           if (!raw) return null;
           const parsed = JSON.parse(raw);
           if (Date.now() - parsed.fetchedAt > 5 * 60 * 1000) return null;
@@ -2906,7 +2924,7 @@ function WorldLeaderboard({ userId, name, onClose }) {
         return;
       }
       const result = await fetchGlobalLeaderboard(10, userId);
-      try { localStorage.setItem("wc2026_world_v1", JSON.stringify(result)); } catch {}
+      try { localStorage.setItem("wc2026_world_v2", JSON.stringify(result)); } catch {}
       setData(result);
     } catch (e) {
       console.error("World leaderboard failed:", e);
@@ -4230,7 +4248,12 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
       </div>
       <div style={{display:"grid",gridTemplateColumns:"1fr auto 1fr",alignItems:"center",gap:8,direction:"ltr"}}>
         <div style={{display:"flex",alignItems:"center",gap:8,justifyContent:"flex-end",opacity:result==="away"?0.5:1}}>
-          <span style={{fontSize:13,fontWeight:result==="home"?800:500,color:"#f1f5f9",textAlign:"right"}}>{home.n}</span>
+          <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",minWidth:0}}>
+            <span style={{fontSize:13,fontWeight:result==="home"?800:500,color:"#f1f5f9",textAlign:"right",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{home.n}</span>
+            {fifaRank(home.n) && (
+              <span style={{fontSize:9,color:"#64748b",letterSpacing:0.5,marginTop:1}}>#{fifaRank(home.n)}</span>
+            )}
+          </div>
           <span style={{fontSize:22}}>{home.f}</span>
         </div>
         <div style={{display:"flex",alignItems:"center",gap:4}}>
@@ -4266,7 +4289,12 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
         </div>
         <div style={{display:"flex",alignItems:"center",gap:8,opacity:result==="home"?0.5:1}}>
           <span style={{fontSize:22}}>{away.f}</span>
-          <span style={{fontSize:13,fontWeight:result==="away"?800:500,color:"#f1f5f9"}}>{away.n}</span>
+          <div style={{display:"flex",flexDirection:"column",alignItems:"flex-start",minWidth:0}}>
+            <span style={{fontSize:13,fontWeight:result==="away"?800:500,color:"#f1f5f9",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{away.n}</span>
+            {fifaRank(away.n) && (
+              <span style={{fontSize:9,color:"#64748b",letterSpacing:0.5,marginTop:1}}>#{fifaRank(away.n)}</span>
+            )}
+          </div>
         </div>
       </div>
       {actual && actual.h !== undefined && actual.h !== "" && (
@@ -7693,7 +7721,7 @@ export default function App() {
     // Global rank from cached world leaderboard (if available)
     let globalRank = null;
     try {
-      const raw = localStorage.getItem("wc2026_world_v1");
+      const raw = localStorage.getItem("wc2026_world_v2");
       if (raw) {
         const parsed = JSON.parse(raw);
         if (parsed.myRank) globalRank = parsed.myRank;
@@ -7770,9 +7798,17 @@ export default function App() {
       requireType: name || "DELETE",
       typePrompt: name ? `Type your name ("${name}") to confirm:` : `Type "DELETE" to confirm:`,
       onConfirm: () => {
+        // Wipe everything from Firebase first (global profile + all leagues),
+        // then clear local state.
+        const codesToLeave = [...leagueCodes];
+        const myUid = userId;
+        Promise.all([
+          deleteMyGlobalProfile(myUid).catch(() => {}),
+          ...codesToLeave.map(c => leaveLeague(c, myUid).catch(() => {})),
+        ]).catch(() => {});
         clearState();
         setName(""); setPicks({}); setKoWinners({}); setKoPicks({}); setGroupIdx(0);
-        setFriends([]); setActuals({}); setActualKo({}); setActualKoScores({}); setLeagueName(""); setLeagueCode(""); setLeagueCodes([]); setActiveLeagueCode(""); setAllLeagueData({}); setWinnerPick(null); setTopScorerPick(null); setCelebratedIds(new Set()); setLastSeenGoals(0); setSeenActualIds(new Set()); setShowOnboarding(true); try { localStorage.removeItem("wc2026_celebrated_v1"); localStorage.removeItem("wc2026_lastseen_goals_v1"); localStorage.removeItem("wc2026_seen_actuals_v1"); localStorage.removeItem("wc2026_onboarded_v1"); localStorage.removeItem("wc2026_world_v1"); localStorage.removeItem("wc2026_achv_v1"); localStorage.removeItem("wc2026_pickhours_v1"); } catch {}
+        setFriends([]); setActuals({}); setActualKo({}); setActualKoScores({}); setLeagueName(""); setLeagueCode(""); setLeagueCodes([]); setActiveLeagueCode(""); setAllLeagueData({}); setWinnerPick(null); setTopScorerPick(null); setCelebratedIds(new Set()); setLastSeenGoals(0); setSeenActualIds(new Set()); setShowOnboarding(true); try { localStorage.removeItem("wc2026_celebrated_v1"); localStorage.removeItem("wc2026_lastseen_goals_v1"); localStorage.removeItem("wc2026_seen_actuals_v1"); localStorage.removeItem("wc2026_onboarded_v1"); localStorage.removeItem("wc2026_world_v2"); localStorage.removeItem("wc2026_achv_v1"); localStorage.removeItem("wc2026_pickhours_v1"); } catch {}
         setScreen("welcome");
         setShowIntro(false);
       },
@@ -7781,10 +7817,10 @@ export default function App() {
   const handleLogout = () => {
     const hasData = totalPredicted > 0 || friends.length > 0;
     if (!hasData) {
-      // No data to worry about, just log out
+      // No data to worry about, just log out locally — keep Firebase intact in case they restore
       clearState();
       setName(""); setPicks({}); setKoWinners({}); setKoPicks({}); setGroupIdx(0);
-      setFriends([]); setActuals({}); setActualKo({}); setActualKoScores({}); setLeagueName(""); setLeagueCode(""); setLeagueCodes([]); setActiveLeagueCode(""); setAllLeagueData({}); setWinnerPick(null); setTopScorerPick(null); setCelebratedIds(new Set()); setLastSeenGoals(0); setSeenActualIds(new Set()); setShowOnboarding(true); try { localStorage.removeItem("wc2026_celebrated_v1"); localStorage.removeItem("wc2026_lastseen_goals_v1"); localStorage.removeItem("wc2026_seen_actuals_v1"); localStorage.removeItem("wc2026_onboarded_v1"); localStorage.removeItem("wc2026_world_v1"); localStorage.removeItem("wc2026_achv_v1"); localStorage.removeItem("wc2026_pickhours_v1"); } catch {}
+      setFriends([]); setActuals({}); setActualKo({}); setActualKoScores({}); setLeagueName(""); setLeagueCode(""); setLeagueCodes([]); setActiveLeagueCode(""); setAllLeagueData({}); setWinnerPick(null); setTopScorerPick(null); setCelebratedIds(new Set()); setLastSeenGoals(0); setSeenActualIds(new Set()); setShowOnboarding(true); try { localStorage.removeItem("wc2026_celebrated_v1"); localStorage.removeItem("wc2026_lastseen_goals_v1"); localStorage.removeItem("wc2026_seen_actuals_v1"); localStorage.removeItem("wc2026_onboarded_v1"); localStorage.removeItem("wc2026_world_v2"); localStorage.removeItem("wc2026_achv_v1"); localStorage.removeItem("wc2026_pickhours_v1"); } catch {}
       setScreen("welcome");
       setShowIntro(false);
       return;
@@ -7796,9 +7832,11 @@ export default function App() {
       secondaryLabel: "💾 Backup first",
       onSecondary: () => setShowBackup(true),
       onConfirm: () => {
+        // Logout is local-only — Firebase profile + league memberships stay intact
+        // so the user can restore their progress later with a backup code.
         clearState();
         setName(""); setPicks({}); setKoWinners({}); setKoPicks({}); setGroupIdx(0);
-        setFriends([]); setActuals({}); setActualKo({}); setActualKoScores({}); setLeagueName(""); setLeagueCode(""); setLeagueCodes([]); setActiveLeagueCode(""); setAllLeagueData({}); setWinnerPick(null); setTopScorerPick(null); setCelebratedIds(new Set()); setLastSeenGoals(0); setSeenActualIds(new Set()); setShowOnboarding(true); try { localStorage.removeItem("wc2026_celebrated_v1"); localStorage.removeItem("wc2026_lastseen_goals_v1"); localStorage.removeItem("wc2026_seen_actuals_v1"); localStorage.removeItem("wc2026_onboarded_v1"); localStorage.removeItem("wc2026_world_v1"); localStorage.removeItem("wc2026_achv_v1"); localStorage.removeItem("wc2026_pickhours_v1"); } catch {}
+        setFriends([]); setActuals({}); setActualKo({}); setActualKoScores({}); setLeagueName(""); setLeagueCode(""); setLeagueCodes([]); setActiveLeagueCode(""); setAllLeagueData({}); setWinnerPick(null); setTopScorerPick(null); setCelebratedIds(new Set()); setLastSeenGoals(0); setSeenActualIds(new Set()); setShowOnboarding(true); try { localStorage.removeItem("wc2026_celebrated_v1"); localStorage.removeItem("wc2026_lastseen_goals_v1"); localStorage.removeItem("wc2026_seen_actuals_v1"); localStorage.removeItem("wc2026_onboarded_v1"); localStorage.removeItem("wc2026_world_v2"); localStorage.removeItem("wc2026_achv_v1"); localStorage.removeItem("wc2026_pickhours_v1"); } catch {}
         setScreen("welcome");
         setShowIntro(false);
       },
