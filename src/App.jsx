@@ -8,7 +8,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "2.3.0";
+const APP_VERSION = "1.5.0";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -135,6 +135,10 @@ const TRANSLATIONS = {
     "league.joinPlaceholder": "e.g. GOLDEN-TIGER-123",
     "league.joining": "Joining...",
     "league.joinBtn": "🤝 Join league",
+    "league.joinHint": "Got a code from a friend? Paste it here.",
+    "league.orCreate": "OR",
+    "league.previewHit": "Most exact predictions will be shown here when matches start",
+    "league.previewMiss": "Most wrong predictions will be shown here when matches start",
     "league.nameRequired": "Give your league a name",
     "league.codeRequired": "Enter a league code",
     "league.couldntCreate": "Couldn't create league. Check Firebase setup.",
@@ -552,6 +556,10 @@ const TRANSLATIONS = {
     "league.joinPlaceholder": "למשל GOLDEN-TIGER-123",
     "league.joining": "מצטרף...",
     "league.joinBtn": "🤝 הצטרף לליגה",
+    "league.joinHint": "קיבלת קוד מחבר? הדבק אותו כאן.",
+    "league.orCreate": "או",
+    "league.previewHit": "מי שיניחש הכי הרבה תוצאות מדויקות יוצג כאן כשמשחקים יתחילו",
+    "league.previewMiss": "מי שיפספס הכי הרבה יוצג כאן כשמשחקים יתחילו",
     "league.nameRequired": "תן שם לליגה",
     "league.codeRequired": "הזן קוד ליגה",
     "league.couldntCreate": "לא ניתן ליצור ליגה. בדוק את הגדרות Firebase.",
@@ -5566,30 +5574,38 @@ function LeagueHub({
           <p style={{color:"#94a3b8",fontSize:13,margin:0,lineHeight:1.5}}>{t("league.intro")}</p>
         </div>
 
-        {/* CREATE */}
-        <div style={{background:"linear-gradient(145deg,#1e293b,#0f172a)",border:"1px solid rgba(251,191,36,0.3)",borderRadius:14,padding:16,marginBottom:12}}>
-          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
-            <span style={{fontSize:24}}>✨</span>
-            <span style={{fontSize:15,fontWeight:800,color:"#fbbf24"}}>{t("league.createLeague")}</span>
-          </div>
-          <input value={draftName} onChange={e=>{setDraftName(e.target.value);setErr("");}} maxLength={30}
-            placeholder={t("league.createPlaceholder")} style={inputStyle}/>
-          <button onClick={handleCreate} disabled={busy} style={{...primaryBtn,opacity:busy?0.5:1}}>
-            {busy ? t("league.creating") : t("league.createBtn")}
-          </button>
-        </div>
-
-        {/* JOIN */}
-        <div style={{background:"linear-gradient(145deg,#1e293b,#0f172a)",border:"1px solid rgba(71,85,105,0.4)",borderRadius:14,padding:16}}>
+        {/* JOIN (prominent — most users will join an existing league) */}
+        <div style={{background:"linear-gradient(145deg,rgba(251,191,36,0.12),#1e293b)",border:"1px solid rgba(251,191,36,0.5)",borderRadius:14,padding:16,marginBottom:12,boxShadow:"0 4px 14px rgba(251,191,36,0.1)"}}>
           <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
             <span style={{fontSize:24}}>🤝</span>
-            <span style={{fontSize:15,fontWeight:800,color:"#cbd5e1"}}>{t("league.joinLeague")}</span>
+            <span style={{fontSize:15,fontWeight:800,color:"#fbbf24"}}>{t("league.joinLeague")}</span>
           </div>
+          <p style={{fontSize:11,color:"#94a3b8",margin:"0 0 8px"}}>{t("league.joinHint")}</p>
           <input value={draftCode} onChange={e=>{setDraftCode(e.target.value.toUpperCase());setErr("");}}
             placeholder={t("league.joinPlaceholder")} maxLength={30}
             style={{...inputStyle,fontFamily:"monospace",letterSpacing:1}}/>
-          <button onClick={handleJoin} disabled={busy} style={{...ghostBtn,opacity:busy?0.5:1}}>
+          <button onClick={handleJoin} disabled={busy} style={{...primaryBtn,opacity:busy?0.5:1}}>
             {busy ? t("league.joining") : t("league.joinBtn")}
+          </button>
+        </div>
+
+        {/* OR divider */}
+        <div style={{display:"flex",alignItems:"center",gap:10,margin:"14px 0 10px",fontSize:10,color:"#64748b",letterSpacing:2}}>
+          <div style={{flex:1,height:1,background:"rgba(71,85,105,0.3)"}}/>
+          <span>{t("league.orCreate")}</span>
+          <div style={{flex:1,height:1,background:"rgba(71,85,105,0.3)"}}/>
+        </div>
+
+        {/* CREATE (secondary — for the few who organize their own league) */}
+        <div style={{background:"rgba(30,41,59,0.4)",border:"1px solid rgba(71,85,105,0.3)",borderRadius:14,padding:14}}>
+          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
+            <span style={{fontSize:18}}>✨</span>
+            <span style={{fontSize:13,fontWeight:700,color:"#cbd5e1"}}>{t("league.createLeague")}</span>
+          </div>
+          <input value={draftName} onChange={e=>{setDraftName(e.target.value);setErr("");}} maxLength={30}
+            placeholder={t("league.createPlaceholder")} style={inputStyle}/>
+          <button onClick={handleCreate} disabled={busy} style={{...ghostBtn,opacity:busy?0.5:1}}>
+            {busy ? t("league.creating") : t("league.createBtn")}
           </button>
         </div>
 
@@ -6169,6 +6185,43 @@ function LeagueHub({
             {t("league.refresh")}
           </button>
         </div>
+
+        {/* 🎯 Hits & Misses awards — preview before tournament starts */}
+        {!hasActuals && members.length > 0 && (
+          <div style={{marginBottom:14,opacity:0.6}}>
+            <div style={{fontSize:11,color:"#94a3b8",letterSpacing:3,marginBottom:8,textAlign:"center"}}>{t("league.hitsMisses")}</div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+              {/* Empty Top Hit preview */}
+              <div style={{
+                background:"linear-gradient(135deg,rgba(34,197,94,0.06),rgba(15,20,36,0.4))",
+                border:"1px dashed rgba(34,197,94,0.3)",
+                borderRadius:12,padding:"10px 10px",
+              }}>
+                <div style={{display:"flex",alignItems:"center",gap:5,marginBottom:6}}>
+                  <span style={{fontSize:18,filter:"grayscale(0.5)"}}>🎯</span>
+                  <span style={{fontSize:9,color:"#22c55e",letterSpacing:2,fontWeight:800}}>{t("league.topHit")}</span>
+                </div>
+                <div style={{fontSize:11,color:"#64748b",fontStyle:"italic",lineHeight:1.4}}>
+                  {t("league.previewHit")}
+                </div>
+              </div>
+              {/* Empty Top Miss preview */}
+              <div style={{
+                background:"linear-gradient(135deg,rgba(239,68,68,0.06),rgba(15,20,36,0.4))",
+                border:"1px dashed rgba(239,68,68,0.3)",
+                borderRadius:12,padding:"10px 10px",
+              }}>
+                <div style={{display:"flex",alignItems:"center",gap:5,marginBottom:6}}>
+                  <span style={{fontSize:18,filter:"grayscale(0.5)"}}>💀</span>
+                  <span style={{fontSize:9,color:"#f87171",letterSpacing:2,fontWeight:800}}>{t("league.topMiss")}</span>
+                </div>
+                <div style={{fontSize:11,color:"#64748b",fontStyle:"italic",lineHeight:1.4}}>
+                  {t("league.previewMiss")}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* 🎯 Hits & Misses awards */}
         {hasActuals && members.length > 0 && (() => {
