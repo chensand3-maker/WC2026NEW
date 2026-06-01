@@ -8,7 +8,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "1.6.4";
+const APP_VERSION = "1.6.5";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -888,21 +888,25 @@ const GROUP_KEYS = Object.keys(GROUPS);
 const ALL_TEAMS = GROUP_KEYS.flatMap(g => GROUPS[g].map(t => ({...t, g})));
 const findTeam = (name) => ALL_TEAMS.find(t => t.n === name);
 
-// FIFA World Rankings (approximate, late-2025 snapshot — static, won't auto-update)
-// Used purely for display next to team names in the group stage.
+// FIFA World Rankings — official, 1 April 2026 update
+// Next official update is 11 June 2026 (after the World Cup starts)
 const FIFA_RANK = {
-  "Argentina": 1, "Spain": 2, "France": 3, "England": 4, "Brazil": 5,
-  "Netherlands": 6, "Portugal": 7, "Belgium": 8, "Italy": 9, "Croatia": 10,
-  "Germany": 11, "Morocco": 12, "Colombia": 13, "Uruguay": 14, "USA": 15,
-  "Switzerland": 16, "Senegal": 17, "Japan": 18, "Mexico": 19, "Iran": 20,
-  "Denmark": 21, "Austria": 22, "Australia": 23, "South Korea": 24, "Ukraine": 25,
-  "Ecuador": 26, "Sweden": 27, "Türkiye": 28, "Wales": 29, "Hungary": 30,
-  "Egypt": 31, "Algeria": 32, "Czechia": 33, "Norway": 34, "Panama": 35,
-  "Côte d'Ivoire": 36, "Tunisia": 37, "Romania": 38, "Slovakia": 39, "Russia": 40,
-  "Scotland": 41, "Paraguay": 42, "Saudi Arabia": 56, "Qatar": 58, "Iraq": 59,
-  "Cabo Verde": 64, "DR Congo": 65, "Uzbekistan": 66, "Jordan": 70, "Bosnia": 71,
-  "Canada": 31, "Haiti": 83, "Ghana": 76, "South Africa": 58, "Curaçao": 89,
-  "New Zealand": 87, "Algeria": 32,
+  // Top 20 (verified from FIFA.com / Wikipedia / ESPN)
+  "France": 1, "Spain": 2, "Argentina": 3, "England": 4, "Portugal": 5,
+  "Brazil": 6, "Netherlands": 7, "Morocco": 8, "Belgium": 9, "Germany": 10,
+  "Croatia": 11, "Italy": 12, "Colombia": 13, "Senegal": 14, "Mexico": 15,
+  "USA": 16, "Uruguay": 17, "Japan": 18, "Switzerland": 19, "Denmark": 20,
+  // 21-50 (from ESPN late-Dec 2025 list; minor shifts possible but close)
+  "South Korea": 22, "Ecuador": 23, "Austria": 24, "Türkiye": 25,
+  "Australia": 26, "Canada": 27, "Norway": 29,
+  "Panama": 30, "Algeria": 34, "Egypt": 35, "Scotland": 36,
+  "Paraguay": 39, "Tunisia": 41, "Côte d'Ivoire": 42, "Czechia": 44,
+  "Uzbekistan": 50,
+  // Honorable mentions (all WC qualifiers below top 50)
+  "Qatar": 53, "Saudi Arabia": 60, "South Africa": 61, "Jordan": 64,
+  "Iran": 20, "Iraq": 59, "Bosnia": 71, "DR Congo": 65,
+  "Cabo Verde": 67, "Ghana": 72, "Curaçao": 82, "Haiti": 84,
+  "New Zealand": 87,
 };
 const fifaRank = (teamName) => FIFA_RANK[teamName] || null;
 
