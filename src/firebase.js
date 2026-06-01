@@ -9,7 +9,7 @@ import {
 
 // 🔧 PASTE YOUR FIREBASE CONFIG HERE (see SETUP.md step 2)
 const firebaseConfig = {
-  api  apiKey: "AIzaSyD4HwvAZZCNwgVMh_h6zsyZ17lzl69_OrM",
+  apiKey: "AIzaSyD4HwvAZZCNwgVMh_h6zsyZ17lzl69_OrM",
   authDomain: "wc-2026-8b41e.firebaseapp.com",
   projectId: "wc-2026-8b41e",
   storageBucket: "wc-2026-8b41e.firebasestorage.app",
