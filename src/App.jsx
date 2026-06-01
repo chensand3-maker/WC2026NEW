@@ -8,7 +8,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "1.5.0";
+const APP_VERSION = "1.6.0";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -280,6 +280,7 @@ const TRANSLATIONS = {
     "league.bracketHidden": "Bracket hidden until kickoff",
     "league.standingsHidden": "Standings hidden until kickoff",
     "league.shareWhatsapp": "Share via WhatsApp",
+    "league.inviteFriends": "INVITE FRIENDS",
     "league.shareMessage": "Hey! 🏆⚽ I started a 2026 World Cup prediction league called \"{name}\".\n\nJoin with this code: {code}\n\n{url}",
     "league.copyTooltip": "Copy code",
     "toast.invitationCopied": "Invitation copied to clipboard! 📋",
@@ -701,6 +702,7 @@ const TRANSLATIONS = {
     "league.bracketHidden": "הברקט מוסתר עד תחילת המונדיאל",
     "league.standingsHidden": "הטבלאות מוסתרות עד תחילת המונדיאל",
     "league.shareWhatsapp": "שלח בוואטסאפ",
+    "league.inviteFriends": "הזמן חברים",
     "league.shareMessage": "היי! 🏆⚽ פתחתי ליגת ניחושים למונדיאל 2026 בשם \"{name}\".\n\nהצטרפו עם הקוד הזה: {code}\n\n{url}",
     "league.copyTooltip": "העתק קוד",
     "toast.invitationCopied": "ההזמנה הועתקה ללוח! 📋",
@@ -6091,87 +6093,32 @@ function LeagueHub({
             marginBottom:10,fontWeight:600,
           }}>← {t("leagues.allLeagues")}</button>
         )}
-        {/* League header */}
-        <div style={{background:"linear-gradient(135deg,rgba(251,191,36,0.1),rgba(217,119,6,0.05))",border:"1px solid rgba(251,191,36,0.3)",borderRadius:14,padding:14,marginBottom:14}}>
-          <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:10}}>
-            <div style={{fontSize:32}}>🏆</div>
-            <div style={{flex:1,minWidth:0}}>
-              <div style={{fontSize:10,color:"#fbbf24",letterSpacing:2,marginBottom:2}}>{t("league.yourLeague")}</div>
-              <div style={{display:"flex",alignItems:"center",gap:6}}>
-                <h2 style={{margin:0,fontSize:17,color:"#f1f5f9",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",flex:1,minWidth:0}}>{leagueData.name}</h2>
-                {leagueData.createdBy === name && (
-                  <button onClick={()=>{setRenameDraft(leagueData.name);setShowRename(true);}}
-                    title={t("league.editName")}
-                    style={{
-                      background:"transparent",border:"none",cursor:"pointer",fontFamily:"inherit",
-                      fontSize:14,color:"#fbbf24",padding:"4px 6px",borderRadius:6,
-                      flexShrink:0,
-                    }}>✏️</button>
-                )}
-              </div>
-              <div style={{fontSize:11,color:"#94a3b8",marginTop:2}}>
-                <span style={{color:"#22c55e"}}>●</span> {t("league.liveSync")} · {members.length} {members.length===1?t("league.member"):t("league.members")}
-              </div>
+        {/* League header — slim, just name + member count */}
+        <div style={{
+          background:"linear-gradient(135deg,rgba(251,191,36,0.1),rgba(217,119,6,0.05))",
+          border:"1px solid rgba(251,191,36,0.3)",
+          borderRadius:14,padding:"12px 14px",marginBottom:14,
+          display:"flex",alignItems:"center",gap:12,
+        }}>
+          <div style={{fontSize:28}}>🏆</div>
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{fontSize:9,color:"#fbbf24",letterSpacing:2,marginBottom:1}}>{t("league.yourLeague")}</div>
+            <div style={{display:"flex",alignItems:"center",gap:6}}>
+              <h2 style={{margin:0,fontSize:18,color:"#f1f5f9",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",flex:1,minWidth:0,fontWeight:900}}>{leagueData.name}</h2>
+              {leagueData.createdBy === name && (
+                <button onClick={()=>{setRenameDraft(leagueData.name);setShowRename(true);}}
+                  title={t("league.editName")}
+                  style={{
+                    background:"transparent",border:"none",cursor:"pointer",fontFamily:"inherit",
+                    fontSize:13,color:"#fbbf24",padding:"2px 4px",borderRadius:6,
+                    flexShrink:0,
+                  }}>✏️</button>
+              )}
+            </div>
+            <div style={{fontSize:11,color:"#94a3b8",marginTop:2}}>
+              <span style={{color:"#22c55e"}}>●</span> {members.length} {members.length===1?t("league.member"):t("league.members")}
             </div>
           </div>
-          <div style={{display:"flex",alignItems:"center",gap:6,background:"#0a0e1c",borderRadius:8,padding:"8px 10px",border:"1px dashed rgba(71,85,105,0.5)"}}>
-            <span style={{fontSize:10,color:"#64748b",letterSpacing:1}}>{t("league.code")}</span>
-            <span style={{flex:1,fontFamily:"monospace",fontSize:13,color:"#fbbf24",letterSpacing:1,fontWeight:700,wordBreak:"break-all"}}>{leagueCode}</span>
-            <button onClick={copy} title={t("league.copyTooltip")} style={{background:copied?"#22c55e":"#fbbf24",color:"#0a0e1c",border:"none",borderRadius:6,padding:"4px 10px",fontSize:11,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>
-              {copied ? "✓" : "📋"}
-            </button>
-          </div>
-          {/* Share buttons row */}
-          <div style={{display:"flex",gap:6,marginTop:8}}>
-            <a
-              href={`https://wa.me/?text=${encodeURIComponent(
-                t("league.shareMessage")
-                  .replace("{name}", leagueData?.name || leagueCode)
-                  .replace("{code}", leagueCode)
-                  .replace("{url}", typeof window !== "undefined" ? window.location.origin : "")
-              )}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{
-                flex:1,textAlign:"center",
-                background:"linear-gradient(135deg,#25D366,#128C7E)",
-                color:"#fff",
-                border:"none",borderRadius:8,padding:"8px 10px",
-                fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"inherit",
-                textDecoration:"none",
-                boxShadow:"0 4px 12px rgba(37,211,102,0.3)",
-                display:"flex",alignItems:"center",justifyContent:"center",gap:6,
-              }}>
-              <span style={{fontSize:14}}>💬</span> {t("league.shareWhatsapp")}
-            </a>
-            <button
-              onClick={async () => {
-                const msg = t("league.shareMessage")
-                  .replace("{name}", leagueData?.name || leagueCode)
-                  .replace("{code}", leagueCode)
-                  .replace("{url}", typeof window !== "undefined" ? window.location.origin : "");
-                // Use native share API if available, else fall back to copy
-                if (typeof navigator !== "undefined" && navigator.share) {
-                  try {
-                    await navigator.share({ text: msg });
-                  } catch (e) { /* user cancelled */ }
-                } else {
-                  await copyText(msg);
-                  showToast(t("toast.invitationCopied"), "success");
-                }
-              }}
-              style={{
-                background:"rgba(30,41,59,0.6)",
-                border:"1px solid rgba(71,85,105,0.4)",
-                color:"#cbd5e1",
-                borderRadius:8,padding:"8px 12px",
-                fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit",
-                display:"flex",alignItems:"center",justifyContent:"center",
-              }}>
-              📤
-            </button>
-          </div>
-          <p style={{fontSize:11,color:"#64748b",margin:"6px 0 0",textAlign:"center"}}>{t("league.shareCode")}</p>
         </div>
 
         {/* Live results status */}
@@ -6402,6 +6349,73 @@ function LeagueHub({
             </button>
           );
         })}
+
+        {/* Invite friends card — moved from header to keep top slim */}
+        <div style={{
+          background:"linear-gradient(135deg,rgba(34,197,94,0.08),rgba(15,20,36,0.5))",
+          border:"1px solid rgba(34,197,94,0.3)",
+          borderRadius:14,padding:14,marginTop:18,marginBottom:6,
+        }}>
+          <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:10}}>
+            <span style={{fontSize:18}}>📣</span>
+            <span style={{fontSize:12,fontWeight:800,color:"#22c55e",letterSpacing:1}}>{t("league.inviteFriends")}</span>
+          </div>
+          {/* Code display */}
+          <div style={{display:"flex",alignItems:"center",gap:6,background:"#0a0e1c",borderRadius:8,padding:"8px 10px",border:"1px dashed rgba(71,85,105,0.5)",marginBottom:8}}>
+            <span style={{fontSize:10,color:"#64748b",letterSpacing:1}}>{t("league.code")}</span>
+            <span style={{flex:1,fontFamily:"monospace",fontSize:13,color:"#fbbf24",letterSpacing:1,fontWeight:700,wordBreak:"break-all"}}>{leagueCode}</span>
+            <button onClick={copy} title={t("league.copyTooltip")} style={{background:copied?"#22c55e":"#fbbf24",color:"#0a0e1c",border:"none",borderRadius:6,padding:"4px 10px",fontSize:11,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>
+              {copied ? "✓" : "📋"}
+            </button>
+          </div>
+          {/* Share buttons row */}
+          <div style={{display:"flex",gap:6}}>
+            <a
+              href={`https://wa.me/?text=${encodeURIComponent(
+                t("league.shareMessage")
+                  .replace("{name}", leagueData?.name || leagueCode)
+                  .replace("{code}", leagueCode)
+                  .replace("{url}", typeof window !== "undefined" ? window.location.origin : "")
+              )}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                flex:1,textAlign:"center",
+                background:"linear-gradient(135deg,#25D366,#128C7E)",
+                color:"#fff",
+                border:"none",borderRadius:8,padding:"8px 10px",
+                fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"inherit",
+                textDecoration:"none",
+                boxShadow:"0 4px 12px rgba(37,211,102,0.3)",
+                display:"flex",alignItems:"center",justifyContent:"center",gap:6,
+              }}>
+              <span style={{fontSize:14}}>💬</span> {t("league.shareWhatsapp")}
+            </a>
+            <button
+              onClick={async () => {
+                const msg = t("league.shareMessage")
+                  .replace("{name}", leagueData?.name || leagueCode)
+                  .replace("{code}", leagueCode)
+                  .replace("{url}", typeof window !== "undefined" ? window.location.origin : "");
+                if (typeof navigator !== "undefined" && navigator.share) {
+                  try { await navigator.share({ text: msg }); } catch (e) {}
+                } else {
+                  await copyText(msg);
+                  showToast(t("toast.invitationCopied"), "success");
+                }
+              }}
+              style={{
+                background:"rgba(30,41,59,0.6)",
+                border:"1px solid rgba(71,85,105,0.4)",
+                color:"#cbd5e1",
+                borderRadius:8,padding:"8px 12px",
+                fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit",
+                display:"flex",alignItems:"center",justifyContent:"center",
+              }}>
+              📤
+            </button>
+          </div>
+        </div>
 
         {/* Leave league + Add another league + World */}
         <div style={{marginTop:24,display:"flex",flexDirection:"column",alignItems:"center",gap:10}}>
