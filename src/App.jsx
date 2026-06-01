@@ -8,7 +8,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "1.6.0";
+const APP_VERSION = "1.6.1";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -6093,44 +6093,35 @@ function LeagueHub({
             marginBottom:10,fontWeight:600,
           }}>← {t("leagues.allLeagues")}</button>
         )}
-        {/* League header — slim, just name + member count */}
+        {/* League header — centered, clean */}
         <div style={{
           background:"linear-gradient(135deg,rgba(251,191,36,0.1),rgba(217,119,6,0.05))",
           border:"1px solid rgba(251,191,36,0.3)",
-          borderRadius:14,padding:"12px 14px",marginBottom:14,
-          display:"flex",alignItems:"center",gap:12,
+          borderRadius:14,padding:"16px 14px",marginBottom:14,
+          textAlign:"center",position:"relative",
         }}>
-          <div style={{fontSize:28}}>🏆</div>
-          <div style={{flex:1,minWidth:0}}>
-            <div style={{fontSize:9,color:"#fbbf24",letterSpacing:2,marginBottom:1}}>{t("league.yourLeague")}</div>
-            <div style={{display:"flex",alignItems:"center",gap:6}}>
-              <h2 style={{margin:0,fontSize:18,color:"#f1f5f9",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",flex:1,minWidth:0,fontWeight:900}}>{leagueData.name}</h2>
-              {leagueData.createdBy === name && (
-                <button onClick={()=>{setRenameDraft(leagueData.name);setShowRename(true);}}
-                  title={t("league.editName")}
-                  style={{
-                    background:"transparent",border:"none",cursor:"pointer",fontFamily:"inherit",
-                    fontSize:13,color:"#fbbf24",padding:"2px 4px",borderRadius:6,
-                    flexShrink:0,
-                  }}>✏️</button>
-              )}
-            </div>
-            <div style={{fontSize:11,color:"#94a3b8",marginTop:2}}>
-              <span style={{color:"#22c55e"}}>●</span> {members.length} {members.length===1?t("league.member"):t("league.members")}
-            </div>
+          {/* Edit pencil (creator only) — absolute positioned, doesn't affect centering */}
+          {leagueData.createdBy === name && (
+            <button onClick={()=>{setRenameDraft(leagueData.name);setShowRename(true);}}
+              title={t("league.editName")}
+              style={{
+                position:"absolute",top:10,insetInlineEnd:10,
+                background:"transparent",border:"none",cursor:"pointer",fontFamily:"inherit",
+                fontSize:14,color:"#fbbf24",padding:"4px 6px",borderRadius:6,
+              }}>✏️</button>
+          )}
+          <div style={{fontSize:32,marginBottom:4}}>🏆</div>
+          <div style={{fontSize:9,color:"#fbbf24",letterSpacing:3,marginBottom:4,fontWeight:700}}>{t("league.yourLeague")}</div>
+          <h2 style={{
+            margin:"0 0 6px",fontSize:22,color:"#f1f5f9",
+            overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",
+            fontWeight:900,
+            background:"linear-gradient(180deg,#fde68a,#f59e0b)",
+            WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",
+          }}>{leagueData.name}</h2>
+          <div style={{fontSize:11,color:"#94a3b8"}}>
+            <span style={{color:"#22c55e"}}>●</span> {members.length} {members.length===1?t("league.member"):t("league.members")}
           </div>
-        </div>
-
-        {/* Live results status */}
-        <div style={{background:"rgba(30,41,59,0.5)",border:"1px solid rgba(71,85,105,0.3)",borderRadius:10,padding:"10px 12px",marginBottom:14,display:"flex",alignItems:"center",gap:10}}>
-          <span style={{fontSize:18}}>📡</span>
-          <div style={{flex:1,minWidth:0}}>
-            <div style={{fontSize:11,color:"#f1f5f9",fontWeight:600}}>{t("league.liveResults")}</div>
-            <div style={{fontSize:10,color:liveError?"#fca5a5":"#94a3b8"}}>{liveError || fetchedLabel}</div>
-          </div>
-          <button onClick={()=>{showToast(t("toast.refreshing"), "info"); onFetchLive();}} style={{background:"rgba(251,191,36,0.15)",border:"1px solid rgba(251,191,36,0.4)",color:"#fbbf24",borderRadius:6,padding:"5px 10px",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
-            {t("league.refresh")}
-          </button>
         </div>
 
         {/* 🎯 Hits & Misses awards — preview before tournament starts */}
@@ -6349,6 +6340,29 @@ function LeagueHub({
             </button>
           );
         })}
+
+        {/* Live results status — compact, at bottom */}
+        <div style={{
+          marginTop:14,
+          background:"rgba(30,41,59,0.3)",
+          border:"1px solid rgba(71,85,105,0.2)",
+          borderRadius:8,padding:"6px 10px",
+          display:"flex",alignItems:"center",gap:8,
+        }}>
+          <span style={{fontSize:11}}>📡</span>
+          <div style={{flex:1,minWidth:0,fontSize:9,color:liveError?"#fca5a5":"#64748b",letterSpacing:0.5}}>
+            {liveError || fetchedLabel}
+          </div>
+          <button onClick={()=>{showToast(t("toast.refreshing"), "info"); onFetchLive();}} style={{
+            background:"transparent",
+            border:"1px solid rgba(251,191,36,0.3)",
+            color:"#fbbf24",
+            borderRadius:5,padding:"3px 8px",
+            fontSize:9,fontWeight:700,cursor:"pointer",fontFamily:"inherit",letterSpacing:0.5,
+          }}>
+            ↻ {t("league.refresh")}
+          </button>
+        </div>
 
         {/* Invite friends card — moved from header to keep top slim */}
         <div style={{
