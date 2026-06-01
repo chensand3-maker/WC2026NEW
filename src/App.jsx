@@ -8,7 +8,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "1.6.5.1";
+const APP_VERSION = "1.7.1";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -1115,6 +1115,22 @@ const POINTS = {
   // Bonus bets (in ⭐ Bonus tab)
   WINNER_BET: 20,   // flat bonus for picking the tournament winner correctly
   TOP_SCORER_GOAL: 2, // each goal scored by your top-scorer pick — celebrated in real-time
+};
+
+// 💰 Coin economy
+const COINS = {
+  EXACT: 200,       // 🎯 perfect prediction (groups)
+  RESULT: 100,      // ✅ correct winner (groups)
+  KO_EXACT: 400,    // 🎯 perfect KO prediction (doubled — rarer)
+  KO_RESULT: 200,   // ✅ correct KO winner
+  SPIN: 100,        // 🎰 cost of one roulette spin
+  STARTING_BONUS: 1000, // 🎁 given when user first opens the app
+  // Duplicate-card refund by rarity (when you pull a card you already own)
+  DUP_COMMON: 20,
+  DUP_UNCOMMON: 50,
+  DUP_RARE: 100,
+  DUP_EPIC: 300,
+  DUP_LEGENDARY: 1000,
 };
 
 // ─── ACHIEVEMENTS ────────────────────────────────────────────────────────────
@@ -7253,6 +7269,30 @@ export default function App() {
   const [showRules, setShowRules] = useState(false);
   const [showAchievements, setShowAchievements] = useState(false);
   // Track unlocked badge IDs (persisted in localStorage)
+  // 💰 COINS — earned from correct predictions, spent on roulette spins
+  // Format: { balance, earnedFromIds, gotStartingBonus }
+  const [coins, setCoins] = useState(() => {
+    try {
+      const raw = localStorage.getItem("wc2026_coins_v1");
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        // Grant the starting bonus to users who upgraded from an earlier version
+        if (!parsed.gotStartingBonus) {
+          const updated = { ...parsed, balance: (parsed.balance || 0) + COINS.STARTING_BONUS, gotStartingBonus: true };
+          try { localStorage.setItem("wc2026_coins_v1", JSON.stringify(updated)); } catch {}
+          return updated;
+        }
+        return parsed;
+      }
+    } catch {}
+    // Brand-new user: starts with the bonus
+    const initial = { balance: COINS.STARTING_BONUS, earnedFromIds: {}, gotStartingBonus: true };
+    try { localStorage.setItem("wc2026_coins_v1", JSON.stringify(initial)); } catch {}
+    return initial;
+  });
+  // Pop-up notification for newly earned coins
+  const [coinFlash, setCoinFlash] = useState(null); // { amount, type, key }
+
   const [unlockedAchievements, setUnlockedAchievements] = useState(() => {
     try {
       const raw = localStorage.getItem("wc2026_achv_v1");
@@ -7755,6 +7795,55 @@ export default function App() {
       setNewBadgeQueue(q => [...q, ...newOnes]);
     }
   }, [picks, actuals, koWinners, koPicks, actualKoScores, winnerPick, topScorerPick, actualWinner, actualTopScorer, myTotalPoints, leagueCodes.join("|"), leagueData, pickedAtHours]);
+
+  // ─── 💰 COIN REWARDS ──────────────────────────────────────────────────
+  // Whenever a new match result appears, scan for predictions that just
+  // became scorable. Award coins ONCE per match (tracked in earnedFromIds).
+  useEffect(() => {
+    let totalNew = 0;
+    let newType = null;
+    const newEarned = { ...coins.earnedFromIds };
+    // Group-stage matches
+    for (const f of FIXTURES) {
+      if (newEarned[f.id] != null) continue; // already paid
+      const p = picks[f.id], a = actuals[f.id];
+      if (!p || !a) continue;
+      if (a.h === "" || a.h === undefined) continue;
+      const s = scoreMatch(p, a);
+      let reward = 0;
+      if (s.type === "exact") { reward = COINS.EXACT; newType = newType || "exact"; }
+      else if (s.type === "result") { reward = COINS.RESULT; newType = newType || "result"; }
+      else if (s.type === "wrong") { /* no coins for wrong, but mark as processed */ }
+      newEarned[f.id] = reward;
+      totalNew += reward;
+    }
+    // Knockout matches (use ID directly since not in FIXTURES)
+    Object.keys(actualKoScores || {}).forEach(id => {
+      if (newEarned[id] != null) return;
+      const p = koPicks?.[id], a = actualKoScores[id];
+      if (!p || !a) return;
+      if (a.h === "" || a.h === undefined) return;
+      const s = scoreKoMatch(p, a);
+      let reward = 0;
+      if (s.type === "exact") { reward = COINS.KO_EXACT; newType = newType || "exact"; }
+      else if (s.type === "result") { reward = COINS.KO_RESULT; newType = newType || "result"; }
+      newEarned[id] = reward;
+      totalNew += reward;
+    });
+    if (totalNew > 0) {
+      const updated = { balance: coins.balance + totalNew, earnedFromIds: newEarned };
+      setCoins(updated);
+      try { localStorage.setItem("wc2026_coins_v1", JSON.stringify(updated)); } catch {}
+      setCoinFlash({ amount: totalNew, type: newType, key: Date.now() });
+    }
+  }, [picks, actuals, koPicks, actualKoScores]);
+
+  // Auto-dismiss the coin flash after 3 seconds
+  useEffect(() => {
+    if (!coinFlash) return;
+    const t = setTimeout(() => setCoinFlash(null), 3000);
+    return () => clearTimeout(t);
+  }, [coinFlash]);
   // Bonus picks (winner + top scorer) lock once the first match has kicked off
   const bonusLocked = (() => {
     const firstKick = Math.min(...FIXTURES.filter(f => f.kickoff).map(f => new Date(f.kickoff).getTime()));
@@ -7811,8 +7900,8 @@ export default function App() {
           ...codesToLeave.map(c => leaveLeague(c, myUid).catch(() => {})),
         ]).catch(() => {});
         clearState();
-        setName(""); setPicks({}); setKoWinners({}); setKoPicks({}); setGroupIdx(0);
-        setFriends([]); setActuals({}); setActualKo({}); setActualKoScores({}); setLeagueName(""); setLeagueCode(""); setLeagueCodes([]); setActiveLeagueCode(""); setAllLeagueData({}); setWinnerPick(null); setTopScorerPick(null); setCelebratedIds(new Set()); setLastSeenGoals(0); setSeenActualIds(new Set()); setShowOnboarding(true); try { localStorage.removeItem("wc2026_celebrated_v1"); localStorage.removeItem("wc2026_lastseen_goals_v1"); localStorage.removeItem("wc2026_seen_actuals_v1"); localStorage.removeItem("wc2026_onboarded_v1"); localStorage.removeItem("wc2026_world_v2"); localStorage.removeItem("wc2026_achv_v1"); localStorage.removeItem("wc2026_pickhours_v1"); } catch {}
+        setName(""); setPicks({}); setKoWinners({}); setKoPicks({}); setCoins({ balance: COINS.STARTING_BONUS, earnedFromIds: {}, gotStartingBonus: true }); setGroupIdx(0);
+        setFriends([]); setActuals({}); setActualKo({}); setActualKoScores({}); setLeagueName(""); setLeagueCode(""); setLeagueCodes([]); setActiveLeagueCode(""); setAllLeagueData({}); setWinnerPick(null); setTopScorerPick(null); setCelebratedIds(new Set()); setLastSeenGoals(0); setSeenActualIds(new Set()); setShowOnboarding(true); try { localStorage.removeItem("wc2026_celebrated_v1"); localStorage.removeItem("wc2026_lastseen_goals_v1"); localStorage.removeItem("wc2026_seen_actuals_v1"); localStorage.removeItem("wc2026_onboarded_v1"); localStorage.removeItem("wc2026_world_v2"); localStorage.removeItem("wc2026_achv_v1"); localStorage.removeItem("wc2026_pickhours_v1"); localStorage.removeItem("wc2026_coins_v1"); } catch {}
         setScreen("welcome");
         setShowIntro(false);
       },
@@ -7823,8 +7912,8 @@ export default function App() {
     if (!hasData) {
       // No data to worry about, just log out locally — keep Firebase intact in case they restore
       clearState();
-      setName(""); setPicks({}); setKoWinners({}); setKoPicks({}); setGroupIdx(0);
-      setFriends([]); setActuals({}); setActualKo({}); setActualKoScores({}); setLeagueName(""); setLeagueCode(""); setLeagueCodes([]); setActiveLeagueCode(""); setAllLeagueData({}); setWinnerPick(null); setTopScorerPick(null); setCelebratedIds(new Set()); setLastSeenGoals(0); setSeenActualIds(new Set()); setShowOnboarding(true); try { localStorage.removeItem("wc2026_celebrated_v1"); localStorage.removeItem("wc2026_lastseen_goals_v1"); localStorage.removeItem("wc2026_seen_actuals_v1"); localStorage.removeItem("wc2026_onboarded_v1"); localStorage.removeItem("wc2026_world_v2"); localStorage.removeItem("wc2026_achv_v1"); localStorage.removeItem("wc2026_pickhours_v1"); } catch {}
+      setName(""); setPicks({}); setKoWinners({}); setKoPicks({}); setCoins({ balance: COINS.STARTING_BONUS, earnedFromIds: {}, gotStartingBonus: true }); setGroupIdx(0);
+      setFriends([]); setActuals({}); setActualKo({}); setActualKoScores({}); setLeagueName(""); setLeagueCode(""); setLeagueCodes([]); setActiveLeagueCode(""); setAllLeagueData({}); setWinnerPick(null); setTopScorerPick(null); setCelebratedIds(new Set()); setLastSeenGoals(0); setSeenActualIds(new Set()); setShowOnboarding(true); try { localStorage.removeItem("wc2026_celebrated_v1"); localStorage.removeItem("wc2026_lastseen_goals_v1"); localStorage.removeItem("wc2026_seen_actuals_v1"); localStorage.removeItem("wc2026_onboarded_v1"); localStorage.removeItem("wc2026_world_v2"); localStorage.removeItem("wc2026_achv_v1"); localStorage.removeItem("wc2026_pickhours_v1"); localStorage.removeItem("wc2026_coins_v1"); } catch {}
       setScreen("welcome");
       setShowIntro(false);
       return;
@@ -7839,8 +7928,8 @@ export default function App() {
         // Logout is local-only — Firebase profile + league memberships stay intact
         // so the user can restore their progress later with a backup code.
         clearState();
-        setName(""); setPicks({}); setKoWinners({}); setKoPicks({}); setGroupIdx(0);
-        setFriends([]); setActuals({}); setActualKo({}); setActualKoScores({}); setLeagueName(""); setLeagueCode(""); setLeagueCodes([]); setActiveLeagueCode(""); setAllLeagueData({}); setWinnerPick(null); setTopScorerPick(null); setCelebratedIds(new Set()); setLastSeenGoals(0); setSeenActualIds(new Set()); setShowOnboarding(true); try { localStorage.removeItem("wc2026_celebrated_v1"); localStorage.removeItem("wc2026_lastseen_goals_v1"); localStorage.removeItem("wc2026_seen_actuals_v1"); localStorage.removeItem("wc2026_onboarded_v1"); localStorage.removeItem("wc2026_world_v2"); localStorage.removeItem("wc2026_achv_v1"); localStorage.removeItem("wc2026_pickhours_v1"); } catch {}
+        setName(""); setPicks({}); setKoWinners({}); setKoPicks({}); setCoins({ balance: COINS.STARTING_BONUS, earnedFromIds: {}, gotStartingBonus: true }); setGroupIdx(0);
+        setFriends([]); setActuals({}); setActualKo({}); setActualKoScores({}); setLeagueName(""); setLeagueCode(""); setLeagueCodes([]); setActiveLeagueCode(""); setAllLeagueData({}); setWinnerPick(null); setTopScorerPick(null); setCelebratedIds(new Set()); setLastSeenGoals(0); setSeenActualIds(new Set()); setShowOnboarding(true); try { localStorage.removeItem("wc2026_celebrated_v1"); localStorage.removeItem("wc2026_lastseen_goals_v1"); localStorage.removeItem("wc2026_seen_actuals_v1"); localStorage.removeItem("wc2026_onboarded_v1"); localStorage.removeItem("wc2026_world_v2"); localStorage.removeItem("wc2026_achv_v1"); localStorage.removeItem("wc2026_pickhours_v1"); localStorage.removeItem("wc2026_coins_v1"); } catch {}
         setScreen("welcome");
         setShowIntro(false);
       },
@@ -7996,6 +8085,21 @@ export default function App() {
               <div style={{width:`${Math.round((totalPredicted/FIXTURES.length)*100)}%`,height:"100%",background:"linear-gradient(90deg,#fbbf24,#f59e0b)",borderRadius:3,transition:"width 0.4s"}}/>
             </div>
             <span style={{fontSize:10,color:"#fbbf24",fontWeight:700,minWidth:42,textAlign:"center",fontVariantNumeric:"tabular-nums"}}>{totalPredicted}/{FIXTURES.length}</span>
+
+            {/* 💰 Coin balance */}
+            {coins.balance > 0 && (
+              <div style={{
+                display:"flex",alignItems:"center",gap:3,
+                background:"rgba(251,191,36,0.12)",
+                border:"1px solid rgba(251,191,36,0.3)",
+                borderRadius:6,padding:"2px 7px",
+                fontSize:11,fontWeight:800,color:"#fbbf24",
+                fontVariantNumeric:"tabular-nums",
+              }}>
+                <span style={{fontSize:11}}>🪙</span>
+                <span>{coins.balance}</span>
+              </div>
+            )}
 
             {/* Just-saved indicator (small green check) */}
             {justSaved && (
@@ -8232,6 +8336,39 @@ export default function App() {
           achievement={newBadgeQueue[0]}
           onClose={()=>setNewBadgeQueue(q => q.slice(1))}
         />
+      )}
+
+      {/* 💰 Coin flash — appears top-right when coins are earned */}
+      {coinFlash && (
+        <div key={coinFlash.key} style={{
+          position:"fixed",top:60,insetInlineEnd:14,zIndex:9400,
+          pointerEvents:"none",
+        }}>
+          <style>{`
+            @keyframes coinFlashIn {
+              0% { transform: translateX(80px) scale(0.5); opacity: 0; }
+              30% { transform: translateX(0) scale(1.15); opacity: 1; }
+              60% { transform: translateX(0) scale(1); opacity: 1; }
+              100% { transform: translateX(0) scale(1); opacity: 0; }
+            }
+            @keyframes coinSparkle {
+              0%, 100% { transform: rotate(0deg) scale(1); }
+              50% { transform: rotate(15deg) scale(1.1); }
+            }
+          `}</style>
+          <div style={{
+            background:"linear-gradient(135deg,#fbbf24,#f59e0b)",
+            color:"#0a0e1c",
+            borderRadius:12,padding:"10px 16px",
+            display:"flex",alignItems:"center",gap:8,
+            boxShadow:"0 8px 24px rgba(251,191,36,0.4)",
+            animation:"coinFlashIn 3s ease-out forwards",
+            fontWeight:900,fontSize:16,
+          }}>
+            <span style={{fontSize:22,animation:"coinSparkle 0.6s ease-in-out"}}>🪙</span>
+            <span>+{coinFlash.amount}</span>
+          </div>
+        </div>
       )}
       </div>
     </div>
