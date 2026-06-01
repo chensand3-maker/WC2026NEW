@@ -4,17 +4,17 @@
 import { initializeApp } from "firebase/app";
 import {
   getFirestore, doc, setDoc, updateDoc, onSnapshot,
-  collection, getDoc, serverTimestamp, deleteField,
+  collection, getDoc, serverTimestamp, deleteField, deleteDoc,
 } from "firebase/firestore";
 
 // 🔧 PASTE YOUR FIREBASE CONFIG HERE (see SETUP.md step 2)
 const firebaseConfig = {
-    apiKey: "AIzaSyD4HwvAZZCNwgVMh_h6zsyZ17lzl69_OrM",
-  authDomain: "wc-2026-8b41e.firebaseapp.com",
-  projectId: "wc-2026-8b41e",
-  storageBucket: "wc-2026-8b41e.firebasestorage.app",
-  messagingSenderId: "141406397194",
-  appId: "1:141406397194:web:a0139af6eb261cc2bf50f3",
+  apiKey: "PASTE_HERE",
+  authDomain: "PASTE_HERE",
+  projectId: "PASTE_HERE",
+  storageBucket: "PASTE_HERE",
+  messagingSenderId: "PASTE_HERE",
+  appId: "PASTE_HERE",
 };
 
 const app = initializeApp(firebaseConfig);
@@ -117,27 +117,52 @@ export async function updateMyGlobalProfile(userId, name, picks, koWinners, extr
   }, { merge: true });
 }
 
+// Delete this user's profile entirely — used when the user resets their account.
+// Removes them from the global leaderboard.
+export async function deleteMyGlobalProfile(userId) {
+  if (!userId) return;
+  const ref = doc(db, "users", userId);
+  try {
+    await deleteDoc(ref);
+  } catch (e) {
+    console.warn("Couldn't delete global profile:", e);
+  }
+}
+
 // Fetch the top N users by total points + the requesting user's rank
 // Returns: { top: [...users], myRank, totalUsers, fetchedAt }
 import { query, orderBy, limit, getDocs } from "firebase/firestore";
 
 export async function fetchGlobalLeaderboard(topN = 10, myUserId = null) {
   const usersRef = collection(db, "users");
-  // Get top N by totalPoints
-  const topQuery = query(usersRef, orderBy("totalPoints", "desc"), limit(topN));
+  // Get top N by totalPoints. Over-fetch to allow for filtering out ghost profiles
+  // (users who deleted their account but old docs still exist).
+  const topQuery = query(usersRef, orderBy("totalPoints", "desc"), limit(topN * 3 + 20));
   const topSnap = await getDocs(topQuery);
-  const top = topSnap.docs.map((d, i) => ({ uid: d.id, rank: i + 1, ...d.data() }));
+  const isReal = (d) => {
+    const data = d.data() || {};
+    // Filter out profiles with no name OR no actual activity
+    if (!data.name || !data.name.trim()) return false;
+    const hasPicks = data.picks && Object.keys(data.picks).length > 0;
+    const hasKoPicks = data.koPicks && Object.keys(data.koPicks).length > 0;
+    const hasBonus = data.winnerPick || data.topScorerPick;
+    return hasPicks || hasKoPicks || hasBonus;
+  };
+  const top = topSnap.docs
+    .filter(isReal)
+    .slice(0, topN)
+    .map((d, i) => ({ uid: d.id, rank: i + 1, ...d.data() }));
 
-  // Get total user count + my rank (one big fetch — okay because we cache 5min)
+  // Get total user count + my rank — also filter ghosts
   let totalUsers = 0;
   let myRank = null;
   let myPoints = 0;
   if (myUserId) {
-    // Get all users sorted by totalPoints. Limit to 5000 to keep payload reasonable.
     const allQuery = query(usersRef, orderBy("totalPoints", "desc"), limit(5000));
     const allSnap = await getDocs(allQuery);
-    totalUsers = allSnap.size;
-    allSnap.docs.forEach((d, i) => {
+    const realDocs = allSnap.docs.filter(isReal);
+    totalUsers = realDocs.length;
+    realDocs.forEach((d, i) => {
       if (d.id === myUserId) {
         myRank = i + 1;
         myPoints = d.data().totalPoints || 0;
