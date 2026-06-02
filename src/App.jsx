@@ -8,7 +8,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "1.9.4";
+const APP_VERSION = "1.9.6";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -3826,9 +3826,128 @@ function NewBadgePopup({ achievement, onClose }) {
 }
 
 // ─── 🎰 ROULETTE MODAL ────────────────────────────────────────────────────
+// 🔊 Slot machine sounds via Web Audio API (no MP3 files needed)
+let _audioCtx = null;
+function getAudio() {
+  if (typeof window === "undefined") return null;
+  if (!_audioCtx) {
+    try { _audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+    catch { return null; }
+  }
+  return _audioCtx;
+}
+function isMuted() {
+  try { return localStorage.getItem("wc2026_mute") === "1"; } catch { return false; }
+}
+function setMuted(v) {
+  try { localStorage.setItem("wc2026_mute", v ? "1" : "0"); } catch {}
+}
+// One-off "tick" sound — used for each tick of the reels
+function playTick() {
+  if (isMuted()) return;
+  const ctx = getAudio(); if (!ctx) return;
+  try {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = "square";
+    osc.frequency.value = 800 + Math.random() * 200;
+    gain.gain.setValueAtTime(0.05, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.05);
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.start(); osc.stop(ctx.currentTime + 0.05);
+  } catch {}
+}
+// "Reel stop" sound — a thud
+function playReelStop() {
+  if (isMuted()) return;
+  const ctx = getAudio(); if (!ctx) return;
+  try {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(220, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(80, ctx.currentTime + 0.15);
+    gain.gain.setValueAtTime(0.25, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.2);
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.start(); osc.stop(ctx.currentTime + 0.2);
+  } catch {}
+}
+// Lever pull — a satisfying mechanical pull
+function playLever() {
+  if (isMuted()) return;
+  const ctx = getAudio(); if (!ctx) return;
+  try {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = "sawtooth";
+    osc.frequency.setValueAtTime(100, ctx.currentTime);
+    osc.frequency.linearRampToValueAtTime(60, ctx.currentTime + 0.3);
+    gain.gain.setValueAtTime(0.15, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.start(); osc.stop(ctx.currentTime + 0.35);
+  } catch {}
+}
+// Win fanfare — happy ascending tones (more notes = bigger reward)
+function playWinSound(rarity) {
+  if (isMuted()) return;
+  const ctx = getAudio(); if (!ctx) return;
+  // Note sequences (higher = better tier)
+  const sequences = {
+    L: [523, 659, 784, 1047, 1319, 1568], // C-E-G-C-E-G (huge fanfare!)
+    E: [523, 659, 784, 1047],               // C-E-G-C
+    R: [523, 659, 784],                      // C-E-G
+    U: [523, 659],                           // C-E
+    C: [523],                                // single C
+  };
+  const notes = sequences[rarity] || sequences.C;
+  notes.forEach((freq, i) => {
+    try {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "triangle";
+      osc.frequency.value = freq;
+      const startT = ctx.currentTime + i * 0.12;
+      gain.gain.setValueAtTime(0, startT);
+      gain.gain.linearRampToValueAtTime(0.2, startT + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, startT + 0.4);
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.start(startT); osc.stop(startT + 0.4);
+    } catch {}
+  });
+}
+
 function RouletteModal({ coins, isSpinning, pendingCard, onSpin, onClose, onShowCollection }) {
   const t = useT();
   const canSpin = coins.balance >= COINS.SPIN && !isSpinning;
+  const [leverPulled, setLeverPulled] = useState(false);
+  const [muted, setMutedState] = useState(() => isMuted());
+
+  const toggleMute = () => {
+    const next = !muted;
+    setMutedState(next);
+    setMuted(next);
+  };
+
+  // Pull the lever, play sound, then trigger spin
+  const handleLeverPull = () => {
+    if (!canSpin) return;
+    setLeverPulled(true);
+    playLever();
+    // After lever animation completes, trigger the spin
+    setTimeout(() => {
+      onSpin();
+    }, 300);
+    // Reset lever after a moment so it animates back up
+    setTimeout(() => setLeverPulled(false), 800);
+  };
+
+  // The spin button also triggers the lever for satisfaction
+  const handleSpinClick = () => {
+    if (!canSpin) return;
+    handleLeverPull();
+  };
 
   return (
     <div onClick={() => !isSpinning && onClose()} style={{
@@ -3869,7 +3988,7 @@ function RouletteModal({ coins, isSpinning, pendingCard, onSpin, onClose, onShow
         animation:"rouletteSpinIn 0.5s ease-out",
         position:"relative",
       }}>
-        {/* Close button */}
+        {/* Close + Mute */}
         {!isSpinning && (
           <button onClick={onClose} style={{
             position:"absolute",top:12,insetInlineEnd:12,
@@ -3877,6 +3996,11 @@ function RouletteModal({ coins, isSpinning, pendingCard, onSpin, onClose, onShow
             cursor:"pointer",fontFamily:"inherit",padding:"4px 8px",
           }}>✕</button>
         )}
+        <button onClick={toggleMute} title={muted ? "Unmute" : "Mute"} style={{
+          position:"absolute",top:12,insetInlineStart:12,
+          background:"transparent",border:"none",fontSize:16,
+          cursor:"pointer",fontFamily:"inherit",padding:"4px 8px",
+        }}>{muted ? "🔇" : "🔊"}</button>
 
         {/* Title */}
         <div style={{textAlign:"center",marginBottom:18}}>
@@ -3887,33 +4011,80 @@ function RouletteModal({ coins, isSpinning, pendingCard, onSpin, onClose, onShow
           }}>🎰 {t("roulette.spinTitle")}</h2>
         </div>
 
-        {/* 🎰 SLOT MACHINE — 3 reels: country (1.5s), position (3s), rarity (5s) */}
+        {/* 🎰 SLOT MACHINE with LEVER on the side */}
         <div style={{
-          display:"flex",justifyContent:"center",gap:6,
-          margin:"24px 0",padding:"14px 10px",
-          background:"linear-gradient(180deg,#1a1f3a,#0a0e1c)",
-          border:"3px solid #fbbf24",
-          borderRadius:14,
-          animation: isSpinning ? "neonPulse 0.6s ease-in-out infinite" : "none",
+          display:"flex",alignItems:"stretch",gap:10,
+          margin:"24px 0",
         }}>
-          <SlotReel
-            type="flag"
-            spinning={isSpinning}
-            stopAt={2000}
-            finalValue={pendingCard?.flag}
-          />
-          <SlotReel
-            type="position"
-            spinning={isSpinning}
-            stopAt={4000}
-            finalValue={pendingCard?.pos}
-          />
-          <SlotReel
-            type="rarity"
-            spinning={isSpinning}
-            stopAt={7000}
-            finalValue={pendingCard?.rarity}
-          />
+          {/* Slot machine reels */}
+          <div style={{
+            flex:1,
+            display:"flex",justifyContent:"center",gap:6,
+            padding:"14px 10px",
+            background:"linear-gradient(180deg,#1a1f3a,#0a0e1c)",
+            border:"3px solid #fbbf24",
+            borderRadius:14,
+            animation: isSpinning ? "neonPulse 0.6s ease-in-out infinite" : "none",
+          }}>
+            <SlotReel
+              type="flag"
+              spinning={isSpinning}
+              stopAt={2000}
+              finalValue={pendingCard?.flag}
+            />
+            <SlotReel
+              type="position"
+              spinning={isSpinning}
+              stopAt={4000}
+              finalValue={pendingCard?.pos}
+            />
+            <SlotReel
+              type="rarity"
+              spinning={isSpinning}
+              stopAt={7000}
+              finalValue={pendingCard?.rarity}
+            />
+          </div>
+
+          {/* 🎰 LEVER — the mechanical arm */}
+          <button
+            onClick={handleLeverPull}
+            disabled={!canSpin}
+            title="Pull to spin!"
+            style={{
+              width:34,
+              background:"linear-gradient(180deg,#1a1f3a,#0a0e1c)",
+              border:"2px solid #fbbf24",
+              borderRadius:14,
+              padding:"6px 0",
+              cursor: canSpin ? "pointer" : "not-allowed",
+              opacity: canSpin ? 1 : 0.5,
+              display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"flex-start",
+              position:"relative",
+              fontFamily:"inherit",
+            }}
+          >
+            {/* Lever arm */}
+            <div style={{
+              width:6,
+              flex:1,
+              background:"linear-gradient(180deg,#94a3b8,#475569)",
+              borderRadius:3,
+              boxShadow:"inset 1px 0 0 rgba(255,255,255,0.3), inset -1px 0 0 rgba(0,0,0,0.5)",
+              marginBottom:4,
+              transformOrigin:"top center",
+              transform: leverPulled ? "translateY(50px) scaleY(0.7)" : "translateY(0) scaleY(1)",
+              transition: leverPulled ? "transform 0.2s ease-in" : "transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)",
+            }}/>
+            {/* Lever ball */}
+            <div style={{
+              width:24,height:24,borderRadius:"50%",
+              background:"radial-gradient(circle at 30% 30%, #fef3c7, #ef4444, #7f1d1d)",
+              boxShadow:"0 4px 8px rgba(0,0,0,0.4), inset 0 -3px 6px rgba(0,0,0,0.4)",
+              transform: leverPulled ? "translateY(50px)" : "translateY(0)",
+              transition: leverPulled ? "transform 0.2s ease-in" : "transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)",
+            }}/>
+          </button>
         </div>
 
         {/* Rarity legend */}
@@ -3954,7 +4125,7 @@ function RouletteModal({ coins, isSpinning, pendingCard, onSpin, onClose, onShow
           </div>
         </div>
 
-        <button onClick={onSpin} disabled={!canSpin} style={{
+        <button onClick={handleSpinClick} disabled={!canSpin} style={{
           width:"100%",padding:"14px",borderRadius:12,
           background: canSpin ? "linear-gradient(135deg,#fbbf24,#f59e0b)" : "rgba(71,85,105,0.4)",
           color: canSpin ? "#0a0e1c" : "#64748b",
@@ -4011,20 +4182,26 @@ function SlotReel({ type, spinning, stopAt, finalValue }) {
       // Cycle through icons while spinning — rarity reel cycles SLOWER to build tension
       const cycleSpeed = type === "rarity" ? 140 : 80;
       let i = 0;
+      let tickCounter = 0;
       const tick = setInterval(() => {
         i = (i + 1) % ICONS.length;
         setDisplayValue(ICONS[i]);
+        // Play a soft tick every few cycles (don't overload audio)
+        tickCounter++;
+        if (tickCounter % 3 === 0) playTick();
       }, cycleSpeed);
       // Stop at stopAt ms
       const stop = setTimeout(() => {
         clearInterval(tick);
-        // For rarity, show the emoji of the actual rarity (not whatever was rolling)
+        // For rarity, show the emoji of the actual rarity
         if (type === "rarity") {
           setDisplayValue(RARITY_CONFIG[finalValue]?.emoji || "?");
         } else {
           setDisplayValue(finalValue);
         }
         setStopped(true);
+        // Loud thud when reel stops
+        playReelStop();
       }, stopAt);
       return () => { clearInterval(tick); clearTimeout(stop); };
     } else {
@@ -4184,6 +4361,11 @@ function CardRevealModal({ result, onClose }) {
   const isEpic = card.rarity === "E";
   const isRare = card.rarity === "R";
 
+  // Play win fanfare when the card appears
+  useEffect(() => {
+    playWinSound(card.rarity);
+  }, [card.rarity]);
+
   return (
     <div onClick={onClose} style={{
       position:"fixed",inset:0,zIndex:9500,
@@ -4211,79 +4393,61 @@ function CardRevealModal({ result, onClose }) {
           0%, 100% { box-shadow: 0 0 60px ${cfg.glow}, 0 0 0 0 ${cfg.glow}; }
           50% { box-shadow: 0 0 100px ${cfg.glow}, 0 0 40px 15px ${cfg.glow}; }
         }
-        @keyframes confettiBurst {
-          0% { transform: translate(0,0) rotate(0deg); opacity: 1; }
-          100% { transform: translate(var(--tx), var(--ty)) rotate(720deg); opacity: 0; }
-        }
         @keyframes smokeRise {
-          0% { transform: translateY(0) translateX(0) scale(0.5); opacity: 0.8; }
-          100% { transform: translateY(-300px) translateX(var(--drift)) scale(2.5); opacity: 0; }
+          0% { transform: translateY(0) scale(0.5); opacity: 0.8; }
+          100% { transform: translateY(-300px) scale(2.5); opacity: 0; }
         }
         @keyframes fireFlicker {
           0%, 100% { transform: translateY(0) scale(1); opacity: 0.9; filter: blur(0px); }
           50% { transform: translateY(-30px) scale(1.3); opacity: 0.5; filter: blur(2px); }
         }
         @keyframes lightBeam {
-          0% { transform: translateY(100vh) rotate(0deg); opacity: 0; }
+          0% { opacity: 0; }
           50% { opacity: 0.6; }
-          100% { transform: translateY(-100vh) rotate(360deg); opacity: 0; }
+          100% { opacity: 0; }
         }
         @keyframes goldRain {
           0% { transform: translateY(-50px) rotate(0deg); opacity: 1; }
-          100% { transform: translateY(120vh) rotate(720deg); opacity: 0; }
+          100% { transform: translateY(110vh) rotate(720deg); opacity: 0; }
+        }
+        @keyframes confettiOut {
+          0% { transform: translate(0,0) rotate(0deg); opacity: 1; }
+          100% { transform: translate(var(--end-x, 0px), var(--end-y, 0px)) rotate(720deg); opacity: 0; }
         }
       `}</style>
 
-      {/* 🏆 LEGENDARY — Gold rain + light beams + sparkles + confetti */}
+      {/* 🏆 LEGENDARY — Gold rain + light beams + sparkles */}
       {isLegendary && (
         <>
           {/* Light beams behind */}
           {[...Array(8)].map((_, i) => (
             <div key={`beam-${i}`} style={{
-              position:"absolute",
+              position:"fixed",
               top:"50%",left:"50%",
-              width:4,height:"200vh",
-              background:`linear-gradient(180deg, transparent, ${cfg.color}66, transparent)`,
+              width:6,height:"200vh",
+              background:`linear-gradient(180deg, transparent, ${cfg.color}88, transparent)`,
               transformOrigin:"top center",
-              transform:`translate(-50%,-50%) rotate(${i * 45}deg)`,
-              animation:`lightBeam 3s ease-out infinite`,
-              animationDelay:`${i * 0.2}s`,
+              transform:`translate(-50%, -50%) rotate(${i * 45}deg)`,
+              animation:`lightBeam 3s ease-in-out infinite ${i * 0.2}s`,
               pointerEvents:"none",
+              zIndex:0,
             }}/>
           ))}
           {/* Gold particles raining down */}
           {[...Array(40)].map((_, i) => (
             <div key={`gold-${i}`} style={{
-              position:"absolute",
+              position:"fixed",
               top:"-20px",
               left:`${Math.random() * 100}%`,
-              width:8,height:8,
+              width:10,height:10,
               background:["#fbbf24","#fde68a","#f59e0b"][i%3],
               borderRadius: i%2 ? "50%" : "2px",
-              animation:`goldRain ${2 + Math.random() * 2}s linear infinite`,
-              animationDelay:`${Math.random() * 1.5}s`,
+              animation:`goldRain ${2 + Math.random() * 2}s linear infinite ${Math.random() * 1.5}s`,
               pointerEvents:"none",
               boxShadow:`0 0 8px ${cfg.color}`,
+              zIndex:1,
             }}/>
           ))}
-          {/* Confetti burst from center */}
-          <div style={{position:"absolute",top:"50%",left:"50%",pointerEvents:"none"}}>
-            {[...Array(40)].map((_, i) => {
-              const angle = (i / 40) * Math.PI * 2;
-              const dist = 250 + Math.random() * 200;
-              return (
-                <div key={i} style={{
-                  position:"absolute",
-                  width:8,height:8,
-                  background:["#fbbf24","#fde68a","#f59e0b","#ef4444","#a855f7"][i%5],
-                  borderRadius: i%2 ? "50%" : "2px",
-                  "--tx": `${Math.cos(angle) * dist}px`,
-                  "--ty": `${Math.sin(angle) * dist}px`,
-                  animation: `confettiBurst 2.5s ease-out forwards ${Math.random()*0.3}s`,
-                }}/>
-              );
-            })}
-          </div>
         </>
       )}
 
@@ -4292,16 +4456,15 @@ function CardRevealModal({ result, onClose }) {
         <>
           {[...Array(15)].map((_, i) => (
             <div key={`smoke-${i}`} style={{
-              position:"absolute",
+              position:"fixed",
               bottom:"30%",
               left:`${20 + Math.random() * 60}%`,
-              width:60,height:60,
+              width:80,height:80,
               borderRadius:"50%",
               background:`radial-gradient(circle, ${cfg.glow} 0%, transparent 70%)`,
-              "--drift": `${(Math.random() - 0.5) * 100}px`,
-              animation:`smokeRise ${2 + Math.random() * 1.5}s ease-out infinite`,
-              animationDelay:`${Math.random() * 1.5}s`,
+              animation:`smokeRise ${2 + Math.random() * 1.5}s ease-out infinite ${Math.random() * 1.5}s`,
               pointerEvents:"none",
+              zIndex:0,
             }}/>
           ))}
         </>
@@ -4310,19 +4473,19 @@ function CardRevealModal({ result, onClose }) {
       {/* 🔥 RARE — Red fire/embers */}
       {isRare && (
         <>
-          {[...Array(12)].map((_, i) => (
+          {[...Array(15)].map((_, i) => (
             <div key={`fire-${i}`} style={{
-              position:"absolute",
-              bottom:"35%",
-              left:`${30 + Math.random() * 40}%`,
-              width:14,height:30,
+              position:"fixed",
+              bottom:`${25 + Math.random() * 15}%`,
+              left:`${25 + Math.random() * 50}%`,
+              width:18,height:36,
               borderRadius:"50% 50% 20% 20%",
               background:`linear-gradient(180deg, #fbbf24, #ef4444, #7f1d1d)`,
-              filter:"blur(2px)",
-              animation:`fireFlicker ${0.4 + Math.random() * 0.5}s ease-in-out infinite`,
-              animationDelay:`${Math.random() * 0.8}s`,
+              filter:"blur(3px)",
+              animation:`fireFlicker ${0.4 + Math.random() * 0.5}s ease-in-out infinite ${Math.random() * 0.8}s`,
               pointerEvents:"none",
-              opacity:0.7,
+              opacity:0.8,
+              zIndex:0,
             }}/>
           ))}
         </>
@@ -8389,13 +8552,13 @@ export default function App() {
   // Format: { balance, earnedFromIds, gotStartingBonus }
   const [coins, setCoins] = useState(() => {
     try {
-      const raw = localStorage.getItem("wc2026_coins_v2");
+      const raw = localStorage.getItem("wc2026_coins_v3");
       if (raw) {
         const parsed = JSON.parse(raw);
         // Grant the starting bonus to users who upgraded from an earlier version
         if (!parsed.gotStartingBonus) {
           const updated = { ...parsed, balance: (parsed.balance || 0) + COINS.STARTING_BONUS, gotStartingBonus: true };
-          try { localStorage.setItem("wc2026_coins_v2", JSON.stringify(updated)); } catch {}
+          try { localStorage.setItem("wc2026_coins_v3", JSON.stringify(updated)); } catch {}
           return updated;
         }
         return parsed;
@@ -8403,7 +8566,7 @@ export default function App() {
     } catch {}
     // Brand-new user: starts with the bonus
     const initial = { balance: COINS.STARTING_BONUS, earnedFromIds: {}, gotStartingBonus: true };
-    try { localStorage.setItem("wc2026_coins_v2", JSON.stringify(initial)); } catch {}
+    try { localStorage.setItem("wc2026_coins_v3", JSON.stringify(initial)); } catch {}
     return initial;
   });
   // Pop-up notification for newly earned coins
@@ -8437,7 +8600,7 @@ export default function App() {
     const newBalance = coins.balance - COINS.SPIN;
     const updatedCoins = { ...coins, balance: newBalance };
     setCoins(updatedCoins);
-    try { localStorage.setItem("wc2026_coins_v2", JSON.stringify(updatedCoins)); } catch {}
+    try { localStorage.setItem("wc2026_coins_v3", JSON.stringify(updatedCoins)); } catch {}
     // After all reels have stopped (5 seconds total), reveal the card
     setTimeout(() => {
       const isDuplicate = (cardCollection[card.id] || 0) > 0;
@@ -8452,7 +8615,7 @@ export default function App() {
         const refundedBalance = newBalance + refund;
         const withRefund = { ...updatedCoins, balance: refundedBalance };
         setCoins(withRefund);
-        try { localStorage.setItem("wc2026_coins_v2", JSON.stringify(withRefund)); } catch {}
+        try { localStorage.setItem("wc2026_coins_v3", JSON.stringify(withRefund)); } catch {}
       }
       setSpinResult({ card, isDuplicate, refund });
       setIsSpinning(false);
@@ -8463,7 +8626,7 @@ export default function App() {
         else if (card.rarity === "E") navigator.vibrate?.([20, 40, 50]);
         else navigator.vibrate?.(20);
       } catch {}
-    }, 7000);
+    }, 8000);
   };
 
   const closeSpinResult = () => {
@@ -9010,7 +9173,7 @@ export default function App() {
     if (totalNew > 0) {
       const updated = { balance: coins.balance + totalNew, earnedFromIds: newEarned };
       setCoins(updated);
-      try { localStorage.setItem("wc2026_coins_v2", JSON.stringify(updated)); } catch {}
+      try { localStorage.setItem("wc2026_coins_v3", JSON.stringify(updated)); } catch {}
       setCoinFlash({ amount: totalNew, type: newType, key: Date.now() });
     }
   }, [picks, actuals, koPicks, actualKoScores]);
@@ -9078,7 +9241,7 @@ export default function App() {
         ]).catch(() => {});
         clearState();
         setName(""); setPicks({}); setKoWinners({}); setKoPicks({}); setCoins({ balance: COINS.STARTING_BONUS, earnedFromIds: {}, gotStartingBonus: true }); setCardCollection({}); setGroupIdx(0);
-        setFriends([]); setActuals({}); setActualKo({}); setActualKoScores({}); setLeagueName(""); setLeagueCode(""); setLeagueCodes([]); setActiveLeagueCode(""); setAllLeagueData({}); setWinnerPick(null); setTopScorerPick(null); setCelebratedIds(new Set()); setLastSeenGoals(0); setSeenActualIds(new Set()); setShowOnboarding(true); try { localStorage.removeItem("wc2026_celebrated_v1"); localStorage.removeItem("wc2026_lastseen_goals_v1"); localStorage.removeItem("wc2026_seen_actuals_v1"); localStorage.removeItem("wc2026_onboarded_v1"); localStorage.removeItem("wc2026_world_v2"); localStorage.removeItem("wc2026_achv_v1"); localStorage.removeItem("wc2026_pickhours_v1"); localStorage.removeItem("wc2026_coins_v2"); localStorage.removeItem("wc2026_cards_v1"); } catch {}
+        setFriends([]); setActuals({}); setActualKo({}); setActualKoScores({}); setLeagueName(""); setLeagueCode(""); setLeagueCodes([]); setActiveLeagueCode(""); setAllLeagueData({}); setWinnerPick(null); setTopScorerPick(null); setCelebratedIds(new Set()); setLastSeenGoals(0); setSeenActualIds(new Set()); setShowOnboarding(true); try { localStorage.removeItem("wc2026_celebrated_v1"); localStorage.removeItem("wc2026_lastseen_goals_v1"); localStorage.removeItem("wc2026_seen_actuals_v1"); localStorage.removeItem("wc2026_onboarded_v1"); localStorage.removeItem("wc2026_world_v2"); localStorage.removeItem("wc2026_achv_v1"); localStorage.removeItem("wc2026_pickhours_v1"); localStorage.removeItem("wc2026_coins_v3"); localStorage.removeItem("wc2026_cards_v1"); } catch {}
         setScreen("welcome");
         setShowIntro(false);
       },
@@ -9090,7 +9253,7 @@ export default function App() {
       // No data to worry about, just log out locally — keep Firebase intact in case they restore
       clearState();
       setName(""); setPicks({}); setKoWinners({}); setKoPicks({}); setCoins({ balance: COINS.STARTING_BONUS, earnedFromIds: {}, gotStartingBonus: true }); setCardCollection({}); setGroupIdx(0);
-      setFriends([]); setActuals({}); setActualKo({}); setActualKoScores({}); setLeagueName(""); setLeagueCode(""); setLeagueCodes([]); setActiveLeagueCode(""); setAllLeagueData({}); setWinnerPick(null); setTopScorerPick(null); setCelebratedIds(new Set()); setLastSeenGoals(0); setSeenActualIds(new Set()); setShowOnboarding(true); try { localStorage.removeItem("wc2026_celebrated_v1"); localStorage.removeItem("wc2026_lastseen_goals_v1"); localStorage.removeItem("wc2026_seen_actuals_v1"); localStorage.removeItem("wc2026_onboarded_v1"); localStorage.removeItem("wc2026_world_v2"); localStorage.removeItem("wc2026_achv_v1"); localStorage.removeItem("wc2026_pickhours_v1"); localStorage.removeItem("wc2026_coins_v2"); localStorage.removeItem("wc2026_cards_v1"); } catch {}
+      setFriends([]); setActuals({}); setActualKo({}); setActualKoScores({}); setLeagueName(""); setLeagueCode(""); setLeagueCodes([]); setActiveLeagueCode(""); setAllLeagueData({}); setWinnerPick(null); setTopScorerPick(null); setCelebratedIds(new Set()); setLastSeenGoals(0); setSeenActualIds(new Set()); setShowOnboarding(true); try { localStorage.removeItem("wc2026_celebrated_v1"); localStorage.removeItem("wc2026_lastseen_goals_v1"); localStorage.removeItem("wc2026_seen_actuals_v1"); localStorage.removeItem("wc2026_onboarded_v1"); localStorage.removeItem("wc2026_world_v2"); localStorage.removeItem("wc2026_achv_v1"); localStorage.removeItem("wc2026_pickhours_v1"); localStorage.removeItem("wc2026_coins_v3"); localStorage.removeItem("wc2026_cards_v1"); } catch {}
       setScreen("welcome");
       setShowIntro(false);
       return;
@@ -9106,7 +9269,7 @@ export default function App() {
         // so the user can restore their progress later with a backup code.
         clearState();
         setName(""); setPicks({}); setKoWinners({}); setKoPicks({}); setCoins({ balance: COINS.STARTING_BONUS, earnedFromIds: {}, gotStartingBonus: true }); setCardCollection({}); setGroupIdx(0);
-        setFriends([]); setActuals({}); setActualKo({}); setActualKoScores({}); setLeagueName(""); setLeagueCode(""); setLeagueCodes([]); setActiveLeagueCode(""); setAllLeagueData({}); setWinnerPick(null); setTopScorerPick(null); setCelebratedIds(new Set()); setLastSeenGoals(0); setSeenActualIds(new Set()); setShowOnboarding(true); try { localStorage.removeItem("wc2026_celebrated_v1"); localStorage.removeItem("wc2026_lastseen_goals_v1"); localStorage.removeItem("wc2026_seen_actuals_v1"); localStorage.removeItem("wc2026_onboarded_v1"); localStorage.removeItem("wc2026_world_v2"); localStorage.removeItem("wc2026_achv_v1"); localStorage.removeItem("wc2026_pickhours_v1"); localStorage.removeItem("wc2026_coins_v2"); localStorage.removeItem("wc2026_cards_v1"); } catch {}
+        setFriends([]); setActuals({}); setActualKo({}); setActualKoScores({}); setLeagueName(""); setLeagueCode(""); setLeagueCodes([]); setActiveLeagueCode(""); setAllLeagueData({}); setWinnerPick(null); setTopScorerPick(null); setCelebratedIds(new Set()); setLastSeenGoals(0); setSeenActualIds(new Set()); setShowOnboarding(true); try { localStorage.removeItem("wc2026_celebrated_v1"); localStorage.removeItem("wc2026_lastseen_goals_v1"); localStorage.removeItem("wc2026_seen_actuals_v1"); localStorage.removeItem("wc2026_onboarded_v1"); localStorage.removeItem("wc2026_world_v2"); localStorage.removeItem("wc2026_achv_v1"); localStorage.removeItem("wc2026_pickhours_v1"); localStorage.removeItem("wc2026_coins_v3"); localStorage.removeItem("wc2026_cards_v1"); } catch {}
         setScreen("welcome");
         setShowIntro(false);
       },
