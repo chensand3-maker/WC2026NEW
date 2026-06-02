@@ -8,7 +8,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "2.0.1";
+const APP_VERSION = "2.0.2";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -238,6 +238,12 @@ const TRANSLATIONS = {
     "onboarding.step1": "Create a league",
     "onboarding.step2": "Share the code with friends",
     "onboarding.step3": "Watch who nails the predictions",
+    "onboarding.slide4Title": "Roulette & Cards",
+    "onboarding.coinsTitle": "Earn coins",
+    "onboarding.rarityTitle": "5 RARITY TIERS",
+    "onboarding.spinTip": "Spin for 100 🪙 — collect 300+ player cards",
+    "onboarding.collectTip": "Find your collection in the menu (☰)",
+    "onboarding.dupTip": "Duplicate cards refund coins automatically",
     "onboarding.whatsappTip": "One-tap WhatsApp share to invite friends",
     "onboarding.worldTip": "There's a worldwide leaderboard too!",
     // Toast notifications
@@ -676,6 +682,12 @@ const TRANSLATIONS = {
     "onboarding.step1": "צור ליגה",
     "onboarding.step2": "שתף את הקוד עם חברים",
     "onboarding.step3": "תראה מי קולע הכי טוב",
+    "onboarding.slide4Title": "רולטה וקלפים",
+    "onboarding.coinsTitle": "צבור מטבעות",
+    "onboarding.rarityTitle": "5 רמות נדירות",
+    "onboarding.spinTip": "סיבוב עולה 100 🪙 — אסוף 300+ קלפי שחקנים",
+    "onboarding.collectTip": "מצא את האוסף שלך בתפריט (☰)",
+    "onboarding.dupTip": "קלפים כפולים מחזירים לך מטבעות אוטומטית",
     "onboarding.whatsappTip": "כפתור שיתוף ישיר בוואטסאפ",
     "onboarding.worldTip": "יש גם דירוג עולמי לכל המשתמשים!",
     // Toast notifications
@@ -2995,6 +3007,71 @@ function OnboardingTutorial({ onDone }) {
         </div>
       ),
     },
+    {
+      emoji: "🎰",
+      title: t("onboarding.slide4Title"),
+      accent: "#fbbf24",
+      content: (
+        <div>
+          {/* Coins explainer */}
+          <div style={{
+            background:"linear-gradient(135deg,rgba(251,191,36,0.15),rgba(15,20,36,0.5))",
+            border:"1px solid rgba(251,191,36,0.4)",
+            borderRadius:12,padding:"14px",marginBottom:14,
+          }}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
+              <div style={{display:"flex",alignItems:"center",gap:6}}>
+                <span style={{fontSize:24}}>🪙</span>
+                <span style={{fontSize:14,fontWeight:900,color:"#fbbf24"}}>{t("onboarding.coinsTitle")}</span>
+              </div>
+              <span style={{fontSize:11,color:"#94a3b8"}}>1000 🎁</span>
+            </div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,fontSize:11}}>
+              <div style={{color:"#cbd5e1"}}>🎯 {t("onboarding.exact")}</div>
+              <div style={{color:"#fbbf24",fontWeight:800,textAlign:"end"}}>+200 🪙</div>
+              <div style={{color:"#cbd5e1"}}>✅ {t("onboarding.winner")}</div>
+              <div style={{color:"#fbbf24",fontWeight:800,textAlign:"end"}}>+100 🪙</div>
+            </div>
+          </div>
+
+          {/* Rarity rainbow */}
+          <div style={{
+            background:"rgba(15,20,36,0.5)",
+            border:"1px solid rgba(71,85,105,0.3)",
+            borderRadius:12,padding:"12px",marginBottom:14,
+          }}>
+            <div style={{fontSize:11,color:"#cbd5e1",fontWeight:700,marginBottom:8,textAlign:"center",letterSpacing:2}}>{t("onboarding.rarityTitle")}</div>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(5, 1fr)",gap:4}}>
+              {[
+                { e: "🏆", l: "LEG", c: "#fbbf24", p: "3%" },
+                { e: "💎", l: "EPIC", c: "#a855f7", p: "12%" },
+                { e: "🔥", l: "RARE", c: "#ef4444", p: "22%" },
+                { e: "💧", l: "UNC", c: "#3b82f6", p: "28%" },
+                { e: "⚪", l: "COM", c: "#94a3b8", p: "35%" },
+              ].map(r => (
+                <div key={r.l} style={{
+                  textAlign:"center",
+                  padding:"6px 2px",borderRadius:6,
+                  background:`${r.c}15`,
+                  border:`1px solid ${r.c}44`,
+                }}>
+                  <div style={{fontSize:18,marginBottom:2}}>{r.e}</div>
+                  <div style={{fontSize:8,color:r.c,fontWeight:900,letterSpacing:0.5}}>{r.l}</div>
+                  <div style={{fontSize:9,color:"#94a3b8",fontWeight:700,marginTop:2}}>{r.p}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Tips */}
+          <div style={{fontSize:12,color:"#94a3b8",lineHeight:1.7,padding:"0 4px"}}>
+            🎰 {t("onboarding.spinTip")}<br/>
+            🃏 {t("onboarding.collectTip")}<br/>
+            🔁 {t("onboarding.dupTip")}
+          </div>
+        </div>
+      ),
+    },
   ];
 
   const current = slides[slide];
@@ -4465,6 +4542,52 @@ function PlayerCard({ card, size = "L", animated = false }) {
 }
 
 // ─── 🎉 CARD REVEAL MODAL ──────────────────────────────────────────────────
+// 🎉 Confetti burst — pre-computes random animations as inline <style> tag
+function ConfettiBurst({ count = 40 }) {
+  // Generate per-particle keyframes + props once
+  const particles = useMemo(() => {
+    return Array.from({ length: count }).map((_, i) => {
+      const angle = (i / count) * Math.PI * 2 + Math.random() * 0.3;
+      const dist = 220 + Math.random() * 280;
+      return {
+        id: i,
+        tx: Math.cos(angle) * dist,
+        ty: Math.sin(angle) * dist,
+        rot: Math.random() * 1080,
+        color: ["#fbbf24","#fde68a","#f59e0b","#ef4444","#a855f7","#22c55e","#3b82f6"][i % 7],
+        round: i % 2 === 0,
+        delay: Math.random() * 0.15,
+      };
+    });
+  }, [count]);
+
+  // Build a stylesheet of unique keyframes
+  const css = particles.map(p => `
+    @keyframes conf-${p.id} {
+      0% { transform: translate(-50%, -50%) translate(0, 0) rotate(0deg); opacity: 1; }
+      100% { transform: translate(-50%, -50%) translate(${p.tx}px, ${p.ty}px) rotate(${p.rot}deg); opacity: 0; }
+    }
+  `).join("");
+
+  return (
+    <>
+      <style>{css}</style>
+      {particles.map(p => (
+        <div key={p.id} style={{
+          position:"fixed",
+          top:"50%",left:"50%",
+          width:12,height:12,
+          background:p.color,
+          borderRadius: p.round ? "50%" : "2px",
+          animation:`conf-${p.id} 2s cubic-bezier(0.2, 0.6, 0.3, 1) forwards ${p.delay}s`,
+          pointerEvents:"none",
+          zIndex:9504,
+        }}/>
+      ))}
+    </>
+  );
+}
+
 function CardRevealModal({ result, onClose }) {
   const t = useT();
   const { card, isDuplicate, refund } = result;
@@ -4531,13 +4654,13 @@ function CardRevealModal({ result, onClose }) {
           100% { transform: translateY(120vh) rotate(720deg) scale(0.8); opacity: 0; }
         }
         @keyframes orbitParticle {
-          0% { transform: rotate(0deg) translateX(var(--orbit-r, 150px)) rotate(0deg); }
-          100% { transform: rotate(360deg) translateX(var(--orbit-r, 150px)) rotate(-360deg); }
+          0% { transform: rotate(0deg) translateX(160px) rotate(0deg); }
+          100% { transform: rotate(360deg) translateX(160px) rotate(-360deg); }
         }
         @keyframes smokePuff {
           0% { transform: translate(0, 0) scale(0.3); opacity: 0; }
           15% { opacity: 0.9; }
-          100% { transform: translate(var(--smoke-tx, 0px), -400px) scale(3); opacity: 0; }
+          100% { transform: translate(0, -400px) scale(3); opacity: 0; }
         }
         @keyframes fireFlick {
           0%, 100% { transform: translateY(0) scaleY(1) scaleX(1); opacity: 0.95; filter: blur(2px); }
@@ -4547,7 +4670,7 @@ function CardRevealModal({ result, onClose }) {
         }
         @keyframes embers {
           0% { transform: translateY(0) translateX(0); opacity: 1; }
-          100% { transform: translateY(-300px) translateX(var(--ember-tx, 0px)); opacity: 0; }
+          100% { transform: translateY(-300px) translateX(40px); opacity: 0; }
         }
         @keyframes wave {
           0% { transform: translateY(0) scaleX(1); opacity: 0.8; }
@@ -4564,10 +4687,6 @@ function CardRevealModal({ result, onClose }) {
         @keyframes textChar {
           0% { transform: translateY(20px) scale(0.5); opacity: 0; }
           100% { transform: translateY(0) scale(1); opacity: 1; }
-        }
-        @keyframes confettiBig {
-          0% { transform: translate(0, 0) rotate(0deg); opacity: 1; }
-          100% { transform: translate(var(--c-tx, 0px), var(--c-ty, 0px)) rotate(var(--c-rot, 720deg)); opacity: 0; }
         }
       `}</style>
 
@@ -4675,7 +4794,7 @@ function CardRevealModal({ result, onClose }) {
             animation:"shockwave 1.3s ease-out",
             pointerEvents:"none",zIndex:9501,
           }}/>
-          {/* Radial purple rays */}
+          {/* Big radial purple beams (like Legendary but purple) */}
           <div style={{
             position:"fixed",top:"50%",left:"50%",
             width:"200vw",height:"200vh",
@@ -4683,45 +4802,80 @@ function CardRevealModal({ result, onClose }) {
             pointerEvents:"none",zIndex:9501,
             transform:"translate(-50%, -50%)",
           }}>
-            {[...Array(8)].map((_, i) => (
+            {[...Array(10)].map((_, i) => (
               <div key={`epicray-${i}`} style={{
                 position:"absolute",
                 top:"50%",left:"50%",
-                width:5,height:"100vh",
-                background:`linear-gradient(180deg, transparent, ${cfg.color}aa, transparent)`,
+                width:8,height:"100vh",
+                background:`linear-gradient(180deg, transparent, ${cfg.color}, transparent)`,
                 transformOrigin:"top center",
-                transform:`translate(-50%, 0) rotate(${i * 45}deg)`,
-                opacity:0.5,
+                transform:`translate(-50%, 0) rotate(${i * 36}deg)`,
+                opacity:0.7,
               }}/>
             ))}
           </div>
-          {/* Purple smoke from below */}
-          {[...Array(25)].map((_, i) => (
+          {/* Counter-rotating thinner rays */}
+          <div style={{
+            position:"fixed",top:"50%",left:"50%",
+            width:"200vw",height:"200vh",
+            animation:"rayRotate 14s linear infinite reverse",
+            pointerEvents:"none",zIndex:9501,
+            transform:"translate(-50%, -50%)",
+          }}>
+            {[...Array(14)].map((_, i) => (
+              <div key={`epicray2-${i}`} style={{
+                position:"absolute",
+                top:"50%",left:"50%",
+                width:3,height:"100vh",
+                background:`linear-gradient(180deg, transparent, #d8b4fe, transparent)`,
+                transformOrigin:"top center",
+                transform:`translate(-50%, 0) rotate(${i * 25.7}deg)`,
+                opacity:0.6,
+              }}/>
+            ))}
+          </div>
+          {/* Purple smoke clouds floating across screen */}
+          {[...Array(20)].map((_, i) => (
             <div key={`smoke-${i}`} style={{
               position:"fixed",
-              bottom:"-50px",
+              top:`${Math.random() * 100}%`,
               left:`${Math.random() * 100}%`,
-              width:120,height:120,
+              width:140,height:140,
               borderRadius:"50%",
-              background:`radial-gradient(circle, ${cfg.color}cc 0%, ${cfg.color}66 30%, transparent 70%)`,
-              animation:`smokePuff ${2.5 + Math.random() * 2}s ease-out infinite ${Math.random() * 2.5}s`,
+              background:`radial-gradient(circle, ${cfg.color} 0%, ${cfg.color}aa 30%, transparent 70%)`,
+              animation:`sparkle ${2 + Math.random() * 2}s ease-in-out infinite ${Math.random() * 2}s`,
               pointerEvents:"none",
               zIndex:9501,
-              filter:"blur(10px)",
-              "--smoke-tx": `${(Math.random() - 0.5) * 200}px`,
+              filter:"blur(20px)",
+              opacity:0.6,
             }}/>
           ))}
+          {/* Falling purple diamonds */}
+          {[...Array(40)].map((_, i) => {
+            const size = [12, 18, 26][i % 3];
+            return (
+              <div key={`pdiamond-${i}`} style={{
+                position:"fixed",
+                top:"-100px",
+                left:`${Math.random() * 100}%`,
+                fontSize:size,
+                animation:`goldFall ${2.5 + Math.random() * 2.5}s linear infinite ${Math.random() * 2}s`,
+                pointerEvents:"none",
+                zIndex:9502,
+                filter:`drop-shadow(0 0 ${size}px ${cfg.color})`,
+              }}>💎</div>
+            );
+          })}
           {/* Orbiting diamonds */}
-          {[...Array(6)].map((_, i) => (
+          {[...Array(8)].map((_, i) => (
             <div key={`diamond-${i}`} style={{
               position:"fixed",top:"50%",left:"50%",
-              fontSize:24,
-              animation:`orbitParticle ${5 + i * 0.4}s linear infinite`,
-              animationDelay:`${i * -0.7}s`,
+              fontSize:28,
+              animation:`orbitParticle ${5 + i * 0.3}s linear infinite`,
+              animationDelay:`${i * -0.6}s`,
               pointerEvents:"none",
               zIndex:9503,
-              filter:`drop-shadow(0 0 8px ${cfg.color})`,
-              "--orbit-r": "170px",
+              filter:`drop-shadow(0 0 12px ${cfg.color}) drop-shadow(0 0 24px ${cfg.color})`,
             }}>💎</div>
           ))}
         </>
@@ -4850,29 +5004,7 @@ function CardRevealModal({ result, onClose }) {
 
       {/* ═════════ Universal: confetti burst on entry ═════════ */}
       {(isLegendary || isEpic) && (
-        <>
-          {[...Array(isLegendary ? 50 : 30)].map((_, i) => {
-            const angle = (i / (isLegendary ? 50 : 30)) * Math.PI * 2;
-            const dist = 200 + Math.random() * 250;
-            const tx = Math.cos(angle) * dist;
-            const ty = Math.sin(angle) * dist;
-            return (
-              <div key={`conf-${i}`} style={{
-                position:"fixed",top:"50%",left:"50%",
-                width: isLegendary ? 12 : 8,
-                height: isLegendary ? 12 : 8,
-                background:["#fbbf24","#fde68a","#f59e0b","#ef4444","#a855f7","#22c55e","#3b82f6"][i%7],
-                borderRadius: i%2 ? "50%" : "2px",
-                animation:`confettiBig 2s cubic-bezier(0.2, 0.6, 0.3, 1) forwards`,
-                pointerEvents:"none",
-                zIndex:9504,
-                "--c-tx": `${tx}px`,
-                "--c-ty": `${ty}px`,
-                "--c-rot": `${Math.random() * 1080}deg`,
-              }}/>
-            );
-          })}
-        </>
+        <ConfettiBurst count={isLegendary ? 50 : 35} />
       )}
 
       {/* ═════════ Tier announcement ═════════ */}
@@ -8950,13 +9082,13 @@ export default function App() {
   // Format: { balance, earnedFromIds, gotStartingBonus }
   const [coins, setCoins] = useState(() => {
     try {
-      const raw = localStorage.getItem("wc2026_coins_v5");
+      const raw = localStorage.getItem("wc2026_coins_v6");
       if (raw) {
         const parsed = JSON.parse(raw);
         // Grant the starting bonus to users who upgraded from an earlier version
         if (!parsed.gotStartingBonus) {
           const updated = { ...parsed, balance: (parsed.balance || 0) + COINS.STARTING_BONUS, gotStartingBonus: true };
-          try { localStorage.setItem("wc2026_coins_v5", JSON.stringify(updated)); } catch {}
+          try { localStorage.setItem("wc2026_coins_v6", JSON.stringify(updated)); } catch {}
           return updated;
         }
         return parsed;
@@ -8964,7 +9096,7 @@ export default function App() {
     } catch {}
     // Brand-new user: starts with the bonus
     const initial = { balance: COINS.STARTING_BONUS, earnedFromIds: {}, gotStartingBonus: true };
-    try { localStorage.setItem("wc2026_coins_v5", JSON.stringify(initial)); } catch {}
+    try { localStorage.setItem("wc2026_coins_v6", JSON.stringify(initial)); } catch {}
     return initial;
   });
   // Pop-up notification for newly earned coins
@@ -8998,7 +9130,7 @@ export default function App() {
     const newBalance = coins.balance - COINS.SPIN;
     const updatedCoins = { ...coins, balance: newBalance };
     setCoins(updatedCoins);
-    try { localStorage.setItem("wc2026_coins_v5", JSON.stringify(updatedCoins)); } catch {}
+    try { localStorage.setItem("wc2026_coins_v6", JSON.stringify(updatedCoins)); } catch {}
     // After all reels have stopped (5 seconds total), reveal the card
     setTimeout(() => {
       const isDuplicate = (cardCollection[card.id] || 0) > 0;
@@ -9013,7 +9145,7 @@ export default function App() {
         const refundedBalance = newBalance + refund;
         const withRefund = { ...updatedCoins, balance: refundedBalance };
         setCoins(withRefund);
-        try { localStorage.setItem("wc2026_coins_v5", JSON.stringify(withRefund)); } catch {}
+        try { localStorage.setItem("wc2026_coins_v6", JSON.stringify(withRefund)); } catch {}
       }
       setSpinResult({ card, isDuplicate, refund });
       setIsSpinning(false);
@@ -9571,7 +9703,7 @@ export default function App() {
     if (totalNew > 0) {
       const updated = { balance: coins.balance + totalNew, earnedFromIds: newEarned };
       setCoins(updated);
-      try { localStorage.setItem("wc2026_coins_v5", JSON.stringify(updated)); } catch {}
+      try { localStorage.setItem("wc2026_coins_v6", JSON.stringify(updated)); } catch {}
       setCoinFlash({ amount: totalNew, type: newType, key: Date.now() });
     }
   }, [picks, actuals, koPicks, actualKoScores]);
@@ -9639,7 +9771,7 @@ export default function App() {
         ]).catch(() => {});
         clearState();
         setName(""); setPicks({}); setKoWinners({}); setKoPicks({}); setCoins({ balance: COINS.STARTING_BONUS, earnedFromIds: {}, gotStartingBonus: true }); setCardCollection({}); setGroupIdx(0);
-        setFriends([]); setActuals({}); setActualKo({}); setActualKoScores({}); setLeagueName(""); setLeagueCode(""); setLeagueCodes([]); setActiveLeagueCode(""); setAllLeagueData({}); setWinnerPick(null); setTopScorerPick(null); setCelebratedIds(new Set()); setLastSeenGoals(0); setSeenActualIds(new Set()); setShowOnboarding(true); try { localStorage.removeItem("wc2026_celebrated_v1"); localStorage.removeItem("wc2026_lastseen_goals_v1"); localStorage.removeItem("wc2026_seen_actuals_v1"); localStorage.removeItem("wc2026_onboarded_v1"); localStorage.removeItem("wc2026_world_v2"); localStorage.removeItem("wc2026_achv_v1"); localStorage.removeItem("wc2026_pickhours_v1"); localStorage.removeItem("wc2026_coins_v5"); localStorage.removeItem("wc2026_cards_v1"); } catch {}
+        setFriends([]); setActuals({}); setActualKo({}); setActualKoScores({}); setLeagueName(""); setLeagueCode(""); setLeagueCodes([]); setActiveLeagueCode(""); setAllLeagueData({}); setWinnerPick(null); setTopScorerPick(null); setCelebratedIds(new Set()); setLastSeenGoals(0); setSeenActualIds(new Set()); setShowOnboarding(true); try { localStorage.removeItem("wc2026_celebrated_v1"); localStorage.removeItem("wc2026_lastseen_goals_v1"); localStorage.removeItem("wc2026_seen_actuals_v1"); localStorage.removeItem("wc2026_onboarded_v1"); localStorage.removeItem("wc2026_world_v2"); localStorage.removeItem("wc2026_achv_v1"); localStorage.removeItem("wc2026_pickhours_v1"); localStorage.removeItem("wc2026_coins_v6"); localStorage.removeItem("wc2026_cards_v1"); } catch {}
         setScreen("welcome");
         setShowIntro(false);
       },
@@ -9651,7 +9783,7 @@ export default function App() {
       // No data to worry about, just log out locally — keep Firebase intact in case they restore
       clearState();
       setName(""); setPicks({}); setKoWinners({}); setKoPicks({}); setCoins({ balance: COINS.STARTING_BONUS, earnedFromIds: {}, gotStartingBonus: true }); setCardCollection({}); setGroupIdx(0);
-      setFriends([]); setActuals({}); setActualKo({}); setActualKoScores({}); setLeagueName(""); setLeagueCode(""); setLeagueCodes([]); setActiveLeagueCode(""); setAllLeagueData({}); setWinnerPick(null); setTopScorerPick(null); setCelebratedIds(new Set()); setLastSeenGoals(0); setSeenActualIds(new Set()); setShowOnboarding(true); try { localStorage.removeItem("wc2026_celebrated_v1"); localStorage.removeItem("wc2026_lastseen_goals_v1"); localStorage.removeItem("wc2026_seen_actuals_v1"); localStorage.removeItem("wc2026_onboarded_v1"); localStorage.removeItem("wc2026_world_v2"); localStorage.removeItem("wc2026_achv_v1"); localStorage.removeItem("wc2026_pickhours_v1"); localStorage.removeItem("wc2026_coins_v5"); localStorage.removeItem("wc2026_cards_v1"); } catch {}
+      setFriends([]); setActuals({}); setActualKo({}); setActualKoScores({}); setLeagueName(""); setLeagueCode(""); setLeagueCodes([]); setActiveLeagueCode(""); setAllLeagueData({}); setWinnerPick(null); setTopScorerPick(null); setCelebratedIds(new Set()); setLastSeenGoals(0); setSeenActualIds(new Set()); setShowOnboarding(true); try { localStorage.removeItem("wc2026_celebrated_v1"); localStorage.removeItem("wc2026_lastseen_goals_v1"); localStorage.removeItem("wc2026_seen_actuals_v1"); localStorage.removeItem("wc2026_onboarded_v1"); localStorage.removeItem("wc2026_world_v2"); localStorage.removeItem("wc2026_achv_v1"); localStorage.removeItem("wc2026_pickhours_v1"); localStorage.removeItem("wc2026_coins_v6"); localStorage.removeItem("wc2026_cards_v1"); } catch {}
       setScreen("welcome");
       setShowIntro(false);
       return;
@@ -9667,7 +9799,7 @@ export default function App() {
         // so the user can restore their progress later with a backup code.
         clearState();
         setName(""); setPicks({}); setKoWinners({}); setKoPicks({}); setCoins({ balance: COINS.STARTING_BONUS, earnedFromIds: {}, gotStartingBonus: true }); setCardCollection({}); setGroupIdx(0);
-        setFriends([]); setActuals({}); setActualKo({}); setActualKoScores({}); setLeagueName(""); setLeagueCode(""); setLeagueCodes([]); setActiveLeagueCode(""); setAllLeagueData({}); setWinnerPick(null); setTopScorerPick(null); setCelebratedIds(new Set()); setLastSeenGoals(0); setSeenActualIds(new Set()); setShowOnboarding(true); try { localStorage.removeItem("wc2026_celebrated_v1"); localStorage.removeItem("wc2026_lastseen_goals_v1"); localStorage.removeItem("wc2026_seen_actuals_v1"); localStorage.removeItem("wc2026_onboarded_v1"); localStorage.removeItem("wc2026_world_v2"); localStorage.removeItem("wc2026_achv_v1"); localStorage.removeItem("wc2026_pickhours_v1"); localStorage.removeItem("wc2026_coins_v5"); localStorage.removeItem("wc2026_cards_v1"); } catch {}
+        setFriends([]); setActuals({}); setActualKo({}); setActualKoScores({}); setLeagueName(""); setLeagueCode(""); setLeagueCodes([]); setActiveLeagueCode(""); setAllLeagueData({}); setWinnerPick(null); setTopScorerPick(null); setCelebratedIds(new Set()); setLastSeenGoals(0); setSeenActualIds(new Set()); setShowOnboarding(true); try { localStorage.removeItem("wc2026_celebrated_v1"); localStorage.removeItem("wc2026_lastseen_goals_v1"); localStorage.removeItem("wc2026_seen_actuals_v1"); localStorage.removeItem("wc2026_onboarded_v1"); localStorage.removeItem("wc2026_world_v2"); localStorage.removeItem("wc2026_achv_v1"); localStorage.removeItem("wc2026_pickhours_v1"); localStorage.removeItem("wc2026_coins_v6"); localStorage.removeItem("wc2026_cards_v1"); } catch {}
         setScreen("welcome");
         setShowIntro(false);
       },
