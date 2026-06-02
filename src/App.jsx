@@ -8,7 +8,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "2.4.0";
+const APP_VERSION = "2.4.1";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -5285,7 +5285,7 @@ function CardRevealModal({ result, onClose, freshSpin = false }) {
           ? `drop-shadow(0 0 16px ${cfg.glow})`
           : "none",
       }}>
-        <PlayerCard card={card} size="L" animated={true} flippable={true} />
+        <PlayerCard card={card} size="L" animated={true} />
       </div>
 
       {/* Duplicate info */}
