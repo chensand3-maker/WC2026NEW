@@ -8,7 +8,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "2.3.0";
+const APP_VERSION = "2.4.0";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -4457,18 +4457,42 @@ function skillStars(rating) {
   return 1;
 }
 
-function PlayerCard({ card, size = "L", animated = false }) {
+// 📊 4 FIFA-style stats derived from rating + position (deterministic)
+// Returns { pace, shooting, passing, defending }
+function getPlayerStats(card) {
+  const rating = getPlayerRating(card);
+  const h = _stringHash(card.name);
+  // Position weights: how each pos affects each stat
+  // Format: [pace, shooting, passing, defending]
+  const weights = {
+    GK: [-15, -25,  -5,  +5],
+    D:  [ -5, -15,  -2,  +8],
+    M:  [  0,  -5,  +8,  -3],
+    F:  [ +5, +10,  -3, -15],
+  }[card.pos] || [0,0,0,0];
+  // Use different hash slices for each stat → unique variance per stat
+  const variances = [(h % 11) - 5, ((h>>3) % 11) - 5, ((h>>7) % 11) - 5, ((h>>11) % 11) - 5];
+  const stats = weights.map((w, i) => {
+    let v = rating + w + variances[i];
+    return Math.max(20, Math.min(99, v));
+  });
+  return { pace: stats[0], shooting: stats[1], passing: stats[2], defending: stats[3] };
+}
+
+function PlayerCard({ card, size = "L", animated = false, flippable = false }) {
   const cfg = RARITY_CONFIG[card.rarity];
   const isLegendary = card.rarity === "L";
   const rating = getPlayerRating(card);
   const isPerfect = rating === 99;
-  const number = shirtNumber(card);
   const stars = skillStars(rating);
-  const code = countryCode(card.team);
+  const stats = getPlayerStats(card);
 
-  const dims = size === "L" ? { w: 240, h: 360, font: 18, flag: 80, position: 16, rating: 42, num: 200, code: 11, star: 10 }
-             : size === "M" ? { w: 140, h: 210, font: 12, flag: 46, position: 11, rating: 24, num: 120, code: 7, star: 7 }
-             : { w: 95, h: 138, font: 9, flag: 30, position: 8, rating: 17, num: 80, code: 5, star: 5 };
+  // Flip state — only used when flippable=true
+  const [flipped, setFlipped] = useState(false);
+
+  const dims = size === "L" ? { w: 240, h: 360, font: 18, flag: 80, position: 16, rating: 42, star: 11 }
+             : size === "M" ? { w: 140, h: 210, font: 12, flag: 46, position: 11, rating: 24, star: 7 }
+             : { w: 95, h: 138, font: 9, flag: 30, position: 8, rating: 17, star: 5 };
 
   const posInfo = {
     GK: { label: "GOALKEEPER", short: "GK", color: "#fbbf24", icon: "🧤" },
@@ -4477,7 +4501,8 @@ function PlayerCard({ card, size = "L", animated = false }) {
     F:  { label: "FORWARD",    short: "FWD", color: "#ef4444", icon: "⚔️" },
   }[card.pos] || { label: "PLAYER", short: "P", color: "#94a3b8", icon: "⚽" };
 
-  return (
+  // ─── BACK SIDE: Mundialito branding + 4 stats ───────────────────────
+  const renderBack = () => (
     <div style={{
       width: dims.w, height: dims.h,
       background: cfg.bgGrad,
@@ -4485,29 +4510,143 @@ function PlayerCard({ card, size = "L", animated = false }) {
       backgroundPosition: "center",
       border: `3px solid ${cfg.color}`,
       borderRadius: 14,
-      padding: 0,
       display: "flex", flexDirection: "column",
+      padding: size === "L" ? "16px 16px" : size === "M" ? "10px 10px" : "6px 6px",
       boxShadow: animated
         ? `0 0 30px ${cfg.glow}, 0 8px 24px rgba(0,0,0,0.5), inset 0 0 30px rgba(0,0,0,0.3)`
         : `0 4px 12px rgba(0,0,0,0.3), inset 0 0 20px rgba(0,0,0,0.2)`,
       position: "relative",
       overflow: "hidden",
+      backfaceVisibility: "hidden",
+      transform: "rotateY(180deg)",
     }}>
-      {/* GIANT shirt number in the background (very subtle) */}
+      {/* Subtle field pattern */}
       <div style={{
-        position:"absolute",
-        top:"42%",left:"50%",
-        transform:"translate(-50%, -50%)",
-        fontSize: dims.num,
-        fontWeight: 900,
-        color: "rgba(255,255,255,0.08)",
-        fontVariantNumeric:"tabular-nums",
-        letterSpacing:-8,
-        lineHeight:1,
+        position:"absolute",inset:0,
+        background:`repeating-linear-gradient(0deg, transparent, transparent 18px, rgba(255,255,255,0.03) 18px, rgba(255,255,255,0.03) 20px)`,
+        pointerEvents:"none",
+      }}/>
+
+      {/* MUNDIALITO branding header */}
+      <div style={{
+        textAlign:"center",
+        marginBottom: size === "L" ? 12 : 6,
+        position:"relative",zIndex:2,
+      }}>
+        <div style={{
+          fontSize: size === "L" ? 9 : 6,
+          color: cfg.color,
+          letterSpacing: 3,
+          fontWeight:900,
+          textShadow:`0 0 6px ${cfg.glow}`,
+        }}>🏆 MUNDIALITO</div>
+        <div style={{
+          fontSize: size === "L" ? 16 : size === "M" ? 11 : 8,
+          color:"#fff",fontWeight:900,letterSpacing:2,
+          textShadow:"0 2px 4px rgba(0,0,0,0.6)",
+          marginTop:1,
+        }}>2026</div>
+      </div>
+
+      {/* Divider */}
+      <div style={{
+        height:1,
+        background:`linear-gradient(90deg, transparent, ${cfg.color}, transparent)`,
+        marginBottom: size === "L" ? 12 : 6,
+        position:"relative",zIndex:2,
+      }}/>
+
+      {/* 4 Stats */}
+      <div style={{
+        flex:1,
+        display:"flex",flexDirection:"column",justifyContent:"center",
+        gap: size === "L" ? 12 : size === "M" ? 6 : 3,
+        position:"relative",zIndex:2,
+      }}>
+        {[
+          { lbl:"PAC", val: stats.pace, icon:"⚡" },
+          { lbl:"SHO", val: stats.shooting, icon:"⚽" },
+          { lbl:"PAS", val: stats.passing, icon:"🎯" },
+          { lbl:"DEF", val: stats.defending, icon:"🛡️" },
+        ].map(s => (
+          <div key={s.lbl} style={{
+            display:"flex",alignItems:"center",
+            gap: size === "L" ? 8 : 4,
+          }}>
+            <div style={{
+              fontSize: size === "L" ? 13 : size === "M" ? 9 : 7,
+              fontWeight:900,
+              color:"#fff",
+              minWidth: size === "L" ? 30 : 22,
+              letterSpacing:1,
+              textShadow:"0 1px 2px rgba(0,0,0,0.5)",
+            }}>{s.lbl}</div>
+            <div style={{
+              flex:1,height: size === "L" ? 8 : 5,
+              background:"rgba(0,0,0,0.4)",
+              borderRadius:4,overflow:"hidden",
+              border:`1px solid ${cfg.color}55`,
+            }}>
+              <div style={{
+                width: `${s.val}%`,
+                height:"100%",
+                background: `linear-gradient(90deg, ${cfg.color}cc, ${cfg.color})`,
+                boxShadow:`0 0 8px ${cfg.glow}`,
+                transition:"width 0.6s ease-out",
+              }}/>
+            </div>
+            <div style={{
+              fontSize: size === "L" ? 14 : size === "M" ? 10 : 8,
+              fontWeight:900,
+              color:"#fff",
+              minWidth: size === "L" ? 24 : 18,
+              textAlign:"right",
+              fontVariantNumeric:"tabular-nums",
+              textShadow:"0 1px 3px rgba(0,0,0,0.7)",
+            }}>{s.val}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Footer: tap to flip hint */}
+      {flippable && size === "L" && (
+        <div style={{
+          textAlign:"center",
+          fontSize:9,color:"#fff",opacity:0.5,letterSpacing:2,
+          marginTop:8,position:"relative",zIndex:2,
+        }}>↻ TAP TO FLIP</div>
+      )}
+    </div>
+  );
+
+  // ─── FRONT SIDE ─────────────────────────────────────────────────────
+  const renderFront = () => (
+    <div style={{
+      width: dims.w, height: dims.h,
+      background: `radial-gradient(ellipse at center top, ${cfg.color}33 0%, transparent 60%), ${cfg.bgGrad}`,
+      backgroundSize: "150% 150%, 150% 150%",
+      backgroundPosition: "center",
+      border: `3px solid ${cfg.color}`,
+      borderRadius: 14,
+      padding: 0,
+      display: "flex", flexDirection: "column",
+      boxShadow: animated
+        ? `0 0 30px ${cfg.glow}, 0 8px 24px rgba(0,0,0,0.5), inset 0 0 40px rgba(0,0,0,0.4)`
+        : `0 4px 12px rgba(0,0,0,0.3), inset 0 0 30px rgba(0,0,0,0.3)`,
+      position: "relative",
+      overflow: "hidden",
+      backfaceVisibility: "hidden",
+    }}>
+      {/* 🏟️ Soccer pitch lines pattern (subtle) */}
+      <div style={{
+        position:"absolute",inset:0,
+        background:`
+          radial-gradient(circle at 50% 50%, transparent 0px, transparent 28px, rgba(255,255,255,0.05) 28px, rgba(255,255,255,0.05) 29px, transparent 29px),
+          linear-gradient(180deg, transparent calc(50% - 0.5px), rgba(255,255,255,0.04) calc(50% - 0.5px), rgba(255,255,255,0.04) calc(50% + 0.5px), transparent calc(50% + 0.5px))
+        `,
         pointerEvents:"none",
         zIndex:1,
-        userSelect:"none",
-      }}>{number}</div>
+      }}/>
 
       {/* Holographic stripe pattern */}
       <div style={{
@@ -4515,49 +4654,36 @@ function PlayerCard({ card, size = "L", animated = false }) {
         background:`repeating-linear-gradient(
           115deg,
           transparent 0px,
-          transparent 8px,
-          rgba(255,255,255,0.04) 8px,
-          rgba(255,255,255,0.04) 9px
+          transparent 10px,
+          rgba(255,255,255,0.04) 10px,
+          rgba(255,255,255,0.04) 11px
         )`,
         pointerEvents:"none",
         zIndex:1,
       }}/>
 
+      {/* MUNDIALITO 2026 logo — small bottom-center watermark */}
+      {size !== "S" && (
+        <div style={{
+          position:"absolute",
+          bottom: size === "L" ? 38 : 24,
+          left:"50%",
+          transform:"translateX(-50%)",
+          fontSize: size === "L" ? 7 : 5,
+          color:"#fff",opacity:0.25,letterSpacing:2,fontWeight:900,
+          pointerEvents:"none",
+          zIndex:2,
+          whiteSpace:"nowrap",
+        }}>🏆 MUNDIALITO 2026 🏆</div>
+      )}
+
       {/* Corner FIFA-style decorations */}
       {size !== "S" && (
         <>
-          <div style={{
-            position:"absolute",top:6,left:6,
-            width:14,height:14,
-            borderTop:`2px solid ${cfg.color}aa`,
-            borderLeft:`2px solid ${cfg.color}aa`,
-            borderRadius:"3px 0 0 0",
-            pointerEvents:"none",zIndex:2,
-          }}/>
-          <div style={{
-            position:"absolute",top:6,right:6,
-            width:14,height:14,
-            borderTop:`2px solid ${cfg.color}aa`,
-            borderRight:`2px solid ${cfg.color}aa`,
-            borderRadius:"0 3px 0 0",
-            pointerEvents:"none",zIndex:2,
-          }}/>
-          <div style={{
-            position:"absolute",bottom:6,left:6,
-            width:14,height:14,
-            borderBottom:`2px solid ${cfg.color}aa`,
-            borderLeft:`2px solid ${cfg.color}aa`,
-            borderRadius:"0 0 0 3px",
-            pointerEvents:"none",zIndex:2,
-          }}/>
-          <div style={{
-            position:"absolute",bottom:6,right:6,
-            width:14,height:14,
-            borderBottom:`2px solid ${cfg.color}aa`,
-            borderRight:`2px solid ${cfg.color}aa`,
-            borderRadius:"0 0 3px 0",
-            pointerEvents:"none",zIndex:2,
-          }}/>
+          <div style={{position:"absolute",top:6,left:6,width:14,height:14,borderTop:`2px solid ${cfg.color}aa`,borderLeft:`2px solid ${cfg.color}aa`,borderRadius:"3px 0 0 0",pointerEvents:"none",zIndex:2}}/>
+          <div style={{position:"absolute",top:6,right:6,width:14,height:14,borderTop:`2px solid ${cfg.color}aa`,borderRight:`2px solid ${cfg.color}aa`,borderRadius:"0 3px 0 0",pointerEvents:"none",zIndex:2}}/>
+          <div style={{position:"absolute",bottom:6,left:6,width:14,height:14,borderBottom:`2px solid ${cfg.color}aa`,borderLeft:`2px solid ${cfg.color}aa`,borderRadius:"0 0 0 3px",pointerEvents:"none",zIndex:2}}/>
+          <div style={{position:"absolute",bottom:6,right:6,width:14,height:14,borderBottom:`2px solid ${cfg.color}aa`,borderRight:`2px solid ${cfg.color}aa`,borderRadius:"0 0 3px 0",pointerEvents:"none",zIndex:2}}/>
         </>
       )}
 
@@ -4580,14 +4706,13 @@ function PlayerCard({ card, size = "L", animated = false }) {
         </>
       )}
 
-      {/* ─── HEADER: Rating + stars (left) + Rarity emoji (right) ─── */}
+      {/* HEADER: Rating + stars (left) | Rarity emoji (right) */}
       <div style={{
         display:"flex",alignItems:"flex-start",justifyContent:"space-between",
         padding: size === "L" ? "10px 12px 4px" : size === "M" ? "8px 8px 4px" : "5px 5px 3px",
         position:"relative",zIndex:3,
       }}>
         <div style={{display:"flex",flexDirection:"column",alignItems:"flex-start",gap:3}}>
-          {/* Rating badge */}
           <div style={{
             width: dims.rating, height: dims.rating,
             background: isPerfect
@@ -4618,7 +4743,6 @@ function PlayerCard({ card, size = "L", animated = false }) {
               }}>{posInfo.short}</div>
             )}
           </div>
-          {/* Skill stars */}
           {size !== "S" && (
             <div style={{display:"flex",gap:1}}>
               {[...Array(5)].map((_, i) => (
@@ -4639,18 +4763,17 @@ function PlayerCard({ card, size = "L", animated = false }) {
         }}>{cfg.emoji}</div>
       </div>
 
-      {/* ─── FLAG in glowing circle + country code ─── */}
+      {/* FLAG in glowing circle */}
       <div style={{
         flex:1,
-        display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",
+        display:"flex",alignItems:"center",justifyContent:"center",
         position:"relative",zIndex:3,
-        gap: size === "L" ? 6 : 3,
       }}>
         <div style={{
           width: dims.flag + (size === "L" ? 32 : size === "M" ? 18 : 10),
           height: dims.flag + (size === "L" ? 32 : size === "M" ? 18 : 10),
           borderRadius:"50%",
-          background:`radial-gradient(circle, rgba(255,255,255,0.08) 0%, transparent 70%)`,
+          background:`radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%)`,
           border:`2px solid ${cfg.color}66`,
           display:"flex",alignItems:"center",justifyContent:"center",
           boxShadow: animated
@@ -4662,20 +4785,9 @@ function PlayerCard({ card, size = "L", animated = false }) {
             filter:"drop-shadow(0 4px 8px rgba(0,0,0,0.5))",
           }}>{card.flag}</div>
         </div>
-        {/* Country code under flag */}
-        {size !== "S" && (
-          <div style={{
-            fontSize: dims.code,
-            fontWeight:900,
-            color: "#fff",
-            letterSpacing: size === "L" ? 4 : 2,
-            opacity:0.85,
-            textShadow:"0 1px 3px rgba(0,0,0,0.6)",
-          }}>{code}</div>
-        )}
       </div>
 
-      {/* ─── PLAYER NAME + TEAM ─── */}
+      {/* PLAYER NAME + TEAM */}
       <div style={{
         padding: size === "L" ? "0 14px 6px" : size === "M" ? "0 10px 4px" : "0 6px 3px",
         textAlign:"center",
@@ -4699,7 +4811,7 @@ function PlayerCard({ card, size = "L", animated = false }) {
         </div>
       </div>
 
-      {/* ─── FOOTER: Position with icons + shirt # ─── */}
+      {/* FOOTER: Position */}
       <div style={{
         background:`linear-gradient(90deg, transparent 0%, ${posInfo.color}55 50%, transparent 100%)`,
         borderTop:`1px solid ${cfg.color}66`,
@@ -4707,40 +4819,55 @@ function PlayerCard({ card, size = "L", animated = false }) {
         display:"flex",alignItems:"center",justifyContent:"center",gap:6,
         position:"relative",zIndex:3,
       }}>
-        <span style={{
-          fontSize: size === "L" ? 16 : size === "M" ? 12 : 10,
-          filter: `drop-shadow(0 0 4px ${posInfo.color})`,
-        }}>{posInfo.icon}</span>
-        <div style={{
-          fontSize: dims.position,
-          color:"#fff",fontWeight:900,letterSpacing: size === "L" ? 3 : 1.5,
-        }}>
+        <span style={{fontSize:size==="L"?16:size==="M"?12:10,filter:`drop-shadow(0 0 4px ${posInfo.color})`}}>{posInfo.icon}</span>
+        <div style={{fontSize:dims.position,color:"#fff",fontWeight:900,letterSpacing:size==="L"?3:1.5}}>
           {size === "S" ? posInfo.short : posInfo.label}
         </div>
-        <span style={{
-          fontSize: size === "L" ? 16 : size === "M" ? 12 : 10,
-          filter: `drop-shadow(0 0 4px ${posInfo.color})`,
-        }}>{posInfo.icon}</span>
+        <span style={{fontSize:size==="L"?16:size==="M"?12:10,filter:`drop-shadow(0 0 4px ${posInfo.color})`}}>{posInfo.icon}</span>
       </div>
 
       {/* Perfect 99 badge */}
       {isPerfect && (
         <div style={{
-          position:"absolute",
-          top: "44%",
-          right: 6,
+          position:"absolute",top:"44%",right:6,
           background:"linear-gradient(135deg,#fde68a,#fbbf24,#92400e)",
           color:"#0a0e1c",
           fontSize: size === "L" ? 9 : 7,
           fontWeight:900,letterSpacing:1,
-          padding:"2px 6px",
-          borderRadius:4,
+          padding:"2px 6px",borderRadius:4,
           border:"1px solid #92400e",
           boxShadow:"0 0 8px #fbbf24",
           zIndex:5,
           transform:"rotate(8deg)",
         }}>PERFECT</div>
       )}
+    </div>
+  );
+
+  // If not flippable, just return front
+  if (!flippable) return renderFront();
+
+  // Flippable wrapper with 3D flip
+  return (
+    <div
+      onClick={(e) => { e.stopPropagation(); setFlipped(f => !f); }}
+      style={{
+        width: dims.w, height: dims.h,
+        perspective: 1000,
+        cursor: "pointer",
+        position: "relative",
+      }}
+    >
+      <div style={{
+        width:"100%",height:"100%",
+        position:"relative",
+        transformStyle:"preserve-3d",
+        transition:"transform 0.7s cubic-bezier(0.4, 0.2, 0.2, 1)",
+        transform: flipped ? "rotateY(180deg)" : "rotateY(0deg)",
+      }}>
+        <div style={{position:"absolute",inset:0}}>{renderFront()}</div>
+        <div style={{position:"absolute",inset:0}}>{renderBack()}</div>
+      </div>
     </div>
   );
 }
@@ -4798,24 +4925,15 @@ function CardRevealModal({ result, onClose, freshSpin = false }) {
   const isRare = card.rarity === "R";
   const isUncommon = card.rarity === "U";
 
-  // Wrap stage: if this is a fresh spin, show pack first, user taps to open
-  const [wrapOpen, setWrapOpen] = useState(!freshSpin);
-
-  // Play win sound when card is revealed (after wrap opens or immediately for previews)
+  // Play win sound + haptics
   useEffect(() => {
-    if (wrapOpen) playWinSound(card.rarity);
-  }, [wrapOpen, card.rarity]);
-
-  // Wrapping tap handler
-  const handleOpenPack = () => {
-    if (wrapOpen) return;
-    setWrapOpen(true);
+    playWinSound(card.rarity);
     try {
       if (card.rarity === "L") navigator.vibrate?.([30, 50, 30, 50, 80, 50, 120]);
       else if (card.rarity === "E") navigator.vibrate?.([20, 40, 50]);
       else navigator.vibrate?.(20);
     } catch {}
-  };
+  }, [card.rarity]);
 
   // Vignette color matches the rarity
   const vignetteBg = isLegendary ? "radial-gradient(circle at center, rgba(120,53,15,0.4) 0%, rgba(0,0,0,0.92) 70%)"
@@ -4825,7 +4943,7 @@ function CardRevealModal({ result, onClose, freshSpin = false }) {
                                  : "rgba(0,0,0,0.7)";
 
   return (
-    <div onClick={wrapOpen ? onClose : handleOpenPack} style={{
+    <div onClick={onClose} style={{
       position:"fixed",inset:0,zIndex:9500,
       background: vignetteBg,
       display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",
@@ -4904,96 +5022,6 @@ function CardRevealModal({ result, onClose, freshSpin = false }) {
           100% { transform: translateY(0) scale(1); opacity: 1; }
         }
       `}</style>
-
-      {/* 🎁 CARD PACK — shown before opening */}
-      {!wrapOpen && (
-        <div style={{
-          position:"relative",
-          zIndex:9510,
-          animation:"packFloat 2s ease-in-out infinite",
-          textAlign:"center",
-        }}>
-          <style>{`
-            @keyframes packFloat {
-              0%, 100% { transform: translateY(0) rotate(-2deg); }
-              50% { transform: translateY(-12px) rotate(2deg); }
-            }
-            @keyframes packGlow {
-              0%, 100% { box-shadow: 0 0 30px ${cfg.glow}, 0 10px 40px rgba(0,0,0,0.6); }
-              50% { box-shadow: 0 0 60px ${cfg.glow}, 0 0 100px ${cfg.glow}, 0 10px 40px rgba(0,0,0,0.6); }
-            }
-            @keyframes tapHint {
-              0%, 100% { opacity: 0.5; transform: scale(1); }
-              50% { opacity: 1; transform: scale(1.1); }
-            }
-          `}</style>
-          <div style={{
-            width:200,height:300,
-            background:`linear-gradient(135deg, ${cfg.bgGrad})`,
-            border:`4px solid ${cfg.color}`,
-            borderRadius:16,
-            display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",
-            gap:14,
-            animation:"packGlow 2s ease-in-out infinite",
-            position:"relative",
-            overflow:"hidden",
-          }}>
-            {/* Holographic pattern on pack */}
-            <div style={{
-              position:"absolute",inset:0,
-              background:`repeating-linear-gradient(
-                45deg,
-                transparent 0px,
-                transparent 14px,
-                rgba(255,255,255,0.06) 14px,
-                rgba(255,255,255,0.06) 16px
-              )`,
-              pointerEvents:"none",
-            }}/>
-            {/* Diagonal shine */}
-            <div style={{
-              position:"absolute",
-              top:0,left:"-50%",
-              width:"50%",height:"100%",
-              background:"linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.3) 50%, transparent 70%)",
-              animation:"shimmer 3s linear infinite",
-              pointerEvents:"none",
-            }}/>
-            <style>{`
-              @keyframes shimmer {
-                0% { transform: translateX(-100%); }
-                100% { transform: translateX(800%); }
-              }
-            `}</style>
-            {/* Pack content */}
-            <div style={{fontSize:60,zIndex:2,filter:`drop-shadow(0 4px 12px ${cfg.glow})`}}>🎁</div>
-            <div style={{
-              fontSize:14,fontWeight:900,letterSpacing:3,color:"#fff",zIndex:2,
-              textShadow:"0 2px 6px rgba(0,0,0,0.8)",
-            }}>PLAYER PACK</div>
-            <div style={{
-              padding:"4px 12px",
-              background:"rgba(0,0,0,0.3)",
-              border:`2px solid ${cfg.color}`,
-              borderRadius:6,
-              fontSize:11,fontWeight:900,letterSpacing:2,color:cfg.color,
-              zIndex:2,
-              textShadow:`0 0 8px ${cfg.glow}`,
-            }}>{cfg.label}</div>
-          </div>
-          {/* Tap to open hint */}
-          <div style={{
-            marginTop:24,
-            fontSize:13,color:cfg.color,letterSpacing:3,fontWeight:900,
-            animation:"tapHint 1.2s ease-in-out infinite",
-            textShadow:`0 0 12px ${cfg.glow}`,
-          }}>👆 TAP TO OPEN</div>
-        </div>
-      )}
-
-      {/* Card + effects only show after pack opens */}
-      {wrapOpen && (
-        <>
 
       {/* ═════════ 🏆 LEGENDARY EFFECTS ═════════ */}
 
@@ -5257,7 +5285,7 @@ function CardRevealModal({ result, onClose, freshSpin = false }) {
           ? `drop-shadow(0 0 16px ${cfg.glow})`
           : "none",
       }}>
-        <PlayerCard card={card} size="L" animated={true} />
+        <PlayerCard card={card} size="L" animated={true} flippable={true} />
       </div>
 
       {/* Duplicate info */}
@@ -5291,8 +5319,6 @@ function CardRevealModal({ result, onClose, freshSpin = false }) {
         }}>
           {t("roulette.tapToClose")}
         </div>
-      )}
-        </>
       )}
     </div>
   );
@@ -10584,7 +10610,6 @@ export default function App() {
         <CardRevealModal
           result={spinResult}
           onClose={closeSpinResult}
-          freshSpin={true}
         />
       )}
 
