@@ -8,7 +8,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "2.1.0";
+const APP_VERSION = "2.1.1";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -9105,13 +9105,13 @@ export default function App() {
   // Format: { balance, earnedFromIds, gotStartingBonus }
   const [coins, setCoins] = useState(() => {
     try {
-      const raw = localStorage.getItem("wc2026_coins_v6");
+      const raw = localStorage.getItem("wc2026_coins_v7");
       if (raw) {
         const parsed = JSON.parse(raw);
         // Grant the starting bonus to users who upgraded from an earlier version
         if (!parsed.gotStartingBonus) {
           const updated = { ...parsed, balance: (parsed.balance || 0) + COINS.STARTING_BONUS, gotStartingBonus: true };
-          try { localStorage.setItem("wc2026_coins_v6", JSON.stringify(updated)); } catch {}
+          try { localStorage.setItem("wc2026_coins_v7", JSON.stringify(updated)); } catch {}
           return updated;
         }
         return parsed;
@@ -9119,7 +9119,7 @@ export default function App() {
     } catch {}
     // Brand-new user: starts with the bonus
     const initial = { balance: COINS.STARTING_BONUS, earnedFromIds: {}, gotStartingBonus: true };
-    try { localStorage.setItem("wc2026_coins_v6", JSON.stringify(initial)); } catch {}
+    try { localStorage.setItem("wc2026_coins_v7", JSON.stringify(initial)); } catch {}
     return initial;
   });
   // Pop-up notification for newly earned coins
@@ -9129,7 +9129,7 @@ export default function App() {
   // Format: { [cardId]: count }
   const [cardCollection, setCardCollection] = useState(() => {
     try {
-      const raw = localStorage.getItem("wc2026_cards_v1");
+      const raw = localStorage.getItem("wc2026_cards_v2");
       if (raw) return JSON.parse(raw);
     } catch {}
     return {};
@@ -9153,14 +9153,14 @@ export default function App() {
     const newBalance = coins.balance - COINS.SPIN;
     const updatedCoins = { ...coins, balance: newBalance };
     setCoins(updatedCoins);
-    try { localStorage.setItem("wc2026_coins_v6", JSON.stringify(updatedCoins)); } catch {}
+    try { localStorage.setItem("wc2026_coins_v7", JSON.stringify(updatedCoins)); } catch {}
     // After all reels have stopped (5 seconds total), reveal the card
     setTimeout(() => {
       const isDuplicate = (cardCollection[card.id] || 0) > 0;
       // Add to collection (or increment count for duplicates)
       const newCollection = { ...cardCollection, [card.id]: (cardCollection[card.id] || 0) + 1 };
       setCardCollection(newCollection);
-      try { localStorage.setItem("wc2026_cards_v1", JSON.stringify(newCollection)); } catch {}
+      try { localStorage.setItem("wc2026_cards_v2", JSON.stringify(newCollection)); } catch {}
       // If duplicate, refund coins based on rarity
       let refund = 0;
       if (isDuplicate) {
@@ -9168,7 +9168,7 @@ export default function App() {
         const refundedBalance = newBalance + refund;
         const withRefund = { ...updatedCoins, balance: refundedBalance };
         setCoins(withRefund);
-        try { localStorage.setItem("wc2026_coins_v6", JSON.stringify(withRefund)); } catch {}
+        try { localStorage.setItem("wc2026_coins_v7", JSON.stringify(withRefund)); } catch {}
       }
       setSpinResult({ card, isDuplicate, refund });
       setIsSpinning(false);
@@ -9726,7 +9726,7 @@ export default function App() {
     if (totalNew > 0) {
       const updated = { balance: coins.balance + totalNew, earnedFromIds: newEarned };
       setCoins(updated);
-      try { localStorage.setItem("wc2026_coins_v6", JSON.stringify(updated)); } catch {}
+      try { localStorage.setItem("wc2026_coins_v7", JSON.stringify(updated)); } catch {}
       setCoinFlash({ amount: totalNew, type: newType, key: Date.now() });
     }
   }, [picks, actuals, koPicks, actualKoScores]);
@@ -9794,7 +9794,7 @@ export default function App() {
         ]).catch(() => {});
         clearState();
         setName(""); setPicks({}); setKoWinners({}); setKoPicks({}); setCoins({ balance: COINS.STARTING_BONUS, earnedFromIds: {}, gotStartingBonus: true }); setCardCollection({}); setGroupIdx(0);
-        setFriends([]); setActuals({}); setActualKo({}); setActualKoScores({}); setLeagueName(""); setLeagueCode(""); setLeagueCodes([]); setActiveLeagueCode(""); setAllLeagueData({}); setWinnerPick(null); setTopScorerPick(null); setCelebratedIds(new Set()); setLastSeenGoals(0); setSeenActualIds(new Set()); setShowOnboarding(true); try { localStorage.removeItem("wc2026_celebrated_v1"); localStorage.removeItem("wc2026_lastseen_goals_v1"); localStorage.removeItem("wc2026_seen_actuals_v1"); localStorage.removeItem("wc2026_onboarded_v1"); localStorage.removeItem("wc2026_world_v2"); localStorage.removeItem("wc2026_achv_v1"); localStorage.removeItem("wc2026_pickhours_v1"); localStorage.removeItem("wc2026_coins_v6"); localStorage.removeItem("wc2026_cards_v1"); } catch {}
+        setFriends([]); setActuals({}); setActualKo({}); setActualKoScores({}); setLeagueName(""); setLeagueCode(""); setLeagueCodes([]); setActiveLeagueCode(""); setAllLeagueData({}); setWinnerPick(null); setTopScorerPick(null); setCelebratedIds(new Set()); setLastSeenGoals(0); setSeenActualIds(new Set()); setShowOnboarding(true); try { localStorage.removeItem("wc2026_celebrated_v1"); localStorage.removeItem("wc2026_lastseen_goals_v1"); localStorage.removeItem("wc2026_seen_actuals_v1"); localStorage.removeItem("wc2026_onboarded_v1"); localStorage.removeItem("wc2026_world_v2"); localStorage.removeItem("wc2026_achv_v1"); localStorage.removeItem("wc2026_pickhours_v1"); localStorage.removeItem("wc2026_coins_v7"); localStorage.removeItem("wc2026_cards_v2"); } catch {}
         setScreen("welcome");
         setShowIntro(false);
       },
@@ -9806,7 +9806,7 @@ export default function App() {
       // No data to worry about, just log out locally — keep Firebase intact in case they restore
       clearState();
       setName(""); setPicks({}); setKoWinners({}); setKoPicks({}); setCoins({ balance: COINS.STARTING_BONUS, earnedFromIds: {}, gotStartingBonus: true }); setCardCollection({}); setGroupIdx(0);
-      setFriends([]); setActuals({}); setActualKo({}); setActualKoScores({}); setLeagueName(""); setLeagueCode(""); setLeagueCodes([]); setActiveLeagueCode(""); setAllLeagueData({}); setWinnerPick(null); setTopScorerPick(null); setCelebratedIds(new Set()); setLastSeenGoals(0); setSeenActualIds(new Set()); setShowOnboarding(true); try { localStorage.removeItem("wc2026_celebrated_v1"); localStorage.removeItem("wc2026_lastseen_goals_v1"); localStorage.removeItem("wc2026_seen_actuals_v1"); localStorage.removeItem("wc2026_onboarded_v1"); localStorage.removeItem("wc2026_world_v2"); localStorage.removeItem("wc2026_achv_v1"); localStorage.removeItem("wc2026_pickhours_v1"); localStorage.removeItem("wc2026_coins_v6"); localStorage.removeItem("wc2026_cards_v1"); } catch {}
+      setFriends([]); setActuals({}); setActualKo({}); setActualKoScores({}); setLeagueName(""); setLeagueCode(""); setLeagueCodes([]); setActiveLeagueCode(""); setAllLeagueData({}); setWinnerPick(null); setTopScorerPick(null); setCelebratedIds(new Set()); setLastSeenGoals(0); setSeenActualIds(new Set()); setShowOnboarding(true); try { localStorage.removeItem("wc2026_celebrated_v1"); localStorage.removeItem("wc2026_lastseen_goals_v1"); localStorage.removeItem("wc2026_seen_actuals_v1"); localStorage.removeItem("wc2026_onboarded_v1"); localStorage.removeItem("wc2026_world_v2"); localStorage.removeItem("wc2026_achv_v1"); localStorage.removeItem("wc2026_pickhours_v1"); localStorage.removeItem("wc2026_coins_v7"); localStorage.removeItem("wc2026_cards_v2"); } catch {}
       setScreen("welcome");
       setShowIntro(false);
       return;
@@ -9822,7 +9822,7 @@ export default function App() {
         // so the user can restore their progress later with a backup code.
         clearState();
         setName(""); setPicks({}); setKoWinners({}); setKoPicks({}); setCoins({ balance: COINS.STARTING_BONUS, earnedFromIds: {}, gotStartingBonus: true }); setCardCollection({}); setGroupIdx(0);
-        setFriends([]); setActuals({}); setActualKo({}); setActualKoScores({}); setLeagueName(""); setLeagueCode(""); setLeagueCodes([]); setActiveLeagueCode(""); setAllLeagueData({}); setWinnerPick(null); setTopScorerPick(null); setCelebratedIds(new Set()); setLastSeenGoals(0); setSeenActualIds(new Set()); setShowOnboarding(true); try { localStorage.removeItem("wc2026_celebrated_v1"); localStorage.removeItem("wc2026_lastseen_goals_v1"); localStorage.removeItem("wc2026_seen_actuals_v1"); localStorage.removeItem("wc2026_onboarded_v1"); localStorage.removeItem("wc2026_world_v2"); localStorage.removeItem("wc2026_achv_v1"); localStorage.removeItem("wc2026_pickhours_v1"); localStorage.removeItem("wc2026_coins_v6"); localStorage.removeItem("wc2026_cards_v1"); } catch {}
+        setFriends([]); setActuals({}); setActualKo({}); setActualKoScores({}); setLeagueName(""); setLeagueCode(""); setLeagueCodes([]); setActiveLeagueCode(""); setAllLeagueData({}); setWinnerPick(null); setTopScorerPick(null); setCelebratedIds(new Set()); setLastSeenGoals(0); setSeenActualIds(new Set()); setShowOnboarding(true); try { localStorage.removeItem("wc2026_celebrated_v1"); localStorage.removeItem("wc2026_lastseen_goals_v1"); localStorage.removeItem("wc2026_seen_actuals_v1"); localStorage.removeItem("wc2026_onboarded_v1"); localStorage.removeItem("wc2026_world_v2"); localStorage.removeItem("wc2026_achv_v1"); localStorage.removeItem("wc2026_pickhours_v1"); localStorage.removeItem("wc2026_coins_v7"); localStorage.removeItem("wc2026_cards_v2"); } catch {}
         setScreen("welcome");
         setShowIntro(false);
       },
