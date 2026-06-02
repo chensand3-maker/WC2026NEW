@@ -8,7 +8,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "2.2.1";
+const APP_VERSION = "2.3.0";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -4421,17 +4421,55 @@ function SlotReel({ type, spinning, stopAt, finalValue }) {
 
 // ─── 🃏 PLAYER CARD COMPONENT ──────────────────────────────────────────────
 // Shared card display used in the reveal + collection. Animates by rarity.
+// 3-letter country codes (FIFA style)
+const COUNTRY_CODE = {
+  "Argentina":"ARG","France":"FRA","England":"ENG","Brazil":"BRA","Portugal":"POR",
+  "Spain":"ESP","Germany":"GER","Netherlands":"NED","Belgium":"BEL","Italy":"ITA",
+  "Croatia":"CRO","Morocco":"MAR","Uruguay":"URU","Colombia":"COL","Senegal":"SEN",
+  "Mexico":"MEX","USA":"USA","Japan":"JPN","Switzerland":"SUI","Denmark":"DEN",
+  "South Korea":"KOR","Ecuador":"ECU","Austria":"AUT","Türkiye":"TUR","Australia":"AUS",
+  "Canada":"CAN","Norway":"NOR","Panama":"PAN","Algeria":"ALG","Egypt":"EGY",
+  "Scotland":"SCO","Paraguay":"PAR","Tunisia":"TUN","Côte d\'Ivoire":"CIV","Czechia":"CZE",
+  "Uzbekistan":"UZB","Qatar":"QAT","Saudi Arabia":"KSA","South Africa":"RSA","Jordan":"JOR",
+  "Iran":"IRN","Iraq":"IRQ","Bosnia":"BIH","DR Congo":"COD","Cabo Verde":"CPV",
+  "Ghana":"GHA","Curaçao":"CUW","Haiti":"HAI","New Zealand":"NZL","Sweden":"SWE",
+};
+function countryCode(n) { return COUNTRY_CODE[n] || (n || "").slice(0,3).toUpperCase(); }
+
+// Shirt number by position (deterministic from name)
+function shirtNumber(card) {
+  const h = _stringHash(card.name);
+  const numbers = {
+    GK: [1, 12, 22, 23],
+    D:  [2, 3, 4, 5, 6],
+    M:  [8, 10, 14, 16, 18, 20],
+    F:  [7, 9, 11, 17, 19, 21],
+  }[card.pos] || [10];
+  return numbers[h % numbers.length];
+}
+
+// Skill stars based on rating (1-5)
+function skillStars(rating) {
+  if (rating >= 95) return 5;
+  if (rating >= 85) return 4;
+  if (rating >= 75) return 3;
+  if (rating >= 65) return 2;
+  return 1;
+}
+
 function PlayerCard({ card, size = "L", animated = false }) {
   const cfg = RARITY_CONFIG[card.rarity];
   const isLegendary = card.rarity === "L";
   const rating = getPlayerRating(card);
   const isPerfect = rating === 99;
+  const number = shirtNumber(card);
+  const stars = skillStars(rating);
+  const code = countryCode(card.team);
 
-  const dims = size === "L" ? { w: 240, h: 360, font: 19, flag: 80, position: 16, rating: 42 }
-             : size === "M" ? { w: 140, h: 210, font: 13, flag: 46, position: 11, rating: 24 }
-             : { w: 95, h: 138, font: 9, flag: 30, position: 8, rating: 17 };
+  const dims = size === "L" ? { w: 240, h: 360, font: 18, flag: 80, position: 16, rating: 42, num: 200, code: 11, star: 10 }
+             : size === "M" ? { w: 140, h: 210, font: 12, flag: 46, position: 11, rating: 24, num: 120, code: 7, star: 7 }
+             : { w: 95, h: 138, font: 9, flag: 30, position: 8, rating: 17, num: 80, code: 5, star: 5 };
 
-  // Position info — full label, short label, and visual icon
   const posInfo = {
     GK: { label: "GOALKEEPER", short: "GK", color: "#fbbf24", icon: "🧤" },
     D:  { label: "DEFENDER",   short: "DEF", color: "#3b82f6", icon: "🛡️" },
@@ -4455,7 +4493,23 @@ function PlayerCard({ card, size = "L", animated = false }) {
       position: "relative",
       overflow: "hidden",
     }}>
-      {/* Holographic stripe pattern (subtle, sports-card style) */}
+      {/* GIANT shirt number in the background (very subtle) */}
+      <div style={{
+        position:"absolute",
+        top:"42%",left:"50%",
+        transform:"translate(-50%, -50%)",
+        fontSize: dims.num,
+        fontWeight: 900,
+        color: "rgba(255,255,255,0.08)",
+        fontVariantNumeric:"tabular-nums",
+        letterSpacing:-8,
+        lineHeight:1,
+        pointerEvents:"none",
+        zIndex:1,
+        userSelect:"none",
+      }}>{number}</div>
+
+      {/* Holographic stripe pattern */}
       <div style={{
         position:"absolute",inset:0,
         background:`repeating-linear-gradient(
@@ -4468,6 +4522,44 @@ function PlayerCard({ card, size = "L", animated = false }) {
         pointerEvents:"none",
         zIndex:1,
       }}/>
+
+      {/* Corner FIFA-style decorations */}
+      {size !== "S" && (
+        <>
+          <div style={{
+            position:"absolute",top:6,left:6,
+            width:14,height:14,
+            borderTop:`2px solid ${cfg.color}aa`,
+            borderLeft:`2px solid ${cfg.color}aa`,
+            borderRadius:"3px 0 0 0",
+            pointerEvents:"none",zIndex:2,
+          }}/>
+          <div style={{
+            position:"absolute",top:6,right:6,
+            width:14,height:14,
+            borderTop:`2px solid ${cfg.color}aa`,
+            borderRight:`2px solid ${cfg.color}aa`,
+            borderRadius:"0 3px 0 0",
+            pointerEvents:"none",zIndex:2,
+          }}/>
+          <div style={{
+            position:"absolute",bottom:6,left:6,
+            width:14,height:14,
+            borderBottom:`2px solid ${cfg.color}aa`,
+            borderLeft:`2px solid ${cfg.color}aa`,
+            borderRadius:"0 0 0 3px",
+            pointerEvents:"none",zIndex:2,
+          }}/>
+          <div style={{
+            position:"absolute",bottom:6,right:6,
+            width:14,height:14,
+            borderBottom:`2px solid ${cfg.color}aa`,
+            borderRight:`2px solid ${cfg.color}aa`,
+            borderRadius:"0 0 3px 0",
+            pointerEvents:"none",zIndex:2,
+          }}/>
+        </>
+      )}
 
       {/* Diagonal shine streak */}
       <div style={{
@@ -4482,51 +4574,64 @@ function PlayerCard({ card, size = "L", animated = false }) {
       {/* Legendary sparkles */}
       {isLegendary && animated && (
         <>
-          <div style={{position:"absolute",top:8,right:54,fontSize:14,animation:"sparkle 1.5s ease-in-out infinite",zIndex:4}}>✨</div>
-          <div style={{position:"absolute",bottom:54,left:8,fontSize:14,animation:"sparkle 1.5s ease-in-out infinite 1s",zIndex:4}}>✨</div>
-          <div style={{position:"absolute",bottom:54,right:8,fontSize:14,animation:"sparkle 1.5s ease-in-out infinite 0.7s",zIndex:4}}>✨</div>
+          <div style={{position:"absolute",top:18,right:60,fontSize:14,animation:"sparkle 1.5s ease-in-out infinite",zIndex:4}}>✨</div>
+          <div style={{position:"absolute",bottom:60,left:18,fontSize:14,animation:"sparkle 1.5s ease-in-out infinite 1s",zIndex:4}}>✨</div>
+          <div style={{position:"absolute",bottom:60,right:18,fontSize:14,animation:"sparkle 1.5s ease-in-out infinite 0.7s",zIndex:4}}>✨</div>
         </>
       )}
 
-      {/* ─── HEADER: Rating badge (left) + Rarity emoji (right) ─── */}
+      {/* ─── HEADER: Rating + stars (left) + Rarity emoji (right) ─── */}
       <div style={{
         display:"flex",alignItems:"flex-start",justifyContent:"space-between",
-        padding: size === "L" ? "10px 12px 6px" : size === "M" ? "8px 8px 4px" : "5px 5px 3px",
+        padding: size === "L" ? "10px 12px 4px" : size === "M" ? "8px 8px 4px" : "5px 5px 3px",
         position:"relative",zIndex:3,
       }}>
-        {/* Rating badge — FIFA-style big number */}
-        <div style={{
-          width: dims.rating, height: dims.rating,
-          background: isPerfect
-            ? "radial-gradient(circle at 30% 30%, #fde68a, #fbbf24, #92400e)"
-            : `linear-gradient(135deg, rgba(0,0,0,0.55), rgba(0,0,0,0.75))`,
-          border: `2px solid ${cfg.color}`,
-          borderRadius: 8,
-          display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",
-          boxShadow: isPerfect
-            ? `0 0 16px #fbbf24, inset 0 -3px 6px rgba(0,0,0,0.3)`
-            : `0 2px 4px rgba(0,0,0,0.4), inset 0 -2px 4px rgba(0,0,0,0.3)`,
-          lineHeight:1,
-        }}>
+        <div style={{display:"flex",flexDirection:"column",alignItems:"flex-start",gap:3}}>
+          {/* Rating badge */}
           <div style={{
-            fontSize: size === "L" ? 24 : size === "M" ? 15 : 11,
-            fontWeight:900,
-            color: isPerfect ? "#0a0e1c" : "#fff",
-            textShadow: isPerfect ? "none" : "0 1px 2px rgba(0,0,0,0.5)",
-            fontVariantNumeric:"tabular-nums",
-            letterSpacing:-1,
-          }}>{rating}</div>
-          {size !== "S" && (
+            width: dims.rating, height: dims.rating,
+            background: isPerfect
+              ? "radial-gradient(circle at 30% 30%, #fde68a, #fbbf24, #92400e)"
+              : `linear-gradient(135deg, rgba(0,0,0,0.55), rgba(0,0,0,0.75))`,
+            border: `2px solid ${cfg.color}`,
+            borderRadius: 8,
+            display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",
+            boxShadow: isPerfect
+              ? `0 0 16px #fbbf24, inset 0 -3px 6px rgba(0,0,0,0.3)`
+              : `0 2px 4px rgba(0,0,0,0.4), inset 0 -2px 4px rgba(0,0,0,0.3)`,
+            lineHeight:1,
+          }}>
             <div style={{
-              fontSize: size === "L" ? 8 : 6,
-              color: isPerfect ? "#451a03" : "#cbd5e1",
-              fontWeight:900,letterSpacing:1,
-              marginTop:-2,
-            }}>{posInfo.short}</div>
+              fontSize: size === "L" ? 24 : size === "M" ? 15 : 11,
+              fontWeight:900,
+              color: isPerfect ? "#0a0e1c" : "#fff",
+              textShadow: isPerfect ? "none" : "0 1px 2px rgba(0,0,0,0.5)",
+              fontVariantNumeric:"tabular-nums",
+              letterSpacing:-1,
+            }}>{rating}</div>
+            {size !== "S" && (
+              <div style={{
+                fontSize: size === "L" ? 8 : 6,
+                color: isPerfect ? "#451a03" : "#cbd5e1",
+                fontWeight:900,letterSpacing:1,
+                marginTop:-2,
+              }}>{posInfo.short}</div>
+            )}
+          </div>
+          {/* Skill stars */}
+          {size !== "S" && (
+            <div style={{display:"flex",gap:1}}>
+              {[...Array(5)].map((_, i) => (
+                <span key={i} style={{
+                  fontSize: dims.star,
+                  color: i < stars ? "#fde68a" : "rgba(255,255,255,0.25)",
+                  filter: i < stars ? `drop-shadow(0 0 3px ${cfg.color})` : "none",
+                }}>★</span>
+              ))}
+            </div>
           )}
         </div>
 
-        {/* Rarity emoji */}
         <div style={{
           fontSize: size === "L" ? 22 : size === "M" ? 16 : 12,
           filter: animated ? `drop-shadow(0 0 8px ${cfg.glow})` : "none",
@@ -4534,11 +4639,12 @@ function PlayerCard({ card, size = "L", animated = false }) {
         }}>{cfg.emoji}</div>
       </div>
 
-      {/* ─── FLAG in glowing circle (centerpiece) ─── */}
+      {/* ─── FLAG in glowing circle + country code ─── */}
       <div style={{
         flex:1,
-        display:"flex",alignItems:"center",justifyContent:"center",
+        display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",
         position:"relative",zIndex:3,
+        gap: size === "L" ? 6 : 3,
       }}>
         <div style={{
           width: dims.flag + (size === "L" ? 32 : size === "M" ? 18 : 10),
@@ -4556,6 +4662,17 @@ function PlayerCard({ card, size = "L", animated = false }) {
             filter:"drop-shadow(0 4px 8px rgba(0,0,0,0.5))",
           }}>{card.flag}</div>
         </div>
+        {/* Country code under flag */}
+        {size !== "S" && (
+          <div style={{
+            fontSize: dims.code,
+            fontWeight:900,
+            color: "#fff",
+            letterSpacing: size === "L" ? 4 : 2,
+            opacity:0.85,
+            textShadow:"0 1px 3px rgba(0,0,0,0.6)",
+          }}>{code}</div>
+        )}
       </div>
 
       {/* ─── PLAYER NAME + TEAM ─── */}
@@ -4574,15 +4691,15 @@ function PlayerCard({ card, size = "L", animated = false }) {
           {card.name}
         </div>
         <div style={{
-          fontSize: size === "L" ? 10 : 8,
-          color:"#fff",opacity:0.75,fontWeight:700,letterSpacing:1.5,
+          fontSize: size === "L" ? 9 : 7,
+          color:"#fff",opacity:0.65,fontWeight:700,letterSpacing:1.5,
           textTransform:"uppercase",
         }}>
           {card.team}
         </div>
       </div>
 
-      {/* ─── FOOTER: Position with icons on both sides ─── */}
+      {/* ─── FOOTER: Position with icons + shirt # ─── */}
       <div style={{
         background:`linear-gradient(90deg, transparent 0%, ${posInfo.color}55 50%, transparent 100%)`,
         borderTop:`1px solid ${cfg.color}66`,
@@ -4606,7 +4723,7 @@ function PlayerCard({ card, size = "L", animated = false }) {
         }}>{posInfo.icon}</span>
       </div>
 
-      {/* Perfect 99 special badge */}
+      {/* Perfect 99 badge */}
       {isPerfect && (
         <div style={{
           position:"absolute",
@@ -4672,7 +4789,7 @@ function ConfettiBurst({ count = 40 }) {
   );
 }
 
-function CardRevealModal({ result, onClose }) {
+function CardRevealModal({ result, onClose, freshSpin = false }) {
   const t = useT();
   const { card, isDuplicate, refund } = result;
   const cfg = RARITY_CONFIG[card.rarity];
@@ -4681,10 +4798,24 @@ function CardRevealModal({ result, onClose }) {
   const isRare = card.rarity === "R";
   const isUncommon = card.rarity === "U";
 
-  // Play win sound on mount
+  // Wrap stage: if this is a fresh spin, show pack first, user taps to open
+  const [wrapOpen, setWrapOpen] = useState(!freshSpin);
+
+  // Play win sound when card is revealed (after wrap opens or immediately for previews)
   useEffect(() => {
-    playWinSound(card.rarity);
-  }, [card.rarity]);
+    if (wrapOpen) playWinSound(card.rarity);
+  }, [wrapOpen, card.rarity]);
+
+  // Wrapping tap handler
+  const handleOpenPack = () => {
+    if (wrapOpen) return;
+    setWrapOpen(true);
+    try {
+      if (card.rarity === "L") navigator.vibrate?.([30, 50, 30, 50, 80, 50, 120]);
+      else if (card.rarity === "E") navigator.vibrate?.([20, 40, 50]);
+      else navigator.vibrate?.(20);
+    } catch {}
+  };
 
   // Vignette color matches the rarity
   const vignetteBg = isLegendary ? "radial-gradient(circle at center, rgba(120,53,15,0.4) 0%, rgba(0,0,0,0.92) 70%)"
@@ -4694,7 +4825,7 @@ function CardRevealModal({ result, onClose }) {
                                  : "rgba(0,0,0,0.7)";
 
   return (
-    <div onClick={onClose} style={{
+    <div onClick={wrapOpen ? onClose : handleOpenPack} style={{
       position:"fixed",inset:0,zIndex:9500,
       background: vignetteBg,
       display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",
@@ -4774,7 +4905,98 @@ function CardRevealModal({ result, onClose }) {
         }
       `}</style>
 
+      {/* 🎁 CARD PACK — shown before opening */}
+      {!wrapOpen && (
+        <div style={{
+          position:"relative",
+          zIndex:9510,
+          animation:"packFloat 2s ease-in-out infinite",
+          textAlign:"center",
+        }}>
+          <style>{`
+            @keyframes packFloat {
+              0%, 100% { transform: translateY(0) rotate(-2deg); }
+              50% { transform: translateY(-12px) rotate(2deg); }
+            }
+            @keyframes packGlow {
+              0%, 100% { box-shadow: 0 0 30px ${cfg.glow}, 0 10px 40px rgba(0,0,0,0.6); }
+              50% { box-shadow: 0 0 60px ${cfg.glow}, 0 0 100px ${cfg.glow}, 0 10px 40px rgba(0,0,0,0.6); }
+            }
+            @keyframes tapHint {
+              0%, 100% { opacity: 0.5; transform: scale(1); }
+              50% { opacity: 1; transform: scale(1.1); }
+            }
+          `}</style>
+          <div style={{
+            width:200,height:300,
+            background:`linear-gradient(135deg, ${cfg.bgGrad})`,
+            border:`4px solid ${cfg.color}`,
+            borderRadius:16,
+            display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",
+            gap:14,
+            animation:"packGlow 2s ease-in-out infinite",
+            position:"relative",
+            overflow:"hidden",
+          }}>
+            {/* Holographic pattern on pack */}
+            <div style={{
+              position:"absolute",inset:0,
+              background:`repeating-linear-gradient(
+                45deg,
+                transparent 0px,
+                transparent 14px,
+                rgba(255,255,255,0.06) 14px,
+                rgba(255,255,255,0.06) 16px
+              )`,
+              pointerEvents:"none",
+            }}/>
+            {/* Diagonal shine */}
+            <div style={{
+              position:"absolute",
+              top:0,left:"-50%",
+              width:"50%",height:"100%",
+              background:"linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.3) 50%, transparent 70%)",
+              animation:"shimmer 3s linear infinite",
+              pointerEvents:"none",
+            }}/>
+            <style>{`
+              @keyframes shimmer {
+                0% { transform: translateX(-100%); }
+                100% { transform: translateX(800%); }
+              }
+            `}</style>
+            {/* Pack content */}
+            <div style={{fontSize:60,zIndex:2,filter:`drop-shadow(0 4px 12px ${cfg.glow})`}}>🎁</div>
+            <div style={{
+              fontSize:14,fontWeight:900,letterSpacing:3,color:"#fff",zIndex:2,
+              textShadow:"0 2px 6px rgba(0,0,0,0.8)",
+            }}>PLAYER PACK</div>
+            <div style={{
+              padding:"4px 12px",
+              background:"rgba(0,0,0,0.3)",
+              border:`2px solid ${cfg.color}`,
+              borderRadius:6,
+              fontSize:11,fontWeight:900,letterSpacing:2,color:cfg.color,
+              zIndex:2,
+              textShadow:`0 0 8px ${cfg.glow}`,
+            }}>{cfg.label}</div>
+          </div>
+          {/* Tap to open hint */}
+          <div style={{
+            marginTop:24,
+            fontSize:13,color:cfg.color,letterSpacing:3,fontWeight:900,
+            animation:"tapHint 1.2s ease-in-out infinite",
+            textShadow:`0 0 12px ${cfg.glow}`,
+          }}>👆 TAP TO OPEN</div>
+        </div>
+      )}
+
+      {/* Card + effects only show after pack opens */}
+      {wrapOpen && (
+        <>
+
       {/* ═════════ 🏆 LEGENDARY EFFECTS ═════════ */}
+
       {isLegendary && (
         <>
           {/* Shockwave ring - emanates from center */}
@@ -5069,6 +5291,8 @@ function CardRevealModal({ result, onClose }) {
         }}>
           {t("roulette.tapToClose")}
         </div>
+      )}
+        </>
       )}
     </div>
   );
@@ -10360,6 +10584,7 @@ export default function App() {
         <CardRevealModal
           result={spinResult}
           onClose={closeSpinResult}
+          freshSpin={true}
         />
       )}
 
