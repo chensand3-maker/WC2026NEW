@@ -8,7 +8,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "2.4.1";
+const APP_VERSION = "2.5.0";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -424,6 +424,22 @@ const TRANSLATIONS = {
     "achv.lucky_7.desc": "Have exactly 7 exact predictions",
     "achv.clown.name": "The Clown",
     "achv.clown.desc": "5 wrong predictions in a row 🤡",
+    "achv.first_card.name": "First Card",
+    "achv.first_card.desc": "Open your first player card",
+    "achv.ten_cards.name": "Card Collector",
+    "achv.ten_cards.desc": "Collect 10 different cards",
+    "achv.fifty_cards.name": "Card Hoarder",
+    "achv.fifty_cards.desc": "Collect 50 different cards",
+    "achv.hundred_cards.name": "Card Champion",
+    "achv.hundred_cards.desc": "Collect 100 different cards",
+    "achv.first_legendary.name": "Legend Pulled!",
+    "achv.first_legendary.desc": "Pull your first Legendary card",
+    "achv.five_legendary.name": "Hall of Fame",
+    "achv.five_legendary.desc": "Collect 5 Legendary cards",
+    "achv.perfect_card.name": "PERFECT 99!",
+    "achv.perfect_card.desc": "Pull a card rated 99",
+    "achv.card_master.name": "Card Master",
+    "achv.card_master.desc": "Collect every single card 🌟",
     // Profile / Stats
     "profile.yourStats": "YOUR STATS",
     "profile.totalPoints": "TOTAL POINTS",
@@ -868,6 +884,22 @@ const TRANSLATIONS = {
     "achv.lucky_7.desc": "ניחשת בדיוק 7 ניחושים מדויקים",
     "achv.clown.name": "הליצן",
     "achv.clown.desc": "5 פספוסים ברצף 🤡",
+    "achv.first_card.name": "קלף ראשון",
+    "achv.first_card.desc": "פתח את הקלף הראשון שלך",
+    "achv.ten_cards.name": "אספן",
+    "achv.ten_cards.desc": "אסוף 10 קלפים שונים",
+    "achv.fifty_cards.name": "אספן רציני",
+    "achv.fifty_cards.desc": "אסוף 50 קלפים שונים",
+    "achv.hundred_cards.name": "אלוף הקלפים",
+    "achv.hundred_cards.desc": "אסוף 100 קלפים שונים",
+    "achv.first_legendary.name": "האגדה הראשונה!",
+    "achv.first_legendary.desc": "תקבל את הקלף הלג'נדרי הראשון שלך",
+    "achv.five_legendary.name": "היכל התהילה",
+    "achv.five_legendary.desc": "אסוף 5 קלפים לג'נדריים",
+    "achv.perfect_card.name": "מושלם 99!",
+    "achv.perfect_card.desc": "קבל קלף עם דירוג 99",
+    "achv.card_master.name": "מאסטר הקלפים",
+    "achv.card_master.desc": "אסוף את כל הקלפים 🌟",
     // Profile / Stats
     "profile.yourStats": "הסטטיסטיקה שלך",
     "profile.totalPoints": "סך הנקודות",
@@ -1428,6 +1460,40 @@ const ACHIEVEMENTS = [
       }
       return false;
     } },
+  // ─── 🃏 CARD COLLECTOR ACHIEVEMENTS ────────────────────────────────
+  { id: "first_card", emoji: "🎴", check: ({ cardCollection }) => {
+    if (!cardCollection) return false;
+    return Object.values(cardCollection).some(c => c > 0);
+  } },
+  { id: "ten_cards", emoji: "🃏", check: ({ cardCollection }) => {
+    if (!cardCollection) return false;
+    return Object.keys(cardCollection).filter(k => cardCollection[k] > 0).length >= 10;
+  } },
+  { id: "fifty_cards", emoji: "📦", check: ({ cardCollection }) => {
+    if (!cardCollection) return false;
+    return Object.keys(cardCollection).filter(k => cardCollection[k] > 0).length >= 50;
+  } },
+  { id: "hundred_cards", emoji: "💯", check: ({ cardCollection }) => {
+    if (!cardCollection) return false;
+    return Object.keys(cardCollection).filter(k => cardCollection[k] > 0).length >= 100;
+  } },
+  { id: "first_legendary", emoji: "🏆", check: ({ cardCollection }) => {
+    if (!cardCollection) return false;
+    return CARDS_BY_RARITY.L.some(c => (cardCollection[c.id] || 0) > 0);
+  } },
+  { id: "five_legendary", emoji: "👑", check: ({ cardCollection }) => {
+    if (!cardCollection) return false;
+    return CARDS_BY_RARITY.L.filter(c => (cardCollection[c.id] || 0) > 0).length >= 5;
+  } },
+  { id: "perfect_card", emoji: "💎", check: ({ cardCollection }) => {
+    if (!cardCollection) return false;
+    return CARDS.some(c => (cardCollection[c.id] || 0) > 0 && getPlayerRating(c) === 99);
+  } },
+  { id: "card_master", emoji: "🌟", check: ({ cardCollection }) => {
+    if (!cardCollection) return false;
+    const owned = Object.keys(cardCollection).filter(k => cardCollection[k] > 0).length;
+    return owned >= CARDS.length;
+  } },
 ];
 
 function checkAchievements(ctx) {
@@ -4662,18 +4728,22 @@ function PlayerCard({ card, size = "L", animated = false, flippable = false }) {
         zIndex:1,
       }}/>
 
-      {/* MUNDIALITO 2026 logo — small bottom-center watermark */}
+      {/* MUNDIALITO 2026 — banner at top center */}
       {size !== "S" && (
         <div style={{
           position:"absolute",
-          bottom: size === "L" ? 38 : 24,
+          top: size === "L" ? 8 : 5,
           left:"50%",
           transform:"translateX(-50%)",
-          fontSize: size === "L" ? 7 : 5,
-          color:"#fff",opacity:0.25,letterSpacing:2,fontWeight:900,
+          fontSize: size === "L" ? 8 : 6,
+          color: cfg.color,
+          opacity: 0.85,
+          letterSpacing: size === "L" ? 3 : 1.5,
+          fontWeight:900,
           pointerEvents:"none",
           zIndex:2,
           whiteSpace:"nowrap",
+          textShadow:`0 0 6px ${cfg.glow}`,
         }}>🏆 MUNDIALITO 2026 🏆</div>
       )}
 
@@ -4709,7 +4779,7 @@ function PlayerCard({ card, size = "L", animated = false, flippable = false }) {
       {/* HEADER: Rating + stars (left) | Rarity emoji (right) */}
       <div style={{
         display:"flex",alignItems:"flex-start",justifyContent:"space-between",
-        padding: size === "L" ? "10px 12px 4px" : size === "M" ? "8px 8px 4px" : "5px 5px 3px",
+        padding: size === "L" ? "24px 12px 4px" : size === "M" ? "18px 8px 4px" : "5px 5px 3px",
         position:"relative",zIndex:3,
       }}>
         <div style={{display:"flex",flexDirection:"column",alignItems:"flex-start",gap:3}}>
@@ -10046,6 +10116,7 @@ export default function App() {
       totalPoints: myTotalPoints,
       leagueCodes, myRank, leagueSize, globalRank,
       pickedAtHours,
+      cardCollection,
     };
     const nowUnlocked = checkAchievements(ctx);
     // Find genuinely new badges
@@ -10062,7 +10133,7 @@ export default function App() {
       try { localStorage.setItem("wc2026_achv_v1", JSON.stringify([...merged])); } catch {}
       setNewBadgeQueue(q => [...q, ...newOnes]);
     }
-  }, [picks, actuals, koWinners, koPicks, actualKoScores, winnerPick, topScorerPick, actualWinner, actualTopScorer, myTotalPoints, leagueCodes.join("|"), leagueData, pickedAtHours]);
+  }, [picks, actuals, koWinners, koPicks, actualKoScores, winnerPick, topScorerPick, actualWinner, actualTopScorer, myTotalPoints, leagueCodes.join("|"), leagueData, pickedAtHours, cardCollection]);
 
   // ─── 💰 COIN REWARDS ──────────────────────────────────────────────────
   // Whenever a new match result appears, scan for predictions that just
