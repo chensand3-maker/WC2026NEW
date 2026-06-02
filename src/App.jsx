@@ -8,7 +8,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "2.0.2";
+const APP_VERSION = "2.0.4";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -4416,14 +4416,14 @@ function PlayerCard({ card, size = "L", animated = false }) {
     <div style={{
       width: dims.w, height: dims.h,
       background: cfg.bgGrad,
-      backgroundSize: isAnimated ? "200% 200%" : "100% 100%",
-      animation: isAnimated ? "cardShimmer 3s ease-in-out infinite" : "none",
+      backgroundSize: "150% 150%",
+      backgroundPosition: "center",
       border: `3px solid ${cfg.color}`,
       borderRadius: 14,
       padding: 0,
       display: "flex", flexDirection: "column",
       boxShadow: animated
-        ? `0 0 40px ${cfg.glow}, 0 8px 24px rgba(0,0,0,0.5), inset 0 0 30px rgba(0,0,0,0.3)`
+        ? `0 0 30px ${cfg.glow}, 0 8px 24px rgba(0,0,0,0.5), inset 0 0 30px rgba(0,0,0,0.3)`
         : `0 4px 12px rgba(0,0,0,0.3), inset 0 0 20px rgba(0,0,0,0.2)`,
       position: "relative",
       overflow: "hidden",
@@ -5026,17 +5026,22 @@ function CardRevealModal({ result, onClose }) {
         </div>
       )}
 
-      {/* ═════════ The card itself — appears at "card" stage ═════════ */}
-      {(
-        <div style={{
-          animation: `cardFlip 0.9s cubic-bezier(0.34, 1.56, 0.64, 1)${isLegendary ? ", legendaryBorderPulse 1.8s ease-in-out infinite 1s" : ""}`,
-          borderRadius:16,
-          zIndex:9510,
-          position:"relative",
-        }}>
-          <PlayerCard card={card} size="L" animated={true} />
-        </div>
-      )}
+      {/* ═════════ The card itself ═════════ */}
+      <div style={{
+        animation: `cardFlip 0.9s cubic-bezier(0.34, 1.56, 0.64, 1) both`,
+        borderRadius:16,
+        zIndex:9510,
+        position:"relative",
+        filter: isLegendary
+          ? `drop-shadow(0 0 30px ${cfg.glow}) drop-shadow(0 0 60px ${cfg.glow})`
+          : isEpic
+          ? `drop-shadow(0 0 20px ${cfg.glow}) drop-shadow(0 0 40px ${cfg.glow})`
+          : isRare
+          ? `drop-shadow(0 0 16px ${cfg.glow})`
+          : "none",
+      }}>
+        <PlayerCard card={card} size="L" animated={true} />
+      </div>
 
       {/* Duplicate info */}
       {isDuplicate && (
@@ -5078,12 +5083,22 @@ function CardRevealModal({ result, onClose }) {
 function CollectionModal({ collection, onClose }) {
   const t = useT();
   const [filter, setFilter] = useState("all");
+  const [previewCard, setPreviewCard] = useState(null); // tap a card to "reveal" it again
 
   const filteredCards = useMemo(() => {
-    if (filter === "all") return CARDS;
-    if (filter === "owned") return CARDS.filter(c => (collection[c.id] || 0) > 0);
-    if (filter === "missing") return CARDS.filter(c => (collection[c.id] || 0) === 0);
-    return CARDS.filter(c => c.rarity === filter);
+    // Sort by rarity: Legendary first, then Epic, Rare, Uncommon, Common
+    const rarityOrder = { L: 0, E: 1, R: 2, U: 3, C: 4 };
+    const sorter = (a, b) => {
+      const r = rarityOrder[a.rarity] - rarityOrder[b.rarity];
+      if (r !== 0) return r;
+      return a.name.localeCompare(b.name);
+    };
+    let cards;
+    if (filter === "all") cards = CARDS;
+    else if (filter === "owned") cards = CARDS.filter(c => (collection[c.id] || 0) > 0);
+    else if (filter === "missing") cards = CARDS.filter(c => (collection[c.id] || 0) === 0);
+    else cards = CARDS.filter(c => c.rarity === filter);
+    return [...cards].sort(sorter);
   }, [filter, collection]);
 
   const ownedCount = CARDS.filter(c => (collection[c.id] || 0) > 0).length;
@@ -5167,11 +5182,16 @@ function CollectionModal({ collection, onClose }) {
             const count = collection[card.id] || 0;
             const owned = count > 0;
             return (
-              <div key={card.id} style={{
-                position:"relative",
-                opacity: owned ? 1 : 0.3,
-                filter: owned ? "none" : "grayscale(1)",
-              }}>
+              <div
+                key={card.id}
+                onClick={owned ? () => setPreviewCard(card) : undefined}
+                style={{
+                  position:"relative",
+                  opacity: owned ? 1 : 0.3,
+                  filter: owned ? "none" : "grayscale(1)",
+                  cursor: owned ? "pointer" : "default",
+                }}
+              >
                 <PlayerCard card={card} size="S" animated={owned} />
                 {!owned && (
                   <div style={{
@@ -5194,6 +5214,14 @@ function CollectionModal({ collection, onClose }) {
           })}
         </div>
       </div>
+
+      {/* 🎉 Preview reveal — replay the wow animation for an owned card */}
+      {previewCard && (
+        <CardRevealModal
+          result={{ card: previewCard, isDuplicate: false, refund: 0 }}
+          onClose={() => setPreviewCard(null)}
+        />
+      )}
     </div>
   );
 }
