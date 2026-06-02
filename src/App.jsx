@@ -8,7 +8,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "1.9.8";
+const APP_VERSION = "2.0.0";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -3952,7 +3952,7 @@ function RouletteModal({ coins, isSpinning, pendingCard, onSpin, onClose, onShow
   return (
     <div onClick={() => !isSpinning && onClose()} style={{
       position:"fixed",inset:0,zIndex:9000,
-      background:"radial-gradient(circle at center, rgba(30,41,59,0.85), rgba(0,0,0,0.92))",
+      background:"radial-gradient(circle at center, rgba(51,65,85,0.85), rgba(15,20,36,0.92))",
       display:"flex",alignItems:"center",justifyContent:"center",
       padding:14,
     }}>
@@ -3981,7 +3981,7 @@ function RouletteModal({ coins, isSpinning, pendingCard, onSpin, onClose, onShow
       `}</style>
       <div onClick={e => e.stopPropagation()} style={{
         maxWidth:420,width:"100%",
-        background:"linear-gradient(180deg, #1e293b, #0f172a)",
+        background:"linear-gradient(180deg, #334155, #1e293b)",
         border:"2px solid #fbbf24",
         borderRadius:24,padding:"24px 20px",
         boxShadow:"0 20px 80px rgba(251,191,36,0.2)",
@@ -4047,18 +4047,18 @@ function RouletteModal({ coins, isSpinning, pendingCard, onSpin, onClose, onShow
             />
           </div>
 
-          {/* 🎰 LEVER on the RIGHT — BIG & VISIBLE */}
+          {/* 🎰 LEVER on the RIGHT — sized just right, bright gold arm */}
           <div style={{
-            width:80,
+            width:60,
             display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"flex-start",
             position:"relative",
-            paddingTop:6,
+            paddingTop:4,
           }}>
-            {/* Mount base — chunky gold housing */}
+            {/* Mount base — gold housing */}
             <div style={{
-              width:42,height:22,
+              width:34,height:18,
               background:"linear-gradient(180deg,#fde68a,#fbbf24,#92400e)",
-              borderRadius:"6px 6px 0 0",
+              borderRadius:"5px 5px 0 0",
               border:"2px solid #78350f",
               boxShadow:"0 2px 4px rgba(0,0,0,0.4), inset 0 2px 4px rgba(255,255,255,0.3)",
               position:"relative",
@@ -4067,7 +4067,7 @@ function RouletteModal({ coins, isSpinning, pendingCard, onSpin, onClose, onShow
               {/* Bolt detail */}
               <div style={{
                 position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",
-                width:8,height:8,borderRadius:"50%",
+                width:6,height:6,borderRadius:"50%",
                 background:"radial-gradient(circle at 30% 30%, #fde68a, #92400e)",
                 border:"1px solid #78350f",
               }}/>
@@ -4078,7 +4078,7 @@ function RouletteModal({ coins, isSpinning, pendingCard, onSpin, onClose, onShow
               disabled={!canSpin}
               title="Pull to spin!"
               style={{
-                width:80,
+                width:60,
                 background:"transparent",
                 border:"none",
                 cursor: canSpin ? "pointer" : "not-allowed",
@@ -4088,28 +4088,28 @@ function RouletteModal({ coins, isSpinning, pendingCard, onSpin, onClose, onShow
                 position:"relative",
               }}
             >
-              {/* Lever arm (chrome pole) — much thicker */}
+              {/* Lever arm — bright GOLD pole (pops against brighter bg) */}
               <div style={{
-                width:14,height:90,
-                background:"linear-gradient(90deg, #1e293b 0%, #94a3b8 30%, #f1f5f9 50%, #94a3b8 70%, #1e293b 100%)",
-                borderRadius:7,
-                boxShadow:"0 0 6px rgba(0,0,0,0.6), inset 0 0 4px rgba(0,0,0,0.3)",
+                width:10,height:75,
+                background:"linear-gradient(90deg, #92400e 0%, #fbbf24 30%, #fde68a 50%, #fbbf24 70%, #92400e 100%)",
+                borderRadius:5,
+                boxShadow:"0 0 8px rgba(251,191,36,0.6), inset 0 0 4px rgba(0,0,0,0.3)",
                 transformOrigin:"top center",
-                transform: leverPulled ? "translateY(55px) scaleY(0.55)" : "translateY(0) scaleY(1)",
+                transform: leverPulled ? "translateY(45px) scaleY(0.55)" : "translateY(0) scaleY(1)",
                 transition: leverPulled ? "transform 0.25s ease-in" : "transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)",
               }}/>
-              {/* Lever ball (BIG red knob) */}
+              {/* Lever ball — BIG red knob */}
               <div style={{
-                width:50,height:50,borderRadius:"50%",
+                width:42,height:42,borderRadius:"50%",
                 background:"radial-gradient(circle at 32% 32%, #fee2e2 0%, #ef4444 40%, #991b1b 80%, #450a0a)",
                 boxShadow:`
                   0 8px 16px rgba(0,0,0,0.6),
-                  inset 0 -6px 12px rgba(0,0,0,0.4),
-                  inset 0 4px 8px rgba(255,255,255,0.3),
-                  0 0 20px rgba(239,68,68,0.5)
+                  inset 0 -5px 10px rgba(0,0,0,0.4),
+                  inset 0 3px 6px rgba(255,255,255,0.3),
+                  0 0 18px rgba(239,68,68,0.5)
                 `,
-                marginTop:-7,
-                transform: leverPulled ? "translateY(55px)" : "translateY(0)",
+                marginTop:-5,
+                transform: leverPulled ? "translateY(45px)" : "translateY(0)",
                 transition: leverPulled ? "transform 0.25s ease-in" : "transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)",
                 border:"3px solid #450a0a",
                 position:"relative",
@@ -4117,17 +4117,17 @@ function RouletteModal({ coins, isSpinning, pendingCard, onSpin, onClose, onShow
                 {/* Shine highlight */}
                 <div style={{
                   position:"absolute",
-                  top:6,left:10,
-                  width:14,height:14,borderRadius:"50%",
-                  background:"radial-gradient(circle, rgba(255,255,255,0.6), transparent 70%)",
+                  top:5,left:8,
+                  width:12,height:12,borderRadius:"50%",
+                  background:"radial-gradient(circle, rgba(255,255,255,0.7), transparent 70%)",
                 }}/>
               </div>
               {/* "PULL" label */}
               {canSpin && !isSpinning && !leverPulled && (
                 <div style={{
                   position:"absolute",
-                  bottom:-22,
-                  fontSize:10,color:"#fbbf24",letterSpacing:3,fontWeight:900,
+                  bottom:-20,
+                  fontSize:9,color:"#fbbf24",letterSpacing:3,fontWeight:900,
                   animation:"pullPulse 1.2s ease-in-out infinite",
                   textShadow:"0 0 8px rgba(251,191,36,0.6)",
                 }}>↓ PULL ↓</div>
@@ -4472,24 +4472,38 @@ function CardRevealModal({ result, onClose }) {
   const isLegendary = card.rarity === "L";
   const isEpic = card.rarity === "E";
   const isRare = card.rarity === "R";
+  const isUncommon = card.rarity === "U";
 
-  // Play win fanfare when the card appears
+  // Staged reveal: first show the explosion/effects, then the card appears
+  const [stage, setStage] = useState("burst"); // burst → card → text → final
   useEffect(() => {
     playWinSound(card.rarity);
+    const t1 = setTimeout(() => setStage("card"), 400);
+    const t2 = setTimeout(() => setStage("text"), 900);
+    const t3 = setTimeout(() => setStage("final"), 1600);
+    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
   }, [card.rarity]);
 
+  // Vignette color matches the rarity
+  const vignetteBg = isLegendary ? "radial-gradient(circle at center, rgba(120,53,15,0.4) 0%, rgba(0,0,0,0.92) 70%)"
+                  : isEpic       ? "radial-gradient(circle at center, rgba(88,28,135,0.5) 0%, rgba(0,0,0,0.92) 70%)"
+                  : isRare       ? "radial-gradient(circle at center, rgba(127,29,29,0.5) 0%, rgba(0,0,0,0.92) 70%)"
+                  : isUncommon   ? "radial-gradient(circle at center, rgba(30,58,138,0.4) 0%, rgba(0,0,0,0.9) 70%)"
+                                 : "rgba(0,0,0,0.7)";
+
   return (
-    <div onClick={onClose} style={{
+    <div onClick={stage === "final" ? onClose : undefined} style={{
       position:"fixed",inset:0,zIndex:9500,
-      background:"rgba(0,0,0,0.5)",
+      background: vignetteBg,
       display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",
       padding:14,
       overflow:"hidden",
+      cursor: stage === "final" ? "pointer" : "default",
     }}>
       <style>{`
-        @keyframes cardReveal {
-          0% { transform: scale(0.3) rotateY(180deg); opacity: 0; }
-          60% { transform: scale(1.1) rotateY(0deg); opacity: 1; }
+        @keyframes cardFlip {
+          0% { transform: scale(0.2) rotateY(540deg); opacity: 0; }
+          70% { transform: scale(1.15) rotateY(0deg); opacity: 1; }
           100% { transform: scale(1) rotateY(0deg); opacity: 1; }
         }
         @keyframes cardShimmer {
@@ -4498,149 +4512,418 @@ function CardRevealModal({ result, onClose }) {
         }
         @keyframes sparkle {
           0%, 100% { transform: scale(0.6); opacity: 0.5; }
-          50% { transform: scale(1.3); opacity: 1; }
+          50% { transform: scale(1.4); opacity: 1; }
         }
-        @keyframes legendaryGlow {
-          0%, 100% { box-shadow: 0 0 60px ${cfg.glow}, 0 0 0 0 ${cfg.glow}; }
-          50% { box-shadow: 0 0 100px ${cfg.glow}, 0 0 40px 15px ${cfg.glow}; }
+        @keyframes legendaryBorderPulse {
+          0%, 100% { box-shadow: 0 0 40px ${cfg.glow}, 0 0 80px ${cfg.glow}, 0 0 0 0 rgba(251,191,36,0.6); }
+          50% { box-shadow: 0 0 80px ${cfg.glow}, 0 0 140px ${cfg.glow}, 0 0 0 20px rgba(251,191,36,0); }
         }
-        @keyframes smokeRise {
+        @keyframes explosionBurst {
+          0% { transform: scale(0); opacity: 1; }
+          100% { transform: scale(8); opacity: 0; }
+        }
+        @keyframes rayRotate {
+          0% { transform: translate(-50%, -50%) rotate(0deg); }
+          100% { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+        @keyframes shockwave {
+          0% { transform: translate(-50%, -50%) scale(0); opacity: 0.8; }
+          100% { transform: translate(-50%, -50%) scale(6); opacity: 0; }
+        }
+        @keyframes goldFall {
+          0% { transform: translateY(-100px) rotate(0deg) scale(1); opacity: 1; }
+          90% { opacity: 1; }
+          100% { transform: translateY(120vh) rotate(720deg) scale(0.8); opacity: 0; }
+        }
+        @keyframes orbitParticle {
+          0% { transform: rotate(0deg) translateX(var(--orbit-r, 150px)) rotate(0deg); }
+          100% { transform: rotate(360deg) translateX(var(--orbit-r, 150px)) rotate(-360deg); }
+        }
+        @keyframes smokePuff {
+          0% { transform: translate(0, 0) scale(0.3); opacity: 0; }
+          15% { opacity: 0.9; }
+          100% { transform: translate(var(--smoke-tx, 0px), -400px) scale(3); opacity: 0; }
+        }
+        @keyframes fireFlick {
+          0%, 100% { transform: translateY(0) scaleY(1) scaleX(1); opacity: 0.95; filter: blur(2px); }
+          25% { transform: translateY(-15px) scaleY(1.3) scaleX(0.85); opacity: 0.8; }
+          50% { transform: translateY(-30px) scaleY(1.5) scaleX(1.1); opacity: 0.6; filter: blur(4px); }
+          75% { transform: translateY(-20px) scaleY(1.2) scaleX(0.9); opacity: 0.75; }
+        }
+        @keyframes embers {
+          0% { transform: translateY(0) translateX(0); opacity: 1; }
+          100% { transform: translateY(-300px) translateX(var(--ember-tx, 0px)); opacity: 0; }
+        }
+        @keyframes wave {
+          0% { transform: translateY(0) scaleX(1); opacity: 0.8; }
+          100% { transform: translateY(-200px) scaleX(2); opacity: 0; }
+        }
+        @keyframes bubble {
           0% { transform: translateY(0) scale(0.5); opacity: 0.8; }
-          100% { transform: translateY(-300px) scale(2.5); opacity: 0; }
+          100% { transform: translateY(-100vh) scale(1.5); opacity: 0; }
         }
-        @keyframes fireFlicker {
-          0%, 100% { transform: translateY(0) scale(1); opacity: 0.9; filter: blur(0px); }
-          50% { transform: translateY(-30px) scale(1.3); opacity: 0.5; filter: blur(2px); }
+        @keyframes commonFade {
+          0% { transform: scale(0.7); opacity: 0; }
+          100% { transform: scale(1); opacity: 1; }
         }
-        @keyframes lightBeam {
-          0% { opacity: 0; }
-          50% { opacity: 0.6; }
-          100% { opacity: 0; }
+        @keyframes textChar {
+          0% { transform: translateY(20px) scale(0.5); opacity: 0; }
+          100% { transform: translateY(0) scale(1); opacity: 1; }
         }
-        @keyframes goldRain {
-          0% { transform: translateY(-50px) rotate(0deg); opacity: 1; }
-          100% { transform: translateY(110vh) rotate(720deg); opacity: 0; }
-        }
-        @keyframes confettiOut {
-          0% { transform: translate(0,0) rotate(0deg); opacity: 1; }
-          100% { transform: translate(var(--end-x, 0px), var(--end-y, 0px)) rotate(720deg); opacity: 0; }
+        @keyframes confettiBig {
+          0% { transform: translate(0, 0) rotate(0deg); opacity: 1; }
+          100% { transform: translate(var(--c-tx, 0px), var(--c-ty, 0px)) rotate(var(--c-rot, 720deg)); opacity: 0; }
         }
       `}</style>
 
-      {/* 🏆 LEGENDARY — Gold rain + light beams + sparkles */}
-      {isLegendary && (
+      {/* ═════════ 🏆 LEGENDARY EFFECTS ═════════ */}
+      {isLegendary && stage !== "burst" && (
         <>
-          {/* Light beams behind */}
-          {[...Array(8)].map((_, i) => (
-            <div key={`beam-${i}`} style={{
-              position:"fixed",
-              top:"50%",left:"50%",
-              width:10,height:"200vh",
-              background:`linear-gradient(180deg, transparent, ${cfg.color}, transparent)`,
-              transformOrigin:"top center",
-              transform:`translate(-50%, -50%) rotate(${i * 45}deg)`,
-              animation:`lightBeam 3s ease-in-out infinite ${i * 0.2}s`,
-              pointerEvents:"none",
-              zIndex:9501,
-              opacity:0.8,
-            }}/>
-          ))}
-          {/* Gold particles raining down */}
-          {[...Array(60)].map((_, i) => (
-            <div key={`gold-${i}`} style={{
-              position:"fixed",
-              top:"-20px",
-              left:`${Math.random() * 100}%`,
+          {/* Shockwave ring - emanates from center */}
+          <div style={{
+            position:"fixed",top:"50%",left:"50%",
+            width:80,height:80,borderRadius:"50%",
+            border:`6px solid ${cfg.color}`,
+            animation:"shockwave 1.5s ease-out",
+            pointerEvents:"none",zIndex:9501,
+          }}/>
+          <div style={{
+            position:"fixed",top:"50%",left:"50%",
+            width:80,height:80,borderRadius:"50%",
+            border:`4px solid ${cfg.color}`,
+            animation:"shockwave 1.5s ease-out 0.2s",
+            pointerEvents:"none",zIndex:9501,
+          }}/>
+          {/* Rotating light rays — 12 of them, two layers */}
+          <div style={{
+            position:"fixed",top:"50%",left:"50%",
+            width:"200vw",height:"200vh",
+            animation:"rayRotate 8s linear infinite",
+            pointerEvents:"none",zIndex:9501,
+            transform:"translate(-50%, -50%)",
+          }}>
+            {[...Array(12)].map((_, i) => (
+              <div key={`ray-${i}`} style={{
+                position:"absolute",
+                top:"50%",left:"50%",
+                width:8,height:"100vh",
+                background:`linear-gradient(180deg, transparent, ${cfg.color}cc, transparent)`,
+                transformOrigin:"top center",
+                transform:`translate(-50%, 0) rotate(${i * 30}deg)`,
+                opacity:0.7,
+              }}/>
+            ))}
+          </div>
+          {/* Counter-rotating thinner rays */}
+          <div style={{
+            position:"fixed",top:"50%",left:"50%",
+            width:"200vw",height:"200vh",
+            animation:"rayRotate 12s linear infinite reverse",
+            pointerEvents:"none",zIndex:9501,
+            transform:"translate(-50%, -50%)",
+          }}>
+            {[...Array(16)].map((_, i) => (
+              <div key={`ray2-${i}`} style={{
+                position:"absolute",
+                top:"50%",left:"50%",
+                width:3,height:"100vh",
+                background:`linear-gradient(180deg, transparent, #fde68a99, transparent)`,
+                transformOrigin:"top center",
+                transform:`translate(-50%, 0) rotate(${i * 22.5}deg)`,
+              }}/>
+            ))}
+          </div>
+          {/* Gold falling particles — 80 of them in 3 sizes */}
+          {[...Array(80)].map((_, i) => {
+            const size = [6, 10, 16][i % 3];
+            return (
+              <div key={`gold-${i}`} style={{
+                position:"fixed",
+                top:"-100px",
+                left:`${Math.random() * 100}%`,
+                width:size,height:size,
+                background:["#fbbf24","#fde68a","#f59e0b","#fef3c7"][i%4],
+                borderRadius: i%3 === 0 ? "50%" : i%3 === 1 ? "2px" : "0",
+                animation:`goldFall ${2.5 + Math.random() * 2.5}s linear infinite ${Math.random() * 2}s`,
+                pointerEvents:"none",
+                boxShadow:`0 0 ${size * 2}px ${cfg.color}, 0 0 ${size}px ${cfg.color}`,
+                zIndex:9502,
+              }}/>
+            );
+          })}
+          {/* Orbiting sparkles around card */}
+          {stage !== "burst" && [...Array(8)].map((_, i) => (
+            <div key={`orbit-${i}`} style={{
+              position:"fixed",top:"50%",left:"50%",
               width:14,height:14,
-              background:["#fbbf24","#fde68a","#f59e0b"][i%3],
-              borderRadius: i%2 ? "50%" : "2px",
-              animation:`goldRain ${2 + Math.random() * 2}s linear infinite ${Math.random() * 1.5}s`,
+              borderRadius:"50%",
+              background:`radial-gradient(circle, #fff 0%, ${cfg.color} 70%)`,
+              boxShadow:`0 0 12px ${cfg.color}, 0 0 24px ${cfg.color}`,
+              animation:`orbitParticle ${4 + i * 0.3}s linear infinite`,
+              animationDelay:`${i * -0.5}s`,
               pointerEvents:"none",
-              boxShadow:`0 0 12px ${cfg.color}, 0 0 20px ${cfg.color}`,
-              zIndex:9502,
+              zIndex:9503,
+              "--orbit-r": "180px",
             }}/>
           ))}
         </>
       )}
 
-      {/* 💎 EPIC — Purple smoke rising */}
-      {isEpic && (
+      {/* ═════════ 💎 EPIC EFFECTS ═════════ */}
+      {isEpic && stage !== "burst" && (
         <>
-          {[...Array(20)].map((_, i) => (
+          {/* Shockwave */}
+          <div style={{
+            position:"fixed",top:"50%",left:"50%",
+            width:80,height:80,borderRadius:"50%",
+            border:`5px solid ${cfg.color}`,
+            animation:"shockwave 1.3s ease-out",
+            pointerEvents:"none",zIndex:9501,
+          }}/>
+          {/* Radial purple rays */}
+          <div style={{
+            position:"fixed",top:"50%",left:"50%",
+            width:"200vw",height:"200vh",
+            animation:"rayRotate 10s linear infinite",
+            pointerEvents:"none",zIndex:9501,
+            transform:"translate(-50%, -50%)",
+          }}>
+            {[...Array(8)].map((_, i) => (
+              <div key={`epicray-${i}`} style={{
+                position:"absolute",
+                top:"50%",left:"50%",
+                width:5,height:"100vh",
+                background:`linear-gradient(180deg, transparent, ${cfg.color}aa, transparent)`,
+                transformOrigin:"top center",
+                transform:`translate(-50%, 0) rotate(${i * 45}deg)`,
+                opacity:0.5,
+              }}/>
+            ))}
+          </div>
+          {/* Purple smoke from below */}
+          {[...Array(25)].map((_, i) => (
             <div key={`smoke-${i}`} style={{
               position:"fixed",
-              bottom:`${10 + Math.random() * 30}%`,
-              left:`${10 + Math.random() * 80}%`,
+              bottom:"-50px",
+              left:`${Math.random() * 100}%`,
               width:120,height:120,
               borderRadius:"50%",
-              background:`radial-gradient(circle, ${cfg.color}99 0%, ${cfg.color}44 40%, transparent 70%)`,
-              animation:`smokeRise ${2.5 + Math.random() * 2}s ease-out infinite ${Math.random() * 2}s`,
+              background:`radial-gradient(circle, ${cfg.color}cc 0%, ${cfg.color}66 30%, transparent 70%)`,
+              animation:`smokePuff ${2.5 + Math.random() * 2}s ease-out infinite ${Math.random() * 2.5}s`,
               pointerEvents:"none",
               zIndex:9501,
-              filter:"blur(8px)",
+              filter:"blur(10px)",
+              "--smoke-tx": `${(Math.random() - 0.5) * 200}px`,
             }}/>
+          ))}
+          {/* Orbiting diamonds */}
+          {[...Array(6)].map((_, i) => (
+            <div key={`diamond-${i}`} style={{
+              position:"fixed",top:"50%",left:"50%",
+              fontSize:24,
+              animation:`orbitParticle ${5 + i * 0.4}s linear infinite`,
+              animationDelay:`${i * -0.7}s`,
+              pointerEvents:"none",
+              zIndex:9503,
+              filter:`drop-shadow(0 0 8px ${cfg.color})`,
+              "--orbit-r": "170px",
+            }}>💎</div>
           ))}
         </>
       )}
 
-      {/* 🔥 RARE — Red fire/embers */}
-      {isRare && (
+      {/* ═════════ 🔥 RARE EFFECTS ═════════ */}
+      {isRare && stage !== "burst" && (
         <>
-          {[...Array(20)].map((_, i) => (
+          {/* Red shockwave */}
+          <div style={{
+            position:"fixed",top:"50%",left:"50%",
+            width:80,height:80,borderRadius:"50%",
+            border:`4px solid ${cfg.color}`,
+            animation:"shockwave 1.2s ease-out",
+            pointerEvents:"none",zIndex:9501,
+          }}/>
+          {/* Fire at bottom */}
+          {[...Array(30)].map((_, i) => (
             <div key={`fire-${i}`} style={{
               position:"fixed",
-              bottom:`${10 + Math.random() * 25}%`,
-              left:`${15 + Math.random() * 70}%`,
-              width:26,height:50,
+              bottom:`${5 + Math.random() * 20}%`,
+              left:`${5 + Math.random() * 90}%`,
+              width:30,height:60,
               borderRadius:"50% 50% 20% 20%",
-              background:`linear-gradient(180deg, #fef3c7, #fbbf24, #ef4444, #7f1d1d)`,
-              filter:"blur(4px)",
-              animation:`fireFlicker ${0.4 + Math.random() * 0.5}s ease-in-out infinite ${Math.random() * 0.8}s`,
+              background:`linear-gradient(180deg, #fef3c7 0%, #fbbf24 20%, #ef4444 60%, #7f1d1d 100%)`,
+              filter:"blur(5px)",
+              animation:`fireFlick ${0.5 + Math.random() * 0.6}s ease-in-out infinite ${Math.random() * 0.8}s`,
               pointerEvents:"none",
-              opacity:0.9,
+              zIndex:9501,
+            }}/>
+          ))}
+          {/* Embers floating up */}
+          {[...Array(40)].map((_, i) => (
+            <div key={`ember-${i}`} style={{
+              position:"fixed",
+              bottom:`${Math.random() * 30}%`,
+              left:`${Math.random() * 100}%`,
+              width:4,height:4,
+              borderRadius:"50%",
+              background:["#fbbf24","#fde68a","#ef4444"][i%3],
+              boxShadow:`0 0 6px ${["#fbbf24","#fde68a","#ef4444"][i%3]}`,
+              animation:`embers ${2 + Math.random() * 2}s linear infinite ${Math.random() * 2}s`,
+              pointerEvents:"none",
+              zIndex:9502,
+              "--ember-tx": `${(Math.random() - 0.5) * 120}px`,
+            }}/>
+          ))}
+        </>
+      )}
+
+      {/* ═════════ 💧 UNCOMMON EFFECTS ═════════ */}
+      {isUncommon && stage !== "burst" && (
+        <>
+          {/* Blue shockwave */}
+          <div style={{
+            position:"fixed",top:"50%",left:"50%",
+            width:80,height:80,borderRadius:"50%",
+            border:`3px solid ${cfg.color}`,
+            animation:"shockwave 1.1s ease-out",
+            pointerEvents:"none",zIndex:9501,
+          }}/>
+          {/* Waves rising */}
+          {[...Array(20)].map((_, i) => (
+            <div key={`wave-${i}`} style={{
+              position:"fixed",
+              bottom:"-50px",
+              left:`${Math.random() * 100}%`,
+              width:60,height:30,
+              borderRadius:"50%",
+              background:`radial-gradient(ellipse, ${cfg.color}88 0%, transparent 70%)`,
+              animation:`wave ${2.5 + Math.random() * 1.5}s ease-out infinite ${Math.random() * 2}s`,
+              pointerEvents:"none",
+              zIndex:9501,
+              filter:"blur(6px)",
+            }}/>
+          ))}
+          {/* Bubbles rising */}
+          {[...Array(25)].map((_, i) => {
+            const sz = 6 + Math.random() * 14;
+            return (
+              <div key={`bub-${i}`} style={{
+                position:"fixed",
+                bottom:"-30px",
+                left:`${Math.random() * 100}%`,
+                width:sz,height:sz,
+                borderRadius:"50%",
+                background:`radial-gradient(circle at 30% 30%, #fff, ${cfg.color}66)`,
+                border:`1px solid ${cfg.color}`,
+                animation:`bubble ${3 + Math.random() * 2}s linear infinite ${Math.random() * 2.5}s`,
+                pointerEvents:"none",
+                zIndex:9502,
+                opacity:0.7,
+              }}/>
+            );
+          })}
+        </>
+      )}
+
+      {/* ═════════ ⚪ COMMON — simple but nice ═════════ */}
+      {!isLegendary && !isEpic && !isRare && !isUncommon && stage !== "burst" && (
+        <>
+          {/* Soft white shockwave */}
+          <div style={{
+            position:"fixed",top:"50%",left:"50%",
+            width:80,height:80,borderRadius:"50%",
+            border:`2px solid ${cfg.color}`,
+            animation:"shockwave 1s ease-out",
+            pointerEvents:"none",zIndex:9501,
+          }}/>
+          {/* Floating dots */}
+          {[...Array(15)].map((_, i) => (
+            <div key={`dot-${i}`} style={{
+              position:"fixed",
+              top:`${Math.random() * 100}%`,
+              left:`${Math.random() * 100}%`,
+              width:4,height:4,
+              borderRadius:"50%",
+              background:cfg.color,
+              animation:`sparkle 2s ease-in-out infinite ${Math.random() * 2}s`,
+              pointerEvents:"none",
               zIndex:9501,
             }}/>
           ))}
         </>
       )}
 
-      {/* Tier announcement */}
-      <div style={{
-        fontSize: isLegendary ? 32 : 20,
-        fontWeight:900,
-        color: cfg.color,
-        textShadow:`0 0 20px ${cfg.glow}`,
-        marginBottom:20,
-        letterSpacing:isLegendary ? 6 : 3,
-        animation:"cardReveal 0.8s ease-out",
-        zIndex:9510,
-        position:"relative",
-      }}>
-        {isLegendary ? "🏆 LEGENDARY 🏆" : `${cfg.emoji} ${cfg.label}!`}
-      </div>
+      {/* ═════════ Universal: confetti burst on entry ═════════ */}
+      {stage === "card" && (isLegendary || isEpic) && (
+        <>
+          {[...Array(isLegendary ? 50 : 30)].map((_, i) => {
+            const angle = (i / (isLegendary ? 50 : 30)) * Math.PI * 2;
+            const dist = 200 + Math.random() * 250;
+            const tx = Math.cos(angle) * dist;
+            const ty = Math.sin(angle) * dist;
+            return (
+              <div key={`conf-${i}`} style={{
+                position:"fixed",top:"50%",left:"50%",
+                width: isLegendary ? 12 : 8,
+                height: isLegendary ? 12 : 8,
+                background:["#fbbf24","#fde68a","#f59e0b","#ef4444","#a855f7","#22c55e","#3b82f6"][i%7],
+                borderRadius: i%2 ? "50%" : "2px",
+                animation:`confettiBig 2s cubic-bezier(0.2, 0.6, 0.3, 1) forwards`,
+                pointerEvents:"none",
+                zIndex:9504,
+                "--c-tx": `${tx}px`,
+                "--c-ty": `${ty}px`,
+                "--c-rot": `${Math.random() * 1080}deg`,
+              }}/>
+            );
+          })}
+        </>
+      )}
 
-      {/* The card itself */}
-      <div style={{
-        animation: `cardReveal 0.9s cubic-bezier(0.34, 1.56, 0.64, 1)${isLegendary ? ", legendaryGlow 2s ease-in-out infinite 1s" : ""}`,
-        borderRadius:16,
-        zIndex:9510,
-        position:"relative",
-      }}>
-        <PlayerCard card={card} size="L" animated={true} />
-      </div>
+      {/* ═════════ Tier announcement ═════════ */}
+      {stage !== "burst" && (
+        <div style={{
+          fontSize: isLegendary ? 36 : isEpic ? 26 : 22,
+          fontWeight:900,
+          color: cfg.color,
+          textShadow:`0 0 30px ${cfg.glow}, 0 0 60px ${cfg.glow}`,
+          marginBottom:24,
+          letterSpacing:isLegendary ? 8 : isEpic ? 5 : 3,
+          zIndex:9510,
+          position:"relative",
+          textAlign:"center",
+          animation: stage === "text" || stage === "final" ? "textChar 0.5s ease-out" : "none",
+          opacity: stage === "text" || stage === "final" ? 1 : 0,
+        }}>
+          {isLegendary ? "🏆 LEGENDARY 🏆" : `${cfg.emoji} ${cfg.label}!`}
+        </div>
+      )}
+
+      {/* ═════════ The card itself — appears at "card" stage ═════════ */}
+      {stage !== "burst" && (
+        <div style={{
+          animation: `cardFlip 0.9s cubic-bezier(0.34, 1.56, 0.64, 1)${isLegendary ? ", legendaryBorderPulse 1.8s ease-in-out infinite 1s" : ""}`,
+          borderRadius:16,
+          zIndex:9510,
+          position:"relative",
+        }}>
+          <PlayerCard card={card} size="L" animated={true} />
+        </div>
+      )}
 
       {/* Duplicate info */}
-      {isDuplicate && (
+      {isDuplicate && stage === "final" && (
         <div style={{
           marginTop:20,
           padding:"10px 18px",
-          background:"rgba(251,191,36,0.15)",
-          border:"1px solid rgba(251,191,36,0.4)",
+          background:"rgba(251,191,36,0.18)",
+          border:"1px solid rgba(251,191,36,0.5)",
           borderRadius:10,
           color:"#fbbf24",fontSize:13,fontWeight:700,
           display:"flex",alignItems:"center",gap:8,
           zIndex:9510,
           position:"relative",
+          animation:"textChar 0.4s ease-out",
         }}>
           <span>🔁</span>
           <span>{t("roulette.duplicate")} · +{refund} 🪙</span>
@@ -4648,15 +4931,18 @@ function CardRevealModal({ result, onClose }) {
       )}
 
       {/* Tap to close */}
-      <div style={{
-        marginTop:24,
-        fontSize:11,color:"#64748b",letterSpacing:2,
-        opacity:0.6,
-        zIndex:9510,
-        position:"relative",
-      }}>
-        {t("roulette.tapToClose")}
-      </div>
+      {stage === "final" && (
+        <div style={{
+          marginTop:24,
+          fontSize:11,color:"#cbd5e1",letterSpacing:2,
+          opacity:0.7,
+          zIndex:9510,
+          position:"relative",
+          animation:"textChar 0.4s ease-out",
+        }}>
+          {t("roulette.tapToClose")}
+        </div>
+      )}
     </div>
   );
 }
@@ -8669,13 +8955,13 @@ export default function App() {
   // Format: { balance, earnedFromIds, gotStartingBonus }
   const [coins, setCoins] = useState(() => {
     try {
-      const raw = localStorage.getItem("wc2026_coins_v4");
+      const raw = localStorage.getItem("wc2026_coins_v5");
       if (raw) {
         const parsed = JSON.parse(raw);
         // Grant the starting bonus to users who upgraded from an earlier version
         if (!parsed.gotStartingBonus) {
           const updated = { ...parsed, balance: (parsed.balance || 0) + COINS.STARTING_BONUS, gotStartingBonus: true };
-          try { localStorage.setItem("wc2026_coins_v4", JSON.stringify(updated)); } catch {}
+          try { localStorage.setItem("wc2026_coins_v5", JSON.stringify(updated)); } catch {}
           return updated;
         }
         return parsed;
@@ -8683,7 +8969,7 @@ export default function App() {
     } catch {}
     // Brand-new user: starts with the bonus
     const initial = { balance: COINS.STARTING_BONUS, earnedFromIds: {}, gotStartingBonus: true };
-    try { localStorage.setItem("wc2026_coins_v4", JSON.stringify(initial)); } catch {}
+    try { localStorage.setItem("wc2026_coins_v5", JSON.stringify(initial)); } catch {}
     return initial;
   });
   // Pop-up notification for newly earned coins
@@ -8717,7 +9003,7 @@ export default function App() {
     const newBalance = coins.balance - COINS.SPIN;
     const updatedCoins = { ...coins, balance: newBalance };
     setCoins(updatedCoins);
-    try { localStorage.setItem("wc2026_coins_v4", JSON.stringify(updatedCoins)); } catch {}
+    try { localStorage.setItem("wc2026_coins_v5", JSON.stringify(updatedCoins)); } catch {}
     // After all reels have stopped (5 seconds total), reveal the card
     setTimeout(() => {
       const isDuplicate = (cardCollection[card.id] || 0) > 0;
@@ -8732,7 +9018,7 @@ export default function App() {
         const refundedBalance = newBalance + refund;
         const withRefund = { ...updatedCoins, balance: refundedBalance };
         setCoins(withRefund);
-        try { localStorage.setItem("wc2026_coins_v4", JSON.stringify(withRefund)); } catch {}
+        try { localStorage.setItem("wc2026_coins_v5", JSON.stringify(withRefund)); } catch {}
       }
       setSpinResult({ card, isDuplicate, refund });
       setIsSpinning(false);
@@ -9290,7 +9576,7 @@ export default function App() {
     if (totalNew > 0) {
       const updated = { balance: coins.balance + totalNew, earnedFromIds: newEarned };
       setCoins(updated);
-      try { localStorage.setItem("wc2026_coins_v4", JSON.stringify(updated)); } catch {}
+      try { localStorage.setItem("wc2026_coins_v5", JSON.stringify(updated)); } catch {}
       setCoinFlash({ amount: totalNew, type: newType, key: Date.now() });
     }
   }, [picks, actuals, koPicks, actualKoScores]);
@@ -9358,7 +9644,7 @@ export default function App() {
         ]).catch(() => {});
         clearState();
         setName(""); setPicks({}); setKoWinners({}); setKoPicks({}); setCoins({ balance: COINS.STARTING_BONUS, earnedFromIds: {}, gotStartingBonus: true }); setCardCollection({}); setGroupIdx(0);
-        setFriends([]); setActuals({}); setActualKo({}); setActualKoScores({}); setLeagueName(""); setLeagueCode(""); setLeagueCodes([]); setActiveLeagueCode(""); setAllLeagueData({}); setWinnerPick(null); setTopScorerPick(null); setCelebratedIds(new Set()); setLastSeenGoals(0); setSeenActualIds(new Set()); setShowOnboarding(true); try { localStorage.removeItem("wc2026_celebrated_v1"); localStorage.removeItem("wc2026_lastseen_goals_v1"); localStorage.removeItem("wc2026_seen_actuals_v1"); localStorage.removeItem("wc2026_onboarded_v1"); localStorage.removeItem("wc2026_world_v2"); localStorage.removeItem("wc2026_achv_v1"); localStorage.removeItem("wc2026_pickhours_v1"); localStorage.removeItem("wc2026_coins_v4"); localStorage.removeItem("wc2026_cards_v1"); } catch {}
+        setFriends([]); setActuals({}); setActualKo({}); setActualKoScores({}); setLeagueName(""); setLeagueCode(""); setLeagueCodes([]); setActiveLeagueCode(""); setAllLeagueData({}); setWinnerPick(null); setTopScorerPick(null); setCelebratedIds(new Set()); setLastSeenGoals(0); setSeenActualIds(new Set()); setShowOnboarding(true); try { localStorage.removeItem("wc2026_celebrated_v1"); localStorage.removeItem("wc2026_lastseen_goals_v1"); localStorage.removeItem("wc2026_seen_actuals_v1"); localStorage.removeItem("wc2026_onboarded_v1"); localStorage.removeItem("wc2026_world_v2"); localStorage.removeItem("wc2026_achv_v1"); localStorage.removeItem("wc2026_pickhours_v1"); localStorage.removeItem("wc2026_coins_v5"); localStorage.removeItem("wc2026_cards_v1"); } catch {}
         setScreen("welcome");
         setShowIntro(false);
       },
@@ -9370,7 +9656,7 @@ export default function App() {
       // No data to worry about, just log out locally — keep Firebase intact in case they restore
       clearState();
       setName(""); setPicks({}); setKoWinners({}); setKoPicks({}); setCoins({ balance: COINS.STARTING_BONUS, earnedFromIds: {}, gotStartingBonus: true }); setCardCollection({}); setGroupIdx(0);
-      setFriends([]); setActuals({}); setActualKo({}); setActualKoScores({}); setLeagueName(""); setLeagueCode(""); setLeagueCodes([]); setActiveLeagueCode(""); setAllLeagueData({}); setWinnerPick(null); setTopScorerPick(null); setCelebratedIds(new Set()); setLastSeenGoals(0); setSeenActualIds(new Set()); setShowOnboarding(true); try { localStorage.removeItem("wc2026_celebrated_v1"); localStorage.removeItem("wc2026_lastseen_goals_v1"); localStorage.removeItem("wc2026_seen_actuals_v1"); localStorage.removeItem("wc2026_onboarded_v1"); localStorage.removeItem("wc2026_world_v2"); localStorage.removeItem("wc2026_achv_v1"); localStorage.removeItem("wc2026_pickhours_v1"); localStorage.removeItem("wc2026_coins_v4"); localStorage.removeItem("wc2026_cards_v1"); } catch {}
+      setFriends([]); setActuals({}); setActualKo({}); setActualKoScores({}); setLeagueName(""); setLeagueCode(""); setLeagueCodes([]); setActiveLeagueCode(""); setAllLeagueData({}); setWinnerPick(null); setTopScorerPick(null); setCelebratedIds(new Set()); setLastSeenGoals(0); setSeenActualIds(new Set()); setShowOnboarding(true); try { localStorage.removeItem("wc2026_celebrated_v1"); localStorage.removeItem("wc2026_lastseen_goals_v1"); localStorage.removeItem("wc2026_seen_actuals_v1"); localStorage.removeItem("wc2026_onboarded_v1"); localStorage.removeItem("wc2026_world_v2"); localStorage.removeItem("wc2026_achv_v1"); localStorage.removeItem("wc2026_pickhours_v1"); localStorage.removeItem("wc2026_coins_v5"); localStorage.removeItem("wc2026_cards_v1"); } catch {}
       setScreen("welcome");
       setShowIntro(false);
       return;
@@ -9386,7 +9672,7 @@ export default function App() {
         // so the user can restore their progress later with a backup code.
         clearState();
         setName(""); setPicks({}); setKoWinners({}); setKoPicks({}); setCoins({ balance: COINS.STARTING_BONUS, earnedFromIds: {}, gotStartingBonus: true }); setCardCollection({}); setGroupIdx(0);
-        setFriends([]); setActuals({}); setActualKo({}); setActualKoScores({}); setLeagueName(""); setLeagueCode(""); setLeagueCodes([]); setActiveLeagueCode(""); setAllLeagueData({}); setWinnerPick(null); setTopScorerPick(null); setCelebratedIds(new Set()); setLastSeenGoals(0); setSeenActualIds(new Set()); setShowOnboarding(true); try { localStorage.removeItem("wc2026_celebrated_v1"); localStorage.removeItem("wc2026_lastseen_goals_v1"); localStorage.removeItem("wc2026_seen_actuals_v1"); localStorage.removeItem("wc2026_onboarded_v1"); localStorage.removeItem("wc2026_world_v2"); localStorage.removeItem("wc2026_achv_v1"); localStorage.removeItem("wc2026_pickhours_v1"); localStorage.removeItem("wc2026_coins_v4"); localStorage.removeItem("wc2026_cards_v1"); } catch {}
+        setFriends([]); setActuals({}); setActualKo({}); setActualKoScores({}); setLeagueName(""); setLeagueCode(""); setLeagueCodes([]); setActiveLeagueCode(""); setAllLeagueData({}); setWinnerPick(null); setTopScorerPick(null); setCelebratedIds(new Set()); setLastSeenGoals(0); setSeenActualIds(new Set()); setShowOnboarding(true); try { localStorage.removeItem("wc2026_celebrated_v1"); localStorage.removeItem("wc2026_lastseen_goals_v1"); localStorage.removeItem("wc2026_seen_actuals_v1"); localStorage.removeItem("wc2026_onboarded_v1"); localStorage.removeItem("wc2026_world_v2"); localStorage.removeItem("wc2026_achv_v1"); localStorage.removeItem("wc2026_pickhours_v1"); localStorage.removeItem("wc2026_coins_v5"); localStorage.removeItem("wc2026_cards_v1"); } catch {}
         setScreen("welcome");
         setShowIntro(false);
       },
