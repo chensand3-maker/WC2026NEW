@@ -8,7 +8,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "2.0.5";
+const APP_VERSION = "2.1.0";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -2611,6 +2611,34 @@ function rollOneCard() {
   return pool[Math.floor(Math.random() * pool.length)];
 }
 
+// 🎮 Player rating (FIFA-style 55-99 score) — deterministic from card name
+// Same player always gets the same rating, scaled by rarity tier
+const RATING_RANGES = {
+  L: { min: 88, max: 99 },  // Legendary
+  E: { min: 80, max: 87 },  // Epic
+  R: { min: 72, max: 79 },  // Rare
+  U: { min: 64, max: 71 },  // Uncommon
+  C: { min: 55, max: 63 },  // Common
+};
+// Hash a string into a deterministic integer
+function _stringHash(str) {
+  let h = 0;
+  for (let i = 0; i < str.length; i++) {
+    h = ((h << 5) - h) + str.charCodeAt(i);
+    h |= 0;
+  }
+  return Math.abs(h);
+}
+// Each player gets a deterministic rating + perfect-99 lottery (1 in 15 for legendary, otherwise capped at range)
+function getPlayerRating(card) {
+  const range = RATING_RANGES[card.rarity] || RATING_RANGES.C;
+  const hash = _stringHash(card.name);
+  // Legendary: 1-in-15 chance of getting the perfect 99
+  if (card.rarity === "L" && (hash % 15) === 0) return 99;
+  const span = range.max - range.min;
+  return range.min + (hash % (span + 1));
+}
+
 
 // Module-level avatar color helper (also used by ProfileStats and others)
 const _AVATAR_COLORS = ["#fbbf24","#ef4444","#3b82f6","#22c55e","#a855f7","#ec4899","#14b8a6","#f97316"];
@@ -4396,21 +4424,20 @@ function SlotReel({ type, spinning, stopAt, finalValue }) {
 function PlayerCard({ card, size = "L", animated = false }) {
   const cfg = RARITY_CONFIG[card.rarity];
   const isLegendary = card.rarity === "L";
-  const isEpic = card.rarity === "E";
-  const isRare = card.rarity === "R";
-  const isAnimated = animated && (isLegendary || isEpic || isRare);
+  const rating = getPlayerRating(card);
+  const isPerfect = rating === 99;
 
-  const dims = size === "L" ? { w: 240, h: 360, font: 19, flag: 70, position: 15 }
-             : size === "M" ? { w: 140, h: 210, font: 13, flag: 38, position: 11 }
-             : { w: 95, h: 138, font: 9, flag: 26, position: 8 };
+  const dims = size === "L" ? { w: 240, h: 360, font: 19, flag: 80, position: 16, rating: 42 }
+             : size === "M" ? { w: 140, h: 210, font: 13, flag: 46, position: 11, rating: 24 }
+             : { w: 95, h: 138, font: 9, flag: 30, position: 8, rating: 17 };
 
-  // Position info (full label + color)
+  // Position info — full label, short label, and visual icon
   const posInfo = {
-    GK: { label: "GOALKEEPER", short: "GK", color: "#fbbf24" },
-    D:  { label: "DEFENDER",   short: "DEF", color: "#3b82f6" },
-    M:  { label: "MIDFIELDER", short: "MID", color: "#22c55e" },
-    F:  { label: "FORWARD",    short: "FWD", color: "#ef4444" },
-  }[card.pos] || { label: "PLAYER", short: "P", color: "#94a3b8" };
+    GK: { label: "GOALKEEPER", short: "GK", color: "#fbbf24", icon: "🧤" },
+    D:  { label: "DEFENDER",   short: "DEF", color: "#3b82f6", icon: "🛡️" },
+    M:  { label: "MIDFIELDER", short: "MID", color: "#22c55e", icon: "⚙️" },
+    F:  { label: "FORWARD",    short: "FWD", color: "#ef4444", icon: "⚔️" },
+  }[card.pos] || { label: "PLAYER", short: "P", color: "#94a3b8", icon: "⚽" };
 
   return (
     <div style={{
@@ -4428,121 +4455,178 @@ function PlayerCard({ card, size = "L", animated = false }) {
       position: "relative",
       overflow: "hidden",
     }}>
-      {/* Diagonal shine streak across the card (premium feel) */}
+      {/* Holographic stripe pattern (subtle, sports-card style) */}
       <div style={{
-        position:"absolute",
-        top:0,left:"-50%",
-        width:"40%",height:"100%",
-        background:"linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.15) 50%, transparent 70%)",
+        position:"absolute",inset:0,
+        background:`repeating-linear-gradient(
+          115deg,
+          transparent 0px,
+          transparent 8px,
+          rgba(255,255,255,0.04) 8px,
+          rgba(255,255,255,0.04) 9px
+        )`,
         pointerEvents:"none",
         zIndex:1,
       }}/>
 
-      {/* Legendary sparkles in corners */}
+      {/* Diagonal shine streak */}
+      <div style={{
+        position:"absolute",
+        top:0,left:"-40%",
+        width:"45%",height:"100%",
+        background:"linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.18) 50%, transparent 70%)",
+        pointerEvents:"none",
+        zIndex:2,
+      }}/>
+
+      {/* Legendary sparkles */}
       {isLegendary && animated && (
         <>
-          <div style={{position:"absolute",top:8,left:8,fontSize:16,animation:"sparkle 1.5s ease-in-out infinite",zIndex:3}}>✨</div>
-          <div style={{position:"absolute",top:8,right:8,fontSize:16,animation:"sparkle 1.5s ease-in-out infinite 0.5s",zIndex:3}}>✨</div>
-          <div style={{position:"absolute",bottom:8,left:8,fontSize:16,animation:"sparkle 1.5s ease-in-out infinite 1s",zIndex:3}}>✨</div>
-          <div style={{position:"absolute",bottom:8,right:8,fontSize:16,animation:"sparkle 1.5s ease-in-out infinite 0.7s",zIndex:3}}>✨</div>
+          <div style={{position:"absolute",top:8,right:54,fontSize:14,animation:"sparkle 1.5s ease-in-out infinite",zIndex:4}}>✨</div>
+          <div style={{position:"absolute",bottom:54,left:8,fontSize:14,animation:"sparkle 1.5s ease-in-out infinite 1s",zIndex:4}}>✨</div>
+          <div style={{position:"absolute",bottom:54,right:8,fontSize:14,animation:"sparkle 1.5s ease-in-out infinite 0.7s",zIndex:4}}>✨</div>
         </>
       )}
 
-      {/* ─── HEADER: Rarity badge + emoji ─── */}
+      {/* ─── HEADER: Rating badge (left) + Rarity emoji (right) ─── */}
       <div style={{
-        display:"flex",alignItems:"center",justifyContent:"space-between",
-        padding: size === "L" ? "10px 14px 6px" : size === "M" ? "8px 10px 4px" : "6px 8px 3px",
-        position:"relative",zIndex:2,
-        borderBottom:`1px solid ${cfg.color}66`,
+        display:"flex",alignItems:"flex-start",justifyContent:"space-between",
+        padding: size === "L" ? "10px 12px 6px" : size === "M" ? "8px 8px 4px" : "5px 5px 3px",
+        position:"relative",zIndex:3,
       }}>
+        {/* Rating badge — FIFA-style big number */}
         <div style={{
-          background:"rgba(0,0,0,0.4)",
-          padding: size === "L" ? "3px 10px" : "2px 6px",
-          borderRadius:6,
-          fontSize: size === "L" ? 10 : 8,
-          color: "#fff",fontWeight:900,letterSpacing: size === "L" ? 2 : 1,
-          textShadow: `0 0 8px ${cfg.color}`,
-          border:`1px solid ${cfg.color}88`,
+          width: dims.rating, height: dims.rating,
+          background: isPerfect
+            ? "radial-gradient(circle at 30% 30%, #fde68a, #fbbf24, #92400e)"
+            : `linear-gradient(135deg, rgba(0,0,0,0.55), rgba(0,0,0,0.75))`,
+          border: `2px solid ${cfg.color}`,
+          borderRadius: 8,
+          display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",
+          boxShadow: isPerfect
+            ? `0 0 16px #fbbf24, inset 0 -3px 6px rgba(0,0,0,0.3)`
+            : `0 2px 4px rgba(0,0,0,0.4), inset 0 -2px 4px rgba(0,0,0,0.3)`,
+          lineHeight:1,
         }}>
-          {cfg.label}
+          <div style={{
+            fontSize: size === "L" ? 24 : size === "M" ? 15 : 11,
+            fontWeight:900,
+            color: isPerfect ? "#0a0e1c" : "#fff",
+            textShadow: isPerfect ? "none" : "0 1px 2px rgba(0,0,0,0.5)",
+            fontVariantNumeric:"tabular-nums",
+            letterSpacing:-1,
+          }}>{rating}</div>
+          {size !== "S" && (
+            <div style={{
+              fontSize: size === "L" ? 8 : 6,
+              color: isPerfect ? "#451a03" : "#cbd5e1",
+              fontWeight:900,letterSpacing:1,
+              marginTop:-2,
+            }}>{posInfo.short}</div>
+          )}
         </div>
+
+        {/* Rarity emoji */}
         <div style={{
-          fontSize: size === "L" ? 20 : 14,
+          fontSize: size === "L" ? 22 : size === "M" ? 16 : 12,
           filter: animated ? `drop-shadow(0 0 8px ${cfg.glow})` : "none",
+          marginTop:2,
         }}>{cfg.emoji}</div>
       </div>
 
-      {/* ─── FLAG (centerpiece) ─── */}
+      {/* ─── FLAG in glowing circle (centerpiece) ─── */}
       <div style={{
         flex:1,
         display:"flex",alignItems:"center",justifyContent:"center",
-        position:"relative",zIndex:2,
+        position:"relative",zIndex:3,
       }}>
         <div style={{
-          fontSize: dims.flag,
-          filter: animated ? `drop-shadow(0 8px 20px ${cfg.glow})` : "drop-shadow(0 4px 8px rgba(0,0,0,0.4))",
-          transform: animated ? "scale(1.05)" : "scale(1)",
-          transition:"transform 0.5s",
-        }}>{card.flag}</div>
+          width: dims.flag + (size === "L" ? 32 : size === "M" ? 18 : 10),
+          height: dims.flag + (size === "L" ? 32 : size === "M" ? 18 : 10),
+          borderRadius:"50%",
+          background:`radial-gradient(circle, rgba(255,255,255,0.08) 0%, transparent 70%)`,
+          border:`2px solid ${cfg.color}66`,
+          display:"flex",alignItems:"center",justifyContent:"center",
+          boxShadow: animated
+            ? `0 0 20px ${cfg.glow}, inset 0 0 20px rgba(0,0,0,0.3)`
+            : `inset 0 0 12px rgba(0,0,0,0.3)`,
+        }}>
+          <div style={{
+            fontSize: dims.flag,
+            filter:"drop-shadow(0 4px 8px rgba(0,0,0,0.5))",
+          }}>{card.flag}</div>
+        </div>
       </div>
 
-      {/* ─── PLAYER NAME ─── */}
+      {/* ─── PLAYER NAME + TEAM ─── */}
       <div style={{
-        padding: size === "L" ? "0 14px 6px" : size === "M" ? "0 10px 4px" : "0 8px 3px",
+        padding: size === "L" ? "0 14px 6px" : size === "M" ? "0 10px 4px" : "0 6px 3px",
         textAlign:"center",
-        position:"relative",zIndex:2,
+        position:"relative",zIndex:3,
       }}>
         <div style={{
           fontSize: dims.font, color:"#fff",fontWeight:900,lineHeight:1.15,
-          textShadow:"0 2px 6px rgba(0,0,0,0.7)",
-          marginBottom: 3,
+          textShadow:"0 2px 6px rgba(0,0,0,0.8)",
+          marginBottom: 2,
           overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",
           letterSpacing:0.3,
         }}>
           {card.name}
         </div>
         <div style={{
-          fontSize: size === "L" ? 11 : 9,
-          color:"#fff",opacity:0.85,fontWeight:700,letterSpacing:1,
+          fontSize: size === "L" ? 10 : 8,
+          color:"#fff",opacity:0.75,fontWeight:700,letterSpacing:1.5,
           textTransform:"uppercase",
         }}>
           {card.team}
         </div>
       </div>
 
-      {/* ─── FOOTER: Position bar (full width) ─── */}
+      {/* ─── FOOTER: Position with icons on both sides ─── */}
       <div style={{
-        background:`linear-gradient(90deg, transparent, ${posInfo.color}44, transparent)`,
+        background:`linear-gradient(90deg, transparent 0%, ${posInfo.color}55 50%, transparent 100%)`,
         borderTop:`1px solid ${cfg.color}66`,
-        padding: size === "L" ? "8px 14px" : size === "M" ? "5px 10px" : "3px 8px",
+        padding: size === "L" ? "7px 14px" : size === "M" ? "4px 10px" : "3px 6px",
         display:"flex",alignItems:"center",justifyContent:"center",gap:6,
-        position:"relative",zIndex:2,
+        position:"relative",zIndex:3,
       }}>
-        <div style={{
-          width: size === "L" ? 6 : 4, height: size === "L" ? 6 : 4,
-          borderRadius:"50%",
-          background: posInfo.color,
-          boxShadow:`0 0 6px ${posInfo.color}`,
-        }}/>
+        <span style={{
+          fontSize: size === "L" ? 16 : size === "M" ? 12 : 10,
+          filter: `drop-shadow(0 0 4px ${posInfo.color})`,
+        }}>{posInfo.icon}</span>
         <div style={{
           fontSize: dims.position,
-          color:"#fff",fontWeight:900,letterSpacing: size === "L" ? 4 : 2,
+          color:"#fff",fontWeight:900,letterSpacing: size === "L" ? 3 : 1.5,
         }}>
           {size === "S" ? posInfo.short : posInfo.label}
         </div>
-        <div style={{
-          width: size === "L" ? 6 : 4, height: size === "L" ? 6 : 4,
-          borderRadius:"50%",
-          background: posInfo.color,
-          boxShadow:`0 0 6px ${posInfo.color}`,
-        }}/>
+        <span style={{
+          fontSize: size === "L" ? 16 : size === "M" ? 12 : 10,
+          filter: `drop-shadow(0 0 4px ${posInfo.color})`,
+        }}>{posInfo.icon}</span>
       </div>
+
+      {/* Perfect 99 special badge */}
+      {isPerfect && (
+        <div style={{
+          position:"absolute",
+          top: "44%",
+          right: 6,
+          background:"linear-gradient(135deg,#fde68a,#fbbf24,#92400e)",
+          color:"#0a0e1c",
+          fontSize: size === "L" ? 9 : 7,
+          fontWeight:900,letterSpacing:1,
+          padding:"2px 6px",
+          borderRadius:4,
+          border:"1px solid #92400e",
+          boxShadow:"0 0 8px #fbbf24",
+          zIndex:5,
+          transform:"rotate(8deg)",
+        }}>PERFECT</div>
+      )}
     </div>
   );
 }
-
-// ─── 🎉 CARD REVEAL MODAL ──────────────────────────────────────────────────
-// 🎉 Confetti burst — pre-computes random animations as inline <style> tag
 function ConfettiBurst({ count = 40 }) {
   // Generate per-particle keyframes + props once
   const particles = useMemo(() => {
