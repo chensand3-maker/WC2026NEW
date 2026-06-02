@@ -8,7 +8,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "1.9.7";
+const APP_VERSION = "1.9.8";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -3952,7 +3952,7 @@ function RouletteModal({ coins, isSpinning, pendingCard, onSpin, onClose, onShow
   return (
     <div onClick={() => !isSpinning && onClose()} style={{
       position:"fixed",inset:0,zIndex:9000,
-      background:"radial-gradient(circle at center, rgba(15,20,36,0.95), rgba(0,0,0,0.98))",
+      background:"radial-gradient(circle at center, rgba(30,41,59,0.85), rgba(0,0,0,0.92))",
       display:"flex",alignItems:"center",justifyContent:"center",
       padding:14,
     }}>
@@ -3981,8 +3981,8 @@ function RouletteModal({ coins, isSpinning, pendingCard, onSpin, onClose, onShow
       `}</style>
       <div onClick={e => e.stopPropagation()} style={{
         maxWidth:420,width:"100%",
-        background:"linear-gradient(180deg, rgba(30,41,59,0.6), rgba(15,20,36,0.9))",
-        border:"1px solid rgba(251,191,36,0.3)",
+        background:"linear-gradient(180deg, #1e293b, #0f172a)",
+        border:"2px solid #fbbf24",
         borderRadius:24,padding:"24px 20px",
         boxShadow:"0 20px 80px rgba(251,191,36,0.2)",
         animation:"rouletteSpinIn 0.5s ease-out",
@@ -4047,27 +4047,38 @@ function RouletteModal({ coins, isSpinning, pendingCard, onSpin, onClose, onShow
             />
           </div>
 
-          {/* 🎰 LEVER on the RIGHT — big & visible */}
+          {/* 🎰 LEVER on the RIGHT — BIG & VISIBLE */}
           <div style={{
-            width:50,height:140,
+            width:80,
             display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"flex-start",
             position:"relative",
+            paddingTop:6,
           }}>
-            {/* Mount base */}
+            {/* Mount base — chunky gold housing */}
             <div style={{
-              width:20,height:14,
-              background:"linear-gradient(180deg,#fbbf24,#92400e)",
-              borderRadius:"3px 3px 0 0",
-              border:"1px solid #78350f",
-            }}/>
+              width:42,height:22,
+              background:"linear-gradient(180deg,#fde68a,#fbbf24,#92400e)",
+              borderRadius:"6px 6px 0 0",
+              border:"2px solid #78350f",
+              boxShadow:"0 2px 4px rgba(0,0,0,0.4), inset 0 2px 4px rgba(255,255,255,0.3)",
+              position:"relative",
+              zIndex:3,
+            }}>
+              {/* Bolt detail */}
+              <div style={{
+                position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",
+                width:8,height:8,borderRadius:"50%",
+                background:"radial-gradient(circle at 30% 30%, #fde68a, #92400e)",
+                border:"1px solid #78350f",
+              }}/>
+            </div>
             {/* Lever button (clickable) */}
             <button
               onClick={handleLeverPull}
               disabled={!canSpin}
               title="Pull to spin!"
               style={{
-                width:50,
-                flex:1,
+                width:80,
                 background:"transparent",
                 border:"none",
                 cursor: canSpin ? "pointer" : "not-allowed",
@@ -4077,40 +4088,55 @@ function RouletteModal({ coins, isSpinning, pendingCard, onSpin, onClose, onShow
                 position:"relative",
               }}
             >
-              {/* Lever arm (silver pole) */}
+              {/* Lever arm (chrome pole) — much thicker */}
               <div style={{
-                width:8,height:80,
-                background:"linear-gradient(90deg,#475569,#cbd5e1,#475569)",
-                borderRadius:4,
-                boxShadow:"0 0 4px rgba(0,0,0,0.5)",
+                width:14,height:90,
+                background:"linear-gradient(90deg, #1e293b 0%, #94a3b8 30%, #f1f5f9 50%, #94a3b8 70%, #1e293b 100%)",
+                borderRadius:7,
+                boxShadow:"0 0 6px rgba(0,0,0,0.6), inset 0 0 4px rgba(0,0,0,0.3)",
                 transformOrigin:"top center",
-                transform: leverPulled ? "translateY(50px) scaleY(0.6)" : "translateY(0) scaleY(1)",
-                transition: leverPulled ? "transform 0.2s ease-in" : "transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)",
+                transform: leverPulled ? "translateY(55px) scaleY(0.55)" : "translateY(0) scaleY(1)",
+                transition: leverPulled ? "transform 0.25s ease-in" : "transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)",
               }}/>
-              {/* Lever ball (red) */}
+              {/* Lever ball (BIG red knob) */}
               <div style={{
-                width:34,height:34,borderRadius:"50%",
-                background:"radial-gradient(circle at 30% 30%, #fecaca, #ef4444 50%, #7f1d1d)",
-                boxShadow:"0 6px 12px rgba(0,0,0,0.5), inset 0 -4px 8px rgba(0,0,0,0.4), 0 0 12px rgba(239,68,68,0.4)",
-                marginTop:-4,
-                transform: leverPulled ? "translateY(50px)" : "translateY(0)",
-                transition: leverPulled ? "transform 0.2s ease-in" : "transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)",
-                border:"2px solid #7f1d1d",
-              }}/>
+                width:50,height:50,borderRadius:"50%",
+                background:"radial-gradient(circle at 32% 32%, #fee2e2 0%, #ef4444 40%, #991b1b 80%, #450a0a)",
+                boxShadow:`
+                  0 8px 16px rgba(0,0,0,0.6),
+                  inset 0 -6px 12px rgba(0,0,0,0.4),
+                  inset 0 4px 8px rgba(255,255,255,0.3),
+                  0 0 20px rgba(239,68,68,0.5)
+                `,
+                marginTop:-7,
+                transform: leverPulled ? "translateY(55px)" : "translateY(0)",
+                transition: leverPulled ? "transform 0.25s ease-in" : "transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)",
+                border:"3px solid #450a0a",
+                position:"relative",
+              }}>
+                {/* Shine highlight */}
+                <div style={{
+                  position:"absolute",
+                  top:6,left:10,
+                  width:14,height:14,borderRadius:"50%",
+                  background:"radial-gradient(circle, rgba(255,255,255,0.6), transparent 70%)",
+                }}/>
+              </div>
               {/* "PULL" label */}
               {canSpin && !isSpinning && !leverPulled && (
                 <div style={{
                   position:"absolute",
-                  bottom:-18,
-                  fontSize:9,color:"#fbbf24",letterSpacing:2,fontWeight:800,
-                  animation:"pullPulse 1.5s ease-in-out infinite",
-                }}>↓ PULL</div>
+                  bottom:-22,
+                  fontSize:10,color:"#fbbf24",letterSpacing:3,fontWeight:900,
+                  animation:"pullPulse 1.2s ease-in-out infinite",
+                  textShadow:"0 0 8px rgba(251,191,36,0.6)",
+                }}>↓ PULL ↓</div>
               )}
             </button>
             <style>{`
               @keyframes pullPulse {
-                0%, 100% { opacity: 0.5; }
-                50% { opacity: 1; }
+                0%, 100% { opacity: 0.6; transform: translateY(0); }
+                50% { opacity: 1; transform: translateY(2px); }
               }
             `}</style>
           </div>
@@ -4297,9 +4323,17 @@ function PlayerCard({ card, size = "L", animated = false }) {
   const isRare = card.rarity === "R";
   const isAnimated = animated && (isLegendary || isEpic || isRare);
 
-  const dims = size === "L" ? { w: 240, h: 340, font: 18, flag: 56 }
-             : size === "M" ? { w: 140, h: 200, font: 13, flag: 32 }
-             : { w: 90, h: 130, font: 10, flag: 22 };
+  const dims = size === "L" ? { w: 240, h: 360, font: 19, flag: 70, position: 15 }
+             : size === "M" ? { w: 140, h: 210, font: 13, flag: 38, position: 11 }
+             : { w: 95, h: 138, font: 9, flag: 26, position: 8 };
+
+  // Position info (full label + color)
+  const posInfo = {
+    GK: { label: "GOALKEEPER", short: "GK", color: "#fbbf24" },
+    D:  { label: "DEFENDER",   short: "DEF", color: "#3b82f6" },
+    M:  { label: "MIDFIELDER", short: "MID", color: "#22c55e" },
+    F:  { label: "FORWARD",    short: "FWD", color: "#ef4444" },
+  }[card.pos] || { label: "PLAYER", short: "P", color: "#94a3b8" };
 
   return (
     <div style={{
@@ -4307,71 +4341,124 @@ function PlayerCard({ card, size = "L", animated = false }) {
       background: cfg.bgGrad,
       backgroundSize: isAnimated ? "200% 200%" : "100% 100%",
       animation: isAnimated ? "cardShimmer 3s ease-in-out infinite" : "none",
-      border: `2px solid ${cfg.color}`,
-      borderRadius: 16,
-      padding: 12,
-      display: "flex", flexDirection: "column", alignItems: "center",
-      justifyContent: "space-between",
+      border: `3px solid ${cfg.color}`,
+      borderRadius: 14,
+      padding: 0,
+      display: "flex", flexDirection: "column",
       boxShadow: animated
-        ? `0 0 40px ${cfg.glow}, 0 8px 24px rgba(0,0,0,0.5)`
-        : `0 4px 12px rgba(0,0,0,0.3)`,
+        ? `0 0 40px ${cfg.glow}, 0 8px 24px rgba(0,0,0,0.5), inset 0 0 30px rgba(0,0,0,0.3)`
+        : `0 4px 12px rgba(0,0,0,0.3), inset 0 0 20px rgba(0,0,0,0.2)`,
       position: "relative",
       overflow: "hidden",
     }}>
-      {/* Legendary sparkles */}
+      {/* Diagonal shine streak across the card (premium feel) */}
+      <div style={{
+        position:"absolute",
+        top:0,left:"-50%",
+        width:"40%",height:"100%",
+        background:"linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.15) 50%, transparent 70%)",
+        pointerEvents:"none",
+        zIndex:1,
+      }}/>
+
+      {/* Legendary sparkles in corners */}
       {isLegendary && animated && (
         <>
-          <div style={{position:"absolute",top:6,left:6,fontSize:14,animation:"sparkle 1.5s ease-in-out infinite"}}>✨</div>
-          <div style={{position:"absolute",top:6,right:6,fontSize:14,animation:"sparkle 1.5s ease-in-out infinite 0.5s"}}>✨</div>
-          <div style={{position:"absolute",bottom:6,left:6,fontSize:14,animation:"sparkle 1.5s ease-in-out infinite 1s"}}>✨</div>
-          <div style={{position:"absolute",bottom:6,right:6,fontSize:14,animation:"sparkle 1.5s ease-in-out infinite 0.7s"}}>✨</div>
+          <div style={{position:"absolute",top:8,left:8,fontSize:16,animation:"sparkle 1.5s ease-in-out infinite",zIndex:3}}>✨</div>
+          <div style={{position:"absolute",top:8,right:8,fontSize:16,animation:"sparkle 1.5s ease-in-out infinite 0.5s",zIndex:3}}>✨</div>
+          <div style={{position:"absolute",bottom:8,left:8,fontSize:16,animation:"sparkle 1.5s ease-in-out infinite 1s",zIndex:3}}>✨</div>
+          <div style={{position:"absolute",bottom:8,right:8,fontSize:16,animation:"sparkle 1.5s ease-in-out infinite 0.7s",zIndex:3}}>✨</div>
         </>
       )}
 
-      {/* Rarity label */}
+      {/* ─── HEADER: Rarity badge + emoji ─── */}
       <div style={{
-        fontSize: size === "L" ? 10 : 8,
-        color: "#fff",fontWeight:900,letterSpacing: size === "L" ? 3 : 1.5,
-        textShadow: `0 0 8px ${cfg.color}`,
-        marginTop: isLegendary && animated ? 8 : 0,
+        display:"flex",alignItems:"center",justifyContent:"space-between",
+        padding: size === "L" ? "10px 14px 6px" : size === "M" ? "8px 10px 4px" : "6px 8px 3px",
+        position:"relative",zIndex:2,
+        borderBottom:`1px solid ${cfg.color}66`,
       }}>
-        {cfg.label}
+        <div style={{
+          background:"rgba(0,0,0,0.4)",
+          padding: size === "L" ? "3px 10px" : "2px 6px",
+          borderRadius:6,
+          fontSize: size === "L" ? 10 : 8,
+          color: "#fff",fontWeight:900,letterSpacing: size === "L" ? 2 : 1,
+          textShadow: `0 0 8px ${cfg.color}`,
+          border:`1px solid ${cfg.color}88`,
+        }}>
+          {cfg.label}
+        </div>
+        <div style={{
+          fontSize: size === "L" ? 20 : 14,
+          filter: animated ? `drop-shadow(0 0 8px ${cfg.glow})` : "none",
+        }}>{cfg.emoji}</div>
       </div>
 
-      {/* Flag big */}
+      {/* ─── FLAG (centerpiece) ─── */}
       <div style={{
-        fontSize: dims.flag,
-        filter: animated ? `drop-shadow(0 4px 12px ${cfg.glow})` : "none",
-      }}>{card.flag}</div>
-
-      {/* Name */}
-      <div style={{textAlign:"center",width:"100%"}}>
+        flex:1,
+        display:"flex",alignItems:"center",justifyContent:"center",
+        position:"relative",zIndex:2,
+      }}>
         <div style={{
-          fontSize: dims.font, color:"#fff",fontWeight:900,lineHeight:1.1,
-          textShadow:"0 2px 4px rgba(0,0,0,0.5)",
-          marginBottom: 4,
-          overflow:"hidden",textOverflow:"ellipsis",
+          fontSize: dims.flag,
+          filter: animated ? `drop-shadow(0 8px 20px ${cfg.glow})` : "drop-shadow(0 4px 8px rgba(0,0,0,0.4))",
+          transform: animated ? "scale(1.05)" : "scale(1)",
+          transition:"transform 0.5s",
+        }}>{card.flag}</div>
+      </div>
+
+      {/* ─── PLAYER NAME ─── */}
+      <div style={{
+        padding: size === "L" ? "0 14px 6px" : size === "M" ? "0 10px 4px" : "0 8px 3px",
+        textAlign:"center",
+        position:"relative",zIndex:2,
+      }}>
+        <div style={{
+          fontSize: dims.font, color:"#fff",fontWeight:900,lineHeight:1.15,
+          textShadow:"0 2px 6px rgba(0,0,0,0.7)",
+          marginBottom: 3,
+          overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",
+          letterSpacing:0.3,
         }}>
           {card.name}
         </div>
         <div style={{
           fontSize: size === "L" ? 11 : 9,
-          color:"#fff",opacity:0.85,fontWeight:600,letterSpacing:0.5,
+          color:"#fff",opacity:0.85,fontWeight:700,letterSpacing:1,
+          textTransform:"uppercase",
         }}>
           {card.team}
         </div>
       </div>
 
-      {/* Position badge */}
+      {/* ─── FOOTER: Position bar (full width) ─── */}
       <div style={{
-        background:"rgba(0,0,0,0.4)",
-        border:"1px solid rgba(255,255,255,0.2)",
-        borderRadius:6,
-        padding: size === "L" ? "3px 10px" : "2px 6px",
-        fontSize: size === "L" ? 11 : 9,
-        color:"#fff",fontWeight:700,letterSpacing:1,
+        background:`linear-gradient(90deg, transparent, ${posInfo.color}44, transparent)`,
+        borderTop:`1px solid ${cfg.color}66`,
+        padding: size === "L" ? "8px 14px" : size === "M" ? "5px 10px" : "3px 8px",
+        display:"flex",alignItems:"center",justifyContent:"center",gap:6,
+        position:"relative",zIndex:2,
       }}>
-        {card.pos}
+        <div style={{
+          width: size === "L" ? 6 : 4, height: size === "L" ? 6 : 4,
+          borderRadius:"50%",
+          background: posInfo.color,
+          boxShadow:`0 0 6px ${posInfo.color}`,
+        }}/>
+        <div style={{
+          fontSize: dims.position,
+          color:"#fff",fontWeight:900,letterSpacing: size === "L" ? 4 : 2,
+        }}>
+          {size === "S" ? posInfo.short : posInfo.label}
+        </div>
+        <div style={{
+          width: size === "L" ? 6 : 4, height: size === "L" ? 6 : 4,
+          borderRadius:"50%",
+          background: posInfo.color,
+          boxShadow:`0 0 6px ${posInfo.color}`,
+        }}/>
       </div>
     </div>
   );
@@ -4394,8 +4481,7 @@ function CardRevealModal({ result, onClose }) {
   return (
     <div onClick={onClose} style={{
       position:"fixed",inset:0,zIndex:9500,
-      background:"rgba(0,0,0,0.75)",
-      backdropFilter:"blur(8px)",
+      background:"rgba(0,0,0,0.5)",
       display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",
       padding:14,
       overflow:"hidden",
@@ -8583,13 +8669,13 @@ export default function App() {
   // Format: { balance, earnedFromIds, gotStartingBonus }
   const [coins, setCoins] = useState(() => {
     try {
-      const raw = localStorage.getItem("wc2026_coins_v3");
+      const raw = localStorage.getItem("wc2026_coins_v4");
       if (raw) {
         const parsed = JSON.parse(raw);
         // Grant the starting bonus to users who upgraded from an earlier version
         if (!parsed.gotStartingBonus) {
           const updated = { ...parsed, balance: (parsed.balance || 0) + COINS.STARTING_BONUS, gotStartingBonus: true };
-          try { localStorage.setItem("wc2026_coins_v3", JSON.stringify(updated)); } catch {}
+          try { localStorage.setItem("wc2026_coins_v4", JSON.stringify(updated)); } catch {}
           return updated;
         }
         return parsed;
@@ -8597,7 +8683,7 @@ export default function App() {
     } catch {}
     // Brand-new user: starts with the bonus
     const initial = { balance: COINS.STARTING_BONUS, earnedFromIds: {}, gotStartingBonus: true };
-    try { localStorage.setItem("wc2026_coins_v3", JSON.stringify(initial)); } catch {}
+    try { localStorage.setItem("wc2026_coins_v4", JSON.stringify(initial)); } catch {}
     return initial;
   });
   // Pop-up notification for newly earned coins
@@ -8631,7 +8717,7 @@ export default function App() {
     const newBalance = coins.balance - COINS.SPIN;
     const updatedCoins = { ...coins, balance: newBalance };
     setCoins(updatedCoins);
-    try { localStorage.setItem("wc2026_coins_v3", JSON.stringify(updatedCoins)); } catch {}
+    try { localStorage.setItem("wc2026_coins_v4", JSON.stringify(updatedCoins)); } catch {}
     // After all reels have stopped (5 seconds total), reveal the card
     setTimeout(() => {
       const isDuplicate = (cardCollection[card.id] || 0) > 0;
@@ -8646,7 +8732,7 @@ export default function App() {
         const refundedBalance = newBalance + refund;
         const withRefund = { ...updatedCoins, balance: refundedBalance };
         setCoins(withRefund);
-        try { localStorage.setItem("wc2026_coins_v3", JSON.stringify(withRefund)); } catch {}
+        try { localStorage.setItem("wc2026_coins_v4", JSON.stringify(withRefund)); } catch {}
       }
       setSpinResult({ card, isDuplicate, refund });
       setIsSpinning(false);
@@ -9204,7 +9290,7 @@ export default function App() {
     if (totalNew > 0) {
       const updated = { balance: coins.balance + totalNew, earnedFromIds: newEarned };
       setCoins(updated);
-      try { localStorage.setItem("wc2026_coins_v3", JSON.stringify(updated)); } catch {}
+      try { localStorage.setItem("wc2026_coins_v4", JSON.stringify(updated)); } catch {}
       setCoinFlash({ amount: totalNew, type: newType, key: Date.now() });
     }
   }, [picks, actuals, koPicks, actualKoScores]);
@@ -9272,7 +9358,7 @@ export default function App() {
         ]).catch(() => {});
         clearState();
         setName(""); setPicks({}); setKoWinners({}); setKoPicks({}); setCoins({ balance: COINS.STARTING_BONUS, earnedFromIds: {}, gotStartingBonus: true }); setCardCollection({}); setGroupIdx(0);
-        setFriends([]); setActuals({}); setActualKo({}); setActualKoScores({}); setLeagueName(""); setLeagueCode(""); setLeagueCodes([]); setActiveLeagueCode(""); setAllLeagueData({}); setWinnerPick(null); setTopScorerPick(null); setCelebratedIds(new Set()); setLastSeenGoals(0); setSeenActualIds(new Set()); setShowOnboarding(true); try { localStorage.removeItem("wc2026_celebrated_v1"); localStorage.removeItem("wc2026_lastseen_goals_v1"); localStorage.removeItem("wc2026_seen_actuals_v1"); localStorage.removeItem("wc2026_onboarded_v1"); localStorage.removeItem("wc2026_world_v2"); localStorage.removeItem("wc2026_achv_v1"); localStorage.removeItem("wc2026_pickhours_v1"); localStorage.removeItem("wc2026_coins_v3"); localStorage.removeItem("wc2026_cards_v1"); } catch {}
+        setFriends([]); setActuals({}); setActualKo({}); setActualKoScores({}); setLeagueName(""); setLeagueCode(""); setLeagueCodes([]); setActiveLeagueCode(""); setAllLeagueData({}); setWinnerPick(null); setTopScorerPick(null); setCelebratedIds(new Set()); setLastSeenGoals(0); setSeenActualIds(new Set()); setShowOnboarding(true); try { localStorage.removeItem("wc2026_celebrated_v1"); localStorage.removeItem("wc2026_lastseen_goals_v1"); localStorage.removeItem("wc2026_seen_actuals_v1"); localStorage.removeItem("wc2026_onboarded_v1"); localStorage.removeItem("wc2026_world_v2"); localStorage.removeItem("wc2026_achv_v1"); localStorage.removeItem("wc2026_pickhours_v1"); localStorage.removeItem("wc2026_coins_v4"); localStorage.removeItem("wc2026_cards_v1"); } catch {}
         setScreen("welcome");
         setShowIntro(false);
       },
@@ -9284,7 +9370,7 @@ export default function App() {
       // No data to worry about, just log out locally — keep Firebase intact in case they restore
       clearState();
       setName(""); setPicks({}); setKoWinners({}); setKoPicks({}); setCoins({ balance: COINS.STARTING_BONUS, earnedFromIds: {}, gotStartingBonus: true }); setCardCollection({}); setGroupIdx(0);
-      setFriends([]); setActuals({}); setActualKo({}); setActualKoScores({}); setLeagueName(""); setLeagueCode(""); setLeagueCodes([]); setActiveLeagueCode(""); setAllLeagueData({}); setWinnerPick(null); setTopScorerPick(null); setCelebratedIds(new Set()); setLastSeenGoals(0); setSeenActualIds(new Set()); setShowOnboarding(true); try { localStorage.removeItem("wc2026_celebrated_v1"); localStorage.removeItem("wc2026_lastseen_goals_v1"); localStorage.removeItem("wc2026_seen_actuals_v1"); localStorage.removeItem("wc2026_onboarded_v1"); localStorage.removeItem("wc2026_world_v2"); localStorage.removeItem("wc2026_achv_v1"); localStorage.removeItem("wc2026_pickhours_v1"); localStorage.removeItem("wc2026_coins_v3"); localStorage.removeItem("wc2026_cards_v1"); } catch {}
+      setFriends([]); setActuals({}); setActualKo({}); setActualKoScores({}); setLeagueName(""); setLeagueCode(""); setLeagueCodes([]); setActiveLeagueCode(""); setAllLeagueData({}); setWinnerPick(null); setTopScorerPick(null); setCelebratedIds(new Set()); setLastSeenGoals(0); setSeenActualIds(new Set()); setShowOnboarding(true); try { localStorage.removeItem("wc2026_celebrated_v1"); localStorage.removeItem("wc2026_lastseen_goals_v1"); localStorage.removeItem("wc2026_seen_actuals_v1"); localStorage.removeItem("wc2026_onboarded_v1"); localStorage.removeItem("wc2026_world_v2"); localStorage.removeItem("wc2026_achv_v1"); localStorage.removeItem("wc2026_pickhours_v1"); localStorage.removeItem("wc2026_coins_v4"); localStorage.removeItem("wc2026_cards_v1"); } catch {}
       setScreen("welcome");
       setShowIntro(false);
       return;
@@ -9300,7 +9386,7 @@ export default function App() {
         // so the user can restore their progress later with a backup code.
         clearState();
         setName(""); setPicks({}); setKoWinners({}); setKoPicks({}); setCoins({ balance: COINS.STARTING_BONUS, earnedFromIds: {}, gotStartingBonus: true }); setCardCollection({}); setGroupIdx(0);
-        setFriends([]); setActuals({}); setActualKo({}); setActualKoScores({}); setLeagueName(""); setLeagueCode(""); setLeagueCodes([]); setActiveLeagueCode(""); setAllLeagueData({}); setWinnerPick(null); setTopScorerPick(null); setCelebratedIds(new Set()); setLastSeenGoals(0); setSeenActualIds(new Set()); setShowOnboarding(true); try { localStorage.removeItem("wc2026_celebrated_v1"); localStorage.removeItem("wc2026_lastseen_goals_v1"); localStorage.removeItem("wc2026_seen_actuals_v1"); localStorage.removeItem("wc2026_onboarded_v1"); localStorage.removeItem("wc2026_world_v2"); localStorage.removeItem("wc2026_achv_v1"); localStorage.removeItem("wc2026_pickhours_v1"); localStorage.removeItem("wc2026_coins_v3"); localStorage.removeItem("wc2026_cards_v1"); } catch {}
+        setFriends([]); setActuals({}); setActualKo({}); setActualKoScores({}); setLeagueName(""); setLeagueCode(""); setLeagueCodes([]); setActiveLeagueCode(""); setAllLeagueData({}); setWinnerPick(null); setTopScorerPick(null); setCelebratedIds(new Set()); setLastSeenGoals(0); setSeenActualIds(new Set()); setShowOnboarding(true); try { localStorage.removeItem("wc2026_celebrated_v1"); localStorage.removeItem("wc2026_lastseen_goals_v1"); localStorage.removeItem("wc2026_seen_actuals_v1"); localStorage.removeItem("wc2026_onboarded_v1"); localStorage.removeItem("wc2026_world_v2"); localStorage.removeItem("wc2026_achv_v1"); localStorage.removeItem("wc2026_pickhours_v1"); localStorage.removeItem("wc2026_coins_v4"); localStorage.removeItem("wc2026_cards_v1"); } catch {}
         setScreen("welcome");
         setShowIntro(false);
       },
