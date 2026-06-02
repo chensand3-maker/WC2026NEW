@@ -8,7 +8,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "1.9.6";
+const APP_VERSION = "1.9.7";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -4011,10 +4011,11 @@ function RouletteModal({ coins, isSpinning, pendingCard, onSpin, onClose, onShow
           }}>🎰 {t("roulette.spinTitle")}</h2>
         </div>
 
-        {/* 🎰 SLOT MACHINE with LEVER on the side */}
+        {/* 🎰 SLOT MACHINE — reels on left, big lever on right */}
         <div style={{
-          display:"flex",alignItems:"stretch",gap:10,
+          display:"flex",alignItems:"center",gap:14,
           margin:"24px 0",
+          direction:"ltr", // ensure lever stays on the right even in RTL mode
         }}>
           {/* Slot machine reels */}
           <div style={{
@@ -4046,45 +4047,73 @@ function RouletteModal({ coins, isSpinning, pendingCard, onSpin, onClose, onShow
             />
           </div>
 
-          {/* 🎰 LEVER — the mechanical arm */}
-          <button
-            onClick={handleLeverPull}
-            disabled={!canSpin}
-            title="Pull to spin!"
-            style={{
-              width:34,
-              background:"linear-gradient(180deg,#1a1f3a,#0a0e1c)",
-              border:"2px solid #fbbf24",
-              borderRadius:14,
-              padding:"6px 0",
-              cursor: canSpin ? "pointer" : "not-allowed",
-              opacity: canSpin ? 1 : 0.5,
-              display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"flex-start",
-              position:"relative",
-              fontFamily:"inherit",
-            }}
-          >
-            {/* Lever arm */}
+          {/* 🎰 LEVER on the RIGHT — big & visible */}
+          <div style={{
+            width:50,height:140,
+            display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"flex-start",
+            position:"relative",
+          }}>
+            {/* Mount base */}
             <div style={{
-              width:6,
-              flex:1,
-              background:"linear-gradient(180deg,#94a3b8,#475569)",
-              borderRadius:3,
-              boxShadow:"inset 1px 0 0 rgba(255,255,255,0.3), inset -1px 0 0 rgba(0,0,0,0.5)",
-              marginBottom:4,
-              transformOrigin:"top center",
-              transform: leverPulled ? "translateY(50px) scaleY(0.7)" : "translateY(0) scaleY(1)",
-              transition: leverPulled ? "transform 0.2s ease-in" : "transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)",
+              width:20,height:14,
+              background:"linear-gradient(180deg,#fbbf24,#92400e)",
+              borderRadius:"3px 3px 0 0",
+              border:"1px solid #78350f",
             }}/>
-            {/* Lever ball */}
-            <div style={{
-              width:24,height:24,borderRadius:"50%",
-              background:"radial-gradient(circle at 30% 30%, #fef3c7, #ef4444, #7f1d1d)",
-              boxShadow:"0 4px 8px rgba(0,0,0,0.4), inset 0 -3px 6px rgba(0,0,0,0.4)",
-              transform: leverPulled ? "translateY(50px)" : "translateY(0)",
-              transition: leverPulled ? "transform 0.2s ease-in" : "transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)",
-            }}/>
-          </button>
+            {/* Lever button (clickable) */}
+            <button
+              onClick={handleLeverPull}
+              disabled={!canSpin}
+              title="Pull to spin!"
+              style={{
+                width:50,
+                flex:1,
+                background:"transparent",
+                border:"none",
+                cursor: canSpin ? "pointer" : "not-allowed",
+                opacity: canSpin ? 1 : 0.5,
+                display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"flex-start",
+                fontFamily:"inherit",padding:0,
+                position:"relative",
+              }}
+            >
+              {/* Lever arm (silver pole) */}
+              <div style={{
+                width:8,height:80,
+                background:"linear-gradient(90deg,#475569,#cbd5e1,#475569)",
+                borderRadius:4,
+                boxShadow:"0 0 4px rgba(0,0,0,0.5)",
+                transformOrigin:"top center",
+                transform: leverPulled ? "translateY(50px) scaleY(0.6)" : "translateY(0) scaleY(1)",
+                transition: leverPulled ? "transform 0.2s ease-in" : "transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)",
+              }}/>
+              {/* Lever ball (red) */}
+              <div style={{
+                width:34,height:34,borderRadius:"50%",
+                background:"radial-gradient(circle at 30% 30%, #fecaca, #ef4444 50%, #7f1d1d)",
+                boxShadow:"0 6px 12px rgba(0,0,0,0.5), inset 0 -4px 8px rgba(0,0,0,0.4), 0 0 12px rgba(239,68,68,0.4)",
+                marginTop:-4,
+                transform: leverPulled ? "translateY(50px)" : "translateY(0)",
+                transition: leverPulled ? "transform 0.2s ease-in" : "transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)",
+                border:"2px solid #7f1d1d",
+              }}/>
+              {/* "PULL" label */}
+              {canSpin && !isSpinning && !leverPulled && (
+                <div style={{
+                  position:"absolute",
+                  bottom:-18,
+                  fontSize:9,color:"#fbbf24",letterSpacing:2,fontWeight:800,
+                  animation:"pullPulse 1.5s ease-in-out infinite",
+                }}>↓ PULL</div>
+              )}
+            </button>
+            <style>{`
+              @keyframes pullPulse {
+                0%, 100% { opacity: 0.5; }
+                50% { opacity: 1; }
+              }
+            `}</style>
+          </div>
         </div>
 
         {/* Rarity legend */}
@@ -4182,13 +4211,9 @@ function SlotReel({ type, spinning, stopAt, finalValue }) {
       // Cycle through icons while spinning — rarity reel cycles SLOWER to build tension
       const cycleSpeed = type === "rarity" ? 140 : 80;
       let i = 0;
-      let tickCounter = 0;
       const tick = setInterval(() => {
         i = (i + 1) % ICONS.length;
         setDisplayValue(ICONS[i]);
-        // Play a soft tick every few cycles (don't overload audio)
-        tickCounter++;
-        if (tickCounter % 3 === 0) playTick();
       }, cycleSpeed);
       // Stop at stopAt ms
       const stop = setTimeout(() => {
@@ -4369,8 +4394,8 @@ function CardRevealModal({ result, onClose }) {
   return (
     <div onClick={onClose} style={{
       position:"fixed",inset:0,zIndex:9500,
-      background:"rgba(0,0,0,0.9)",
-      backdropFilter:"blur(12px)",
+      background:"rgba(0,0,0,0.75)",
+      backdropFilter:"blur(8px)",
       display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",
       padding:14,
       overflow:"hidden",
@@ -4424,28 +4449,29 @@ function CardRevealModal({ result, onClose }) {
             <div key={`beam-${i}`} style={{
               position:"fixed",
               top:"50%",left:"50%",
-              width:6,height:"200vh",
-              background:`linear-gradient(180deg, transparent, ${cfg.color}88, transparent)`,
+              width:10,height:"200vh",
+              background:`linear-gradient(180deg, transparent, ${cfg.color}, transparent)`,
               transformOrigin:"top center",
               transform:`translate(-50%, -50%) rotate(${i * 45}deg)`,
               animation:`lightBeam 3s ease-in-out infinite ${i * 0.2}s`,
               pointerEvents:"none",
-              zIndex:0,
+              zIndex:9501,
+              opacity:0.8,
             }}/>
           ))}
           {/* Gold particles raining down */}
-          {[...Array(40)].map((_, i) => (
+          {[...Array(60)].map((_, i) => (
             <div key={`gold-${i}`} style={{
               position:"fixed",
               top:"-20px",
               left:`${Math.random() * 100}%`,
-              width:10,height:10,
+              width:14,height:14,
               background:["#fbbf24","#fde68a","#f59e0b"][i%3],
               borderRadius: i%2 ? "50%" : "2px",
               animation:`goldRain ${2 + Math.random() * 2}s linear infinite ${Math.random() * 1.5}s`,
               pointerEvents:"none",
-              boxShadow:`0 0 8px ${cfg.color}`,
-              zIndex:1,
+              boxShadow:`0 0 12px ${cfg.color}, 0 0 20px ${cfg.color}`,
+              zIndex:9502,
             }}/>
           ))}
         </>
@@ -4454,17 +4480,18 @@ function CardRevealModal({ result, onClose }) {
       {/* 💎 EPIC — Purple smoke rising */}
       {isEpic && (
         <>
-          {[...Array(15)].map((_, i) => (
+          {[...Array(20)].map((_, i) => (
             <div key={`smoke-${i}`} style={{
               position:"fixed",
-              bottom:"30%",
-              left:`${20 + Math.random() * 60}%`,
-              width:80,height:80,
+              bottom:`${10 + Math.random() * 30}%`,
+              left:`${10 + Math.random() * 80}%`,
+              width:120,height:120,
               borderRadius:"50%",
-              background:`radial-gradient(circle, ${cfg.glow} 0%, transparent 70%)`,
-              animation:`smokeRise ${2 + Math.random() * 1.5}s ease-out infinite ${Math.random() * 1.5}s`,
+              background:`radial-gradient(circle, ${cfg.color}99 0%, ${cfg.color}44 40%, transparent 70%)`,
+              animation:`smokeRise ${2.5 + Math.random() * 2}s ease-out infinite ${Math.random() * 2}s`,
               pointerEvents:"none",
-              zIndex:0,
+              zIndex:9501,
+              filter:"blur(8px)",
             }}/>
           ))}
         </>
@@ -4473,19 +4500,19 @@ function CardRevealModal({ result, onClose }) {
       {/* 🔥 RARE — Red fire/embers */}
       {isRare && (
         <>
-          {[...Array(15)].map((_, i) => (
+          {[...Array(20)].map((_, i) => (
             <div key={`fire-${i}`} style={{
               position:"fixed",
-              bottom:`${25 + Math.random() * 15}%`,
-              left:`${25 + Math.random() * 50}%`,
-              width:18,height:36,
+              bottom:`${10 + Math.random() * 25}%`,
+              left:`${15 + Math.random() * 70}%`,
+              width:26,height:50,
               borderRadius:"50% 50% 20% 20%",
-              background:`linear-gradient(180deg, #fbbf24, #ef4444, #7f1d1d)`,
-              filter:"blur(3px)",
+              background:`linear-gradient(180deg, #fef3c7, #fbbf24, #ef4444, #7f1d1d)`,
+              filter:"blur(4px)",
               animation:`fireFlicker ${0.4 + Math.random() * 0.5}s ease-in-out infinite ${Math.random() * 0.8}s`,
               pointerEvents:"none",
-              opacity:0.8,
-              zIndex:0,
+              opacity:0.9,
+              zIndex:9501,
             }}/>
           ))}
         </>
@@ -4500,7 +4527,8 @@ function CardRevealModal({ result, onClose }) {
         marginBottom:20,
         letterSpacing:isLegendary ? 6 : 3,
         animation:"cardReveal 0.8s ease-out",
-        zIndex:2,
+        zIndex:9510,
+        position:"relative",
       }}>
         {isLegendary ? "🏆 LEGENDARY 🏆" : `${cfg.emoji} ${cfg.label}!`}
       </div>
@@ -4509,7 +4537,8 @@ function CardRevealModal({ result, onClose }) {
       <div style={{
         animation: `cardReveal 0.9s cubic-bezier(0.34, 1.56, 0.64, 1)${isLegendary ? ", legendaryGlow 2s ease-in-out infinite 1s" : ""}`,
         borderRadius:16,
-        zIndex:2,
+        zIndex:9510,
+        position:"relative",
       }}>
         <PlayerCard card={card} size="L" animated={true} />
       </div>
@@ -4524,7 +4553,8 @@ function CardRevealModal({ result, onClose }) {
           borderRadius:10,
           color:"#fbbf24",fontSize:13,fontWeight:700,
           display:"flex",alignItems:"center",gap:8,
-          zIndex:2,
+          zIndex:9510,
+          position:"relative",
         }}>
           <span>🔁</span>
           <span>{t("roulette.duplicate")} · +{refund} 🪙</span>
@@ -4536,7 +4566,8 @@ function CardRevealModal({ result, onClose }) {
         marginTop:24,
         fontSize:11,color:"#64748b",letterSpacing:2,
         opacity:0.6,
-        zIndex:2,
+        zIndex:9510,
+        position:"relative",
       }}>
         {t("roulette.tapToClose")}
       </div>
