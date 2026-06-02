@@ -8,7 +8,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "2.2.0";
+const APP_VERSION = "2.2.1";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -7150,6 +7150,7 @@ function LeagueHub({
   actualWinner, actualTopScorer,
   leagueCodes, activeLeagueCode, setActiveLeagueCode, allLeagueData, maxLeagues,
   onShowWorld,
+  cardCollection,
 }) {
   const t = useT();
   const { showToast } = useToast();
@@ -7957,7 +7958,9 @@ function LeagueHub({
 
           {/* TAB: CARDS — their player card collection */}
           {viewTab === "cards" && (() => {
-            const theirCollection = m.cardCollection || {};
+            // For my own profile, use my local collection (fresh).
+            // For friends, use what's synced to Firebase.
+            const theirCollection = m.isMe ? (cardCollection || {}) : (m.cardCollection || {});
             const ownedCards = CARDS.filter(c => (theirCollection[c.id] || 0) > 0);
             // Sort owned by rarity (best first)
             const rarityOrder = { L: 0, E: 1, R: 2, U: 3, C: 4 };
@@ -9570,7 +9573,8 @@ export default function App() {
     if (!leagueCodes.length || !name) return;
     const handle = setTimeout(() => {
       leagueCodes.forEach(code => {
-        updateMyPicks(code, userId, name, picks, koWinners, { winnerPick, topScorerPick, koPicks, cardCollection })
+        // Always include cardCollection — even if empty, this guarantees friends see fresh data
+        updateMyPicks(code, userId, name, picks, koWinners, { winnerPick, topScorerPick, koPicks, cardCollection: cardCollection || {} })
           .catch(err => console.error(`Failed to push picks to ${code}:`, err));
       });
     }, 800);
@@ -10243,6 +10247,7 @@ export default function App() {
           allLeagueData={allLeagueData}
           maxLeagues={MAX_LEAGUES}
           onShowWorld={()=>setScreen("world")}
+          cardCollection={cardCollection}
         />
       )}
 
