@@ -8,7 +8,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "2.0.0";
+const APP_VERSION = "2.0.1";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -4474,14 +4474,9 @@ function CardRevealModal({ result, onClose }) {
   const isRare = card.rarity === "R";
   const isUncommon = card.rarity === "U";
 
-  // Staged reveal: first show the explosion/effects, then the card appears
-  const [stage, setStage] = useState("burst"); // burst → card → text → final
+  // Play win sound on mount
   useEffect(() => {
     playWinSound(card.rarity);
-    const t1 = setTimeout(() => setStage("card"), 400);
-    const t2 = setTimeout(() => setStage("text"), 900);
-    const t3 = setTimeout(() => setStage("final"), 1600);
-    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
   }, [card.rarity]);
 
   // Vignette color matches the rarity
@@ -4492,13 +4487,13 @@ function CardRevealModal({ result, onClose }) {
                                  : "rgba(0,0,0,0.7)";
 
   return (
-    <div onClick={stage === "final" ? onClose : undefined} style={{
+    <div onClick={onClose} style={{
       position:"fixed",inset:0,zIndex:9500,
       background: vignetteBg,
       display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",
       padding:14,
       overflow:"hidden",
-      cursor: stage === "final" ? "pointer" : "default",
+      cursor: "pointer",
     }}>
       <style>{`
         @keyframes cardFlip {
@@ -4577,7 +4572,7 @@ function CardRevealModal({ result, onClose }) {
       `}</style>
 
       {/* ═════════ 🏆 LEGENDARY EFFECTS ═════════ */}
-      {isLegendary && stage !== "burst" && (
+      {isLegendary && (
         <>
           {/* Shockwave ring - emanates from center */}
           <div style={{
@@ -4652,7 +4647,7 @@ function CardRevealModal({ result, onClose }) {
             );
           })}
           {/* Orbiting sparkles around card */}
-          {stage !== "burst" && [...Array(8)].map((_, i) => (
+          {[...Array(8)].map((_, i) => (
             <div key={`orbit-${i}`} style={{
               position:"fixed",top:"50%",left:"50%",
               width:14,height:14,
@@ -4670,7 +4665,7 @@ function CardRevealModal({ result, onClose }) {
       )}
 
       {/* ═════════ 💎 EPIC EFFECTS ═════════ */}
-      {isEpic && stage !== "burst" && (
+      {isEpic && (
         <>
           {/* Shockwave */}
           <div style={{
@@ -4733,7 +4728,7 @@ function CardRevealModal({ result, onClose }) {
       )}
 
       {/* ═════════ 🔥 RARE EFFECTS ═════════ */}
-      {isRare && stage !== "burst" && (
+      {isRare && (
         <>
           {/* Red shockwave */}
           <div style={{
@@ -4778,7 +4773,7 @@ function CardRevealModal({ result, onClose }) {
       )}
 
       {/* ═════════ 💧 UNCOMMON EFFECTS ═════════ */}
-      {isUncommon && stage !== "burst" && (
+      {isUncommon && (
         <>
           {/* Blue shockwave */}
           <div style={{
@@ -4826,7 +4821,7 @@ function CardRevealModal({ result, onClose }) {
       )}
 
       {/* ═════════ ⚪ COMMON — simple but nice ═════════ */}
-      {!isLegendary && !isEpic && !isRare && !isUncommon && stage !== "burst" && (
+      {!isLegendary && !isEpic && !isRare && !isUncommon && (
         <>
           {/* Soft white shockwave */}
           <div style={{
@@ -4854,7 +4849,7 @@ function CardRevealModal({ result, onClose }) {
       )}
 
       {/* ═════════ Universal: confetti burst on entry ═════════ */}
-      {stage === "card" && (isLegendary || isEpic) && (
+      {(isLegendary || isEpic) && (
         <>
           {[...Array(isLegendary ? 50 : 30)].map((_, i) => {
             const angle = (i / (isLegendary ? 50 : 30)) * Math.PI * 2;
@@ -4881,7 +4876,7 @@ function CardRevealModal({ result, onClose }) {
       )}
 
       {/* ═════════ Tier announcement ═════════ */}
-      {stage !== "burst" && (
+      {(
         <div style={{
           fontSize: isLegendary ? 36 : isEpic ? 26 : 22,
           fontWeight:900,
@@ -4892,15 +4887,15 @@ function CardRevealModal({ result, onClose }) {
           zIndex:9510,
           position:"relative",
           textAlign:"center",
-          animation: stage === "text" || stage === "final" ? "textChar 0.5s ease-out" : "none",
-          opacity: stage === "text" || stage === "final" ? 1 : 0,
+          animation: "textChar 0.5s ease-out 0.5s both",
+          opacity: 1,
         }}>
           {isLegendary ? "🏆 LEGENDARY 🏆" : `${cfg.emoji} ${cfg.label}!`}
         </div>
       )}
 
       {/* ═════════ The card itself — appears at "card" stage ═════════ */}
-      {stage !== "burst" && (
+      {(
         <div style={{
           animation: `cardFlip 0.9s cubic-bezier(0.34, 1.56, 0.64, 1)${isLegendary ? ", legendaryBorderPulse 1.8s ease-in-out infinite 1s" : ""}`,
           borderRadius:16,
@@ -4912,7 +4907,7 @@ function CardRevealModal({ result, onClose }) {
       )}
 
       {/* Duplicate info */}
-      {isDuplicate && stage === "final" && (
+      {isDuplicate && (
         <div style={{
           marginTop:20,
           padding:"10px 18px",
@@ -4931,7 +4926,7 @@ function CardRevealModal({ result, onClose }) {
       )}
 
       {/* Tap to close */}
-      {stage === "final" && (
+      {(
         <div style={{
           marginTop:24,
           fontSize:11,color:"#cbd5e1",letterSpacing:2,
