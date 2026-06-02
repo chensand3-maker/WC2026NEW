@@ -8,7 +8,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "2.1.1";
+const APP_VERSION = "2.2.0";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -7194,6 +7194,7 @@ function LeagueHub({
   const [copied, setCopied] = useState(false);
   const [viewing, setViewing] = useState(null);
   const [viewTab, setViewTab] = useState("matches");
+  const [cardPreview, setCardPreview] = useState(null); // for previewing a friend's card
   const [isNarrow, setIsNarrow] = useState(() => typeof window !== "undefined" && window.innerWidth < 720);
   useEffect(() => {
     const onResize = () => setIsNarrow(window.innerWidth < 720);
@@ -7734,7 +7735,7 @@ function LeagueHub({
 
       return (
         <div style={{padding:"16px 14px 40px",maxWidth:920,margin:"0 auto"}}>
-          <button onClick={()=>{setViewing(null);setViewTab("matches");}} style={{...ghostBtn,marginBottom:14,padding:"7px 14px",width:"auto"}}>← Back to league</button>
+          <button onClick={()=>{setViewing(null);setViewTab("matches");setCardPreview(null);}} style={{...ghostBtn,marginBottom:14,padding:"7px 14px",width:"auto"}}>← Back to league</button>
 
           {/* Header */}
           <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:14}}>
@@ -7770,15 +7771,16 @@ function LeagueHub({
           {/* Tabs */}
           <div style={{display:"flex",background:"rgba(15,20,36,0.6)",borderRadius:10,padding:3,marginBottom:12}}>
             {[
-              ["matches","⚽ Matches"],
-              ["standings","📊 Standings"],
-              ["bracket","🏆 Bracket"],
-            ].map(([t,lbl]) => (
-              <button key={t} onClick={()=>setViewTab(t)} style={{
+              ["matches","⚽"],
+              ["standings","📊"],
+              ["bracket","🏆"],
+              ["cards","🃏"],
+            ].map(([tk,lbl]) => (
+              <button key={tk} onClick={()=>setViewTab(tk)} style={{
                 flex:1,padding:"7px 0",border:"none",borderRadius:7,cursor:"pointer",fontFamily:"inherit",
-                background: viewTab===t?"rgba(251,191,36,0.15)":"transparent",
-                color: viewTab===t?"#fbbf24":"#94a3b8",
-                fontSize:11,fontWeight:700,letterSpacing:1,
+                background: viewTab===tk?"rgba(251,191,36,0.15)":"transparent",
+                color: viewTab===tk?"#fbbf24":"#94a3b8",
+                fontSize:13,fontWeight:700,letterSpacing:1,
               }}>{lbl}</button>
             ))}
           </div>
@@ -7951,6 +7953,125 @@ function LeagueHub({
             <div style={{background:"rgba(30,41,59,0.4)",border:"1px dashed rgba(71,85,105,0.4)",borderRadius:10,padding:"20px",textAlign:"center",fontSize:12,color:"#94a3b8"}}>
               {m.isMe?"You haven't":"They haven't"} finished the group stage yet, so the bracket isn't built.
             </div>
+          )}
+
+          {/* TAB: CARDS — their player card collection */}
+          {viewTab === "cards" && (() => {
+            const theirCollection = m.cardCollection || {};
+            const ownedCards = CARDS.filter(c => (theirCollection[c.id] || 0) > 0);
+            // Sort owned by rarity (best first)
+            const rarityOrder = { L: 0, E: 1, R: 2, U: 3, C: 4 };
+            ownedCards.sort((a, b) => {
+              const r = rarityOrder[a.rarity] - rarityOrder[b.rarity];
+              if (r !== 0) return r;
+              return b.name.localeCompare(a.name);
+            });
+            const total = CARDS.length;
+            const pct = Math.round((ownedCards.length / total) * 100);
+            // Highest-rated card (best brag)
+            const topCard = ownedCards.length > 0
+              ? ownedCards.reduce((best, c) => getPlayerRating(c) > getPlayerRating(best) ? c : best, ownedCards[0])
+              : null;
+            // Rarity breakdown
+            const byRarity = ["L","E","R","U","C"].map(r => ({
+              r, count: ownedCards.filter(c => c.rarity === r).length,
+              total: CARDS_BY_RARITY[r]?.length || 0,
+            }));
+
+            return (
+              <div>
+                {ownedCards.length === 0 ? (
+                  <div style={{background:"rgba(30,41,59,0.4)",border:"1px dashed rgba(71,85,105,0.4)",borderRadius:10,padding:"20px",textAlign:"center",fontSize:12,color:"#94a3b8"}}>
+                    🃏 {m.isMe ? "You don't" : "They don't"} have any cards yet.
+                  </div>
+                ) : (
+                  <>
+                    {/* Progress */}
+                    <div style={{background:"rgba(15,20,36,0.6)",borderRadius:10,padding:"12px 14px",marginBottom:12}}>
+                      <div style={{display:"flex",justifyContent:"space-between",fontSize:11,marginBottom:6}}>
+                        <span style={{color:"#cbd5e1",fontWeight:700}}>{ownedCards.length} / {total} {t("collection.collected")}</span>
+                        <span style={{color:"#fbbf24",fontWeight:800}}>{pct}%</span>
+                      </div>
+                      <div style={{height:6,background:"rgba(71,85,105,0.3)",borderRadius:3,overflow:"hidden"}}>
+                        <div style={{width:`${pct}%`,height:"100%",background:"linear-gradient(90deg,#fbbf24,#f59e0b)",borderRadius:3,transition:"width 0.4s"}}/>
+                      </div>
+                    </div>
+
+                    {/* Rarity breakdown */}
+                    <div style={{display:"grid",gridTemplateColumns:"repeat(5, 1fr)",gap:5,marginBottom:14}}>
+                      {byRarity.map(br => {
+                        const cfg = RARITY_CONFIG[br.r];
+                        return (
+                          <div key={br.r} style={{
+                            textAlign:"center",padding:"6px 4px",borderRadius:6,
+                            background:`${cfg.color}15`,
+                            border:`1px solid ${cfg.color}44`,
+                          }}>
+                            <div style={{fontSize:14,marginBottom:2}}>{cfg.emoji}</div>
+                            <div style={{fontSize:11,color:"#fff",fontWeight:800,fontVariantNumeric:"tabular-nums"}}>
+                              {br.count}<span style={{color:"#94a3b8",fontSize:9}}>/{br.total}</span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Best card highlight */}
+                    {topCard && (
+                      <div style={{marginBottom:14,textAlign:"center"}}>
+                        <div style={{fontSize:9,color:"#94a3b8",letterSpacing:2,fontWeight:700,marginBottom:8}}>★ TOP CARD ★</div>
+                        <button onClick={()=>setCardPreview(topCard)} style={{
+                          background:"transparent",border:"none",cursor:"pointer",padding:0,
+                          display:"inline-block",fontFamily:"inherit",
+                        }}>
+                          <PlayerCard card={topCard} size="M" animated={true} />
+                        </button>
+                      </div>
+                    )}
+
+                    {/* All owned cards grid */}
+                    <div style={{
+                      display:"grid",
+                      gridTemplateColumns:"repeat(auto-fill, minmax(95px, 1fr))",
+                      gap:8,padding:"4px",
+                    }}>
+                      {ownedCards.map(card => {
+                        const count = theirCollection[card.id] || 0;
+                        return (
+                          <button
+                            key={card.id}
+                            onClick={()=>setCardPreview(card)}
+                            style={{
+                              position:"relative",background:"transparent",border:"none",
+                              cursor:"pointer",padding:0,fontFamily:"inherit",
+                            }}
+                          >
+                            <PlayerCard card={card} size="S" animated={true} />
+                            {count > 1 && (
+                              <div style={{
+                                position:"absolute",top:4,right:4,
+                                background:"#fbbf24",color:"#0a0e1c",
+                                fontSize:9,fontWeight:900,
+                                borderRadius:8,padding:"2px 5px",
+                                border:"1px solid #0a0e1c",
+                              }}>×{count}</div>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </>
+                )}
+              </div>
+            );
+          })()}
+
+          {/* Preview a card by tapping it */}
+          {cardPreview && (
+            <CardRevealModal
+              result={{ card: cardPreview, isDuplicate: false, refund: 0 }}
+              onClose={() => setCardPreview(null)}
+            />
           )}
         </div>
       );
@@ -9449,12 +9570,12 @@ export default function App() {
     if (!leagueCodes.length || !name) return;
     const handle = setTimeout(() => {
       leagueCodes.forEach(code => {
-        updateMyPicks(code, userId, name, picks, koWinners, { winnerPick, topScorerPick, koPicks })
+        updateMyPicks(code, userId, name, picks, koWinners, { winnerPick, topScorerPick, koPicks, cardCollection })
           .catch(err => console.error(`Failed to push picks to ${code}:`, err));
       });
     }, 800);
     return () => clearTimeout(handle);
-  }, [leagueCodes.join("|"), userId, name, picks, koWinners, winnerPick, topScorerPick]);
+  }, [leagueCodes.join("|"), userId, name, picks, koWinners, winnerPick, topScorerPick, cardCollection]);
 
   // ─── GLOBAL PROFILE: push to the worldwide leaderboard (every user) ──────
   // Independent of league membership — everyone is on the global board.
@@ -9481,11 +9602,11 @@ export default function App() {
         total += (actualTopScorer.goals || 0) * POINTS.TOP_SCORER_GOAL;
       }
       updateMyGlobalProfile(userId, name, picks, koWinners, {
-        winnerPick, topScorerPick, koPicks, totalPoints: total,
+        winnerPick, topScorerPick, koPicks, totalPoints: total, cardCollection,
       }).catch(err => console.error("Failed to push global profile:", err));
     }, 1200);
     return () => clearTimeout(handle);
-  }, [userId, name, picks, koWinners, koPicks, winnerPick, topScorerPick, actuals, actualKoScores, actualWinner, actualTopScorer]);
+  }, [userId, name, picks, koWinners, koPicks, winnerPick, topScorerPick, actuals, actualKoScores, actualWinner, actualTopScorer, cardCollection]);
 
   // ─── LIVE RESULTS AUTO-FETCH ───────────────────────────────────────────────
   // Poll API-Football every 5 min for new match results
