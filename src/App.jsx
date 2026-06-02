@@ -8,7 +8,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "2.0.4";
+const APP_VERSION = "2.0.5";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -4701,14 +4701,7 @@ function CardRevealModal({ result, onClose }) {
             animation:"shockwave 1.5s ease-out",
             pointerEvents:"none",zIndex:9501,
           }}/>
-          <div style={{
-            position:"fixed",top:"50%",left:"50%",
-            width:80,height:80,borderRadius:"50%",
-            border:`4px solid ${cfg.color}`,
-            animation:"shockwave 1.5s ease-out 0.2s",
-            pointerEvents:"none",zIndex:9501,
-          }}/>
-          {/* Rotating light rays — 12 of them, two layers */}
+          {/* Rotating light rays — just 6 (was 12+16) */}
           <div style={{
             position:"fixed",top:"50%",left:"50%",
             width:"200vw",height:"200vh",
@@ -4716,70 +4709,36 @@ function CardRevealModal({ result, onClose }) {
             pointerEvents:"none",zIndex:9501,
             transform:"translate(-50%, -50%)",
           }}>
-            {[...Array(12)].map((_, i) => (
+            {[...Array(6)].map((_, i) => (
               <div key={`ray-${i}`} style={{
                 position:"absolute",
                 top:"50%",left:"50%",
                 width:8,height:"100vh",
                 background:`linear-gradient(180deg, transparent, ${cfg.color}cc, transparent)`,
                 transformOrigin:"top center",
-                transform:`translate(-50%, 0) rotate(${i * 30}deg)`,
+                transform:`translate(-50%, 0) rotate(${i * 60}deg)`,
                 opacity:0.7,
               }}/>
             ))}
           </div>
-          {/* Counter-rotating thinner rays */}
-          <div style={{
-            position:"fixed",top:"50%",left:"50%",
-            width:"200vw",height:"200vh",
-            animation:"rayRotate 12s linear infinite reverse",
-            pointerEvents:"none",zIndex:9501,
-            transform:"translate(-50%, -50%)",
-          }}>
-            {[...Array(16)].map((_, i) => (
-              <div key={`ray2-${i}`} style={{
-                position:"absolute",
-                top:"50%",left:"50%",
-                width:3,height:"100vh",
-                background:`linear-gradient(180deg, transparent, #fde68a99, transparent)`,
-                transformOrigin:"top center",
-                transform:`translate(-50%, 0) rotate(${i * 22.5}deg)`,
-              }}/>
-            ))}
-          </div>
-          {/* Gold falling particles — 80 of them in 3 sizes */}
-          {[...Array(80)].map((_, i) => {
-            const size = [6, 10, 16][i % 3];
+          {/* Gold falling particles — 25 (was 80) */}
+          {[...Array(25)].map((_, i) => {
+            const size = [8, 12][i % 2];
             return (
               <div key={`gold-${i}`} style={{
                 position:"fixed",
                 top:"-100px",
                 left:`${Math.random() * 100}%`,
                 width:size,height:size,
-                background:["#fbbf24","#fde68a","#f59e0b","#fef3c7"][i%4],
-                borderRadius: i%3 === 0 ? "50%" : i%3 === 1 ? "2px" : "0",
-                animation:`goldFall ${2.5 + Math.random() * 2.5}s linear infinite ${Math.random() * 2}s`,
+                background:["#fbbf24","#fde68a","#f59e0b"][i%3],
+                borderRadius: i%2 ? "50%" : "2px",
+                animation:`goldFall ${2.5 + Math.random() * 2}s linear infinite ${Math.random() * 2}s`,
                 pointerEvents:"none",
-                boxShadow:`0 0 ${size * 2}px ${cfg.color}, 0 0 ${size}px ${cfg.color}`,
+                boxShadow:`0 0 ${size}px ${cfg.color}`,
                 zIndex:9502,
               }}/>
             );
           })}
-          {/* Orbiting sparkles around card */}
-          {[...Array(8)].map((_, i) => (
-            <div key={`orbit-${i}`} style={{
-              position:"fixed",top:"50%",left:"50%",
-              width:14,height:14,
-              borderRadius:"50%",
-              background:`radial-gradient(circle, #fff 0%, ${cfg.color} 70%)`,
-              boxShadow:`0 0 12px ${cfg.color}, 0 0 24px ${cfg.color}`,
-              animation:`orbitParticle ${4 + i * 0.3}s linear infinite`,
-              animationDelay:`${i * -0.5}s`,
-              pointerEvents:"none",
-              zIndex:9503,
-              "--orbit-r": "180px",
-            }}/>
-          ))}
         </>
       )}
 
@@ -4794,7 +4753,7 @@ function CardRevealModal({ result, onClose }) {
             animation:"shockwave 1.3s ease-out",
             pointerEvents:"none",zIndex:9501,
           }}/>
-          {/* Big radial purple beams (like Legendary but purple) */}
+          {/* 6 purple beams (was 10+14) */}
           <div style={{
             position:"fixed",top:"50%",left:"50%",
             width:"200vw",height:"200vh",
@@ -4802,82 +4761,34 @@ function CardRevealModal({ result, onClose }) {
             pointerEvents:"none",zIndex:9501,
             transform:"translate(-50%, -50%)",
           }}>
-            {[...Array(10)].map((_, i) => (
+            {[...Array(6)].map((_, i) => (
               <div key={`epicray-${i}`} style={{
                 position:"absolute",
                 top:"50%",left:"50%",
-                width:8,height:"100vh",
+                width:7,height:"100vh",
                 background:`linear-gradient(180deg, transparent, ${cfg.color}, transparent)`,
                 transformOrigin:"top center",
-                transform:`translate(-50%, 0) rotate(${i * 36}deg)`,
+                transform:`translate(-50%, 0) rotate(${i * 60}deg)`,
                 opacity:0.7,
               }}/>
             ))}
           </div>
-          {/* Counter-rotating thinner rays */}
-          <div style={{
-            position:"fixed",top:"50%",left:"50%",
-            width:"200vw",height:"200vh",
-            animation:"rayRotate 14s linear infinite reverse",
-            pointerEvents:"none",zIndex:9501,
-            transform:"translate(-50%, -50%)",
-          }}>
-            {[...Array(14)].map((_, i) => (
-              <div key={`epicray2-${i}`} style={{
-                position:"absolute",
-                top:"50%",left:"50%",
-                width:3,height:"100vh",
-                background:`linear-gradient(180deg, transparent, #d8b4fe, transparent)`,
-                transformOrigin:"top center",
-                transform:`translate(-50%, 0) rotate(${i * 25.7}deg)`,
-                opacity:0.6,
-              }}/>
-            ))}
-          </div>
-          {/* Purple smoke clouds floating across screen */}
-          {[...Array(20)].map((_, i) => (
-            <div key={`smoke-${i}`} style={{
-              position:"fixed",
-              top:`${Math.random() * 100}%`,
-              left:`${Math.random() * 100}%`,
-              width:140,height:140,
-              borderRadius:"50%",
-              background:`radial-gradient(circle, ${cfg.color} 0%, ${cfg.color}aa 30%, transparent 70%)`,
-              animation:`sparkle ${2 + Math.random() * 2}s ease-in-out infinite ${Math.random() * 2}s`,
-              pointerEvents:"none",
-              zIndex:9501,
-              filter:"blur(20px)",
-              opacity:0.6,
-            }}/>
-          ))}
-          {/* Falling purple diamonds */}
-          {[...Array(40)].map((_, i) => {
-            const size = [12, 18, 26][i % 3];
+          {/* Falling purple diamonds — 15 (was 40) */}
+          {[...Array(15)].map((_, i) => {
+            const size = [14, 22][i % 2];
             return (
               <div key={`pdiamond-${i}`} style={{
                 position:"fixed",
                 top:"-100px",
                 left:`${Math.random() * 100}%`,
                 fontSize:size,
-                animation:`goldFall ${2.5 + Math.random() * 2.5}s linear infinite ${Math.random() * 2}s`,
+                animation:`goldFall ${2.5 + Math.random() * 2}s linear infinite ${Math.random() * 2}s`,
                 pointerEvents:"none",
                 zIndex:9502,
                 filter:`drop-shadow(0 0 ${size}px ${cfg.color})`,
               }}>💎</div>
             );
           })}
-          {/* Orbiting diamonds */}
-          {[...Array(8)].map((_, i) => (
-            <div key={`diamond-${i}`} style={{
-              position:"fixed",top:"50%",left:"50%",
-              fontSize:28,
-              animation:`orbitParticle ${5 + i * 0.3}s linear infinite`,
-              animationDelay:`${i * -0.6}s`,
-              pointerEvents:"none",
-              zIndex:9503,
-              filter:`drop-shadow(0 0 12px ${cfg.color}) drop-shadow(0 0 24px ${cfg.color})`,
-            }}>💎</div>
-          ))}
         </>
       )}
 
@@ -5004,7 +4915,7 @@ function CardRevealModal({ result, onClose }) {
 
       {/* ═════════ Universal: confetti burst on entry ═════════ */}
       {(isLegendary || isEpic) && (
-        <ConfettiBurst count={isLegendary ? 50 : 35} />
+        <ConfettiBurst count={isLegendary ? 20 : 14} />
       )}
 
       {/* ═════════ Tier announcement ═════════ */}
