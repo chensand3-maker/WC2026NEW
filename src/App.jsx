@@ -8,7 +8,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "2.5.0";
+const APP_VERSION = "2.5.1";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -1461,35 +1461,35 @@ const ACHIEVEMENTS = [
       return false;
     } },
   // ─── 🃏 CARD COLLECTOR ACHIEVEMENTS ────────────────────────────────
-  { id: "first_card", emoji: "🎴", check: ({ cardCollection }) => {
+  { id: "first_card", icon: "🎴", color: "#94a3b8", check: ({ cardCollection }) => {
     if (!cardCollection) return false;
     return Object.values(cardCollection).some(c => c > 0);
   } },
-  { id: "ten_cards", emoji: "🃏", check: ({ cardCollection }) => {
+  { id: "ten_cards", icon: "🃏", color: "#3b82f6", check: ({ cardCollection }) => {
     if (!cardCollection) return false;
     return Object.keys(cardCollection).filter(k => cardCollection[k] > 0).length >= 10;
   } },
-  { id: "fifty_cards", emoji: "📦", check: ({ cardCollection }) => {
+  { id: "fifty_cards", icon: "📦", color: "#a855f7", check: ({ cardCollection }) => {
     if (!cardCollection) return false;
     return Object.keys(cardCollection).filter(k => cardCollection[k] > 0).length >= 50;
   } },
-  { id: "hundred_cards", emoji: "💯", check: ({ cardCollection }) => {
+  { id: "hundred_cards", icon: "💯", color: "#ef4444", check: ({ cardCollection }) => {
     if (!cardCollection) return false;
     return Object.keys(cardCollection).filter(k => cardCollection[k] > 0).length >= 100;
   } },
-  { id: "first_legendary", emoji: "🏆", check: ({ cardCollection }) => {
+  { id: "first_legendary", icon: "🏆", color: "#fbbf24", check: ({ cardCollection }) => {
     if (!cardCollection) return false;
     return CARDS_BY_RARITY.L.some(c => (cardCollection[c.id] || 0) > 0);
   } },
-  { id: "five_legendary", emoji: "👑", check: ({ cardCollection }) => {
+  { id: "five_legendary", icon: "👑", color: "#fbbf24", check: ({ cardCollection }) => {
     if (!cardCollection) return false;
     return CARDS_BY_RARITY.L.filter(c => (cardCollection[c.id] || 0) > 0).length >= 5;
   } },
-  { id: "perfect_card", emoji: "💎", check: ({ cardCollection }) => {
+  { id: "perfect_card", icon: "💎", color: "#fbbf24", check: ({ cardCollection }) => {
     if (!cardCollection) return false;
     return CARDS.some(c => (cardCollection[c.id] || 0) > 0 && getPlayerRating(c) === 99);
   } },
-  { id: "card_master", emoji: "🌟", check: ({ cardCollection }) => {
+  { id: "card_master", icon: "🌟", color: "#fbbf24", check: ({ cardCollection }) => {
     if (!cardCollection) return false;
     const owned = Object.keys(cardCollection).filter(k => cardCollection[k] > 0).length;
     return owned >= CARDS.length;
