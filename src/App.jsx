@@ -8,7 +8,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "2.9.6";
+const APP_VERSION = "2.9.8";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -1798,12 +1798,16 @@ const primaryBtn = {
   background:"linear-gradient(135deg,#fbbf24,#d97706)",
   color:"#1e2940",border:"none",borderRadius:12,
   fontSize:14,fontWeight:800,cursor:"pointer",letterSpacing:0.5,fontFamily:"inherit",
-  boxShadow:"0 6px 18px rgba(251,191,36,0.3)",transition:"all 0.2s",
+  boxShadow:"0 4px 0 #92400e, 0 8px 18px rgba(251,191,36,0.35), inset 0 1px 0 rgba(255,255,255,0.3)",
+  transition:"all 0.15s",
 };
 const ghostBtn = {
   width:"100%",padding:"11px 16px",
-  background:"rgba(30,41,59,0.6)",color:"#cbd5e1",border:"1px solid rgba(71,85,105,0.4)",
-  borderRadius:12,fontSize:14,fontWeight:600,cursor:"pointer",fontFamily:"inherit",transition:"all 0.2s",
+  background:"linear-gradient(180deg,rgba(50,65,95,0.7),rgba(30,41,59,0.7))",
+  color:"#cbd5e1",border:"1px solid rgba(100,116,139,0.5)",
+  borderRadius:12,fontSize:14,fontWeight:600,cursor:"pointer",fontFamily:"inherit",
+  boxShadow:"0 3px 0 rgba(15,23,42,0.6), 0 6px 12px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.08)",
+  transition:"all 0.15s",
 };
 const koRoundHeader = {
   fontSize:9,color:"#94a3b8",letterSpacing:2,fontWeight:700,
@@ -3746,7 +3750,7 @@ function Sidebar({ open, onClose, name, lang, setLang, onShowProfile, onShowRule
             <div style={{flex:1,minWidth:0}}>
               <div style={{fontSize:16,fontWeight:800,color:"#f1f5f9",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{name}</div>
               <div style={{fontSize:11,color:"#fbbf24",marginTop:2,fontWeight:700}}>
-                📈 {totalPoints} {t("welcome.pts")}
+                📈 <AnimatedNumber value={totalPoints} /> {t("welcome.pts")}
               </div>
             </div>
           </div>
@@ -5516,6 +5520,7 @@ function CollectionModal({ collection, onClose }) {
               <div
                 key={card.id}
                 onClick={owned ? () => setPreviewCard(card) : undefined}
+                className={owned ? "card-tilt" : ""}
                 style={{
                   position:"relative",
                   opacity: owned ? 1 : 0.3,
@@ -6456,7 +6461,7 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
               <span style={{fontSize:9,color:"#64748b",letterSpacing:0.5,marginTop:1}}>#{fifaRank(home.n)}</span>
             )}
           </div>
-          <span style={{fontSize:22}}>{home.f}</span>
+          <span className="flag-wave" style={{fontSize:22}}>{home.f}</span>
         </div>
         <div style={{display:"flex",alignItems:"center",gap:4}}>
           <input id={homeInputId} type="text" inputMode="numeric" value={h}
@@ -6490,7 +6495,7 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
             }}/>
         </div>
         <div style={{display:"flex",alignItems:"center",gap:8,opacity:(result==="home" && showHighlight)?0.5:1}}>
-          <span style={{fontSize:22}}>{away.f}</span>
+          <span className="flag-wave" style={{fontSize:22, animationDelay:"1.5s"}}>{away.f}</span>
           <div style={{display:"flex",flexDirection:"column",alignItems:"flex-start",minWidth:0}}>
             <span style={{fontSize:13,fontWeight:result==="away"?800:500,color:"#f1f5f9",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{away.n}</span>
             {fifaRank(away.n) && (
@@ -6675,6 +6680,32 @@ function StandingsTable({ group, standings, bestThirds, liveStandings, liveBestT
 }
 
 // ─── TODAY SCREEN: matches happening today/tomorrow ──────────────────────────
+// 🔢 ANIMATED NUMBER — counts up smoothly when value changes
+function AnimatedNumber({ value, duration = 600 }) {
+  const [display, setDisplay] = useState(value);
+  const fromRef = useRef(value);
+  const startRef = useRef(null);
+  const rafRef = useRef(null);
+  useEffect(() => {
+    if (display === value) return;
+    fromRef.current = display;
+    startRef.current = null;
+    const tick = (ts) => {
+      if (startRef.current === null) startRef.current = ts;
+      const elapsed = ts - startRef.current;
+      const t = Math.min(elapsed / duration, 1);
+      const eased = 1 - Math.pow(1 - t, 3); // ease-out cubic
+      const next = Math.round(fromRef.current + (value - fromRef.current) * eased);
+      setDisplay(next);
+      if (t < 1) rafRef.current = requestAnimationFrame(tick);
+    };
+    rafRef.current = requestAnimationFrame(tick);
+    return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value, duration]);
+  return <>{display}</>;
+}
+
 // ⏰ NEXT MATCH COUNTDOWN — ticking display of time until next match
 function NextMatchCountdown({ allMatches }) {
   const t = useT();
@@ -7640,7 +7671,7 @@ function Leaderboard({ name, picks, koWinners, friends, actuals, actualKo, hasAc
                 </div>
               </div>
               <div style={{textAlign:"right"}}>
-                <div style={{fontSize:24,fontWeight:900,color:"#fbbf24",lineHeight:1}}>{p.totalPoints}</div>
+                <div style={{fontSize:24,fontWeight:900,color:"#fbbf24",lineHeight:1}}><AnimatedNumber value={p.totalPoints} /></div>
                 <div style={{fontSize:9,color:"#94a3b8",letterSpacing:1}}>POINTS</div>
               </div>
             </div>
@@ -8578,6 +8609,7 @@ function LeagueHub({
                           <button
                             key={card.id}
                             onClick={()=>setCardPreview(card)}
+                            className="card-tilt"
                             style={{
                               position:"relative",background:"transparent",border:"none",
                               cursor:"pointer",padding:0,fontFamily:"inherit",
@@ -8872,7 +8904,7 @@ function LeagueHub({
                   fontWeight:900,
                   color: showPoints ? (isPodium ? podiumBorder : "#94a3b8") : "#475569",
                   lineHeight:1,
-                }}>{p.totalPoints}</div>
+                }}><AnimatedNumber value={p.totalPoints} /></div>
                 <div style={{fontSize:9,color:"#94a3b8",letterSpacing:1}}>{t("league.pts")}</div>
               </div>
             </button>
@@ -9278,7 +9310,7 @@ function LeagueView({ name, picks, koWinners, friends, setFriends, leagueName, s
                       </div>
                     </div>
                     <div style={{textAlign:"right"}}>
-                      <div style={{fontSize:22,fontWeight:900,color:"#fbbf24",lineHeight:1}}>{p.totalPoints}</div>
+                      <div style={{fontSize:22,fontWeight:900,color:"#fbbf24",lineHeight:1}}><AnimatedNumber value={p.totalPoints} /></div>
                       <div style={{fontSize:9,color:"#94a3b8",letterSpacing:1}}>PTS</div>
                     </div>
                   </button>
@@ -10503,7 +10535,8 @@ export default function App() {
         transition: transform 0.12s ease-out, box-shadow 0.12s ease-out, opacity 0.12s ease-out;
       }
       button:not(:disabled):active {
-        transform: scale(0.95);
+        transform: translateY(2px) scale(0.98);
+        filter: brightness(0.92);
       }
       @keyframes numBump {
         0% { transform: scale(1); }
@@ -10512,15 +10545,33 @@ export default function App() {
       }
       .num-bump { animation: numBump 0.4s ease-out; }
       @keyframes screenSlideIn {
-        from { opacity: 0; transform: translateY(8px); }
-        to { opacity: 1; transform: translateY(0); }
+        from { opacity: 0; transform: translateY(10px) scale(0.985); filter: blur(4px); }
+        to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
       }
-      .screen-enter { animation: screenSlideIn 0.35s cubic-bezier(0.2, 0.7, 0.3, 1); }
+      .screen-enter { animation: screenSlideIn 0.45s cubic-bezier(0.2, 0.7, 0.3, 1); }
       @keyframes cardLift {
         from { opacity: 0; transform: translateY(12px) scale(0.98); }
         to { opacity: 1; transform: translateY(0) scale(1); }
       }
       .card-lift { animation: cardLift 0.4s cubic-bezier(0.2, 0.7, 0.3, 1); }
+      @keyframes flagWave {
+        0%, 100% { transform: rotate(-3deg) scale(1); }
+        50% { transform: rotate(3deg) scale(1.02); }
+      }
+      .flag-wave {
+        display: inline-block;
+        animation: flagWave 3s ease-in-out infinite;
+        transform-origin: center bottom;
+      }
+      .card-tilt {
+        transition: transform 0.3s cubic-bezier(0.2, 0.7, 0.3, 1);
+      }
+      .card-tilt:hover {
+        transform: perspective(800px) rotateY(8deg) rotateX(-4deg) scale(1.03);
+      }
+      .card-tilt:active {
+        transform: perspective(800px) rotateY(0deg) rotateX(0deg) scale(0.97);
+      }
     `}</style>
     <div style={{minHeight:"100vh",background:"linear-gradient(160deg,#2c3956 0%,#334466 50%,#3d4f7a 100%)",color:"#f1f5f9",fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif",position:"relative",overflow:"hidden",direction:lang==="he"?"rtl":"ltr"}}>
       {/* Language toggle: shown only on welcome screen */}
