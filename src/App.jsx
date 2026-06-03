@@ -8,7 +8,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "2.9.0";
+const APP_VERSION = "2.8.1";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -314,13 +314,6 @@ const TRANSLATIONS = {
     "roulette.yourBalance": "BALANCE",
     "roulette.spinCost": "COST",
     "roulette.spinBtn": "SPIN!",
-    "roulette.freeSpin": "FREE DAILY SPIN!",
-    "daily.title": "Daily Bonus",
-    "daily.subtitle": "Open the app every day to grow your streak. Day 7 = HUGE!",
-    "daily.claim": "CLAIM",
-    "daily.claimed": "CLAIMED TODAY",
-    "daily.comeBack": "Come back tomorrow for more 🎁",
-    "daily.menuLink": "Daily Bonus",
     "roulette.spinning": "SPINNING...",
     "roulette.notEnough": "NOT ENOUGH COINS",
     "roulette.viewCollection": "View My Collection",
@@ -781,13 +774,6 @@ const TRANSLATIONS = {
     "roulette.yourBalance": "יתרה",
     "roulette.spinCost": "מחיר",
     "roulette.spinBtn": "סובב!",
-    "roulette.freeSpin": "סיבוב יומי חינם!",
-    "daily.title": "בונוס יומי",
-    "daily.subtitle": "פתח את האפליקציה כל יום כדי לבנות streak. יום 7 = ענקי!",
-    "daily.claim": "קבל",
-    "daily.claimed": "נדרש היום",
-    "daily.comeBack": "חזור מחר עוד 🎁",
-    "daily.menuLink": "בונוס יומי",
     "roulette.spinning": "מסתובב...",
     "roulette.notEnough": "אין מספיק מטבעות",
     "roulette.viewCollection": "צפה באוסף שלי",
@@ -1222,10 +1208,6 @@ const COINS = {
   DUP_EPIC: 300,
   DUP_LEGENDARY: 1000,
 };
-
-// 🎁 Daily Login Bonus — rewards scale up across 7 days, then reset to day 1
-const DAILY_BONUS_REWARDS = [50, 75, 100, 125, 150, 200, 500];
-// 🔮 Daily free spin: one per calendar day, no charge
 
 // ─── ACHIEVEMENTS ────────────────────────────────────────────────────────────
 // 20+ badges users can unlock. Each has an id, icon, color, and a `check(ctx)`
@@ -4107,123 +4089,9 @@ function playWinSound(rarity) {
   });
 }
 
-// 🎁 DAILY BONUS MODAL — shows the 7-day reward grid + claim button
-function DailyBonusModal({ streak, nextDay, nextReward, available, onClaim, onClose }) {
+function RouletteModal({ coins, isSpinning, pendingCard, onSpin, onClose, onShowCollection }) {
   const t = useT();
-  return (
-    <div onClick={onClose} style={{
-      position:"fixed",inset:0,zIndex:9100,
-      background:"rgba(0,0,0,0.85)",backdropFilter:"blur(8px)",
-      display:"flex",alignItems:"center",justifyContent:"center",
-      padding:14,animation:"goalFadeIn 0.3s ease-out",
-    }}>
-      <style>{`@keyframes goalFadeIn { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes daySparkle {
-          0%, 100% { transform: scale(1); }
-          50% { transform: scale(1.08); }
-        }
-      `}</style>
-      <div onClick={e => e.stopPropagation()} style={{
-        maxWidth:420,width:"100%",
-        background:"linear-gradient(160deg,#2c3956,#243150)",
-        border:"1px solid rgba(251,191,36,0.4)",
-        borderRadius:18,padding:"22px 18px",
-        boxShadow:"0 20px 60px rgba(0,0,0,0.6)",
-      }}>
-        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:6}}>
-          <h2 style={{margin:0,fontSize:20,color:"#fbbf24",fontWeight:900}}>
-            🎁 {t("daily.title")}
-          </h2>
-          <button onClick={onClose} style={{
-            background:"transparent",border:"none",color:"#94a3b8",fontSize:22,
-            cursor:"pointer",fontFamily:"inherit",padding:"4px 8px",
-          }}>✕</button>
-        </div>
-        <p style={{fontSize:12,color:"#94a3b8",margin:"0 0 16px",lineHeight:1.5}}>
-          {t("daily.subtitle")}
-        </p>
-
-        {/* 7-day grid */}
-        <div style={{
-          display:"grid",
-          gridTemplateColumns:"repeat(7, 1fr)",
-          gap:6,marginBottom:18,
-        }}>
-          {DAILY_BONUS_REWARDS.map((amount, i) => {
-            const day = i + 1;
-            // The day BEFORE today's nextDay was already claimed
-            const claimed = day < nextDay;
-            const isToday = day === nextDay;
-            const isLast = day === 7;
-            return (
-              <div key={day} style={{
-                background: claimed
-                  ? "rgba(34,197,94,0.15)"
-                  : isToday
-                    ? (isLast ? "linear-gradient(135deg,#fbbf24,#d97706)" : "rgba(251,191,36,0.2)")
-                    : "rgba(15,23,42,0.5)",
-                border: `1px solid ${claimed ? "#22c55e66" : isToday ? "#fbbf24" : "rgba(71,85,105,0.4)"}`,
-                borderRadius:8,
-                padding:"8px 4px",
-                textAlign:"center",
-                opacity: claimed ? 0.6 : 1,
-                animation: isToday && available ? "daySparkle 1.5s ease-in-out infinite" : "none",
-                boxShadow: isToday && available ? "0 0 16px rgba(251,191,36,0.5)" : "none",
-              }}>
-                <div style={{
-                  fontSize:9,color: claimed ? "#22c55e" : isToday && isLast ? "#1e2940" : "#94a3b8",
-                  fontWeight:900,letterSpacing:1,marginBottom:2,
-                }}>
-                  {claimed ? "✓" : `D${day}`}
-                </div>
-                <div style={{
-                  fontSize: isLast ? 14 : 11,
-                  fontWeight:900,
-                  color: claimed ? "#22c55e" : isToday && isLast ? "#1e2940" : isLast ? "#fbbf24" : "#fff",
-                }}>
-                  {amount}
-                </div>
-                <div style={{
-                  fontSize:9,
-                  color: claimed ? "#22c55e" : isToday && isLast ? "#1e2940" : "#94a3b8",
-                }}>🪙</div>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Claim button */}
-        <button onClick={available ? onClaim : undefined} disabled={!available} style={{
-          width:"100%",padding:"14px",borderRadius:12,
-          background: available
-            ? "linear-gradient(135deg,#fbbf24,#d97706)"
-            : "rgba(71,85,105,0.4)",
-          color: available ? "#1e2940" : "#64748b",
-          border:"none",fontSize:15,fontWeight:900,
-          fontFamily:"inherit",cursor: available ? "pointer" : "not-allowed",
-          boxShadow: available ? "0 8px 24px rgba(251,191,36,0.4)" : "none",
-          letterSpacing:1,
-        }}>
-          {available
-            ? `🎁 ${t("daily.claim")} +${nextReward} 🪙`
-            : `✓ ${t("daily.claimed")}`}
-        </button>
-
-        {!available && (
-          <div style={{
-            marginTop:10,fontSize:11,color:"#94a3b8",textAlign:"center",
-          }}>
-            {t("daily.comeBack")}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function RouletteModal({ coins, isSpinning, pendingCard, onSpin, onClose, onShowCollection, freeSpinAvailable = false }) {
-  const t = useT();
-  const canSpin = (coins.balance >= COINS.SPIN || freeSpinAvailable) && !isSpinning;
+  const canSpin = coins.balance >= COINS.SPIN && !isSpinning;
   const [leverPulled, setLeverPulled] = useState(false);
   const [muted, setMutedState] = useState(() => isMuted());
 
@@ -4238,11 +4106,11 @@ function RouletteModal({ coins, isSpinning, pendingCard, onSpin, onClose, onShow
     if (!canSpin) return;
     setLeverPulled(true);
     playLever();
-    // Spin is FREE if a free spin is available — use that first
-    const useFree = freeSpinAvailable;
+    // After lever animation completes, trigger the spin
     setTimeout(() => {
-      onSpin(useFree);
+      onSpin();
     }, 300);
+    // Reset lever after a moment so it animates back up
     setTimeout(() => setLeverPulled(false), 800);
   };
 
@@ -4485,24 +4353,14 @@ function RouletteModal({ coins, isSpinning, pendingCard, onSpin, onClose, onShow
 
         <button onClick={handleSpinClick} disabled={!canSpin} style={{
           width:"100%",padding:"14px",borderRadius:12,
-          background: !canSpin ? "rgba(71,85,105,0.4)"
-            : freeSpinAvailable
-              ? "linear-gradient(135deg,#22c55e,#15803d)"
-              : "linear-gradient(135deg,#fbbf24,#f59e0b)",
-          color: !canSpin ? "#64748b" : freeSpinAvailable ? "#fff" : "#1e2940",
+          background: canSpin ? "linear-gradient(135deg,#fbbf24,#f59e0b)" : "rgba(71,85,105,0.4)",
+          color: canSpin ? "#1e2940" : "#64748b",
           border:"none",fontSize:16,fontWeight:900,
           fontFamily:"inherit",cursor: canSpin ? "pointer" : "not-allowed",
-          boxShadow: !canSpin ? "none"
-            : freeSpinAvailable
-              ? "0 8px 24px rgba(34,197,94,0.5)"
-              : "0 8px 24px rgba(251,191,36,0.4)",
+          boxShadow: canSpin ? "0 8px 24px rgba(251,191,36,0.4)" : "none",
           letterSpacing:1,
-          animation: (canSpin && freeSpinAvailable && !isSpinning) ? "pulse 1.5s ease-in-out infinite" : "none",
         }}>
-          {isSpinning ? `🎰 ${t("roulette.spinning")}`
-           : !canSpin ? `🪙 ${t("roulette.notEnough")}`
-           : freeSpinAvailable ? `🎁 ${t("roulette.freeSpin")}`
-           : `🎰 ${t("roulette.spinBtn")}`}
+          {isSpinning ? `🎰 ${t("roulette.spinning")}` : canSpin ? `🎰 ${t("roulette.spinBtn")}` : `🪙 ${t("roulette.notEnough")}`}
         </button>
 
         <button onClick={onShowCollection} style={{
@@ -9750,68 +9608,6 @@ export default function App() {
   });
   // Pop-up notification for newly earned coins
   const [coinFlash, setCoinFlash] = useState(null); // { amount, type, key }
-  const [showDailyBonus, setShowDailyBonus] = useState(false);
-
-  // ─── 🎁 DAILY LOGIN & FREE SPIN ─────────────────────────────────────
-  // Tracks: { lastClaim: "YYYY-MM-DD", streak: 1-7, lastFreeSpin: "YYYY-MM-DD" }
-  const [dailyState, setDailyState] = useState(() => {
-    try {
-      const raw = localStorage.getItem("wc2026_daily_v1");
-      if (raw) return JSON.parse(raw);
-    } catch {}
-    return { lastClaim: null, streak: 0, lastFreeSpin: null };
-  });
-  useEffect(() => {
-    try { localStorage.setItem("wc2026_daily_v1", JSON.stringify(dailyState)); } catch {}
-  }, [dailyState]);
-
-  // Helper: today's date as "YYYY-MM-DD" in local time
-  const todayKey = () => {
-    const d = new Date();
-    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
-  };
-  const yesterdayKey = () => {
-    const d = new Date();
-    d.setDate(d.getDate() - 1);
-    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
-  };
-  // Has the user already claimed today's bonus?
-  const today = todayKey();
-  const dailyAvailable = dailyState.lastClaim !== today;
-  const freeSpinAvailable = dailyState.lastFreeSpin !== today;
-  // What day of the streak is today? (1-7). If we missed yesterday, streak resets to 1.
-  const nextStreakDay = (() => {
-    if (!dailyState.lastClaim) return 1;
-    if (dailyState.lastClaim === yesterdayKey()) {
-      // Continued — bump streak (capped at 7, then wraps to 1)
-      return dailyState.streak >= 7 ? 1 : dailyState.streak + 1;
-    }
-    // Missed at least one day — reset
-    return 1;
-  })();
-  const nextBonus = DAILY_BONUS_REWARDS[nextStreakDay - 1];
-
-  const claimDailyBonus = () => {
-    if (!dailyAvailable) return;
-    const reward = nextBonus;
-    setCoins(c => {
-      const updated = { ...c, balance: c.balance + reward };
-      try { localStorage.setItem("wc2026_coins_v7", JSON.stringify(updated)); } catch {}
-      return updated;
-    });
-    setDailyState(s => ({ ...s, lastClaim: today, streak: nextStreakDay }));
-    setCoinFlash({ amount: reward, type: "daily", key: Date.now() });
-    try { navigator.vibrate?.(40); } catch {}
-  };
-
-  // Auto-pop the daily bonus modal on first load if it's available
-  // (Only after name is set — don't interrupt welcome flow)
-  useEffect(() => {
-    if (name && dailyAvailable && !showOnboarding) {
-      const handle = setTimeout(() => setShowDailyBonus(true), 600);
-      return () => clearTimeout(handle);
-    }
-  }, [name, showOnboarding]); // eslint-disable-line
 
   // 🃏 Card collection — stores which cards the user owns (and counts of duplicates)
   // Format: { [cardId]: count }
@@ -9830,23 +9626,18 @@ export default function App() {
   const [showCollection, setShowCollection] = useState(false); // collection viewer
 
   // Spend coins, roll a card, save to collection
-  const handleSpin = (isFree = false) => {
-    if (isSpinning) return;
-    if (!isFree && coins.balance < COINS.SPIN) return;
+  const handleSpin = () => {
+    if (coins.balance < COINS.SPIN || isSpinning) return;
     // Roll the card UPFRONT — the reels need to know what to stop on
     const card = rollOneCard();
     setPendingCard(card);
     setIsSpinning(true);
     setSpinResult(null);
-    // Deduct coins immediately (unless this is a free spin)
-    const newBalance = isFree ? coins.balance : coins.balance - COINS.SPIN;
+    // Deduct coins immediately
+    const newBalance = coins.balance - COINS.SPIN;
     const updatedCoins = { ...coins, balance: newBalance };
     setCoins(updatedCoins);
     try { localStorage.setItem("wc2026_coins_v7", JSON.stringify(updatedCoins)); } catch {}
-    // If free spin, mark today as claimed
-    if (isFree) {
-      setDailyState(s => ({ ...s, lastFreeSpin: today }));
-    }
     // After all reels have stopped (5 seconds total), reveal the card
     setTimeout(() => {
       const isDuplicate = (cardCollection[card.id] || 0) > 0;
@@ -10556,10 +10347,6 @@ export default function App() {
         to { opacity: 1; transform: translateY(0) scale(1); }
       }
       .card-lift { animation: cardLift 0.4s cubic-bezier(0.2, 0.7, 0.3, 1); }
-      @keyframes pulse {
-        0%, 100% { transform: scale(1); }
-        50% { transform: scale(1.04); }
-      }
     `}</style>
     <div style={{minHeight:"100vh",background:"linear-gradient(160deg,#1e2940 0%,#243150 50%,#2c3956 100%)",color:"#f1f5f9",fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif",position:"relative",overflow:"hidden",direction:lang==="he"?"rtl":"ltr"}}>
       {/* Language toggle: shown only on welcome screen */}
@@ -10716,21 +10503,6 @@ export default function App() {
                 <span style={{fontSize:11}}>🪙</span>
                 <span key={coins.balance} className="num-bump">{coins.balance}</span>
               </div>
-            )}
-
-            {/* 🎁 Daily bonus pill — only when bonus is unclaimed */}
-            {dailyAvailable && (
-              <button onClick={()=>setShowDailyBonus(true)} style={{
-                display:"flex",alignItems:"center",gap:3,
-                background:"rgba(34,197,94,0.15)",
-                border:"1px solid rgba(34,197,94,0.4)",
-                borderRadius:6,padding:"2px 6px",
-                fontSize:11,fontWeight:800,color:"#22c55e",
-                cursor:"pointer",fontFamily:"inherit",
-                animation:"pulse 1.5s ease-in-out infinite",
-              }}>
-                🎁
-              </button>
             )}
 
             {/* Just-saved indicator (small green check) */}
@@ -10962,18 +10734,6 @@ export default function App() {
         onReset={handleReset}
       />
 
-      {/* 🎁 Daily Bonus Modal */}
-      {showDailyBonus && (
-        <DailyBonusModal
-          streak={dailyState.streak}
-          nextDay={nextStreakDay}
-          nextReward={nextBonus}
-          available={dailyAvailable}
-          onClaim={() => { claimDailyBonus(); setShowDailyBonus(false); }}
-          onClose={() => setShowDailyBonus(false)}
-        />
-      )}
-
       {/* 🎰 Roulette */}
       {showRoulette && !spinResult && (
         <RouletteModal
@@ -10983,7 +10743,6 @@ export default function App() {
           onSpin={handleSpin}
           onClose={()=>setShowRoulette(false)}
           onShowCollection={()=>setShowCollection(true)}
-          freeSpinAvailable={freeSpinAvailable}
         />
       )}
 
