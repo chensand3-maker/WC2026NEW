@@ -8,7 +8,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "2.9.2";
+const APP_VERSION = "2.9.4";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -210,7 +210,9 @@ const TRANSLATIONS = {
     "today.subtitle": "All matches happening today and tomorrow",
     "today.today": "TODAY",
     "today.tomorrow": "TOMORROW",
-    "today.liveNow": "LIVE / JUST FINISHED",
+    "today.liveNow": "LIVE NOW",
+    "today.justFinished": "JUST FINISHED",
+    "today.refresh": "Refresh",
     "today.noMatchesToday": "No matches today",
     "today.noMatchesTomorrow": "No matches tomorrow",
     "today.matchNoPick": "match needs your prediction",
@@ -670,7 +672,9 @@ const TRANSLATIONS = {
     "today.subtitle": "כל המשחקים של היום ומחר",
     "today.today": "היום",
     "today.tomorrow": "מחר",
-    "today.liveNow": "חי / זה עתה הסתיים",
+    "today.liveNow": "משחק חי",
+    "today.justFinished": "זה עתה הסתיים",
+    "today.refresh": "רענן",
     "today.noMatchesToday": "אין משחקים היום",
     "today.noMatchesTomorrow": "אין משחקים מחר",
     "today.matchNoPick": "משחק מחכה לניחוש שלך",
@@ -6236,6 +6240,8 @@ function Welcome({ onStart, onImport }) {
 
 function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, awayInputId, nextInputId, lockable = true, leagueMembers = null }) {
   const t = useT();
+  const { lang } = useContext(LangContext);
+  const isRTL = lang === "he";
   const home = findTeam(fixture.home);
   const away = findTeam(fixture.away);
   const h = pick?.h ?? "";
@@ -6544,8 +6550,8 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
             <span style={{fontSize:9,color:"#a855f7",letterSpacing:2,fontWeight:700}}>🧠 {t("insights.yourLeague")}</span>
             <span style={{fontSize:9,color:"#64748b"}}>{insights.total} {insights.total===1 ? t("insights.pick") : t("insights.picks")}</span>
           </div>
-          {/* Three-segment bar showing %s */}
-          <div style={{display:"flex",height:8,borderRadius:4,overflow:"hidden",background:"rgba(36,49,80,0.6)",marginBottom:5}}>
+          {/* Three-segment bar showing %s — order flipped in RTL so home aligns right */}
+          <div style={{display:"flex",height:8,borderRadius:4,overflow:"hidden",background:"rgba(36,49,80,0.6)",marginBottom:5,flexDirection: isRTL ? "row-reverse" : "row"}}>
             {insights.home > 0 && (
               <div style={{
                 width:`${insights.home}%`,
@@ -6568,8 +6574,8 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
               }}/>
             )}
           </div>
-          {/* Three-column legend */}
-          <div style={{display:"flex",justifyContent:"space-between",fontSize:10,fontVariantNumeric:"tabular-nums"}}>
+          {/* Three-column legend — order also flipped in RTL */}
+          <div style={{display:"flex",justifyContent:"space-between",fontSize:10,fontVariantNumeric:"tabular-nums",flexDirection: isRTL ? "row-reverse" : "row"}}>
             <div style={{display:"flex",alignItems:"center",gap:4}}>
               <span style={{fontSize:11}}>{home?.f}</span>
               <span style={{color:"#22c55e",fontWeight:700}}>{insights.home}%</span>
@@ -6659,7 +6665,7 @@ function StandingsTable({ group, standings, bestThirds, liveStandings, liveBestT
 }
 
 // ─── TODAY SCREEN: matches happening today/tomorrow ──────────────────────────
-function TodayScreen({ picks, actuals, onPick, onBack, onGoToBracket, leagueMembers = null }) {
+function TodayScreen({ picks, actuals, onPick, onBack, onGoToBracket, leagueMembers = null, onRefresh, lastFetchAt }) {
   const t = useT();
 
   // Group all fixtures (group + knockout) by date
@@ -6685,13 +6691,24 @@ function TodayScreen({ picks, actuals, onPick, onBack, onGoToBracket, leagueMemb
   const todayMatches = [];
   const tomorrowMatches = [];
   const liveOrJustEndedMatches = [];
+  const justFinishedMatches = [];
   for (const m of allMatches) {
     const k = new Date(m.kickoff).getTime();
-    // 🔴 LIVE: started within the last 2.5 hours (covers regular + extra time)
-    // This catches matches regardless of whether they started "today" or "yesterday"
-    const isLive = k > now - 2.5 * 60 * 60 * 1000 && k <= now;
+    const minSinceKickoff = (now - k) / (60 * 1000);
+    // 📡 Has a result already been recorded for this match?
+    const actual = m.type === "group" ? actuals[m.fixture?.id] : null;
+    const hasFinalScore = actual && actual.h !== "" && actual.h !== undefined && actual.a !== "" && actual.a !== undefined;
+    // 🔴 LIVE: started within the last 120 minutes (covers regular + injury time)
+    // AND not yet marked as a final result, OR within the first 95 mins (might still be live)
+    const isLive = k <= now && minSinceKickoff <= 120 && !(hasFinalScore && minSinceKickoff > 95);
+    // 🏁 Just finished: has a final score, and ended within the last 3 hours
+    const isJustFinished = hasFinalScore && minSinceKickoff > 95 && minSinceKickoff < 180;
     if (isLive) {
       liveOrJustEndedMatches.push(m);
+      continue;
+    }
+    if (isJustFinished) {
+      justFinishedMatches.push(m);
       continue;
     }
     // Past matches not live → skip from main lists
@@ -6774,7 +6791,22 @@ function TodayScreen({ picks, actuals, onPick, onBack, onGoToBracket, leagueMemb
 
   return (
     <div style={{padding:"16px 14px 60px",maxWidth:560,margin:"0 auto"}}>
-      <button onClick={onBack} style={{...ghostBtn,marginBottom:14,padding:"7px 14px",width:"auto"}}>{t("welcome.back")}</button>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14,gap:8}}>
+        <button onClick={onBack} style={{...ghostBtn,padding:"7px 14px",width:"auto"}}>{t("welcome.back")}</button>
+        {onRefresh && (
+          <button onClick={onRefresh} style={{
+            padding:"7px 12px",
+            background:"rgba(34,197,94,0.15)",
+            border:"1px solid rgba(34,197,94,0.4)",
+            borderRadius:10,
+            color:"#22c55e",fontSize:13,fontWeight:700,
+            cursor:"pointer",fontFamily:"inherit",
+            display:"flex",alignItems:"center",gap:5,
+          }}>
+            🔄 {t("today.refresh")}
+          </button>
+        )}
+      </div>
 
       <div style={{textAlign:"center",marginBottom:18}}>
         <div style={{fontSize:10,color:"#64748b",letterSpacing:3}}>{t("today.upcoming")}</div>
@@ -6803,11 +6835,11 @@ function TodayScreen({ picks, actuals, onPick, onBack, onGoToBracket, leagueMemb
         </div>
       )}
 
-      {/* Live / just-ended */}
+      {/* 🔴 LIVE matches only */}
       {liveOrJustEndedMatches.length > 0 && (
         <div style={{marginBottom:18}}>
           <div style={{
-            fontSize:11,color:"#22c55e",letterSpacing:3,marginBottom:8,
+            fontSize:11,color:"#ef4444",letterSpacing:3,marginBottom:8,
             fontWeight:700,display:"flex",alignItems:"center",gap:6,
           }}>
             <span style={{
@@ -6826,6 +6858,16 @@ function TodayScreen({ picks, actuals, onPick, onBack, onGoToBracket, leagueMemb
             }
           `}</style>
           {liveOrJustEndedMatches.map(renderMatchRow)}
+        </div>
+      )}
+
+      {/* 🏁 Just finished matches (separate section) */}
+      {justFinishedMatches.length > 0 && (
+        <div style={{marginBottom:18}}>
+          <div style={{fontSize:11,color:"#94a3b8",letterSpacing:3,marginBottom:8,fontWeight:700}}>
+            🏁 {t("today.justFinished")}
+          </div>
+          {justFinishedMatches.map(renderMatchRow)}
         </div>
       )}
 
@@ -10606,6 +10648,7 @@ export default function App() {
           onBack={()=>setScreen("group")}
           onGoToBracket={()=>setScreen("bracket")}
           leagueMembers={leagueData ? Object.values(leagueData.members || {}) : null}
+          onRefresh={() => { showToast(t("toast.refreshing"), "info"); fetchAndApplyLive(); fetchAndApplyTopScorers(); }}
         />
       )}
 
