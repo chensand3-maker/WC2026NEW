@@ -8,7 +8,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.0.1";
+const APP_VERSION = "3.0.2";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -213,6 +213,8 @@ const TRANSLATIONS = {
     "today.liveNow": "LIVE NOW",
     "today.justFinished": "JUST FINISHED",
     "today.refresh": "Refresh",
+    "matchcard.predicted": "Predicted",
+    "matchcard.noPick": "No prediction yet",
     "today.nextMatchIn": "NEXT MATCH IN",
     "today.days": "DAYS",
     "today.hours": "HRS",
@@ -680,6 +682,8 @@ const TRANSLATIONS = {
     "today.liveNow": "משחק חי",
     "today.justFinished": "זה עתה הסתיים",
     "today.refresh": "רענן",
+    "matchcard.predicted": "ניחשת",
+    "matchcard.noPick": "עוד לא ניחשת",
     "today.nextMatchIn": "המשחק הבא בעוד",
     "today.days": "ימים",
     "today.hours": "שעות",
@@ -6453,7 +6457,8 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
         {isLocked && <span style={{color:"#f87171",fontWeight:700,whiteSpace:"nowrap"}}>🔒 LOCKED</span>}
         {!isLocked && isLockingSoon && <span style={{color:"#fbbf24",fontWeight:700,whiteSpace:"nowrap"}}>⏰ LOCKS SOON</span>}
         {sc && <span style={{color:sc.text,fontWeight:700,whiteSpace:"nowrap"}}>{sc.label} +{score.points}</span>}
-        {!sc && !isLocked && hasResult && <span style={{color:"#22c55e"}}>✓</span>}
+        {!sc && !isLocked && hasResult && <span style={{color:"#22c55e"}} title={t("matchcard.predicted")}>🎯</span>}
+        {!sc && !isLocked && !hasResult && <span style={{color:"#64748b",opacity:0.5}} title={t("matchcard.noPick")}>⚪</span>}
       </div>
       <div style={{display:"grid",gridTemplateColumns:"1fr auto 1fr",alignItems:"center",gap:8,direction:"ltr"}}>
         <div style={{display:"flex",alignItems:"center",gap:8,justifyContent:"flex-end",opacity:(result==="away" && showHighlight)?0.5:1}}>
@@ -10577,7 +10582,7 @@ export default function App() {
         transform: perspective(800px) rotateY(0deg) rotateX(0deg) scale(0.97);
       }
     `}</style>
-    <div style={{minHeight:"100vh",background:"linear-gradient(160deg,#2c3956 0%,#334466 50%,#3d4f7a 100%)",color:"#f1f5f9",fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif",position:"relative",overflow:"hidden",direction:lang==="he"?"rtl":"ltr"}}>
+    <div style={{minHeight:"100vh",background:"linear-gradient(160deg,#1a2235 0%,#1f2942 50%,#243150 100%)",color:"#f1f5f9",fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif",position:"relative",overflow:"hidden",direction:lang==="he"?"rtl":"ltr"}}>
       {/* Language toggle: shown only on welcome screen */}
       {screen === "welcome" && (
         <div style={{
