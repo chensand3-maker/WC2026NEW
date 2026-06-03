@@ -8,7 +8,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "2.6.0";
+const APP_VERSION = "2.8.0";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -10283,7 +10283,32 @@ export default function App() {
   return (
     <LangContext.Provider value={{ lang, setLang }}>
     <ToastProvider>
-    <div style={{minHeight:"100vh",background:"radial-gradient(ellipse at top,#1e1b4b 0%,#1e2940 70%)",color:"#f1f5f9",fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif",position:"relative",overflow:"hidden",direction:lang==="he"?"rtl":"ltr"}}>
+    <style>{`
+      /* ─── Global polish: button taps, number bumps, smooth transitions ─── */
+      button {
+        transition: transform 0.12s ease-out, box-shadow 0.12s ease-out, opacity 0.12s ease-out;
+      }
+      button:not(:disabled):active {
+        transform: scale(0.95);
+      }
+      @keyframes numBump {
+        0% { transform: scale(1); }
+        40% { transform: scale(1.25); }
+        100% { transform: scale(1); }
+      }
+      .num-bump { animation: numBump 0.4s ease-out; }
+      @keyframes screenSlideIn {
+        from { opacity: 0; transform: translateY(8px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+      .screen-enter { animation: screenSlideIn 0.35s cubic-bezier(0.2, 0.7, 0.3, 1); }
+      @keyframes cardLift {
+        from { opacity: 0; transform: translateY(12px) scale(0.98); }
+        to { opacity: 1; transform: translateY(0) scale(1); }
+      }
+      .card-lift { animation: cardLift 0.4s cubic-bezier(0.2, 0.7, 0.3, 1); }
+    `}</style>
+    <div style={{minHeight:"100vh",background:"linear-gradient(160deg,#1e2940 0%,#243150 50%,#2c3956 100%)",color:"#f1f5f9",fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif",position:"relative",overflow:"hidden",direction:lang==="he"?"rtl":"ltr"}}>
       {/* Language toggle: shown only on welcome screen */}
       {screen === "welcome" && (
         <div style={{
@@ -10425,8 +10450,8 @@ export default function App() {
             </div>
             <span style={{fontSize:10,color:"#fbbf24",fontWeight:700,minWidth:42,textAlign:"center",fontVariantNumeric:"tabular-nums"}}>{totalPredicted}/{FIXTURES.length}</span>
 
-            {/* 💰 Coin balance */}
-            {coins.balance > 0 && (
+            {/* 💰 Coin balance (always visible) */}
+            {(
               <div style={{
                 display:"flex",alignItems:"center",gap:3,
                 background:"rgba(251,191,36,0.12)",
@@ -10436,7 +10461,7 @@ export default function App() {
                 fontVariantNumeric:"tabular-nums",
               }}>
                 <span style={{fontSize:11}}>🪙</span>
-                <span>{coins.balance}</span>
+                <span key={coins.balance} className="num-bump">{coins.balance}</span>
               </div>
             )}
 
@@ -10477,6 +10502,9 @@ export default function App() {
       {screen === "welcome" && showIntro && <SoccerIntro onDone={()=>setShowIntro(false)} />}
       {name && showOnboarding && <OnboardingTutorial onDone={completeOnboarding} />}
       {screen === "welcome" && !showIntro && <Welcome onStart={handleStart} onImport={handleImport} />}
+
+      {/* Main screens — wrapped so each one slides in on screen change */}
+      <div key={screen + (screen==="group"?String(groupIdx):"")} className="screen-enter">
 
       {screen === "group" && (
         <GroupView
@@ -10587,6 +10615,8 @@ export default function App() {
           onClose={()=>setScreen("league")}
         />
       )}
+
+      </div>{/* end of .screen-enter wrapper */}
 
       {/* Backup modal */}
       {showBackup && (
