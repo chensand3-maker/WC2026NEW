@@ -8,7 +8,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.0.2";
+const APP_VERSION = "3.0.3";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -6343,22 +6343,36 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
   };
 
   // Track when a match transitions from incomplete → complete to trigger reaction
+  // We persist "seen" state in localStorage so re-entering the screen doesn't replay.
   const [reaction, setReaction] = useState(null);
   const prevCompleteRef = useRef(false);
   useEffect(() => {
-    if (hasResult && !prevCompleteRef.current) {
-      // Just completed!
-      const r = getReaction(h, a);
-      setReaction({ ...r, key: Date.now() });
-      // Subtle vibration on mobile devices
-      try { navigator.vibrate?.(15); } catch {}
-      const t = setTimeout(()=>setReaction(null), 1600);
-      prevCompleteRef.current = true;
-      return () => clearTimeout(t);
-    } else if (!hasResult) {
+    if (!hasResult) {
       prevCompleteRef.current = false;
+      return;
     }
-  }, [hasResult, h, a]);
+    if (prevCompleteRef.current) return; // already triggered this mount
+    // Check if we've ever shown a reaction for this match before
+    let seenReactions = {};
+    try {
+      const raw = localStorage.getItem("wc2026_reactions_v1");
+      if (raw) seenReactions = JSON.parse(raw);
+    } catch {}
+    const key = `${fixture.id}:${h}-${a}`;
+    if (seenReactions[key]) {
+      prevCompleteRef.current = true;
+      return; // already saw a reaction for this pick — don't replay
+    }
+    // First time! Show reaction and mark as seen
+    const r = getReaction(h, a);
+    setReaction({ ...r, key: Date.now() });
+    try { navigator.vibrate?.(15); } catch {}
+    seenReactions[key] = 1;
+    try { localStorage.setItem("wc2026_reactions_v1", JSON.stringify(seenReactions)); } catch {}
+    const tm = setTimeout(()=>setReaction(null), 1600);
+    prevCompleteRef.current = true;
+    return () => clearTimeout(tm);
+  }, [hasResult, h, a, fixture.id]);
 
   const setScore = (side, val) => {
     if (isLocked) return; // hard block
@@ -6416,6 +6430,11 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
       borderRadius:12,padding:"10px 12px",marginBottom:8,transition:"all 0.25s",
       position:"relative",overflow:"visible",
       animation: reaction ? "matchFlash 0.5s ease-out" : "none",
+      boxShadow: sc
+        ? (score.type === "exact" ? "0 0 20px rgba(251,191,36,0.25), 0 4px 12px rgba(0,0,0,0.2)"
+          : score.type === "result" ? "0 0 16px rgba(34,197,94,0.22), 0 4px 12px rgba(0,0,0,0.2)"
+          : "0 0 14px rgba(248,113,113,0.18), 0 4px 12px rgba(0,0,0,0.2)")
+        : "0 2px 8px rgba(0,0,0,0.15)",
     }}>
       {/* Floating reaction */}
       {reaction && (
