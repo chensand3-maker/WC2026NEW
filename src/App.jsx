@@ -8,7 +8,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.1.0";
+const APP_VERSION = "3.0.5";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -315,31 +315,6 @@ const TRANSLATIONS = {
     "world.updatedEvery": "Updates every 5 minutes",
     // Sidebar (hamburger menu)
     "sidebar.myStats": "My Stats",
-    "sidebar.wrapped": "📊 My Week",
-    "wrapped.title": "YOUR WEEK",
-    "wrapped.subtitle": "Mundialito 2026 · weekly recap",
-    "wrapped.tapToContinue": "Tap to continue →",
-    "wrapped.predictionsTitle": "PREDICTIONS",
-    "wrapped.predictionsSubtitle": "You made",
-    "wrapped.predictionsSingular": "prediction this week",
-    "wrapped.predictionsPlural": "predictions this week",
-    "wrapped.exactTitle": "EXACT SCORES",
-    "wrapped.exactSubtitle": "Bullseyes this week",
-    "wrapped.exactBrag": "🔥 You're on fire!",
-    "wrapped.exactZero": "Next week is yours!",
-    "wrapped.coinsTitle": "COINS EARNED",
-    "wrapped.coinsSubtitle": "From predictions",
-    "wrapped.coinsLabel": "🪙 added to your balance",
-    "wrapped.cardsTitle": "CARDS COLLECTED",
-    "wrapped.cardsSubtitle": "Spun the roulette",
-    "wrapped.cardsSingular": "new card this week",
-    "wrapped.cardsPlural": "new cards this week",
-    "wrapped.bestCardTitle": "TOP CARD",
-    "wrapped.bestCardSubtitle": "Your best pull of the week",
-    "wrapped.finalTitle": "THE VERDICT",
-    "wrapped.finalSubtitle": "And the title goes to...",
-    "wrapped.shareIt": "Brag about it!",
-    "wrapped.shareBtn": "SHARE TO WHATSAPP",
     "sidebar.achievements": "Achievements",
     "sidebar.roulette": "Roulette",
     "sidebar.tutorial": "How to Play",
@@ -809,31 +784,6 @@ const TRANSLATIONS = {
     "world.updatedEvery": "מתעדכן כל 5 דקות",
     // Sidebar (hamburger menu)
     "sidebar.myStats": "הסטטיסטיקה שלי",
-    "sidebar.wrapped": "📊 השבוע שלי",
-    "wrapped.title": "השבוע שלך",
-    "wrapped.subtitle": "מונדיאליטו 2026 · סיכום שבועי",
-    "wrapped.tapToContinue": "הקש להמשך →",
-    "wrapped.predictionsTitle": "ניחושים",
-    "wrapped.predictionsSubtitle": "ביצעת",
-    "wrapped.predictionsSingular": "ניחוש השבוע",
-    "wrapped.predictionsPlural": "ניחושים השבוע",
-    "wrapped.exactTitle": "ניחושים מדויקים",
-    "wrapped.exactSubtitle": "בולים השבוע",
-    "wrapped.exactBrag": "🔥 בלתי ניתן לעצור!",
-    "wrapped.exactZero": "השבוע הבא יהיה שלך!",
-    "wrapped.coinsTitle": "מטבעות שצברת",
-    "wrapped.coinsSubtitle": "מהניחושים שלך",
-    "wrapped.coinsLabel": "🪙 נוספו ליתרה שלך",
-    "wrapped.cardsTitle": "קלפים שאספת",
-    "wrapped.cardsSubtitle": "מהרולטה השבועית",
-    "wrapped.cardsSingular": "קלף חדש השבוע",
-    "wrapped.cardsPlural": "קלפים חדשים השבוע",
-    "wrapped.bestCardTitle": "הקלף הטוב ביותר",
-    "wrapped.bestCardSubtitle": "השליפה הכי טובה השבוע",
-    "wrapped.finalTitle": "ההכרזה",
-    "wrapped.finalSubtitle": "וההכתר השבועי שייך ל...",
-    "wrapped.shareIt": "תתפאר!",
-    "wrapped.shareBtn": "שתף בוואטסאפ",
     "sidebar.achievements": "הישגים",
     "sidebar.roulette": "רולטה",
     "sidebar.tutorial": "איך משחקים?",
@@ -3750,7 +3700,7 @@ function WorldLeaderboard({ userId, name, onClose }) {
 }
 
 // ─── SIDEBAR: hamburger menu drawer that slides in from one side ─────────────
-function Sidebar({ open, onClose, name, lang, setLang, onShowProfile, onShowRules, onShowBackup, onShowTutorial, onShowAchievements, onShowRoulette, onShowWrapped, onLogout, onReset, totalPoints, unlockedCount, coinBalance }) {
+function Sidebar({ open, onClose, name, lang, setLang, onShowProfile, onShowRules, onShowBackup, onShowTutorial, onShowAchievements, onShowRoulette, onLogout, onReset, totalPoints, unlockedCount, coinBalance }) {
   const t = useT();
   const isRTL = lang === "he";
 
@@ -3813,9 +3763,6 @@ function Sidebar({ open, onClose, name, lang, setLang, onShowProfile, onShowRule
         {/* Menu items */}
         <div style={{padding:"12px 12px",flex:1}}>
           <SidebarItem icon="📊" label={t("sidebar.myStats")} onClick={()=>{onClose();onShowProfile();}}/>
-          {onShowWrapped && (
-            <SidebarItem icon="🎬" label={t("sidebar.wrapped")} onClick={()=>{onClose();onShowWrapped();}}/>
-          )}
           <SidebarItem
             icon="🏅"
             label={`${t("sidebar.achievements")}${unlockedCount ? ` (${unlockedCount})` : ""}`}
@@ -5060,221 +5007,6 @@ function ConfettiBurst({ count = 40 }) {
         }}/>
       ))}
     </>
-  );
-}
-
-// 🎬 SUNDAY WRAPPED — Spotify-Wrapped-style weekly recap
-function WrappedModal({ stats, onClose }) {
-  const t = useT();
-  const [slideIdx, setSlideIdx] = useState(0);
-
-  const slides = useMemo(() => {
-    const list = [
-      {
-        bg: "linear-gradient(160deg,#fbbf24,#d97706,#92400e)",
-        emoji: "🎬",
-        title: t("wrapped.title"),
-        subtitle: t("wrapped.subtitle"),
-        big: stats.name,
-        bigSize: 32,
-        small: t("wrapped.tapToContinue"),
-      },
-      {
-        bg: "linear-gradient(160deg,#22c55e,#15803d,#14532d)",
-        emoji: "🎯",
-        title: t("wrapped.predictionsTitle"),
-        subtitle: t("wrapped.predictionsSubtitle"),
-        big: String(stats.totalPicks),
-        bigSize: 96,
-        small: stats.totalPicks === 1 ? t("wrapped.predictionsSingular") : t("wrapped.predictionsPlural"),
-      },
-      {
-        bg: "linear-gradient(160deg,#fbbf24,#f59e0b,#92400e)",
-        emoji: "🎯",
-        title: t("wrapped.exactTitle"),
-        subtitle: t("wrapped.exactSubtitle"),
-        big: String(stats.exactCount),
-        bigSize: 96,
-        small: stats.exactCount > 0 ? t("wrapped.exactBrag") : t("wrapped.exactZero"),
-      },
-      {
-        bg: "linear-gradient(160deg,#a855f7,#7c3aed,#4c1d95)",
-        emoji: "🪙",
-        title: t("wrapped.coinsTitle"),
-        subtitle: t("wrapped.coinsSubtitle"),
-        big: `+${stats.coinsEarned}`,
-        bigSize: 72,
-        small: t("wrapped.coinsLabel"),
-      },
-      {
-        bg: "linear-gradient(160deg,#3b82f6,#2563eb,#1e3a8a)",
-        emoji: "🃏",
-        title: t("wrapped.cardsTitle"),
-        subtitle: t("wrapped.cardsSubtitle"),
-        big: String(stats.cardsThisWeek),
-        bigSize: 96,
-        small: stats.cardsThisWeek === 1 ? t("wrapped.cardsSingular") : t("wrapped.cardsPlural"),
-      },
-    ];
-    // Best card slide (only if at least one card)
-    if (stats.bestCard) {
-      list.push({
-        bg: "linear-gradient(160deg,#1e293b,#0f172a,#020617)",
-        emoji: "🏆",
-        title: t("wrapped.bestCardTitle"),
-        subtitle: t("wrapped.bestCardSubtitle"),
-        bigCard: stats.bestCard,
-        small: `${stats.bestCard.name} · ${stats.bestCard.team}`,
-      });
-    }
-    // Final slide with summary
-    list.push({
-      bg: "linear-gradient(160deg,#ec4899,#be185d,#831843)",
-      emoji: "✨",
-      title: t("wrapped.finalTitle"),
-      subtitle: t("wrapped.finalSubtitle"),
-      big: stats.quote,
-      bigSize: 24,
-      small: t("wrapped.shareIt"),
-      showShare: true,
-    });
-    return list;
-  }, [stats, t]);
-
-  const slide = slides[slideIdx];
-  const isLast = slideIdx === slides.length - 1;
-
-  const handleTap = (e) => {
-    // Auto-advance on tap
-    if (isLast) return;
-    setSlideIdx(i => Math.min(i + 1, slides.length - 1));
-  };
-
-  const handleShare = () => {
-    const text = `🎬 השבוע שלי ב-Mundialito 2026:\n🎯 ${stats.exactCount} ניחושים מדויקים\n🪙 +${stats.coinsEarned} מטבעות\n🃏 ${stats.cardsThisWeek} קלפים חדשים\n\nתצטרפו אליי!`;
-    if (navigator.share) {
-      navigator.share({ text }).catch(()=>{});
-    } else {
-      navigator.clipboard?.writeText(text);
-    }
-  };
-
-  return (
-    <div style={{
-      position:"fixed",inset:0,zIndex:9600,
-      background:"#000",
-      display:"flex",alignItems:"center",justifyContent:"center",
-      animation:"goalFadeIn 0.3s ease-out",
-    }}>
-      <style>{`
-        @keyframes wrappedSlideIn {
-          from { opacity: 0; transform: scale(0.95) translateY(20px); }
-          to { opacity: 1; transform: scale(1) translateY(0); }
-        }
-        @keyframes wrappedBig {
-          from { transform: scale(0.5) rotate(-10deg); opacity: 0; }
-          to { transform: scale(1) rotate(0deg); opacity: 1; }
-        }
-      `}</style>
-      {/* Close X */}
-      <button onClick={onClose} style={{
-        position:"absolute",top:14,right:14,zIndex:10,
-        background:"rgba(0,0,0,0.5)",border:"none",
-        color:"#fff",fontSize:22,
-        width:36,height:36,borderRadius:18,
-        cursor:"pointer",fontFamily:"inherit",
-      }}>✕</button>
-
-      {/* Progress bars at top */}
-      <div style={{
-        position:"absolute",top:14,left:14,right:60,
-        display:"flex",gap:4,zIndex:10,
-      }}>
-        {slides.map((_, i) => (
-          <div key={i} style={{
-            flex:1,height:3,
-            borderRadius:2,
-            background: i < slideIdx ? "#fff"
-              : i === slideIdx ? "rgba(255,255,255,0.7)"
-              : "rgba(255,255,255,0.25)",
-          }}/>
-        ))}
-      </div>
-
-      {/* Slide content (tap to advance) */}
-      <div
-        key={slideIdx}
-        onClick={handleTap}
-        style={{
-          width:"100%",maxWidth:420,height:"100%",maxHeight:780,
-          background: slide.bg,
-          display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",
-          padding:"60px 24px 30px",
-          cursor:"pointer",
-          animation:"wrappedSlideIn 0.5s cubic-bezier(0.2,0.7,0.3,1)",
-          textAlign:"center",
-          position:"relative",
-        }}
-      >
-        <div style={{fontSize:60,marginBottom:18,animation:"wrappedBig 0.7s cubic-bezier(0.4,2,0.6,1)"}}>
-          {slide.emoji}
-        </div>
-        <div style={{
-          fontSize:11,color:"rgba(255,255,255,0.85)",
-          letterSpacing:3,fontWeight:800,marginBottom:8,
-        }}>{slide.title}</div>
-        <div style={{
-          fontSize:14,color:"rgba(255,255,255,0.7)",
-          marginBottom:36,maxWidth:300,lineHeight:1.4,
-        }}>{slide.subtitle}</div>
-
-        {slide.bigCard ? (
-          <div style={{animation:"wrappedBig 0.7s cubic-bezier(0.4,2,0.6,1) 0.15s both"}}>
-            <PlayerCard card={slide.bigCard} size="M" animated={true} />
-          </div>
-        ) : (
-          <div style={{
-            fontSize: slide.bigSize || 72,
-            fontWeight:900,color:"#fff",lineHeight:1.1,
-            textShadow:"0 4px 20px rgba(0,0,0,0.5)",
-            marginBottom:14,
-            animation:"wrappedBig 0.7s cubic-bezier(0.4,2,0.6,1) 0.15s both",
-            fontVariantNumeric:"tabular-nums",
-          }}>{slide.big}</div>
-        )}
-
-        <div style={{
-          fontSize:14,color:"rgba(255,255,255,0.9)",
-          marginTop:14,fontWeight:600,maxWidth:280,
-        }}>{slide.small}</div>
-
-        {/* Share button on last slide */}
-        {slide.showShare && (
-          <button
-            onClick={(e) => { e.stopPropagation(); handleShare(); }}
-            style={{
-              marginTop:30,
-              padding:"14px 28px",
-              background:"#fff",
-              color:"#1e2940",
-              border:"none",borderRadius:14,
-              fontSize:15,fontWeight:900,letterSpacing:1,
-              cursor:"pointer",fontFamily:"inherit",
-              boxShadow:"0 10px 30px rgba(0,0,0,0.3)",
-            }}
-          >📤 {t("wrapped.shareBtn")}</button>
-        )}
-
-        {/* Tap to continue hint */}
-        {!isLast && (
-          <div style={{
-            position:"absolute",bottom:30,
-            fontSize:11,color:"rgba(255,255,255,0.6)",
-            letterSpacing:2,
-          }}>{t("wrapped.tapToContinue")}</div>
-        )}
-      </div>
-    </div>
   );
 }
 
@@ -10118,79 +9850,6 @@ export default function App() {
   const [showProfile, setShowProfile] = useState(false);
   const [showRules, setShowRules] = useState(false);
   const [showAchievements, setShowAchievements] = useState(false);
-  const [showWrapped, setShowWrapped] = useState(false);
-
-  // 🎬 Compute the weekly Wrapped stats from current data
-  const wrappedStats = useMemo(() => {
-    const now = Date.now();
-    const weekAgo = now - 7 * 24 * 60 * 60 * 1000;
-    // Count predictions made (we don't have timestamps per pick, so count all completed)
-    let totalPicks = 0;
-    let exactCount = 0;
-    let winnerCount = 0;
-    let coinsEarned = 0;
-    for (const fid in picks) {
-      const p = picks[fid];
-      if (!p || p.h === "" || p.a === "") continue;
-      totalPicks++;
-      const a = actuals[fid];
-      if (a && a.h !== "" && a.a !== "") {
-        const ph = parseInt(p.h), pa = parseInt(p.a);
-        const ah = parseInt(a.h), aa = parseInt(a.a);
-        if (!isNaN(ph) && !isNaN(pa) && !isNaN(ah) && !isNaN(aa)) {
-          if (ph === ah && pa === aa) { exactCount++; coinsEarned += 200; }
-          else if (Math.sign(ph - pa) === Math.sign(ah - aa)) { winnerCount++; coinsEarned += 100; }
-        }
-      }
-    }
-    // Cards this week — count owned cards (proxy for this week if app is new)
-    const cardsOwned = Object.values(cardCollection || {}).reduce((a,b)=>a+b, 0);
-    const cardsThisWeek = Math.min(cardsOwned, 20); // cap for display
-    // Best card by rating
-    let bestCard = null;
-    let bestRating = 0;
-    for (const cid in (cardCollection || {})) {
-      if (cardCollection[cid] > 0) {
-        const card = CARDS.find(c => c.id === cid);
-        if (card) {
-          const r = getPlayerRating(card);
-          if (r > bestRating) { bestRating = r; bestCard = card; }
-        }
-      }
-    }
-    // Closing quote — based on performance
-    let quote = "Keep playing! 🎮";
-    if (exactCount >= 3) quote = "🔥 You're a legend!";
-    else if (exactCount >= 1) quote = "⭐ Pretty impressive!";
-    else if (winnerCount >= 5) quote = "👏 Consistent!";
-    else if (totalPicks >= 10) quote = "💪 Showing up!";
-    else if (totalPicks > 0) quote = "🌱 Just getting started!";
-    return {
-      name: name || "You",
-      totalPicks, exactCount, winnerCount,
-      coinsEarned, cardsThisWeek,
-      bestCard, quote,
-    };
-  }, [picks, actuals, cardCollection, name]);
-
-  // 🎬 Auto-show Wrapped on Sunday morning, once per week
-  useEffect(() => {
-    if (!name) return;
-    const d = new Date();
-    if (d.getDay() !== 0) return; // not Sunday (0 = Sunday)
-    if (wrappedStats.totalPicks === 0) return; // skip if user did nothing
-    try {
-      const lastShown = localStorage.getItem("wc2026_wrapped_lastshown_v1");
-      const todayKey = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
-      if (lastShown === todayKey) return;
-      // Wait a moment then show
-      const t = setTimeout(() => {
-        setShowWrapped(true);
-        localStorage.setItem("wc2026_wrapped_lastshown_v1", todayKey);
-      }, 1500);
-      return () => clearTimeout(t);
-    } catch {}
-  }, [name, wrappedStats.totalPicks]);
   // Track unlocked badge IDs (persisted in localStorage)
   // 💰 COINS — earned from correct predictions, spent on roulette spins
   // Format: { balance, earnedFromIds, gotStartingBonus }
@@ -11357,18 +11016,9 @@ export default function App() {
         onShowTutorial={()=>setShowOnboarding(true)}
         onShowAchievements={()=>setShowAchievements(true)}
         onShowRoulette={()=>setShowRoulette(true)}
-        onShowWrapped={()=>setShowWrapped(true)}
         onLogout={handleLogout}
         onReset={handleReset}
       />
-
-      {/* 🎬 Sunday Wrapped */}
-      {showWrapped && (
-        <WrappedModal
-          stats={wrappedStats}
-          onClose={()=>setShowWrapped(false)}
-        />
-      )}
 
       {/* 🎰 Roulette */}
       {showRoulette && !spinResult && (
