@@ -8,7 +8,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "2.9.4";
+const APP_VERSION = "2.9.6";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -213,6 +213,11 @@ const TRANSLATIONS = {
     "today.liveNow": "LIVE NOW",
     "today.justFinished": "JUST FINISHED",
     "today.refresh": "Refresh",
+    "today.nextMatchIn": "NEXT MATCH IN",
+    "today.days": "DAYS",
+    "today.hours": "HRS",
+    "today.mins": "MIN",
+    "today.secs": "SEC",
     "today.noMatchesToday": "No matches today",
     "today.noMatchesTomorrow": "No matches tomorrow",
     "today.matchNoPick": "match needs your prediction",
@@ -675,6 +680,11 @@ const TRANSLATIONS = {
     "today.liveNow": "משחק חי",
     "today.justFinished": "זה עתה הסתיים",
     "today.refresh": "רענן",
+    "today.nextMatchIn": "המשחק הבא בעוד",
+    "today.days": "ימים",
+    "today.hours": "שעות",
+    "today.mins": "דק'",
+    "today.secs": "שנ'",
     "today.noMatchesToday": "אין משחקים היום",
     "today.noMatchesTomorrow": "אין משחקים מחר",
     "today.matchNoPick": "משחק מחכה לניחוש שלך",
@@ -6665,6 +6675,104 @@ function StandingsTable({ group, standings, bestThirds, liveStandings, liveBestT
 }
 
 // ─── TODAY SCREEN: matches happening today/tomorrow ──────────────────────────
+// ⏰ NEXT MATCH COUNTDOWN — ticking display of time until next match
+function NextMatchCountdown({ allMatches }) {
+  const t = useT();
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  // Find next upcoming match (kickoff in the future)
+  const next = useMemo(() => {
+    const future = allMatches.filter(m => {
+      const k = new Date(m.kickoff).getTime();
+      return k > now;
+    });
+    return future[0] || null;
+  }, [allMatches, now]);
+
+  if (!next) return null;
+
+  const k = new Date(next.kickoff).getTime();
+  const diff = Math.max(0, k - now);
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+  const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+  const minutes = Math.floor((diff / (1000 * 60)) % 60);
+  const seconds = Math.floor((diff / 1000) % 60);
+
+  // Render team info if it's a group match (we know both teams)
+  let teamLine = null;
+  if (next.type === "group" && next.fixture) {
+    const home = findTeam(next.fixture.home);
+    const away = findTeam(next.fixture.away);
+    if (home && away) {
+      teamLine = (
+        <div style={{
+          display:"flex",alignItems:"center",justifyContent:"center",
+          gap:8,fontSize:13,color:"#fff",fontWeight:700,marginTop:4,
+        }}>
+          <span>{home.f}</span>
+          <span style={{color:"#94a3b8"}}>{home.n}</span>
+          <span style={{color:"#64748b",fontSize:10}}>vs</span>
+          <span style={{color:"#94a3b8"}}>{away.n}</span>
+          <span>{away.f}</span>
+        </div>
+      );
+    }
+  }
+
+  const cell = (val, label) => (
+    <div style={{
+      display:"flex",flexDirection:"column",alignItems:"center",
+      minWidth:48,
+    }}>
+      <div style={{
+        fontSize:24,fontWeight:900,color:"#fbbf24",
+        fontVariantNumeric:"tabular-nums",lineHeight:1,
+        textShadow:"0 0 10px rgba(251,191,36,0.4)",
+      }}>{String(val).padStart(2,"0")}</div>
+      <div style={{
+        fontSize:9,color:"#94a3b8",letterSpacing:1.5,
+        fontWeight:700,marginTop:3,
+      }}>{label}</div>
+    </div>
+  );
+
+  return (
+    <div style={{
+      background:"linear-gradient(135deg,rgba(251,191,36,0.12),rgba(36,49,80,0.5))",
+      border:"1px solid rgba(251,191,36,0.3)",
+      borderRadius:12,padding:"12px 14px",marginBottom:14,
+    }}>
+      <div style={{
+        fontSize:10,color:"#fbbf24",letterSpacing:2,
+        fontWeight:700,textAlign:"center",marginBottom:8,
+      }}>
+        ⏰ {t("today.nextMatchIn")}
+      </div>
+      <div style={{
+        display:"flex",alignItems:"center",justifyContent:"center",gap:6,
+        direction:"ltr",
+      }}>
+        {days > 0 && (
+          <>
+            {cell(days, t("today.days"))}
+            <div style={{color:"#475569",fontSize:18,fontWeight:900}}>:</div>
+          </>
+        )}
+        {cell(hours, t("today.hours"))}
+        <div style={{color:"#475569",fontSize:18,fontWeight:900}}>:</div>
+        {cell(minutes, t("today.mins"))}
+        <div style={{color:"#475569",fontSize:18,fontWeight:900}}>:</div>
+        {cell(seconds, t("today.secs"))}
+      </div>
+      {teamLine}
+    </div>
+  );
+}
+
 function TodayScreen({ picks, actuals, onPick, onBack, onGoToBracket, leagueMembers = null, onRefresh, lastFetchAt }) {
   const t = useT();
 
@@ -6834,6 +6942,9 @@ function TodayScreen({ picks, actuals, onPick, onBack, onGoToBracket, leagueMemb
           </div>
         </div>
       )}
+
+      {/* ⏰ Countdown to next upcoming match */}
+      <NextMatchCountdown allMatches={allMatches} />
 
       {/* 🔴 LIVE matches only */}
       {liveOrJustEndedMatches.length > 0 && (
