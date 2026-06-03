@@ -8,7 +8,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "2.9.9";
+const APP_VERSION = "3.0.1";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -4734,62 +4734,6 @@ function PlayerCard({ card, size = "L", animated = false, flippable = false }) {
         zIndex:1,
       }}/>
 
-      {/* 🏟️ Stadium silhouette — adds depth/atmosphere */}
-      <svg
-        viewBox="0 0 240 360"
-        preserveAspectRatio="xMidYMax slice"
-        style={{
-          position:"absolute",
-          bottom:0,left:0,right:0,
-          width:"100%",
-          height:"55%",
-          opacity:0.18,
-          pointerEvents:"none",
-          zIndex:1,
-        }}
-      >
-        {/* Trophy silhouette (center, faint) */}
-        <path
-          d="M 100 130 L 100 110 Q 100 100, 110 100 L 130 100 Q 140 100, 140 110 L 140 130 Q 140 160, 125 175 L 125 200 L 135 200 L 135 215 L 105 215 L 105 200 L 115 200 L 115 175 Q 100 160, 100 130 Z"
-          fill={cfg.color}
-          opacity="0.5"
-        />
-        {/* Crowd silhouette layer 1 (back row - tallest) */}
-        <path
-          d="M 0 250 L 12 232 L 24 248 L 38 228 L 52 246 L 68 230 L 82 250 L 96 232 L 110 248 L 124 226 L 138 247 L 152 230 L 168 248 L 182 232 L 196 250 L 210 230 L 224 248 L 240 232 L 240 360 L 0 360 Z"
-          fill={cfg.color}
-          opacity="0.4"
-        />
-        {/* Crowd silhouette layer 2 (mid row) */}
-        <path
-          d="M 0 280 L 14 268 L 28 282 L 44 266 L 58 282 L 74 268 L 88 282 L 104 268 L 118 282 L 134 268 L 148 282 L 164 268 L 178 282 L 194 268 L 210 282 L 226 268 L 240 282 L 240 360 L 0 360 Z"
-          fill="#000"
-          opacity="0.35"
-        />
-        {/* Crowd silhouette layer 3 (front row - tallest individual figures) */}
-        <g fill="#000" opacity="0.5">
-          {[0, 20, 40, 60, 80, 100, 120, 140, 160, 180, 200, 220].map(x => (
-            <g key={x} transform={`translate(${x}, 305)`}>
-              {/* Head */}
-              <circle cx="10" cy="0" r="5" />
-              {/* Body */}
-              <path d="M 4 6 L 16 6 L 18 30 L 2 30 Z" />
-            </g>
-          ))}
-        </g>
-        {/* Stadium floodlight beams */}
-        <path
-          d="M 30 0 L 50 0 L 80 250 L 0 250 Z"
-          fill="white"
-          opacity="0.04"
-        />
-        <path
-          d="M 190 0 L 210 0 L 240 250 L 160 250 Z"
-          fill="white"
-          opacity="0.04"
-        />
-      </svg>
-
       {/* Holographic stripe pattern */}
       <div style={{
         position:"absolute",inset:0,
@@ -5609,10 +5553,12 @@ function CollectionModal({ collection, onClose }) {
 
       {/* 🎉 Preview reveal — replay the wow animation for an owned card */}
       {previewCard && (
-        <CardRevealModal
-          result={{ card: previewCard, isDuplicate: false, refund: 0 }}
-          onClose={() => setPreviewCard(null)}
-        />
+        <div onClick={e => e.stopPropagation()}>
+          <CardRevealModal
+            result={{ card: previewCard, isDuplicate: false, refund: 0 }}
+            onClose={() => setPreviewCard(null)}
+          />
+        </div>
       )}
     </div>
   );
@@ -8693,10 +8639,12 @@ function LeagueHub({
 
           {/* Preview a card by tapping it */}
           {cardPreview && (
-            <CardRevealModal
-              result={{ card: cardPreview, isDuplicate: false, refund: 0 }}
-              onClose={() => setCardPreview(null)}
-            />
+            <div onClick={e => e.stopPropagation()}>
+              <CardRevealModal
+                result={{ card: cardPreview, isDuplicate: false, refund: 0 }}
+                onClose={() => setCardPreview(null)}
+              />
+            </div>
           )}
         </div>
       );
