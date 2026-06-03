@@ -8,7 +8,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "2.9.1";
+const APP_VERSION = "2.9.2";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -6687,13 +6687,16 @@ function TodayScreen({ picks, actuals, onPick, onBack, onGoToBracket, leagueMemb
   const liveOrJustEndedMatches = [];
   for (const m of allMatches) {
     const k = new Date(m.kickoff).getTime();
-    if (k < todayStart.getTime()) {
-      // Possibly live / just ended (within last 3 hours)
-      if (k > now - 3 * 60 * 60 * 1000 && k < now) {
-        liveOrJustEndedMatches.push(m);
-      }
+    // 🔴 LIVE: started within the last 2.5 hours (covers regular + extra time)
+    // This catches matches regardless of whether they started "today" or "yesterday"
+    const isLive = k > now - 2.5 * 60 * 60 * 1000 && k <= now;
+    if (isLive) {
+      liveOrJustEndedMatches.push(m);
       continue;
     }
+    // Past matches not live → skip from main lists
+    if (k < now) continue;
+    // Future matches → bucket by today / tomorrow
     const isToday = k < todayStart.getTime() + 24 * 60 * 60 * 1000;
     if (isToday) todayMatches.push(m);
     else if (k < tomorrowEnd.getTime()) tomorrowMatches.push(m);
