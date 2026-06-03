@@ -8,7 +8,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.0.3";
+const APP_VERSION = "3.0.4";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -7084,11 +7084,23 @@ function GroupView({ group, picks, actuals, standings, bestThirds, liveStandings
   };
 
   return (
-    <div style={{padding:"16px 14px 100px",maxWidth:560,margin:"0 auto"}}>
+    <div style={{padding:"16px 14px 100px",maxWidth:560,margin:"0 auto",position:"relative"}}>
+      {/* Ambient color glow — top of screen tinted to group color */}
+      <div style={{
+        position:"absolute",
+        top:0,left:"50%",
+        transform:"translateX(-50%)",
+        width:"100%",maxWidth:600,
+        height:200,
+        background:`radial-gradient(ellipse at center top, ${color}22 0%, ${color}0a 40%, transparent 70%)`,
+        pointerEvents:"none",
+        zIndex:0,
+      }}/>
       {/* Group selector pills */}
       <div style={{
         display:"grid",gridTemplateColumns:"repeat(6, 1fr)",
         gap:6,marginBottom:14,direction:"ltr",
+        position:"relative",zIndex:1,
       }}>
         {GROUP_KEYS.map(g => {
           const isCurrent = g === group;
@@ -9780,6 +9792,26 @@ export default function App() {
   const [screen, setScreen] = useState(saved?.name ? "group" : "welcome");
   const [name, setName] = useState(saved?.name || "");
   const [picks, setPicks] = useState(saved?.picks || {});
+  // One-time migration: mark all existing picks as "seen" so reactions don't replay on load
+  useEffect(() => {
+    try {
+      const migrated = localStorage.getItem("wc2026_reactions_migrated_v1");
+      if (migrated) return;
+      let seenReactions = {};
+      try {
+        const raw = localStorage.getItem("wc2026_reactions_v1");
+        if (raw) seenReactions = JSON.parse(raw);
+      } catch {}
+      for (const fid in (saved?.picks || {})) {
+        const p = saved.picks[fid];
+        if (p?.h !== "" && p?.h !== undefined && p?.a !== "" && p?.a !== undefined) {
+          seenReactions[`${fid}:${p.h}-${p.a}`] = 1;
+        }
+      }
+      localStorage.setItem("wc2026_reactions_v1", JSON.stringify(seenReactions));
+      localStorage.setItem("wc2026_reactions_migrated_v1", "1");
+    } catch {}
+  }, []); // eslint-disable-line
   const [koWinners, setKoWinners] = useState(saved?.koWinners || {});
   // NEW (Stage 1): koPicks holds score predictions for each knockout match.
   // Format: { "R32-1": { h: "2", a: "1" }, ... }. Parallel to `picks` for groups.
