@@ -8,7 +8,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "2.5.1";
+const APP_VERSION = "2.6.0";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -1775,14 +1775,14 @@ function scoreKnockout(myPick, actualPick) {
 const lbl = {fontSize:11,color:"#fbbf24",letterSpacing:2,display:"block",marginBottom:6};
 const inputStyle = {
   width:"100%",boxSizing:"border-box",padding:"11px 14px",
-  background:"rgba(15,20,36,0.8)",border:"1px solid rgba(251,191,36,0.3)",
+  background:"rgba(36,49,80,0.8)",border:"1px solid rgba(251,191,36,0.3)",
   borderRadius:10,color:"#f1f5f9",fontSize:14,outline:"none",marginBottom:10,fontFamily:"inherit",
 };
 const errStyle = {color:"#f87171",fontSize:12,marginBottom:8};
 const primaryBtn = {
   width:"100%",padding:"12px 18px",
   background:"linear-gradient(135deg,#fbbf24,#d97706)",
-  color:"#0a0e1c",border:"none",borderRadius:12,
+  color:"#1e2940",border:"none",borderRadius:12,
   fontSize:14,fontWeight:800,cursor:"pointer",letterSpacing:0.5,fontFamily:"inherit",
   boxShadow:"0 6px 18px rgba(251,191,36,0.3)",transition:"all 0.2s",
 };
@@ -1844,7 +1844,7 @@ function SoccerIntro({ onDone }) {
   return (
     <div style={{
       position:"fixed",inset:0,zIndex:50,overflow:"hidden",
-      background:"linear-gradient(180deg, #0a0e1c 0%, #1e1b4b 35%, #1e293b 65%, #14532d 65%, #052e16 100%)",
+      background:"linear-gradient(180deg, #1e2940 0%, #1e1b4b 35%, #1e293b 65%, #14532d 65%, #052e16 100%)",
       animation:"introFadeOut 0.4s ease-in 3.8s forwards",
     }}>
       {/* Stadium lights — soft glow at top */}
@@ -1865,7 +1865,7 @@ function SoccerIntro({ onDone }) {
     const x = i*5;
     const h = 25 + Math.random()*20;
     return `L${x},${60-h} L${x+3},${60-h}`;
-  }).join(' ')} L400,60 Z' fill='#0a0e1c'/>
+  }).join(' ')} L400,60 Z' fill='#1e2940'/>
 </svg>
         `)}")`,
         backgroundSize:"100% 100%",
@@ -1939,7 +1939,7 @@ function SoccerIntro({ onDone }) {
             {/* Body parts use grouped transforms for the kick animation */}
             {/* Back leg (planted) */}
             <g style={{transformOrigin:"0px -28px",animation:"introBackLeg 0.6s ease-out 2.6s both"}}>
-              <rect x="-3" y="-28" width="6" height="22" rx="2" fill="#0a0e1c"/>
+              <rect x="-3" y="-28" width="6" height="22" rx="2" fill="#1e2940"/>
               <rect x="-5" y="-8" width="10" height="5" rx="1" fill="#fbbf24"/>
             </g>
             {/* Front leg (kicking) */}
@@ -1947,7 +1947,7 @@ function SoccerIntro({ onDone }) {
               transformOrigin:"0px -28px",
               animation:"introKickLeg 0.5s cubic-bezier(0.5,0,0.4,1.2) 2.6s both",
             }}>
-              <rect x="-3" y="-28" width="6" height="22" rx="2" fill="#0a0e1c"/>
+              <rect x="-3" y="-28" width="6" height="22" rx="2" fill="#1e2940"/>
               <rect x="-5" y="-8" width="10" height="5" rx="1" fill="#fbbf24"/>
             </g>
             {/* Body (jersey) */}
@@ -1975,12 +1975,12 @@ function SoccerIntro({ onDone }) {
           <g id="ball" transform="translate(195, 475)">
             <g style={{transformOrigin:"0 0", animation:"introBallSpin 1.0s linear 3.05s both"}}>
               <circle cx="0" cy="0" r="9" fill="#ffffff"/>
-              <polygon points="0,-5 4.8,-1.5 3,4 -3,4 -4.8,-1.5" fill="#0a0e1c"/>
-              <line x1="0" y1="-5" x2="0" y2="-9" stroke="#0a0e1c" strokeWidth="0.8"/>
-              <line x1="4.8" y1="-1.5" x2="8.5" y2="-2.8" stroke="#0a0e1c" strokeWidth="0.8"/>
-              <line x1="3" y1="4" x2="5.3" y2="7.3" stroke="#0a0e1c" strokeWidth="0.8"/>
-              <line x1="-3" y1="4" x2="-5.3" y2="7.3" stroke="#0a0e1c" strokeWidth="0.8"/>
-              <line x1="-4.8" y1="-1.5" x2="-8.5" y2="-2.8" stroke="#0a0e1c" strokeWidth="0.8"/>
+              <polygon points="0,-5 4.8,-1.5 3,4 -3,4 -4.8,-1.5" fill="#1e2940"/>
+              <line x1="0" y1="-5" x2="0" y2="-9" stroke="#1e2940" strokeWidth="0.8"/>
+              <line x1="4.8" y1="-1.5" x2="8.5" y2="-2.8" stroke="#1e2940" strokeWidth="0.8"/>
+              <line x1="3" y1="4" x2="5.3" y2="7.3" stroke="#1e2940" strokeWidth="0.8"/>
+              <line x1="-3" y1="4" x2="-5.3" y2="7.3" stroke="#1e2940" strokeWidth="0.8"/>
+              <line x1="-4.8" y1="-1.5" x2="-8.5" y2="-2.8" stroke="#1e2940" strokeWidth="0.8"/>
             </g>
           </g>
         </g>
@@ -2793,7 +2793,7 @@ function TopScorerCelebration({ player, newTotalGoals, goalDelta, onDismiss }) {
 
         {/* Player card */}
         <div style={{
-          background:"rgba(15,20,36,0.85)",
+          background:"rgba(36,49,80,0.85)",
           border:"2px solid #a855f7",
           borderRadius:14,padding:"14px 18px",
           boxShadow:"0 0 40px rgba(168,85,247,0.4)",
@@ -2922,7 +2922,7 @@ function GoalCelebration({ fixture, score, onDismiss }) {
 
         {/* Match card */}
         <div style={{
-          background:"rgba(15,20,36,0.85)",
+          background:"rgba(36,49,80,0.85)",
           border:"2px solid #fbbf24",
           borderRadius:16,padding:"18px 20px",
           boxShadow:"0 0 40px rgba(251,191,36,0.4)",
@@ -2981,7 +2981,7 @@ function OnboardingTutorial({ onDone }) {
         <div>
           {/* Example match card */}
           <div style={{
-            background:"linear-gradient(135deg,rgba(251,191,36,0.1),rgba(15,20,36,0.5))",
+            background:"linear-gradient(135deg,rgba(251,191,36,0.1),rgba(36,49,80,0.5))",
             border:"1px solid rgba(251,191,36,0.3)",
             borderRadius:14,padding:"14px 16px",marginBottom:18,
           }}>
@@ -3035,7 +3035,7 @@ function OnboardingTutorial({ onDone }) {
           {/* Two big bet cards side by side */}
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:18}}>
             <div style={{
-              background:"linear-gradient(135deg,rgba(251,191,36,0.12),rgba(15,20,36,0.5))",
+              background:"linear-gradient(135deg,rgba(251,191,36,0.12),rgba(36,49,80,0.5))",
               border:"1px solid rgba(251,191,36,0.4)",
               borderRadius:12,padding:"14px 10px",textAlign:"center",
             }}>
@@ -3044,7 +3044,7 @@ function OnboardingTutorial({ onDone }) {
               <div style={{fontSize:22,fontWeight:900,color:"#fbbf24"}}>+20</div>
             </div>
             <div style={{
-              background:"linear-gradient(135deg,rgba(168,85,247,0.12),rgba(15,20,36,0.5))",
+              background:"linear-gradient(135deg,rgba(168,85,247,0.12),rgba(36,49,80,0.5))",
               border:"1px solid rgba(168,85,247,0.4)",
               borderRadius:12,padding:"14px 10px",textAlign:"center",
             }}>
@@ -3109,7 +3109,7 @@ function OnboardingTutorial({ onDone }) {
         <div>
           {/* Coins explainer */}
           <div style={{
-            background:"linear-gradient(135deg,rgba(251,191,36,0.15),rgba(15,20,36,0.5))",
+            background:"linear-gradient(135deg,rgba(251,191,36,0.15),rgba(36,49,80,0.5))",
             border:"1px solid rgba(251,191,36,0.4)",
             borderRadius:12,padding:"14px",marginBottom:14,
           }}>
@@ -3130,7 +3130,7 @@ function OnboardingTutorial({ onDone }) {
 
           {/* Rarity rainbow */}
           <div style={{
-            background:"rgba(15,20,36,0.5)",
+            background:"rgba(36,49,80,0.5)",
             border:"1px solid rgba(71,85,105,0.3)",
             borderRadius:12,padding:"12px",marginBottom:14,
           }}>
@@ -3174,7 +3174,7 @@ function OnboardingTutorial({ onDone }) {
   return (
     <div style={{
       position:"fixed",inset:0,zIndex:9500,
-      background:"linear-gradient(180deg, rgba(10,14,28,0.97), rgba(15,20,36,0.97))",
+      background:"linear-gradient(180deg, rgba(30,41,64,0.97), rgba(36,49,80,0.97))",
       backdropFilter:"blur(8px)",
       display:"flex",alignItems:"center",justifyContent:"center",
       padding:20,animation:"goalFadeIn 0.4s ease-out",
@@ -3189,7 +3189,7 @@ function OnboardingTutorial({ onDone }) {
 
       <div style={{
         maxWidth:420,width:"100%",
-        background:"linear-gradient(145deg,#1a1f3a,#0f1424)",
+        background:"linear-gradient(145deg,#2c3956,#243150)",
         border:`1px solid ${current.accent}66`,
         borderRadius:20,padding:"30px 24px",
         boxShadow:`0 20px 60px rgba(0,0,0,0.6), 0 0 40px ${current.accent}22`,
@@ -3248,7 +3248,7 @@ function OnboardingTutorial({ onDone }) {
           }} style={{
             ...primaryBtn,flex:slide > 0 ? 2 : 1,
             background: `linear-gradient(135deg, ${current.accent}, ${current.accent}cc)`,
-            color: current.accent === "#fbbf24" ? "#0a0e1c" : "#fff",
+            color: current.accent === "#fbbf24" ? "#1e2940" : "#fff",
             boxShadow: `0 6px 18px ${current.accent}44`,
           }}>
             {isLast ? t("onboarding.letsGo") : t("onboarding.next")}
@@ -3290,7 +3290,7 @@ function ToastProvider({ children }) {
             const colors = {
               info: { bg:"rgba(59,130,246,0.95)", border:"#3b82f6", text:"#fff", icon:"ℹ️" },
               success: { bg:"rgba(34,197,94,0.95)", border:"#22c55e", text:"#fff", icon:"✓" },
-              warning: { bg:"rgba(251,191,36,0.95)", border:"#fbbf24", text:"#0a0e1c", icon:"⚠️" },
+              warning: { bg:"rgba(251,191,36,0.95)", border:"#fbbf24", text:"#1e2940", icon:"⚠️" },
               error: { bg:"rgba(239,68,68,0.95)", border:"#ef4444", text:"#fff", icon:"❌" },
             };
             const c = colors[t.type] || colors.info;
@@ -3378,7 +3378,7 @@ function ProfileStats({ name, picks, koWinners, actuals, actualKo, winnerPick, t
       padding:16,animation:"goalFadeIn 0.2s ease-out",
     }}>
       <div onClick={e=>e.stopPropagation()} style={{
-        background:"linear-gradient(145deg,#1a1f3a,#0f1424)",
+        background:"linear-gradient(145deg,#2c3956,#243150)",
         border:"1px solid rgba(251,191,36,0.4)",
         borderRadius:18,padding:"22px 20px",
         maxWidth:480,width:"100%",maxHeight:"90vh",overflowY:"auto",
@@ -3405,7 +3405,7 @@ function ProfileStats({ name, picks, koWinners, actuals, actualKo, winnerPick, t
         {/* Big point total */}
         <div style={{
           textAlign:"center",
-          background:"linear-gradient(135deg,rgba(251,191,36,0.15),rgba(15,20,36,0.5))",
+          background:"linear-gradient(135deg,rgba(251,191,36,0.15),rgba(36,49,80,0.5))",
           border:"1px solid rgba(251,191,36,0.4)",
           borderRadius:14,padding:"14px 12px",marginBottom:14,
         }}>
@@ -3427,7 +3427,7 @@ function ProfileStats({ name, picks, koWinners, actuals, actualKo, winnerPick, t
                 <span>{t("profile.anyHit")}</span>
                 <span style={{fontWeight:700,color:"#22c55e"}}>{stats.accuracy}%</span>
               </div>
-              <div style={{height:6,background:"rgba(15,20,36,0.6)",borderRadius:3,overflow:"hidden"}}>
+              <div style={{height:6,background:"rgba(36,49,80,0.6)",borderRadius:3,overflow:"hidden"}}>
                 <div style={{height:"100%",width:`${stats.accuracy}%`,background:"linear-gradient(90deg,#22c55e,#16a34a)",borderRadius:3,transition:"width 0.6s"}}/>
               </div>
             </div>
@@ -3437,7 +3437,7 @@ function ProfileStats({ name, picks, koWinners, actuals, actualKo, winnerPick, t
                 <span>{t("profile.exactHits")}</span>
                 <span style={{fontWeight:700,color:"#fbbf24"}}>{stats.exactAccuracy}%</span>
               </div>
-              <div style={{height:6,background:"rgba(15,20,36,0.6)",borderRadius:3,overflow:"hidden"}}>
+              <div style={{height:6,background:"rgba(36,49,80,0.6)",borderRadius:3,overflow:"hidden"}}>
                 <div style={{height:"100%",width:`${stats.exactAccuracy}%`,background:"linear-gradient(90deg,#fbbf24,#d97706)",borderRadius:3,transition:"width 0.6s"}}/>
               </div>
             </div>
@@ -3482,7 +3482,7 @@ function ProfileStats({ name, picks, koWinners, actuals, actualKo, winnerPick, t
         {/* Fun facts */}
         {stats.predicted > 0 && (
           <div style={{
-            background:"linear-gradient(135deg,rgba(168,85,247,0.1),rgba(15,20,36,0.5))",
+            background:"linear-gradient(135deg,rgba(168,85,247,0.1),rgba(36,49,80,0.5))",
             border:"1px solid rgba(168,85,247,0.3)",
             borderRadius:12,padding:"12px 14px",marginBottom:14,
           }}>
@@ -3648,7 +3648,7 @@ function WorldLeaderboard({ userId, name, onClose }) {
                 <div key={u.uid} style={{
                   display:"flex",alignItems:"center",gap:10,
                   padding:"10px 12px",
-                  background: isMe ? "linear-gradient(135deg,rgba(251,191,36,0.18),rgba(15,20,36,0.5))" : "rgba(30,41,59,0.5)",
+                  background: isMe ? "linear-gradient(135deg,rgba(251,191,36,0.18),rgba(36,49,80,0.5))" : "rgba(30,41,59,0.5)",
                   border: isMe ? "1px solid rgba(251,191,36,0.5)" : "1px solid rgba(71,85,105,0.3)",
                   borderRadius:10,
                 }}>
@@ -3702,7 +3702,7 @@ function Sidebar({ open, onClose, name, lang, setLang, onShowProfile, onShowRule
         position:"fixed",top:0,bottom:0,
         [isRTL ? "right" : "left"]: 0,
         zIndex:9999,width:"82%",maxWidth:320,
-        background:"linear-gradient(180deg,#1a1f3a,#0f1424)",
+        background:"linear-gradient(180deg,#2c3956,#243150)",
         boxShadow: isRTL ? "-8px 0 32px rgba(0,0,0,0.5)" : "8px 0 32px rgba(0,0,0,0.5)",
         transform: open
           ? "translateX(0)"
@@ -3768,7 +3768,7 @@ function Sidebar({ open, onClose, name, lang, setLang, onShowProfile, onShowRule
               <button onClick={()=>setLang("en")} style={{
                 flex:1,padding:"8px 10px",borderRadius:8,
                 background: lang==="en" ? "linear-gradient(135deg,#fbbf24,#d97706)" : "rgba(30,41,59,0.6)",
-                color: lang==="en" ? "#0a0e1c" : "#cbd5e1",
+                color: lang==="en" ? "#1e2940" : "#cbd5e1",
                 border: lang==="en" ? "none" : "1px solid rgba(71,85,105,0.4)",
                 fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"inherit",
                 letterSpacing:1,
@@ -3776,7 +3776,7 @@ function Sidebar({ open, onClose, name, lang, setLang, onShowProfile, onShowRule
               <button onClick={()=>setLang("he")} style={{
                 flex:1,padding:"8px 10px",borderRadius:8,
                 background: lang==="he" ? "linear-gradient(135deg,#fbbf24,#d97706)" : "rgba(30,41,59,0.6)",
-                color: lang==="he" ? "#0a0e1c" : "#cbd5e1",
+                color: lang==="he" ? "#1e2940" : "#cbd5e1",
                 border: lang==="he" ? "none" : "1px solid rgba(71,85,105,0.4)",
                 fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"inherit",
                 letterSpacing:1,
@@ -3844,7 +3844,7 @@ function AchievementsModal({ unlockedIds, onClose }) {
     }}>
       <div onClick={e=>e.stopPropagation()} style={{
         maxWidth:480,width:"100%",maxHeight:"90vh",overflowY:"auto",
-        background:"linear-gradient(180deg,#1a1f3a,#0f1424)",
+        background:"linear-gradient(180deg,#2c3956,#243150)",
         border:"1px solid rgba(251,191,36,0.3)",
         borderRadius:18,padding:"22px 18px",
         boxShadow:"0 20px 60px rgba(0,0,0,0.6)",
@@ -3873,7 +3873,7 @@ function AchievementsModal({ unlockedIds, onClose }) {
             <span>{unlockedCount} / {total}</span>
             <span>{pct}%</span>
           </div>
-          <div style={{height:6,background:"rgba(15,20,36,0.5)",borderRadius:3,overflow:"hidden"}}>
+          <div style={{height:6,background:"rgba(36,49,80,0.5)",borderRadius:3,overflow:"hidden"}}>
             <div style={{
               width:`${pct}%`,height:"100%",
               background:"linear-gradient(90deg,#fbbf24,#f59e0b)",
@@ -3890,8 +3890,8 @@ function AchievementsModal({ unlockedIds, onClose }) {
               <div key={a.id} style={{
                 padding:"12px 10px",
                 background: unlocked
-                  ? `linear-gradient(135deg, ${a.color}22, rgba(15,20,36,0.5))`
-                  : "rgba(15,20,36,0.5)",
+                  ? `linear-gradient(135deg, ${a.color}22, rgba(36,49,80,0.5))`
+                  : "rgba(36,49,80,0.5)",
                 border: `1px solid ${unlocked ? a.color + "66" : "rgba(71,85,105,0.3)"}`,
                 borderRadius:12,
                 opacity: unlocked ? 1 : 0.5,
@@ -3952,7 +3952,7 @@ function NewBadgePopup({ achievement, onClose }) {
       `}</style>
 
       <div style={{
-        background:"linear-gradient(135deg,#1a1f3a,#0f1424)",
+        background:"linear-gradient(135deg,#2c3956,#243150)",
         border:`2px solid ${achievement.color}`,
         borderRadius:16,padding:"14px 18px",maxWidth:360,
         boxShadow:`0 12px 32px rgba(0,0,0,0.5), 0 0 24px ${achievement.color}44`,
@@ -4123,7 +4123,7 @@ function RouletteModal({ coins, isSpinning, pendingCard, onSpin, onClose, onShow
   return (
     <div onClick={() => !isSpinning && onClose()} style={{
       position:"fixed",inset:0,zIndex:9000,
-      background:"radial-gradient(circle at center, rgba(51,65,85,0.85), rgba(15,20,36,0.92))",
+      background:"radial-gradient(circle at center, rgba(51,65,85,0.85), rgba(36,49,80,0.92))",
       display:"flex",alignItems:"center",justifyContent:"center",
       padding:14,
     }}>
@@ -4193,7 +4193,7 @@ function RouletteModal({ coins, isSpinning, pendingCard, onSpin, onClose, onShow
             flex:1,
             display:"flex",justifyContent:"center",gap:6,
             padding:"14px 10px",
-            background:"linear-gradient(180deg,#1a1f3a,#0a0e1c)",
+            background:"linear-gradient(180deg,#2c3956,#1e2940)",
             border:"3px solid #fbbf24",
             borderRadius:14,
             animation: isSpinning ? "neonPulse 0.6s ease-in-out infinite" : "none",
@@ -4333,7 +4333,7 @@ function RouletteModal({ coins, isSpinning, pendingCard, onSpin, onClose, onShow
 
         {/* Balance + spin button */}
         <div style={{
-          background:"#0a0e1c",
+          background:"#1e2940",
           borderRadius:12,padding:"12px 14px",marginBottom:12,
           display:"flex",alignItems:"center",justifyContent:"space-between",
           border:"1px solid rgba(251,191,36,0.2)",
@@ -4354,7 +4354,7 @@ function RouletteModal({ coins, isSpinning, pendingCard, onSpin, onClose, onShow
         <button onClick={handleSpinClick} disabled={!canSpin} style={{
           width:"100%",padding:"14px",borderRadius:12,
           background: canSpin ? "linear-gradient(135deg,#fbbf24,#f59e0b)" : "rgba(71,85,105,0.4)",
-          color: canSpin ? "#0a0e1c" : "#64748b",
+          color: canSpin ? "#1e2940" : "#64748b",
           border:"none",fontSize:16,fontWeight:900,
           fontFamily:"inherit",cursor: canSpin ? "pointer" : "not-allowed",
           boxShadow: canSpin ? "0 8px 24px rgba(251,191,36,0.4)" : "none",
@@ -4465,7 +4465,7 @@ function SlotReel({ type, spinning, stopAt, finalValue }) {
   return (
     <div style={{
       width:64,height:80,
-      background:"linear-gradient(180deg,#0a0e1c,#1a1f3a)",
+      background:"linear-gradient(180deg,#1e2940,#2c3956)",
       border:`2px solid ${stopped ? "#fbbf24" : "rgba(251,191,36,0.3)"}`,
       borderRadius:8,
       overflow:"hidden",position:"relative",
@@ -4799,7 +4799,7 @@ function PlayerCard({ card, size = "L", animated = false, flippable = false }) {
             <div style={{
               fontSize: size === "L" ? 24 : size === "M" ? 15 : 11,
               fontWeight:900,
-              color: isPerfect ? "#0a0e1c" : "#fff",
+              color: isPerfect ? "#1e2940" : "#fff",
               textShadow: isPerfect ? "none" : "0 1px 2px rgba(0,0,0,0.5)",
               fontVariantNumeric:"tabular-nums",
               letterSpacing:-1,
@@ -4901,7 +4901,7 @@ function PlayerCard({ card, size = "L", animated = false, flippable = false }) {
         <div style={{
           position:"absolute",top:"44%",right:6,
           background:"linear-gradient(135deg,#fde68a,#fbbf24,#92400e)",
-          color:"#0a0e1c",
+          color:"#1e2940",
           fontSize: size === "L" ? 9 : 7,
           fontWeight:900,letterSpacing:1,
           padding:"2px 6px",borderRadius:4,
@@ -5430,7 +5430,7 @@ function CollectionModal({ collection, onClose }) {
     }}>
       <div onClick={e => e.stopPropagation()} style={{
         maxWidth:520,width:"100%",maxHeight:"92vh",
-        background:"linear-gradient(180deg,#1a1f3a,#0f1424)",
+        background:"linear-gradient(180deg,#2c3956,#243150)",
         border:"1px solid rgba(251,191,36,0.3)",
         borderRadius:18,padding:"20px 16px",
         boxShadow:"0 20px 60px rgba(0,0,0,0.6)",
@@ -5449,7 +5449,7 @@ function CollectionModal({ collection, onClose }) {
         </div>
 
         {/* Progress */}
-        <div style={{background:"rgba(15,20,36,0.6)",borderRadius:10,padding:"10px 14px",marginBottom:12}}>
+        <div style={{background:"rgba(36,49,80,0.6)",borderRadius:10,padding:"10px 14px",marginBottom:12}}>
           <div style={{display:"flex",justifyContent:"space-between",fontSize:11,marginBottom:6}}>
             <span style={{color:"#cbd5e1",fontWeight:700}}>{ownedCount} / {totalCount} {t("collection.collected")}</span>
             <span style={{color:"#fbbf24",fontWeight:800}}>{pct}%</span>
@@ -5518,10 +5518,10 @@ function CollectionModal({ collection, onClose }) {
                 {count > 1 && (
                   <div style={{
                     position:"absolute",top:4,right:4,
-                    background:"#fbbf24",color:"#0a0e1c",
+                    background:"#fbbf24",color:"#1e2940",
                     fontSize:9,fontWeight:900,
                     borderRadius:8,padding:"2px 5px",
-                    border:"1px solid #0a0e1c",
+                    border:"1px solid #1e2940",
                   }}>×{count}</div>
                 )}
               </div>
@@ -5630,7 +5630,7 @@ function BackToTopButton() {
         borderRadius: "50%",
         background: "linear-gradient(135deg,#fbbf24,#d97706)",
         border: "none",
-        color: "#0a0e1c",
+        color: "#1e2940",
         fontSize: 20,
         fontWeight: 900,
         cursor: "pointer",
@@ -5661,7 +5661,7 @@ function RecapModal({ recap, onClose }) {
       padding:16,animation:"goalFadeIn 0.3s ease-out",
     }}>
       <div onClick={e=>e.stopPropagation()} style={{
-        background:"linear-gradient(145deg,#1a1f3a,#0f1424)",
+        background:"linear-gradient(145deg,#2c3956,#243150)",
         border:"1px solid rgba(251,191,36,0.4)",
         borderRadius:18,padding:"22px 18px",
         maxWidth:460,width:"100%",maxHeight:"90vh",overflowY:"auto",
@@ -5687,8 +5687,8 @@ function RecapModal({ recap, onClose }) {
         <div style={{
           textAlign:"center",
           background: totalPoints > 0
-            ? "linear-gradient(135deg,rgba(34,197,94,0.18),rgba(15,20,36,0.5))"
-            : "linear-gradient(135deg,rgba(71,85,105,0.15),rgba(15,20,36,0.5))",
+            ? "linear-gradient(135deg,rgba(34,197,94,0.18),rgba(36,49,80,0.5))"
+            : "linear-gradient(135deg,rgba(71,85,105,0.15),rgba(36,49,80,0.5))",
           border:`1px solid ${totalPoints > 0 ? "rgba(34,197,94,0.5)" : "rgba(71,85,105,0.4)"}`,
           borderRadius:12,padding:"12px 10px",marginBottom:14,
         }}>
@@ -5768,7 +5768,7 @@ function ScoringRulesModal({ onClose }) {
       padding:16,animation:"goalFadeIn 0.2s ease-out",
     }}>
       <div onClick={e=>e.stopPropagation()} style={{
-        background:"linear-gradient(145deg,#1a1f3a,#0f1424)",
+        background:"linear-gradient(145deg,#2c3956,#243150)",
         border:"1px solid rgba(251,191,36,0.4)",
         borderRadius:18,padding:"22px 20px",
         maxWidth:440,width:"100%",maxHeight:"90vh",overflowY:"auto",
@@ -5790,7 +5790,7 @@ function ScoringRulesModal({ onClose }) {
         </div>
 
         {/* Group stage */}
-        <div style={{background:"rgba(15,20,36,0.6)",border:"1px solid rgba(71,85,105,0.3)",borderRadius:12,padding:"12px 14px",marginBottom:10}}>
+        <div style={{background:"rgba(36,49,80,0.6)",border:"1px solid rgba(71,85,105,0.3)",borderRadius:12,padding:"12px 14px",marginBottom:10}}>
           <div style={{fontSize:10,color:"#94a3b8",letterSpacing:2,marginBottom:8,fontWeight:700}}>⚽ {t("rules.groupStage")}</div>
           <div style={{display:"flex",justifyContent:"space-between",fontSize:13,color:"#cbd5e1",marginBottom:6}}>
             <span>{t("welcome.exactScore")}</span>
@@ -5803,7 +5803,7 @@ function ScoringRulesModal({ onClose }) {
         </div>
 
         {/* Knockout */}
-        <div style={{background:"linear-gradient(135deg,rgba(168,85,247,0.1),rgba(15,20,36,0.6))",border:"1px solid rgba(168,85,247,0.4)",borderRadius:12,padding:"12px 14px",marginBottom:10}}>
+        <div style={{background:"linear-gradient(135deg,rgba(168,85,247,0.1),rgba(36,49,80,0.6))",border:"1px solid rgba(168,85,247,0.4)",borderRadius:12,padding:"12px 14px",marginBottom:10}}>
           <div style={{fontSize:10,color:"#a855f7",letterSpacing:2,marginBottom:8,fontWeight:700}}>🔥 {t("rules.knockoutDouble")}</div>
           <div style={{display:"flex",justifyContent:"space-between",fontSize:13,color:"#cbd5e1",marginBottom:6}}>
             <span>{t("welcome.exactScore")}</span>
@@ -5816,7 +5816,7 @@ function ScoringRulesModal({ onClose }) {
         </div>
 
         {/* Bonus bets */}
-        <div style={{background:"linear-gradient(135deg,rgba(251,191,36,0.08),rgba(15,20,36,0.6))",border:"1px solid rgba(251,191,36,0.3)",borderRadius:12,padding:"12px 14px",marginBottom:14}}>
+        <div style={{background:"linear-gradient(135deg,rgba(251,191,36,0.08),rgba(36,49,80,0.6))",border:"1px solid rgba(251,191,36,0.3)",borderRadius:12,padding:"12px 14px",marginBottom:14}}>
           <div style={{fontSize:10,color:"#fbbf24",letterSpacing:2,marginBottom:8,fontWeight:700}}>⭐ {t("rules.bonusBets")}</div>
           <div style={{display:"flex",justifyContent:"space-between",fontSize:12,color:"#cbd5e1",marginBottom:5}}>
             <span>🏆 {t("rules.tournamentWinner")}</span>
@@ -5876,25 +5876,25 @@ function BonusPicks({
       )}
 
       {/* ─── TOURNAMENT WINNER ─── */}
-      <div style={{background:"linear-gradient(135deg,rgba(251,191,36,0.08),rgba(15,20,36,0.6))",border:"1px solid rgba(251,191,36,0.3)",borderRadius:14,padding:14,marginBottom:14}}>
+      <div style={{background:"linear-gradient(135deg,rgba(251,191,36,0.08),rgba(36,49,80,0.6))",border:"1px solid rgba(251,191,36,0.3)",borderRadius:14,padding:14,marginBottom:14}}>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
           <div>
             <div style={{fontSize:11,color:"#fbbf24",letterSpacing:2,fontWeight:700}}>{t("bonus.tournamentWinner")}</div>
             <div style={{fontSize:10,color:"#94a3b8",marginTop:2}}>{t("bonus.pickOneTeam")}</div>
           </div>
-          <div style={{background:"#fbbf24",color:"#0a0e1c",fontSize:11,fontWeight:900,padding:"3px 8px",borderRadius:6,letterSpacing:1}}>{t("bonus.fiftyPts")}</div>
+          <div style={{background:"#fbbf24",color:"#1e2940",fontSize:11,fontWeight:900,padding:"3px 8px",borderRadius:6,letterSpacing:1}}>{t("bonus.fiftyPts")}</div>
         </div>
 
         {winnerPick ? (
           <div style={{
             background:"linear-gradient(135deg,#fbbf24,#d97706)",
-            color:"#0a0e1c",borderRadius:10,padding:"10px 12px",
+            color:"#1e2940",borderRadius:10,padding:"10px 12px",
             display:"flex",alignItems:"center",gap:10,
           }}>
             <span style={{fontSize:28}}>{winnerPick.flag || winnerPick.f}</span>
             <span style={{flex:1,fontSize:16,fontWeight:900}}>{winnerPick.name || winnerPick.n}</span>
             {!isLocked && (
-              <button onClick={()=>setWinnerPick(null)} style={{background:"rgba(10,14,28,0.2)",border:"none",borderRadius:6,padding:"4px 10px",color:"#0a0e1c",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>{t("bonus.change")}</button>
+              <button onClick={()=>setWinnerPick(null)} style={{background:"rgba(30,41,64,0.2)",border:"none",borderRadius:6,padding:"4px 10px",color:"#1e2940",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>{t("bonus.change")}</button>
             )}
             {actualWinner && (
               <div style={{fontSize:11,fontWeight:900}}>
@@ -5923,13 +5923,13 @@ function BonusPicks({
       </div>
 
       {/* ─── TOP SCORER ─── */}
-      <div style={{background:"linear-gradient(135deg,rgba(168,85,247,0.08),rgba(15,20,36,0.6))",border:"1px solid rgba(168,85,247,0.3)",borderRadius:14,padding:14}}>
+      <div style={{background:"linear-gradient(135deg,rgba(168,85,247,0.08),rgba(36,49,80,0.6))",border:"1px solid rgba(168,85,247,0.3)",borderRadius:14,padding:14}}>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
           <div>
             <div style={{fontSize:11,color:"#a855f7",letterSpacing:2,fontWeight:700}}>{t("bonus.goldenBoot")}</div>
             <div style={{fontSize:10,color:"#94a3b8",marginTop:2}}>{t("bonus.pickPlayer")}</div>
           </div>
-          <div style={{background:"#a855f7",color:"#0a0e1c",fontSize:11,fontWeight:900,padding:"3px 8px",borderRadius:6,letterSpacing:1}}>{t("bonus.fivePerGoal")}</div>
+          <div style={{background:"#a855f7",color:"#1e2940",fontSize:11,fontWeight:900,padding:"3px 8px",borderRadius:6,letterSpacing:1}}>{t("bonus.fivePerGoal")}</div>
         </div>
 
         {topScorerPick ? (
@@ -5957,7 +5957,7 @@ function BonusPicks({
           </div>
         ) : !isLocked ? (
           <>
-            <div style={{display:"flex",background:"rgba(15,20,36,0.6)",borderRadius:8,padding:2,marginBottom:10}}>
+            <div style={{display:"flex",background:"rgba(36,49,80,0.6)",borderRadius:8,padding:2,marginBottom:10}}>
               <button onClick={()=>setScorerMode("list")} style={{
                 flex:1,padding:"6px 0",border:"none",borderRadius:6,cursor:"pointer",fontFamily:"inherit",
                 background:scorerMode==="list"?"rgba(168,85,247,0.2)":"transparent",
@@ -5976,7 +5976,7 @@ function BonusPicks({
               <>
                 <input value={scorerFilter} onChange={e=>setScorerFilter(e.target.value)} placeholder={t("bonus.searchPlaceholder")} style={{
                   width:"100%",padding:"8px 10px",borderRadius:8,fontSize:13,
-                  background:"#0a0e1c",border:"1px solid rgba(71,85,105,0.4)",
+                  background:"#1e2940",border:"1px solid rgba(71,85,105,0.4)",
                   color:"#f1f5f9",fontFamily:"inherit",outline:"none",
                   marginBottom:8,boxSizing:"border-box",
                 }}/>
@@ -6003,13 +6003,13 @@ function BonusPicks({
               <div>
                 <input value={customPlayer} onChange={e=>setCustomPlayer(e.target.value)} placeholder={t("bonus.playerName")} style={{
                   width:"100%",padding:"8px 10px",borderRadius:8,fontSize:13,
-                  background:"#0a0e1c",border:"1px solid rgba(71,85,105,0.4)",
+                  background:"#1e2940",border:"1px solid rgba(71,85,105,0.4)",
                   color:"#f1f5f9",fontFamily:"inherit",outline:"none",
                   marginBottom:6,boxSizing:"border-box",
                 }}/>
                 <input value={customTeam} onChange={e=>setCustomTeam(e.target.value)} placeholder={t("bonus.team")} style={{
                   width:"100%",padding:"8px 10px",borderRadius:8,fontSize:13,
-                  background:"#0a0e1c",border:"1px solid rgba(71,85,105,0.4)",
+                  background:"#1e2940",border:"1px solid rgba(71,85,105,0.4)",
                   color:"#f1f5f9",fontFamily:"inherit",outline:"none",
                   marginBottom:8,boxSizing:"border-box",
                 }}/>
@@ -6027,7 +6027,7 @@ function BonusPicks({
       {/* ─── TOP SCORERS LEADERBOARD — always visible ─── */}
       <div style={{
         marginTop:14,
-        background:"linear-gradient(135deg,rgba(168,85,247,0.05),rgba(15,20,36,0.6))",
+        background:"linear-gradient(135deg,rgba(168,85,247,0.05),rgba(36,49,80,0.6))",
         border:"1px solid rgba(168,85,247,0.3)",
         borderRadius:14,padding:14,
       }}>
@@ -6159,7 +6159,7 @@ function Welcome({ onStart, onImport }) {
   return (
     <div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
       <div style={{
-        background:"linear-gradient(145deg,#1a1f3a,#0f1424)",
+        background:"linear-gradient(145deg,#2c3956,#243150)",
         border:"1px solid rgba(251,191,36,0.3)",
         borderRadius:20,padding:"30px 24px",maxWidth:400,width:"100%",
         boxShadow:"0 20px 60px rgba(0,0,0,0.5)",animation:"fadeUp 0.5s ease-out",
@@ -6169,7 +6169,7 @@ function Welcome({ onStart, onImport }) {
         <p style={{textAlign:"center",color:"#94a3b8",fontSize:12,margin:"0 0 16px",fontStyle:"italic"}}>{t("welcome.subtitle") || tagline}</p>
 
         {/* Scoring rules preview */}
-        <div style={{background:"rgba(15,20,36,0.6)",border:"1px solid rgba(71,85,105,0.3)",borderRadius:10,padding:"10px 12px",marginBottom:18}}>
+        <div style={{background:"rgba(36,49,80,0.6)",border:"1px solid rgba(71,85,105,0.3)",borderRadius:10,padding:"10px 12px",marginBottom:18}}>
           <div style={{fontSize:10,color:"#fbbf24",letterSpacing:2,marginBottom:6,textAlign:"center"}}>{t("welcome.scoring")}</div>
           <div style={{display:"flex",justifyContent:"space-between",fontSize:11,color:"#cbd5e1",marginBottom:3}}>
             <span>{t("welcome.exactScore")}</span><span style={{color:"#fbbf24",fontWeight:700}}>+5 {t("welcome.pts")}</span>
@@ -6387,7 +6387,7 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
           <div style={{
             display:"flex",alignItems:"center",gap:6,
             background:"linear-gradient(135deg,#fbbf24,#d97706)",
-            color:"#0a0e1c",padding:"6px 12px",borderRadius:20,
+            color:"#1e2940",padding:"6px 12px",borderRadius:20,
             fontSize:13,fontWeight:800,whiteSpace:"nowrap",
             boxShadow:"0 6px 20px rgba(251,191,36,0.5)",
           }}>
@@ -6436,7 +6436,7 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
             readOnly={isLocked}
             placeholder={isLocked?"·":"—"}
             style={{width:36,height:36,textAlign:"center",
-              background: isLocked?"rgba(71,85,105,0.2)":"#0a0e1c",
+              background: isLocked?"rgba(71,85,105,0.2)":"#1e2940",
               border:`1px solid ${isLocked?"rgba(71,85,105,0.4)":(result==="home"?"#22c55e":"rgba(71,85,105,0.5)")}`,
               borderRadius:8,
               color: isLocked?"#64748b":(result==="home"?"#22c55e":"#f1f5f9"),
@@ -6451,7 +6451,7 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
             readOnly={isLocked}
             placeholder={isLocked?"·":"—"}
             style={{width:36,height:36,textAlign:"center",
-              background: isLocked?"rgba(71,85,105,0.2)":"#0a0e1c",
+              background: isLocked?"rgba(71,85,105,0.2)":"#1e2940",
               border:`1px solid ${isLocked?"rgba(71,85,105,0.4)":(result==="away"?"#22c55e":"rgba(71,85,105,0.5)")}`,
               borderRadius:8,
               color: isLocked?"#64748b":(result==="away"?"#22c55e":"#f1f5f9"),
@@ -6477,14 +6477,14 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
           <div style={{
             display:"grid",gridTemplateColumns:"1fr auto 1fr",alignItems:"center",gap:8,
             padding:"6px 4px",direction:"ltr",
-            background: sc?.bg || "rgba(15,20,36,0.5)",
+            background: sc?.bg || "rgba(36,49,80,0.5)",
             borderRadius:8,
             border: `1px solid ${sc?.border || "rgba(71,85,105,0.4)"}`,
           }}>
             <div style={{textAlign:"right",fontSize:10,color:"#94a3b8",letterSpacing:1,fontWeight:700}}>FINAL SCORE</div>
             <div style={{
               display:"flex",alignItems:"center",gap:4,
-              background:"#0a0e1c",border:`1px solid ${sc?.border || "#22c55e"}`,
+              background:"#1e2940",border:`1px solid ${sc?.border || "#22c55e"}`,
               borderRadius:6,padding:"3px 10px",justifyContent:"center",
               color: sc?.text || "#22c55e",fontWeight:900,fontSize:16,
             }}>
@@ -6522,7 +6522,7 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
       {insights && (
         <div style={{
           marginTop:10,padding:"8px 10px",
-          background:"linear-gradient(135deg,rgba(168,85,247,0.08),rgba(15,20,36,0.4))",
+          background:"linear-gradient(135deg,rgba(168,85,247,0.08),rgba(36,49,80,0.4))",
           border:"1px solid rgba(168,85,247,0.25)",
           borderRadius:8,
         }}>
@@ -6531,7 +6531,7 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
             <span style={{fontSize:9,color:"#64748b"}}>{insights.total} {insights.total===1 ? t("insights.pick") : t("insights.picks")}</span>
           </div>
           {/* Three-segment bar showing %s */}
-          <div style={{display:"flex",height:8,borderRadius:4,overflow:"hidden",background:"rgba(15,20,36,0.6)",marginBottom:5}}>
+          <div style={{display:"flex",height:8,borderRadius:4,overflow:"hidden",background:"rgba(36,49,80,0.6)",marginBottom:5}}>
             {insights.home > 0 && (
               <div style={{
                 width:`${insights.home}%`,
@@ -6583,23 +6583,23 @@ function StandingsTable({ group, standings, bestThirds, liveStandings, liveBestT
   const thirdsGroups = activeThirds.map(t => t.group);
 
   return (
-    <div style={{background:"rgba(15,20,36,0.6)",border:`1px solid ${color}33`,borderRadius:12,padding:"10px 12px",marginTop:14}}>
+    <div style={{background:"rgba(36,49,80,0.6)",border:`1px solid ${color}33`,borderRadius:12,padding:"10px 12px",marginTop:14}}>
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
         <div style={{fontSize:10,color,letterSpacing:2,fontWeight:700}}>
           {showLive ? "📡 LIVE STANDINGS" : "🔮 PREDICTED STANDINGS"}
         </div>
         {hasActuals && (
-          <div style={{display:"flex",background:"rgba(15,20,36,0.8)",borderRadius:6,padding:2,border:"1px solid rgba(71,85,105,0.4)"}}>
+          <div style={{display:"flex",background:"rgba(36,49,80,0.8)",borderRadius:6,padding:2,border:"1px solid rgba(71,85,105,0.4)"}}>
             <button onClick={()=>setMode("predicted")} style={{
               padding:"3px 8px",border:"none",borderRadius:4,cursor:"pointer",fontFamily:"inherit",
               background: mode==="predicted" ? color : "transparent",
-              color: mode==="predicted" ? "#0a0e1c" : "#94a3b8",
+              color: mode==="predicted" ? "#1e2940" : "#94a3b8",
               fontSize:9,fontWeight:800,letterSpacing:0.5,
             }}>YOURS</button>
             <button onClick={()=>setMode("live")} style={{
               padding:"3px 8px",border:"none",borderRadius:4,cursor:"pointer",fontFamily:"inherit",
               background: mode==="live" ? color : "transparent",
-              color: mode==="live" ? "#0a0e1c" : "#94a3b8",
+              color: mode==="live" ? "#1e2940" : "#94a3b8",
               fontSize:9,fontWeight:800,letterSpacing:0.5,
             }}>LIVE</button>
           </div>
@@ -6773,7 +6773,7 @@ function TodayScreen({ picks, actuals, onPick, onBack, onGoToBracket, leagueMemb
       {/* Missing picks warning */}
       {missingPicks > 0 && (
         <div style={{
-          background:"linear-gradient(135deg,rgba(239,68,68,0.12),rgba(15,20,36,0.5))",
+          background:"linear-gradient(135deg,rgba(239,68,68,0.12),rgba(36,49,80,0.5))",
           border:"1px solid rgba(239,68,68,0.4)",
           borderRadius:12,padding:"10px 14px",marginBottom:14,
           display:"flex",alignItems:"center",gap:10,
@@ -6858,7 +6858,7 @@ function GroupView({ group, picks, actuals, standings, bestThirds, liveStandings
               style={{
                 position:"relative",
                 background: isCurrent ? c : "rgba(30,41,59,0.6)",
-                color: isCurrent ? "#0a0e1c" : "#cbd5e1",
+                color: isCurrent ? "#1e2940" : "#cbd5e1",
                 border: `1px solid ${isCurrent ? c : "rgba(71,85,105,0.4)"}`,
                 borderRadius: 10,
                 padding: "10px 0",
@@ -6890,7 +6890,7 @@ function GroupView({ group, picks, actuals, standings, bestThirds, liveStandings
         <div style={{
           display:"inline-block",
           background: color,
-          color: "#0a0e1c",
+          color: "#1e2940",
           fontSize: 38,
           fontWeight: 900,
           lineHeight: 1,
@@ -7013,7 +7013,7 @@ function KnockoutBracket({ standings, bestThirds, liveStandings, liveBestThirds,
 
     return (
       <div key={m.id} style={{
-        background: ready ? "rgba(30,41,59,0.6)" : "rgba(15,20,36,0.4)",
+        background: ready ? "rgba(30,41,59,0.6)" : "rgba(36,49,80,0.4)",
         border: `1px solid ${hasPick ? "rgba(251,191,36,0.4)" : "rgba(71,85,105,0.3)"}`,
         borderRadius: 10, padding: "9px 10px", marginBottom: 8,
         opacity: ready ? 1 : 0.5,
@@ -7052,7 +7052,7 @@ function KnockoutBracket({ standings, bestThirds, liveStandings, liveBestThirds,
               placeholder={ready ? (isLocked ? "·" : "—") : ""}
               style={{
                 width:30,height:30,textAlign:"center",
-                background: (isLocked || !ready) ? "rgba(71,85,105,0.2)" : "#0a0e1c",
+                background: (isLocked || !ready) ? "rgba(71,85,105,0.2)" : "#1e2940",
                 border: `1px solid ${hasPick ? "#fbbf24" : "rgba(71,85,105,0.5)"}`,
                 borderRadius:6,color: (isLocked || !ready) ? "#64748b" : "#f1f5f9",
                 fontSize:14,fontWeight:800,fontFamily:"inherit",outline:"none",
@@ -7069,7 +7069,7 @@ function KnockoutBracket({ standings, bestThirds, liveStandings, liveBestThirds,
               placeholder={ready ? (isLocked ? "·" : "—") : ""}
               style={{
                 width:30,height:30,textAlign:"center",
-                background: (isLocked || !ready) ? "rgba(71,85,105,0.2)" : "#0a0e1c",
+                background: (isLocked || !ready) ? "rgba(71,85,105,0.2)" : "#1e2940",
                 border: `1px solid ${hasPick ? "#fbbf24" : "rgba(71,85,105,0.5)"}`,
                 borderRadius:6,color: (isLocked || !ready) ? "#64748b" : "#f1f5f9",
                 fontSize:14,fontWeight:800,fontFamily:"inherit",outline:"none",
@@ -7102,7 +7102,7 @@ function KnockoutBracket({ standings, bestThirds, liveStandings, liveBestThirds,
         <div style={{
           display:"inline-flex",alignItems:"center",gap:8,
           background:"linear-gradient(135deg,#fbbf24,#d97706)",
-          color:"#0a0e1c",
+          color:"#1e2940",
           padding:"5px 14px",borderRadius:20,
           fontSize:11,fontWeight:900,letterSpacing:1,
           boxShadow:"0 4px 12px rgba(251,191,36,0.4)",
@@ -7116,7 +7116,7 @@ function KnockoutBracket({ standings, bestThirds, liveStandings, liveBestThirds,
         display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,marginBottom:14,
       }}>
         <div style={{
-          background:"linear-gradient(135deg,rgba(251,191,36,0.15),rgba(15,20,36,0.5))",
+          background:"linear-gradient(135deg,rgba(251,191,36,0.15),rgba(36,49,80,0.5))",
           border:"1px solid #fbbf24",
           borderRadius:10,padding:"8px 6px",textAlign:"center",
           boxShadow:"0 2px 10px rgba(251,191,36,0.2)",
@@ -7127,7 +7127,7 @@ function KnockoutBracket({ standings, bestThirds, liveStandings, liveBestThirds,
           <div style={{fontSize:18,color:"#fbbf24",fontWeight:900,lineHeight:1}}>+10</div>
         </div>
         <div style={{
-          background:"linear-gradient(135deg,rgba(34,197,94,0.15),rgba(15,20,36,0.5))",
+          background:"linear-gradient(135deg,rgba(34,197,94,0.15),rgba(36,49,80,0.5))",
           border:"1px solid #22c55e",
           borderRadius:10,padding:"8px 6px",textAlign:"center",
           boxShadow:"0 2px 10px rgba(34,197,94,0.2)",
@@ -7159,9 +7159,9 @@ function KnockoutBracket({ standings, bestThirds, liveStandings, liveBestThirds,
 
       {champion && (
         <div key={`champ-${champion.name}`} style={{background:"linear-gradient(135deg,#fbbf24,#d97706)",borderRadius:14,padding:16,marginBottom:18,textAlign:"center",animation:"championPop 0.7s cubic-bezier(0.34, 1.56, 0.64, 1)",boxShadow:"0 10px 30px rgba(251,191,36,0.4)"}}>
-          <div style={{fontSize:10,letterSpacing:3,color:"#0a0e1c",fontWeight:800,marginBottom:4}}>🏆 YOUR CHAMPION 🏆</div>
+          <div style={{fontSize:10,letterSpacing:3,color:"#1e2940",fontWeight:800,marginBottom:4}}>🏆 YOUR CHAMPION 🏆</div>
           <div style={{fontSize:38,marginBottom:2}}>{champion.flag||champion.f}</div>
-          <div style={{fontSize:22,color:"#0a0e1c",fontWeight:900}}>{champion.name||champion.n}</div>
+          <div style={{fontSize:22,color:"#1e2940",fontWeight:900}}>{champion.name||champion.n}</div>
         </div>
       )}
 
@@ -7691,7 +7691,7 @@ function LeagueHub({
             <button key={L.code} onClick={() => setActiveLeagueCode(L.code)} style={{
               textAlign:"start",
               padding:"14px 16px",
-              background:"linear-gradient(145deg,#1e293b,#0f172a)",
+              background:"linear-gradient(145deg,#1e293b,#243150)",
               border:"1px solid rgba(251,191,36,0.3)",
               borderRadius:14,
               cursor:"pointer",fontFamily:"inherit",color:"#f1f5f9",
@@ -7746,7 +7746,7 @@ function LeagueHub({
         {onShowWorld && (
           <button onClick={onShowWorld} style={{
             marginTop:12,width:"100%",
-            background:"linear-gradient(135deg,rgba(59,130,246,0.18),rgba(15,20,36,0.5))",
+            background:"linear-gradient(135deg,rgba(59,130,246,0.18),rgba(36,49,80,0.5))",
             border:"1px solid rgba(59,130,246,0.4)",
             color:"#93c5fd",
             borderRadius:12,padding:"12px 14px",
@@ -7823,7 +7823,7 @@ function LeagueHub({
         {onShowWorld && (
           <button onClick={onShowWorld} style={{
             marginTop:18,width:"100%",
-            background:"linear-gradient(135deg,rgba(59,130,246,0.15),rgba(15,20,36,0.5))",
+            background:"linear-gradient(135deg,rgba(59,130,246,0.15),rgba(36,49,80,0.5))",
             border:"1px solid rgba(59,130,246,0.4)",
             color:"#93c5fd",
             borderRadius:12,padding:"12px 14px",
@@ -7936,7 +7936,7 @@ function LeagueHub({
             </div>
             <div style={{
               display:"flex",alignItems:"center",gap:3,
-              background:hasPick?"#0a0e1c":"transparent",
+              background:hasPick?"#1e2940":"transparent",
               border:`1px solid ${hasPick && showPick ? scoreColor : "rgba(71,85,105,0.3)"}`,
               borderRadius:6,padding:"3px 8px",minWidth:48,justifyContent:"center",
               color: !showPick && hasPick ? "#64748b" : (hasPick ? (score?scoreColor:"#f1f5f9") : "#64748b"),
@@ -8015,7 +8015,7 @@ function LeagueHub({
                          : "rgba(71,85,105,0.5)";
         return (
           <div key={mt.id} style={{
-            background:ready?"rgba(30,41,59,0.6)":"rgba(15,20,36,0.4)",
+            background:ready?"rgba(30,41,59,0.6)":"rgba(36,49,80,0.4)",
             border:`1px solid ${hasMemberPick && showPick ? scoreColor : "rgba(71,85,105,0.3)"}`,
             borderRadius:8,padding:"6px 8px",marginBottom:5,
             opacity:ready?1:0.5,fontSize:11,
@@ -8030,7 +8030,7 @@ function LeagueHub({
               <div style={{
                 display:"flex",alignItems:"center",gap:2,
                 padding:"2px 7px",borderRadius:5,
-                background: hasMemberPick && showPick ? "#0a0e1c" : "transparent",
+                background: hasMemberPick && showPick ? "#1e2940" : "transparent",
                 border: `1px solid ${hasMemberPick && showPick ? scoreColor : "transparent"}`,
                 color: hasMemberPick && showPick ? (koScore?scoreColor:"#f1f5f9") : "#64748b",
                 fontWeight:800,fontSize:12,minWidth:38,justifyContent:"center",
@@ -8073,14 +8073,14 @@ function LeagueHub({
           {/* Champion banner — always at top */}
           {champ && showChamp && (
             <div style={{background:"linear-gradient(135deg,#fbbf24,#d97706)",borderRadius:12,padding:12,marginBottom:14,textAlign:"center"}}>
-              <div style={{fontSize:10,letterSpacing:3,color:"#0a0e1c",fontWeight:800}}>🏆 PREDICTED CHAMPION</div>
+              <div style={{fontSize:10,letterSpacing:3,color:"#1e2940",fontWeight:800}}>🏆 PREDICTED CHAMPION</div>
               <div style={{fontSize:26,margin:"2px 0"}}>{champ.flag||champ.f}</div>
-              <div style={{fontSize:15,color:"#0a0e1c",fontWeight:900}}>{champ.name||champ.n}</div>
+              <div style={{fontSize:15,color:"#1e2940",fontWeight:900}}>{champ.name||champ.n}</div>
             </div>
           )}
           {champ && !showChamp && (
             <div style={{
-              background:"linear-gradient(135deg,rgba(71,85,105,0.3),rgba(15,20,36,0.5))",
+              background:"linear-gradient(135deg,rgba(71,85,105,0.3),rgba(36,49,80,0.5))",
               border:"1px dashed rgba(71,85,105,0.5)",
               borderRadius:12,padding:12,marginBottom:14,textAlign:"center",
             }}>
@@ -8090,7 +8090,7 @@ function LeagueHub({
           )}
 
           {/* Tabs */}
-          <div style={{display:"flex",background:"rgba(15,20,36,0.6)",borderRadius:10,padding:3,marginBottom:12}}>
+          <div style={{display:"flex",background:"rgba(36,49,80,0.6)",borderRadius:10,padding:3,marginBottom:12}}>
             {[
               ["matches","⚽"],
               ["standings","📊"],
@@ -8112,9 +8112,9 @@ function LeagueHub({
               {GROUP_KEYS.map(g => {
                 const fs = FIXTURES.filter(f => f.group === g);
                 return (
-                  <div key={g} style={{background:"rgba(15,20,36,0.6)",border:`1px solid ${COLORS[g]}33`,borderRadius:10,padding:"10px 10px",marginBottom:10}}>
+                  <div key={g} style={{background:"rgba(36,49,80,0.6)",border:`1px solid ${COLORS[g]}33`,borderRadius:10,padding:"10px 10px",marginBottom:10}}>
                     <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
-                      <div style={{background:COLORS[g],color:"#0f1424",width:24,height:24,borderRadius:6,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:900}}>{g}</div>
+                      <div style={{background:COLORS[g],color:"#243150",width:24,height:24,borderRadius:6,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:900}}>{g}</div>
                       <span style={{fontSize:11,color:"#94a3b8",letterSpacing:1,fontWeight:700}}>GROUP {g}</span>
                     </div>
                     {[1,2,3].map(md => (
@@ -8132,7 +8132,7 @@ function LeagueHub({
           {/* TAB: STANDINGS — calculated group standings */}
           {viewTab === "standings" && !showChamp && (
             <div style={{
-              background:"linear-gradient(135deg,rgba(71,85,105,0.3),rgba(15,20,36,0.5))",
+              background:"linear-gradient(135deg,rgba(71,85,105,0.3),rgba(36,49,80,0.5))",
               border:"1px dashed rgba(71,85,105,0.5)",
               borderRadius:12,padding:"24px 16px",textAlign:"center",
             }}>
@@ -8146,9 +8146,9 @@ function LeagueHub({
               {GROUP_KEYS.map(g => {
                 const tbl = m.standings[g];
                 return (
-                  <div key={g} style={{background:"rgba(15,20,36,0.6)",border:`1px solid ${COLORS[g]}33`,borderRadius:10,padding:"8px 10px"}}>
+                  <div key={g} style={{background:"rgba(36,49,80,0.6)",border:`1px solid ${COLORS[g]}33`,borderRadius:10,padding:"8px 10px"}}>
                     <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:6}}>
-                      <div style={{background:COLORS[g],color:"#0f1424",width:20,height:20,borderRadius:5,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:900}}>{g}</div>
+                      <div style={{background:COLORS[g],color:"#243150",width:20,height:20,borderRadius:5,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:900}}>{g}</div>
                     </div>
                     {tbl.map((row, i) => {
                       const color = i < 2 ? "#22c55e" : i === 2 ? "#fbbf24" : "#64748b";
@@ -8169,7 +8169,7 @@ function LeagueHub({
           {/* TAB: BRACKET — knockout view */}
           {viewTab === "bracket" && !showChamp && (
             <div style={{
-              background:"linear-gradient(135deg,rgba(71,85,105,0.3),rgba(15,20,36,0.5))",
+              background:"linear-gradient(135deg,rgba(71,85,105,0.3),rgba(36,49,80,0.5))",
               border:"1px dashed rgba(71,85,105,0.5)",
               borderRadius:12,padding:"24px 16px",textAlign:"center",
             }}>
@@ -8310,7 +8310,7 @@ function LeagueHub({
                 ) : (
                   <>
                     {/* Progress */}
-                    <div style={{background:"rgba(15,20,36,0.6)",borderRadius:10,padding:"12px 14px",marginBottom:12}}>
+                    <div style={{background:"rgba(36,49,80,0.6)",borderRadius:10,padding:"12px 14px",marginBottom:12}}>
                       <div style={{display:"flex",justifyContent:"space-between",fontSize:11,marginBottom:6}}>
                         <span style={{color:"#cbd5e1",fontWeight:700}}>{ownedCards.length} / {total} {t("collection.collected")}</span>
                         <span style={{color:"#fbbf24",fontWeight:800}}>{pct}%</span>
@@ -8373,10 +8373,10 @@ function LeagueHub({
                             {count > 1 && (
                               <div style={{
                                 position:"absolute",top:4,right:4,
-                                background:"#fbbf24",color:"#0a0e1c",
+                                background:"#fbbf24",color:"#1e2940",
                                 fontSize:9,fontWeight:900,
                                 borderRadius:8,padding:"2px 5px",
-                                border:"1px solid #0a0e1c",
+                                border:"1px solid #1e2940",
                               }}>×{count}</div>
                             )}
                           </button>
@@ -8455,7 +8455,7 @@ function LeagueHub({
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
               {/* Empty Top Hit preview */}
               <div style={{
-                background:"linear-gradient(135deg,rgba(34,197,94,0.06),rgba(15,20,36,0.4))",
+                background:"linear-gradient(135deg,rgba(34,197,94,0.06),rgba(36,49,80,0.4))",
                 border:"1px dashed rgba(34,197,94,0.3)",
                 borderRadius:12,padding:"10px 10px",
               }}>
@@ -8469,7 +8469,7 @@ function LeagueHub({
               </div>
               {/* Empty Top Miss preview */}
               <div style={{
-                background:"linear-gradient(135deg,rgba(239,68,68,0.06),rgba(15,20,36,0.4))",
+                background:"linear-gradient(135deg,rgba(239,68,68,0.06),rgba(36,49,80,0.4))",
                 border:"1px dashed rgba(239,68,68,0.3)",
                 borderRadius:12,padding:"10px 10px",
               }}>
@@ -8508,7 +8508,7 @@ function LeagueHub({
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
                 {/* Top Hit */}
                 <div style={{
-                  background:"linear-gradient(135deg,rgba(34,197,94,0.15),rgba(15,20,36,0.5))",
+                  background:"linear-gradient(135deg,rgba(34,197,94,0.15),rgba(36,49,80,0.5))",
                   border:"1px solid rgba(34,197,94,0.4)",
                   borderRadius:12,padding:"10px 10px",
                   boxShadow:"0 4px 12px rgba(34,197,94,0.15)",
@@ -8534,7 +8534,7 @@ function LeagueHub({
                 </div>
                 {/* Top Miss */}
                 <div style={{
-                  background:"linear-gradient(135deg,rgba(239,68,68,0.12),rgba(15,20,36,0.5))",
+                  background:"linear-gradient(135deg,rgba(239,68,68,0.12),rgba(36,49,80,0.5))",
                   border:"1px solid rgba(239,68,68,0.4)",
                   borderRadius:12,padding:"10px 10px",
                   boxShadow:"0 4px 12px rgba(239,68,68,0.1)",
@@ -8593,7 +8593,7 @@ function LeagueHub({
                              : null;
           // Background: podium colors for top 3, "trash" gray for the rest
           const rowBg = isPodium && showPoints
-            ? `linear-gradient(135deg, ${podiumGlow}, rgba(15,20,36,0.4))`
+            ? `linear-gradient(135deg, ${podiumGlow}, rgba(36,49,80,0.4))`
             : p.isMe ? "linear-gradient(135deg,rgba(251,191,36,0.1),rgba(217,119,6,0.05))"
             : "rgba(30,41,59,0.5)";
           const rowBorder = isPodium && showPoints
@@ -8690,7 +8690,7 @@ function LeagueHub({
 
         {/* Invite friends card — moved from header to keep top slim */}
         <div style={{
-          background:"linear-gradient(135deg,rgba(34,197,94,0.08),rgba(15,20,36,0.5))",
+          background:"linear-gradient(135deg,rgba(34,197,94,0.08),rgba(36,49,80,0.5))",
           border:"1px solid rgba(34,197,94,0.3)",
           borderRadius:14,padding:14,marginTop:18,marginBottom:6,
         }}>
@@ -8699,10 +8699,10 @@ function LeagueHub({
             <span style={{fontSize:12,fontWeight:800,color:"#22c55e",letterSpacing:1}}>{t("league.inviteFriends")}</span>
           </div>
           {/* Code display */}
-          <div style={{display:"flex",alignItems:"center",gap:6,background:"#0a0e1c",borderRadius:8,padding:"8px 10px",border:"1px dashed rgba(71,85,105,0.5)",marginBottom:8}}>
+          <div style={{display:"flex",alignItems:"center",gap:6,background:"#1e2940",borderRadius:8,padding:"8px 10px",border:"1px dashed rgba(71,85,105,0.5)",marginBottom:8}}>
             <span style={{fontSize:10,color:"#64748b",letterSpacing:1}}>{t("league.code")}</span>
             <span style={{flex:1,fontFamily:"monospace",fontSize:13,color:"#fbbf24",letterSpacing:1,fontWeight:700,wordBreak:"break-all"}}>{leagueCode}</span>
-            <button onClick={copy} title={t("league.copyTooltip")} style={{background:copied?"#22c55e":"#fbbf24",color:"#0a0e1c",border:"none",borderRadius:6,padding:"4px 10px",fontSize:11,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>
+            <button onClick={copy} title={t("league.copyTooltip")} style={{background:copied?"#22c55e":"#fbbf24",color:"#1e2940",border:"none",borderRadius:6,padding:"4px 10px",fontSize:11,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>
               {copied ? "✓" : "📋"}
             </button>
           </div>
@@ -8768,7 +8768,7 @@ function LeagueHub({
           )}
           {onShowWorld && (
             <button onClick={onShowWorld} style={{
-              background:"linear-gradient(135deg,rgba(59,130,246,0.15),rgba(15,20,36,0.5))",
+              background:"linear-gradient(135deg,rgba(59,130,246,0.15),rgba(36,49,80,0.5))",
               border:"1px solid rgba(59,130,246,0.4)",
               color:"#93c5fd",fontSize:12,fontWeight:700,
               padding:"8px 16px",borderRadius:10,
@@ -8786,7 +8786,7 @@ function LeagueHub({
             backdropFilter:"blur(8px)",
           }}>
             <div onClick={e=>e.stopPropagation()} style={{
-              background:"linear-gradient(145deg,#1a1f3a,#0f1424)",
+              background:"linear-gradient(145deg,#2c3956,#243150)",
               border:"1px solid rgba(251,191,36,0.5)",
               borderRadius:18,padding:"24px 22px",maxWidth:380,width:"100%",
               boxShadow:"0 20px 60px rgba(0,0,0,0.6)",
@@ -8808,7 +8808,7 @@ function LeagueHub({
                 style={{
                   width:"100%",boxSizing:"border-box",
                   padding:"10px 12px",fontSize:14,
-                  background:"#0a0e1c",border:"1px solid rgba(251,191,36,0.4)",
+                  background:"#1e2940",border:"1px solid rgba(251,191,36,0.4)",
                   borderRadius:8,color:"#f1f5f9",fontFamily:"inherit",outline:"none",
                   marginBottom:12,
                 }}
@@ -8841,7 +8841,7 @@ function LeagueHub({
             backdropFilter:"blur(8px)",
           }}>
             <div onClick={e=>e.stopPropagation()} style={{
-              background:"linear-gradient(145deg,#1a1f3a,#0f1424)",
+              background:"linear-gradient(145deg,#2c3956,#243150)",
               border:"1px solid rgba(239,68,68,0.5)",
               borderRadius:18,padding:"24px 22px",maxWidth:380,width:"100%",
               boxShadow:"0 20px 60px rgba(0,0,0,0.6)",
@@ -8968,9 +8968,9 @@ function LeagueView({ name, picks, koWinners, friends, setFriends, leagueName, s
 
         {champ && (
           <div style={{background:"linear-gradient(135deg,#fbbf24,#d97706)",borderRadius:12,padding:14,marginBottom:14,textAlign:"center"}}>
-            <div style={{fontSize:10,letterSpacing:3,color:"#0a0e1c",fontWeight:800}}>🏆 PREDICTED CHAMPION</div>
+            <div style={{fontSize:10,letterSpacing:3,color:"#1e2940",fontWeight:800}}>🏆 PREDICTED CHAMPION</div>
             <div style={{fontSize:30,margin:"4px 0"}}>{champ.flag||champ.f}</div>
-            <div style={{fontSize:16,color:"#0a0e1c",fontWeight:900}}>{champ.name||champ.n}</div>
+            <div style={{fontSize:16,color:"#1e2940",fontWeight:900}}>{champ.name||champ.n}</div>
           </div>
         )}
 
@@ -8980,9 +8980,9 @@ function LeagueView({ name, picks, koWinners, friends, setFriends, leagueName, s
             const winner = member.standings[g][0];
             const runner = member.standings[g][1];
             return (
-              <div key={g} style={{background:"rgba(15,20,36,0.6)",border:`1px solid ${COLORS[g]}33`,borderRadius:10,padding:"8px 10px"}}>
+              <div key={g} style={{background:"rgba(36,49,80,0.6)",border:`1px solid ${COLORS[g]}33`,borderRadius:10,padding:"8px 10px"}}>
                 <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:4}}>
-                  <div style={{background:COLORS[g],color:"#0f1424",width:20,height:20,borderRadius:5,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:900}}>{g}</div>
+                  <div style={{background:COLORS[g],color:"#243150",width:20,height:20,borderRadius:5,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:900}}>{g}</div>
                 </div>
                 <div style={{fontSize:11,color:"#f1f5f9",marginBottom:2}}>🥇 {winner.p>0?`${winner.flag} ${winner.name}`:"—"}</div>
                 <div style={{fontSize:11,color:"#94a3b8"}}>🥈 {runner.p>0?`${runner.flag} ${runner.name}`:"—"}</div>
@@ -9005,8 +9005,8 @@ function LeagueView({ name, picks, koWinners, friends, setFriends, leagueName, s
             <div style={{display:"flex",gap:6}}>
               <input autoFocus value={leagueDraft} onChange={e=>setLeagueDraft(e.target.value)} maxLength={30}
                 onKeyDown={e=>{if(e.key==="Enter"){setLeagueName(leagueDraft.trim()||"My Crew");setEditingLeague(false);}}}
-                style={{flex:1,padding:"5px 8px",background:"rgba(15,20,36,0.8)",border:"1px solid rgba(251,191,36,0.5)",borderRadius:6,color:"#f1f5f9",fontSize:15,fontFamily:"inherit",outline:"none"}}/>
-              <button onClick={()=>{setLeagueName(leagueDraft.trim()||"My Crew");setEditingLeague(false);}} style={{background:"#fbbf24",color:"#0a0e1c",border:"none",borderRadius:6,padding:"0 10px",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>OK</button>
+                style={{flex:1,padding:"5px 8px",background:"rgba(36,49,80,0.8)",border:"1px solid rgba(251,191,36,0.5)",borderRadius:6,color:"#f1f5f9",fontSize:15,fontFamily:"inherit",outline:"none"}}/>
+              <button onClick={()=>{setLeagueName(leagueDraft.trim()||"My Crew");setEditingLeague(false);}} style={{background:"#fbbf24",color:"#1e2940",border:"none",borderRadius:6,padding:"0 10px",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>OK</button>
             </div>
           ) : (
             <div style={{display:"flex",alignItems:"center",gap:6}}>
@@ -9019,7 +9019,7 @@ function LeagueView({ name, picks, koWinners, friends, setFriends, leagueName, s
       </div>
 
       {/* Tabs */}
-      <div style={{display:"flex",background:"rgba(15,20,36,0.6)",borderRadius:10,padding:3,marginBottom:14}}>
+      <div style={{display:"flex",background:"rgba(36,49,80,0.6)",borderRadius:10,padding:3,marginBottom:14}}>
         {[
           ["table","🏅 Standings"],
           ["members","👥 Members"],
@@ -9090,7 +9090,7 @@ function LeagueView({ name, picks, koWinners, friends, setFriends, leagueName, s
       {tab === "members" && (
         <>
           {/* My code (share) */}
-          <div style={{background:"linear-gradient(145deg,#1e293b,#0f172a)",border:"1px solid rgba(251,191,36,0.3)",borderRadius:14,padding:14,marginBottom:12}}>
+          <div style={{background:"linear-gradient(145deg,#1e293b,#243150)",border:"1px solid rgba(251,191,36,0.3)",borderRadius:14,padding:14,marginBottom:12}}>
             <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
               <div style={{width:34,height:34,borderRadius:"50%",background:`linear-gradient(135deg,${colorFor(name)},${colorFor(name)}aa)`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:900,color:"#fff"}}>{name[0]?.toUpperCase()}</div>
               <div style={{flex:1}}>
@@ -9117,7 +9117,7 @@ function LeagueView({ name, picks, koWinners, friends, setFriends, leagueName, s
                   rows={4}
                   style={{
                     width:"100%",boxSizing:"border-box",padding:"10px 12px",
-                    background:"#0a0e1c",border:"1px dashed rgba(251,191,36,0.4)",
+                    background:"#1e2940",border:"1px dashed rgba(251,191,36,0.4)",
                     borderRadius:8,color:"#94a3b8",fontSize:10,fontFamily:"monospace",
                     outline:"none",resize:"vertical",wordBreak:"break-all",whiteSpace:"pre-wrap",
                   }}
@@ -9145,7 +9145,7 @@ function LeagueView({ name, picks, koWinners, friends, setFriends, leagueName, s
               + Add a friend's code
             </button>
           ) : (
-            <div style={{background:"linear-gradient(145deg,#1e293b,#0f172a)",border:"1px solid rgba(251,191,36,0.4)",borderRadius:14,padding:14,marginTop:6}}>
+            <div style={{background:"linear-gradient(145deg,#1e293b,#243150)",border:"1px solid rgba(251,191,36,0.4)",borderRadius:14,padding:14,marginTop:6}}>
               <div style={{fontSize:11,color:"#fbbf24",letterSpacing:2,marginBottom:8}}>PASTE FRIEND'S CODE</div>
               <textarea autoFocus value={code} onChange={e=>{setCode(e.target.value);setErr("");}} rows={3}
                 placeholder="WC26P|..." style={{...inputStyle,fontFamily:"monospace",fontSize:11,marginBottom:8}}/>
@@ -9328,7 +9328,7 @@ function ConfirmModal({ action, onClose }) {
   return (
     <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.85)",zIndex:200,display:"flex",alignItems:"center",justifyContent:"center",padding:20,backdropFilter:"blur(8px)"}}>
       <div style={{
-        background:"linear-gradient(145deg,#1a1f3a,#0f1424)",
+        background:"linear-gradient(145deg,#2c3956,#243150)",
         border:`1px solid ${action.danger?"rgba(239,68,68,0.5)":"rgba(251,191,36,0.4)"}`,
         borderRadius:18,padding:"24px 22px",maxWidth:380,width:"100%",
         boxShadow:"0 20px 60px rgba(0,0,0,0.6)",
@@ -9357,7 +9357,7 @@ function ConfirmModal({ action, onClose }) {
                 width:"100%",
                 padding:"10px 12px",
                 borderRadius:8,
-                background:"#0a0e1c",
+                background:"#1e2940",
                 border:`1px solid ${canConfirm ? "rgba(34,197,94,0.6)" : "rgba(239,68,68,0.4)"}`,
                 color:"#f1f5f9",
                 fontSize:14,
@@ -9428,7 +9428,7 @@ function BackupPanel({ state, onRestore, onClose }) {
 
   return (
     <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.85)",zIndex:100,display:"flex",alignItems:"center",justifyContent:"center",padding:16,backdropFilter:"blur(8px)"}}>
-      <div style={{background:"linear-gradient(145deg,#1a1f3a,#0f1424)",border:"1px solid rgba(251,191,36,0.4)",borderRadius:18,padding:"22px 20px",maxWidth:440,width:"100%",maxHeight:"90vh",overflowY:"auto",boxShadow:"0 20px 60px rgba(0,0,0,0.6)"}}>
+      <div style={{background:"linear-gradient(145deg,#2c3956,#243150)",border:"1px solid rgba(251,191,36,0.4)",borderRadius:18,padding:"22px 20px",maxWidth:440,width:"100%",maxHeight:"90vh",overflowY:"auto",boxShadow:"0 20px 60px rgba(0,0,0,0.6)"}}>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
           <h2 style={{margin:0,fontSize:18,color:"#fbbf24"}}>💾 Backup & Restore</h2>
           <button onClick={onClose} style={{background:"transparent",border:"none",color:"#94a3b8",fontSize:22,cursor:"pointer",fontFamily:"inherit",lineHeight:1}}>✕</button>
@@ -9438,7 +9438,7 @@ function BackupPanel({ state, onRestore, onClose }) {
           Your progress auto-saves on this device. For extra safety, or to move to another device, copy your backup code somewhere safe (notes, email yourself).
         </p>
 
-        <div style={{display:"flex",background:"rgba(15,20,36,0.6)",borderRadius:10,padding:3,marginBottom:14}}>
+        <div style={{display:"flex",background:"rgba(36,49,80,0.6)",borderRadius:10,padding:3,marginBottom:14}}>
           {[["export","📤 Export"],["import","📥 Restore"]].map(([t,lbl]) => (
             <button key={t} onClick={()=>{setTab(t);setErr("");setConfirm(false);}} style={{
               flex:1,padding:"8px 0",border:"none",borderRadius:8,cursor:"pointer",fontFamily:"inherit",
@@ -9460,7 +9460,7 @@ function BackupPanel({ state, onRestore, onClose }) {
               rows={5}
               style={{
                 width:"100%",boxSizing:"border-box",padding:"10px 12px",
-                background:"#0a0e1c",border:"1px dashed rgba(71,85,105,0.4)",
+                background:"#1e2940",border:"1px dashed rgba(71,85,105,0.4)",
                 borderRadius:8,color:"#94a3b8",fontSize:10,fontFamily:"monospace",
                 marginBottom:10,outline:"none",resize:"vertical",wordBreak:"break-all",whiteSpace:"pre-wrap",
               }}
@@ -10283,7 +10283,7 @@ export default function App() {
   return (
     <LangContext.Provider value={{ lang, setLang }}>
     <ToastProvider>
-    <div style={{minHeight:"100vh",background:"radial-gradient(ellipse at top,#1e1b4b 0%,#0a0e1c 70%)",color:"#f1f5f9",fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif",position:"relative",overflow:"hidden",direction:lang==="he"?"rtl":"ltr"}}>
+    <div style={{minHeight:"100vh",background:"radial-gradient(ellipse at top,#1e1b4b 0%,#1e2940 70%)",color:"#f1f5f9",fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif",position:"relative",overflow:"hidden",direction:lang==="he"?"rtl":"ltr"}}>
       {/* Language toggle: shown only on welcome screen */}
       {screen === "welcome" && (
         <div style={{
@@ -10301,13 +10301,13 @@ export default function App() {
           <button onClick={()=>setLang("en")} style={{
             padding:"4px 10px",border:"none",borderRadius:16,cursor:"pointer",fontFamily:"inherit",
             background: lang==="en" ? "#fbbf24" : "transparent",
-            color: lang==="en" ? "#0a0e1c" : "#94a3b8",
+            color: lang==="en" ? "#1e2940" : "#94a3b8",
             fontSize:10,fontWeight:800,letterSpacing:1,
           }}>EN</button>
           <button onClick={()=>setLang("he")} style={{
             padding:"4px 10px",border:"none",borderRadius:16,cursor:"pointer",fontFamily:"inherit",
             background: lang==="he" ? "#fbbf24" : "transparent",
-            color: lang==="he" ? "#0a0e1c" : "#94a3b8",
+            color: lang==="he" ? "#1e2940" : "#94a3b8",
             fontSize:10,fontWeight:800,letterSpacing:1,
           }}>עב</button>
         </div>
@@ -10405,7 +10405,7 @@ export default function App() {
 
       {/* Top bar — minimalist */}
       {screen !== "welcome" && screen !== "results" && (
-        <div style={{position:"sticky",top:0,zIndex:20,background:"rgba(10,14,28,0.95)",backdropFilter:"blur(10px)",borderBottom:"1px solid rgba(71,85,105,0.3)"}}>
+        <div style={{position:"sticky",top:0,zIndex:20,background:"rgba(30,41,64,0.95)",backdropFilter:"blur(10px)",borderBottom:"1px solid rgba(71,85,105,0.3)"}}>
           <div style={{display:"flex",alignItems:"center",gap:10,maxWidth:560,margin:"0 auto",padding:"10px 14px"}}>
             {/* ☰ Hamburger menu */}
             <button onClick={()=>setShowSidebar(true)} aria-label="Menu" style={{
@@ -10728,7 +10728,7 @@ export default function App() {
           `}</style>
           <div style={{
             background:"linear-gradient(135deg,#fbbf24,#f59e0b)",
-            color:"#0a0e1c",
+            color:"#1e2940",
             borderRadius:12,padding:"10px 16px",
             display:"flex",alignItems:"center",gap:8,
             boxShadow:"0 8px 24px rgba(251,191,36,0.4)",
