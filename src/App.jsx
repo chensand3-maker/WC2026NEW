@@ -8,7 +8,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "2.8.0";
+const APP_VERSION = "2.8.1";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -512,8 +512,8 @@ const TRANSLATIONS = {
     "group.groupStage": "שלב הבתים",
     "group.typeAuto": "⚡ הקלידו למעבר אוטומטי",
     "group.group": "בית",
-    "group.previous": "→ הקודם",
-    "group.next": "הבא ←",
+    "group.previous": "← הקודם",
+    "group.next": "הבא →",
     "group.toBracket": "לשלב הנוקאאוט ←",
     // Match card
     "match.matchday": "מ\"מ",
@@ -6286,6 +6286,17 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
     else result = "draw";
   }
 
+  // Only highlight winning side in GREEN after the user has *just* edited.
+  // On entering the page, scores show in neutral color so it doesn't look
+  // like the app is grading their predictions.
+  const [justEdited, setJustEdited] = useState(false);
+  useEffect(() => {
+    if (!justEdited) return;
+    const handle = setTimeout(() => setJustEdited(false), 2500);
+    return () => clearTimeout(handle);
+  }, [justEdited, h, a]);
+  const showHighlight = justEdited;
+
   // Reaction system: pick a fun emoji+label based on the score
   const getReaction = (h, a) => {
     const total = h + a;
@@ -6333,6 +6344,7 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
     if (isLocked) return;
     const raw = e.target.value.replace(/\D/g, "").slice(-1); // only last digit typed
     setScore(side, raw);
+    setJustEdited(true);
     if (raw !== "") {
       // Defer to let React update DOM first
       setTimeout(() => {
@@ -6419,7 +6431,7 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
         {!sc && !isLocked && hasResult && <span style={{color:"#22c55e"}}>✓</span>}
       </div>
       <div style={{display:"grid",gridTemplateColumns:"1fr auto 1fr",alignItems:"center",gap:8,direction:"ltr"}}>
-        <div style={{display:"flex",alignItems:"center",gap:8,justifyContent:"flex-end",opacity:result==="away"?0.5:1}}>
+        <div style={{display:"flex",alignItems:"center",gap:8,justifyContent:"flex-end",opacity:(result==="away" && showHighlight)?0.5:1}}>
           <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",minWidth:0}}>
             <span style={{fontSize:13,fontWeight:result==="home"?800:500,color:"#f1f5f9",textAlign:"right",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{home.n}</span>
             {fifaRank(home.n) && (
@@ -6437,9 +6449,9 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
             placeholder={isLocked?"·":"—"}
             style={{width:36,height:36,textAlign:"center",
               background: isLocked?"rgba(71,85,105,0.2)":"#1e2940",
-              border:`1px solid ${isLocked?"rgba(71,85,105,0.4)":(result==="home"?"#22c55e":"rgba(71,85,105,0.5)")}`,
+              border:`1px solid ${isLocked?"rgba(71,85,105,0.4)":((result==="home" && showHighlight)?"#22c55e":"rgba(71,85,105,0.5)")}`,
               borderRadius:8,
-              color: isLocked?"#64748b":(result==="home"?"#22c55e":"#f1f5f9"),
+              color: isLocked?"#64748b":((result==="home" && showHighlight)?"#22c55e":"#f1f5f9"),
               fontSize:18,fontWeight:800,fontFamily:"inherit",outline:"none",
               cursor: isLocked?"not-allowed":"text",
             }}/>
@@ -6452,14 +6464,14 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
             placeholder={isLocked?"·":"—"}
             style={{width:36,height:36,textAlign:"center",
               background: isLocked?"rgba(71,85,105,0.2)":"#1e2940",
-              border:`1px solid ${isLocked?"rgba(71,85,105,0.4)":(result==="away"?"#22c55e":"rgba(71,85,105,0.5)")}`,
+              border:`1px solid ${isLocked?"rgba(71,85,105,0.4)":((result==="away" && showHighlight)?"#22c55e":"rgba(71,85,105,0.5)")}`,
               borderRadius:8,
-              color: isLocked?"#64748b":(result==="away"?"#22c55e":"#f1f5f9"),
+              color: isLocked?"#64748b":((result==="away" && showHighlight)?"#22c55e":"#f1f5f9"),
               fontSize:18,fontWeight:800,fontFamily:"inherit",outline:"none",
               cursor: isLocked?"not-allowed":"text",
             }}/>
         </div>
-        <div style={{display:"flex",alignItems:"center",gap:8,opacity:result==="home"?0.5:1}}>
+        <div style={{display:"flex",alignItems:"center",gap:8,opacity:(result==="home" && showHighlight)?0.5:1}}>
           <span style={{fontSize:22}}>{away.f}</span>
           <div style={{display:"flex",flexDirection:"column",alignItems:"flex-start",minWidth:0}}>
             <span style={{fontSize:13,fontWeight:result==="away"?800:500,color:"#f1f5f9",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{away.n}</span>
@@ -6821,6 +6833,7 @@ function TodayScreen({ picks, actuals, onPick, onBack, onGoToBracket, leagueMemb
 
 function GroupView({ group, picks, actuals, standings, bestThirds, liveStandings, liveBestThirds, hasActuals, onPick, onNext, onPrev, onJump, isFirst, isLast, showResults, scope = "p", leagueMembers = null }) {
   const t = useT();
+  const { lang } = useContext(LangContext);
   const fixtures = FIXTURES.filter(f => f.group === group);
   const color = COLORS[group];
 
@@ -6926,8 +6939,35 @@ function GroupView({ group, picks, actuals, standings, bestThirds, liveStandings
       <StandingsTable group={group} standings={standings} bestThirds={bestThirds} liveStandings={liveStandings} liveBestThirds={liveBestThirds} hasActuals={hasActuals} />
 
       <div style={{display:"flex",gap:10,marginTop:18}}>
-        <button onClick={onPrev} disabled={isFirst} style={{...ghostBtn,flex:1,opacity:isFirst?0.4:1,cursor:isFirst?"not-allowed":"pointer"}}>{t("group.previous")}</button>
-        <button onClick={onNext} style={{...primaryBtn,flex:2}}>{isLast ? t("group.toBracket") : `${t("group.group")} ${GROUP_KEYS[GROUP_KEYS.indexOf(group)+1]} →`}</button>
+        <button onClick={onPrev} disabled={isFirst} style={{
+          flex:1,
+          padding:"13px 16px",
+          background: isFirst ? "rgba(30,41,59,0.3)" : "rgba(30,41,59,0.7)",
+          color: isFirst ? "#475569" : "#cbd5e1",
+          border:`1px solid ${isFirst ? "rgba(71,85,105,0.2)" : "rgba(71,85,105,0.5)"}`,
+          borderRadius:12,
+          fontSize:13,fontWeight:700,letterSpacing:0.5,
+          cursor: isFirst ? "not-allowed" : "pointer",
+          fontFamily:"inherit",
+          boxShadow: isFirst ? "none" : "0 2px 8px rgba(0,0,0,0.2)",
+        }}>{t("group.previous")}</button>
+        <button onClick={onNext} style={{
+          flex:2,
+          padding:"13px 18px",
+          background: isLast
+            ? "linear-gradient(135deg,#fbbf24,#d97706)"
+            : `linear-gradient(135deg,${color}cc,${color})`,
+          color: "#fff",
+          border:"none",
+          borderRadius:12,
+          fontSize:14,fontWeight:800,letterSpacing:0.5,
+          cursor:"pointer",
+          fontFamily:"inherit",
+          boxShadow: isLast
+            ? "0 6px 18px rgba(251,191,36,0.4)"
+            : `0 6px 18px ${color}55`,
+          textShadow:"0 1px 2px rgba(0,0,0,0.3)",
+        }}>{isLast ? t("group.toBracket") : (lang === "he" ? `← ${t("group.group")} ${GROUP_KEYS[GROUP_KEYS.indexOf(group)+1]}` : `${t("group.group")} ${GROUP_KEYS[GROUP_KEYS.indexOf(group)+1]} →`)}</button>
       </div>
     </div>
   );
