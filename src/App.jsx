@@ -8,7 +8,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "2.8.1";
+const APP_VERSION = "2.9.1";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -4089,6 +4089,8 @@ function playWinSound(rarity) {
   });
 }
 
+// 🎁 DAILY BONUS MODAL — shows the 7-day reward grid + claim button
+
 function RouletteModal({ coins, isSpinning, pendingCard, onSpin, onClose, onShowCollection }) {
   const t = useT();
   const canSpin = coins.balance >= COINS.SPIN && !isSpinning;
@@ -6801,9 +6803,25 @@ function TodayScreen({ picks, actuals, onPick, onBack, onGoToBracket, leagueMemb
       {/* Live / just-ended */}
       {liveOrJustEndedMatches.length > 0 && (
         <div style={{marginBottom:18}}>
-          <div style={{fontSize:11,color:"#22c55e",letterSpacing:3,marginBottom:8,fontWeight:700}}>
-            🔴 {t("today.liveNow")}
+          <div style={{
+            fontSize:11,color:"#22c55e",letterSpacing:3,marginBottom:8,
+            fontWeight:700,display:"flex",alignItems:"center",gap:6,
+          }}>
+            <span style={{
+              width:8,height:8,borderRadius:"50%",
+              background:"#ef4444",
+              boxShadow:"0 0 8px #ef4444",
+              animation:"livePulse 1.2s ease-in-out infinite",
+              display:"inline-block",
+            }}/>
+            {t("today.liveNow")}
           </div>
+          <style>{`
+            @keyframes livePulse {
+              0%, 100% { opacity: 1; transform: scale(1); }
+              50% { opacity: 0.5; transform: scale(1.2); }
+            }
+          `}</style>
           {liveOrJustEndedMatches.map(renderMatchRow)}
         </div>
       )}
@@ -10077,11 +10095,11 @@ export default function App() {
 
   useEffect(() => {
     if (!name) return;
-    // Initial fetch shortly after load
+    // 📡 ONE-TIME fetch shortly after load.
+    // No auto-polling — saves the free API quota.
+    // Users can press the 🔄 refresh button anytime to get fresh data.
     const initial = setTimeout(() => { fetchAndApplyLive(); fetchAndApplyTopScorers(); }, 3000);
-    // Then every 5 minutes
-    const interval = setInterval(() => { fetchAndApplyLive(); fetchAndApplyTopScorers(); }, 5 * 60 * 1000);
-    return () => { clearTimeout(initial); clearInterval(interval); };
+    return () => clearTimeout(initial);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [name, leagueCode]);
 
@@ -10348,7 +10366,7 @@ export default function App() {
       }
       .card-lift { animation: cardLift 0.4s cubic-bezier(0.2, 0.7, 0.3, 1); }
     `}</style>
-    <div style={{minHeight:"100vh",background:"linear-gradient(160deg,#1e2940 0%,#243150 50%,#2c3956 100%)",color:"#f1f5f9",fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif",position:"relative",overflow:"hidden",direction:lang==="he"?"rtl":"ltr"}}>
+    <div style={{minHeight:"100vh",background:"linear-gradient(160deg,#2c3956 0%,#334466 50%,#3d4f7a 100%)",color:"#f1f5f9",fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif",position:"relative",overflow:"hidden",direction:lang==="he"?"rtl":"ltr"}}>
       {/* Language toggle: shown only on welcome screen */}
       {screen === "welcome" && (
         <div style={{
