@@ -8,7 +8,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.3.6";
+const APP_VERSION = "3.4.0";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -10391,7 +10391,7 @@ function BackupPanel({ state, onRestore, onClose }) {
 export default function App() {
   const saved = useMemo(() => loadState(), []);
   
-  const [screen, setScreen] = useState(saved?.name ? "group" : "welcome");
+  const [screen, setScreen] = useState(saved?.name ? "today" : "welcome");
   const [name, setName] = useState(saved?.name || "");
   const [picks, setPicks] = useState(saved?.picks || {});
   // One-time migration: mark all existing picks as "seen" so reactions don't replay on load
@@ -11237,12 +11237,12 @@ export default function App() {
     return Number.isFinite(firstKick) && Date.now() >= firstKick;
   })();
 
-  const handleStart = (n) => { setName(n); setScreen("group"); };
+  const handleStart = (n) => { setName(n); setScreen("today"); };
   const handleImport = (d) => {
     setName(d.name + "'s copy");
     setPicks(d.picks);
     setKoWinners(d.koWinners);
-    setScreen("group");
+    setScreen("today");
   };
   const handleRestore = (restored) => {
     setName(restored.name || "");
@@ -11267,7 +11267,7 @@ export default function App() {
     }
     setWinnerPick(restored.winnerPick || null);
     setTopScorerPick(restored.topScorerPick || null);
-    setScreen("group");
+    setScreen("today");
   };
   const handleReset = () => {
     setConfirmAction({
