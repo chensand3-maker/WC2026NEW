@@ -4,11 +4,11 @@ import {
   updateMyPicks, leaveLeague, subscribeLeague, updateActualResults,
   updateMyGlobalProfile, deleteMyGlobalProfile, fetchGlobalLeaderboard, renameLeague,
 } from "./firebase";
-import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnockoutToBracket, fetchTopScorers, fetchMatchDetails, getApiFixtureId } from "./liveResults";
+import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnockoutToBracket, fetchTopScorers } from "./liveResults";
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.2.0";
+const APP_VERSION = "3.0.4";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -215,23 +215,6 @@ const TRANSLATIONS = {
     "today.refresh": "Refresh",
     "matchcard.predicted": "Predicted",
     "matchcard.noPick": "No prediction yet",
-    "matchdetails.title": "GOAL SCORERS",
-    "matchdetails.loading": "Loading goals...",
-    "matchdetails.error": "Couldn't load goals",
-    "matchdetails.notReady": "Goals aren't available yet",
-    "matchdetails.goals": "GOALS",
-    "matchdetails.noGoals": "No goals in this match",
-    "matchdetails.stats": "STATISTICS",
-    "matchdetails.possession": "Possession",
-    "matchdetails.shots": "Shots",
-    "matchdetails.shotsOnTarget": "On target",
-    "matchdetails.corners": "Corners",
-    "matchdetails.fouls": "Fouls",
-    "matchdetails.yellowCards": "Yellow Cards",
-    "matchdetails.redCards": "Red Cards",
-    "matchdetails.assist": "Assist",
-    "matchdetails.unknown": "Unknown",
-    "matchdetails.viewBtn": "View goal scorers",
     "today.nextMatchIn": "NEXT MATCH IN",
     "today.days": "DAYS",
     "today.hours": "HRS",
@@ -332,31 +315,6 @@ const TRANSLATIONS = {
     "world.updatedEvery": "Updates every 5 minutes",
     // Sidebar (hamburger menu)
     "sidebar.myStats": "My Stats",
-    "sidebar.wrapped": "📊 My Week",
-    "wrapped.title": "YOUR WEEK",
-    "wrapped.subtitle": "Mundialito 2026 · weekly recap",
-    "wrapped.tapToContinue": "Tap to continue →",
-    "wrapped.predictionsTitle": "PREDICTIONS",
-    "wrapped.predictionsSubtitle": "You made",
-    "wrapped.predictionsSingular": "prediction this week",
-    "wrapped.predictionsPlural": "predictions this week",
-    "wrapped.exactTitle": "EXACT SCORES",
-    "wrapped.exactSubtitle": "Bullseyes this week",
-    "wrapped.exactBrag": "🔥 You're on fire!",
-    "wrapped.exactZero": "Next week is yours!",
-    "wrapped.coinsTitle": "COINS EARNED",
-    "wrapped.coinsSubtitle": "From predictions",
-    "wrapped.coinsLabel": "🪙 added to your balance",
-    "wrapped.cardsTitle": "CARDS COLLECTED",
-    "wrapped.cardsSubtitle": "Spun the roulette",
-    "wrapped.cardsSingular": "new card this week",
-    "wrapped.cardsPlural": "new cards this week",
-    "wrapped.bestCardTitle": "TOP CARD",
-    "wrapped.bestCardSubtitle": "Your best pull of the week",
-    "wrapped.finalTitle": "THE VERDICT",
-    "wrapped.finalSubtitle": "And the title goes to...",
-    "wrapped.shareIt": "Brag about it!",
-    "wrapped.shareBtn": "SHARE TO WHATSAPP",
     "sidebar.achievements": "Achievements",
     "sidebar.roulette": "Roulette",
     "sidebar.tutorial": "How to Play",
@@ -726,23 +684,6 @@ const TRANSLATIONS = {
     "today.refresh": "רענן",
     "matchcard.predicted": "ניחשת",
     "matchcard.noPick": "עוד לא ניחשת",
-    "matchdetails.title": "שערים שנכבשו",
-    "matchdetails.loading": "טוען שערים...",
-    "matchdetails.error": "לא הצלחנו לטעון",
-    "matchdetails.notReady": "השערים עדיין לא זמינים",
-    "matchdetails.goals": "שערים",
-    "matchdetails.noGoals": "לא נכבשו שערים במשחק",
-    "matchdetails.stats": "סטטיסטיקות",
-    "matchdetails.possession": "החזקת כדור",
-    "matchdetails.shots": "בעיטות",
-    "matchdetails.shotsOnTarget": "למסגרת",
-    "matchdetails.corners": "קרנות",
-    "matchdetails.fouls": "עבירות",
-    "matchdetails.yellowCards": "כרטיסים צהובים",
-    "matchdetails.redCards": "כרטיסים אדומים",
-    "matchdetails.assist": "בישול",
-    "matchdetails.unknown": "לא ידוע",
-    "matchdetails.viewBtn": "ראה מי הבקיע",
     "today.nextMatchIn": "המשחק הבא בעוד",
     "today.days": "ימים",
     "today.hours": "שעות",
@@ -843,31 +784,6 @@ const TRANSLATIONS = {
     "world.updatedEvery": "מתעדכן כל 5 דקות",
     // Sidebar (hamburger menu)
     "sidebar.myStats": "הסטטיסטיקה שלי",
-    "sidebar.wrapped": "📊 השבוע שלי",
-    "wrapped.title": "השבוע שלך",
-    "wrapped.subtitle": "מונדיאליטו 2026 · סיכום שבועי",
-    "wrapped.tapToContinue": "הקש להמשך →",
-    "wrapped.predictionsTitle": "ניחושים",
-    "wrapped.predictionsSubtitle": "ביצעת",
-    "wrapped.predictionsSingular": "ניחוש השבוע",
-    "wrapped.predictionsPlural": "ניחושים השבוע",
-    "wrapped.exactTitle": "ניחושים מדויקים",
-    "wrapped.exactSubtitle": "בולים השבוע",
-    "wrapped.exactBrag": "🔥 בלתי ניתן לעצור!",
-    "wrapped.exactZero": "השבוע הבא יהיה שלך!",
-    "wrapped.coinsTitle": "מטבעות שצברת",
-    "wrapped.coinsSubtitle": "מהניחושים שלך",
-    "wrapped.coinsLabel": "🪙 נוספו ליתרה שלך",
-    "wrapped.cardsTitle": "קלפים שאספת",
-    "wrapped.cardsSubtitle": "מהרולטה השבועית",
-    "wrapped.cardsSingular": "קלף חדש השבוע",
-    "wrapped.cardsPlural": "קלפים חדשים השבוע",
-    "wrapped.bestCardTitle": "הקלף הטוב ביותר",
-    "wrapped.bestCardSubtitle": "השליפה הכי טובה השבוע",
-    "wrapped.finalTitle": "ההכרזה",
-    "wrapped.finalSubtitle": "וההכתר השבועי שייך ל...",
-    "wrapped.shareIt": "תתפאר!",
-    "wrapped.shareBtn": "שתף בוואטסאפ",
     "sidebar.achievements": "הישגים",
     "sidebar.roulette": "רולטה",
     "sidebar.tutorial": "איך משחקים?",
@@ -3784,7 +3700,7 @@ function WorldLeaderboard({ userId, name, onClose }) {
 }
 
 // ─── SIDEBAR: hamburger menu drawer that slides in from one side ─────────────
-function Sidebar({ open, onClose, name, lang, setLang, onShowProfile, onShowRules, onShowBackup, onShowTutorial, onShowAchievements, onShowRoulette, onShowWrapped, onLogout, onReset, totalPoints, unlockedCount, coinBalance }) {
+function Sidebar({ open, onClose, name, lang, setLang, onShowProfile, onShowRules, onShowBackup, onShowTutorial, onShowAchievements, onShowRoulette, onLogout, onReset, totalPoints, unlockedCount, coinBalance }) {
   const t = useT();
   const isRTL = lang === "he";
 
@@ -3847,9 +3763,6 @@ function Sidebar({ open, onClose, name, lang, setLang, onShowProfile, onShowRule
         {/* Menu items */}
         <div style={{padding:"12px 12px",flex:1}}>
           <SidebarItem icon="📊" label={t("sidebar.myStats")} onClick={()=>{onClose();onShowProfile();}}/>
-          {onShowWrapped && (
-            <SidebarItem icon="🎬" label={t("sidebar.wrapped")} onClick={()=>{onClose();onShowWrapped();}}/>
-          )}
           <SidebarItem
             icon="🏅"
             label={`${t("sidebar.achievements")}${unlockedCount ? ` (${unlockedCount})` : ""}`}
@@ -5094,221 +5007,6 @@ function ConfettiBurst({ count = 40 }) {
         }}/>
       ))}
     </>
-  );
-}
-
-// 🎬 SUNDAY WRAPPED — Spotify-Wrapped-style weekly recap
-function WrappedModal({ stats, onClose }) {
-  const t = useT();
-  const [slideIdx, setSlideIdx] = useState(0);
-
-  const slides = useMemo(() => {
-    const list = [
-      {
-        bg: "linear-gradient(160deg,#fbbf24,#d97706,#92400e)",
-        emoji: "🎬",
-        title: t("wrapped.title"),
-        subtitle: t("wrapped.subtitle"),
-        big: stats.name,
-        bigSize: 32,
-        small: t("wrapped.tapToContinue"),
-      },
-      {
-        bg: "linear-gradient(160deg,#22c55e,#15803d,#14532d)",
-        emoji: "🎯",
-        title: t("wrapped.predictionsTitle"),
-        subtitle: t("wrapped.predictionsSubtitle"),
-        big: String(stats.totalPicks),
-        bigSize: 96,
-        small: stats.totalPicks === 1 ? t("wrapped.predictionsSingular") : t("wrapped.predictionsPlural"),
-      },
-      {
-        bg: "linear-gradient(160deg,#fbbf24,#f59e0b,#92400e)",
-        emoji: "🎯",
-        title: t("wrapped.exactTitle"),
-        subtitle: t("wrapped.exactSubtitle"),
-        big: String(stats.exactCount),
-        bigSize: 96,
-        small: stats.exactCount > 0 ? t("wrapped.exactBrag") : t("wrapped.exactZero"),
-      },
-      {
-        bg: "linear-gradient(160deg,#a855f7,#7c3aed,#4c1d95)",
-        emoji: "🪙",
-        title: t("wrapped.coinsTitle"),
-        subtitle: t("wrapped.coinsSubtitle"),
-        big: `+${stats.coinsEarned}`,
-        bigSize: 72,
-        small: t("wrapped.coinsLabel"),
-      },
-      {
-        bg: "linear-gradient(160deg,#3b82f6,#2563eb,#1e3a8a)",
-        emoji: "🃏",
-        title: t("wrapped.cardsTitle"),
-        subtitle: t("wrapped.cardsSubtitle"),
-        big: String(stats.cardsThisWeek),
-        bigSize: 96,
-        small: stats.cardsThisWeek === 1 ? t("wrapped.cardsSingular") : t("wrapped.cardsPlural"),
-      },
-    ];
-    // Best card slide (only if at least one card)
-    if (stats.bestCard) {
-      list.push({
-        bg: "linear-gradient(160deg,#1e293b,#0f172a,#020617)",
-        emoji: "🏆",
-        title: t("wrapped.bestCardTitle"),
-        subtitle: t("wrapped.bestCardSubtitle"),
-        bigCard: stats.bestCard,
-        small: `${stats.bestCard.name} · ${stats.bestCard.team}`,
-      });
-    }
-    // Final slide with summary
-    list.push({
-      bg: "linear-gradient(160deg,#ec4899,#be185d,#831843)",
-      emoji: "✨",
-      title: t("wrapped.finalTitle"),
-      subtitle: t("wrapped.finalSubtitle"),
-      big: stats.quote,
-      bigSize: 24,
-      small: t("wrapped.shareIt"),
-      showShare: true,
-    });
-    return list;
-  }, [stats, t]);
-
-  const slide = slides[slideIdx];
-  const isLast = slideIdx === slides.length - 1;
-
-  const handleTap = (e) => {
-    // Auto-advance on tap
-    if (isLast) return;
-    setSlideIdx(i => Math.min(i + 1, slides.length - 1));
-  };
-
-  const handleShare = () => {
-    const text = `🎬 השבוע שלי ב-Mundialito 2026:\n🎯 ${stats.exactCount} ניחושים מדויקים\n🪙 +${stats.coinsEarned} מטבעות\n🃏 ${stats.cardsThisWeek} קלפים חדשים\n\nתצטרפו אליי!`;
-    if (navigator.share) {
-      navigator.share({ text }).catch(()=>{});
-    } else {
-      navigator.clipboard?.writeText(text);
-    }
-  };
-
-  return (
-    <div style={{
-      position:"fixed",inset:0,zIndex:9600,
-      background:"#000",
-      display:"flex",alignItems:"center",justifyContent:"center",
-      animation:"goalFadeIn 0.3s ease-out",
-    }}>
-      <style>{`
-        @keyframes wrappedSlideIn {
-          from { opacity: 0; transform: scale(0.95) translateY(20px); }
-          to { opacity: 1; transform: scale(1) translateY(0); }
-        }
-        @keyframes wrappedBig {
-          from { transform: scale(0.5) rotate(-10deg); opacity: 0; }
-          to { transform: scale(1) rotate(0deg); opacity: 1; }
-        }
-      `}</style>
-      {/* Close X */}
-      <button onClick={onClose} style={{
-        position:"absolute",top:14,right:14,zIndex:10,
-        background:"rgba(0,0,0,0.5)",border:"none",
-        color:"#fff",fontSize:22,
-        width:36,height:36,borderRadius:18,
-        cursor:"pointer",fontFamily:"inherit",
-      }}>✕</button>
-
-      {/* Progress bars at top */}
-      <div style={{
-        position:"absolute",top:14,left:14,right:60,
-        display:"flex",gap:4,zIndex:10,
-      }}>
-        {slides.map((_, i) => (
-          <div key={i} style={{
-            flex:1,height:3,
-            borderRadius:2,
-            background: i < slideIdx ? "#fff"
-              : i === slideIdx ? "rgba(255,255,255,0.7)"
-              : "rgba(255,255,255,0.25)",
-          }}/>
-        ))}
-      </div>
-
-      {/* Slide content (tap to advance) */}
-      <div
-        key={slideIdx}
-        onClick={handleTap}
-        style={{
-          width:"100%",maxWidth:420,height:"100%",maxHeight:780,
-          background: slide.bg,
-          display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",
-          padding:"60px 24px 30px",
-          cursor:"pointer",
-          animation:"wrappedSlideIn 0.5s cubic-bezier(0.2,0.7,0.3,1)",
-          textAlign:"center",
-          position:"relative",
-        }}
-      >
-        <div style={{fontSize:60,marginBottom:18,animation:"wrappedBig 0.7s cubic-bezier(0.4,2,0.6,1)"}}>
-          {slide.emoji}
-        </div>
-        <div style={{
-          fontSize:11,color:"rgba(255,255,255,0.85)",
-          letterSpacing:3,fontWeight:800,marginBottom:8,
-        }}>{slide.title}</div>
-        <div style={{
-          fontSize:14,color:"rgba(255,255,255,0.7)",
-          marginBottom:36,maxWidth:300,lineHeight:1.4,
-        }}>{slide.subtitle}</div>
-
-        {slide.bigCard ? (
-          <div style={{animation:"wrappedBig 0.7s cubic-bezier(0.4,2,0.6,1) 0.15s both"}}>
-            <PlayerCard card={slide.bigCard} size="M" animated={true} />
-          </div>
-        ) : (
-          <div style={{
-            fontSize: slide.bigSize || 72,
-            fontWeight:900,color:"#fff",lineHeight:1.1,
-            textShadow:"0 4px 20px rgba(0,0,0,0.5)",
-            marginBottom:14,
-            animation:"wrappedBig 0.7s cubic-bezier(0.4,2,0.6,1) 0.15s both",
-            fontVariantNumeric:"tabular-nums",
-          }}>{slide.big}</div>
-        )}
-
-        <div style={{
-          fontSize:14,color:"rgba(255,255,255,0.9)",
-          marginTop:14,fontWeight:600,maxWidth:280,
-        }}>{slide.small}</div>
-
-        {/* Share button on last slide */}
-        {slide.showShare && (
-          <button
-            onClick={(e) => { e.stopPropagation(); handleShare(); }}
-            style={{
-              marginTop:30,
-              padding:"14px 28px",
-              background:"#fff",
-              color:"#1e2940",
-              border:"none",borderRadius:14,
-              fontSize:15,fontWeight:900,letterSpacing:1,
-              cursor:"pointer",fontFamily:"inherit",
-              boxShadow:"0 10px 30px rgba(0,0,0,0.3)",
-            }}
-          >📤 {t("wrapped.shareBtn")}</button>
-        )}
-
-        {/* Tap to continue hint */}
-        {!isLast && (
-          <div style={{
-            position:"absolute",bottom:30,
-            fontSize:11,color:"rgba(255,255,255,0.6)",
-            letterSpacing:2,
-          }}>{t("wrapped.tapToContinue")}</div>
-        )}
-      </div>
-    </div>
   );
 }
 
@@ -6561,7 +6259,7 @@ function Welcome({ onStart, onImport }) {
   );
 }
 
-function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, awayInputId, nextInputId, lockable = true, leagueMembers = null, onShowDetails = null }) {
+function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, awayInputId, nextInputId, lockable = true, leagueMembers = null }) {
   const t = useT();
   const { lang } = useContext(LangContext);
   const isRTL = lang === "he";
@@ -6778,7 +6476,7 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
         {isLocked && <span style={{color:"#f87171",fontWeight:700,whiteSpace:"nowrap"}}>🔒 LOCKED</span>}
         {!isLocked && isLockingSoon && <span style={{color:"#fbbf24",fontWeight:700,whiteSpace:"nowrap"}}>⏰ LOCKS SOON</span>}
         {sc && <span style={{color:sc.text,fontWeight:700,whiteSpace:"nowrap"}}>{sc.label} +{score.points}</span>}
-        {!sc && !isLocked && hasResult && <span style={{color:"#22c55e"}} title={t("matchcard.predicted")}>✓</span>}
+        {!sc && !isLocked && hasResult && <span style={{color:"#22c55e"}} title={t("matchcard.predicted")}>🎯</span>}
         {!sc && !isLocked && !hasResult && <span style={{color:"#64748b",opacity:0.5}} title={t("matchcard.noPick")}>⚪</span>}
       </div>
       <div style={{display:"grid",gridTemplateColumns:"1fr auto 1fr",alignItems:"center",gap:8,direction:"ltr"}}>
@@ -6879,24 +6577,6 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
         <div style={{marginTop:5,fontSize:9,color:"#475569",textAlign:"center",letterSpacing:1}}>
           📍 {fixture.venue}
         </div>
-      )}
-
-      {/* 📊 View match details button — only for finished matches with onShowDetails */}
-      {actual && actual.h !== undefined && actual.h !== "" && onShowDetails && (
-        <button
-          onClick={() => onShowDetails(fixture)}
-          style={{
-            marginTop:10,width:"100%",
-            padding:"7px 12px",
-            background:"linear-gradient(180deg,rgba(168,85,247,0.18),rgba(168,85,247,0.08))",
-            border:"1px solid rgba(168,85,247,0.4)",
-            borderRadius:8,
-            color:"#c4b5fd",fontSize:11,fontWeight:700,letterSpacing:1,
-            cursor:"pointer",fontFamily:"inherit",
-          }}
-        >
-          ⚽ {t("matchdetails.viewBtn")}
-        </button>
       )}
 
       {/* 🧠 LEAGUE INSIGHTS: % pick distribution, shown after kickoff */}
@@ -7052,155 +6732,6 @@ function AnimatedNumber({ value, duration = 600 }) {
   return <>{display}</>;
 }
 
-// 📊 MATCH DETAILS MODAL — shows goals + stats for a finished match
-function MatchDetailsModal({ fixture, apiFixtureId, onClose }) {
-  const t = useT();
-  const { lang } = useContext(LangContext);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [details, setDetails] = useState(null);
-
-  useEffect(() => {
-    if (!apiFixtureId) {
-      setError("no_fixture_id");
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
-    fetchMatchDetails(apiFixtureId)
-      .then(d => { setDetails(d); setLoading(false); })
-      .catch(e => { setError(e.message); setLoading(false); });
-  }, [apiFixtureId]);
-
-  const home = findTeam(fixture.home);
-  const away = findTeam(fixture.away);
-
-  // Find which API team name matches "home" vs "away"
-  // (API may swap orders, so we look at details.homeTeam)
-  const apiHomeIsOurHome = details?.homeTeam === fixture.home;
-
-  // Group goals by team
-  const goals = (details?.events || []).filter(e => e.type === "Goal");
-
-  return (
-    <div onClick={onClose} style={{
-      position:"fixed",inset:0,zIndex:9100,
-      background:"rgba(0,0,0,0.8)",backdropFilter:"blur(6px)",
-      display:"flex",alignItems:"center",justifyContent:"center",
-      padding:14,animation:"goalFadeIn 0.25s ease-out",
-    }}>
-      <div onClick={e => e.stopPropagation()} style={{
-        maxWidth:480,width:"100%",maxHeight:"90vh",overflowY:"auto",
-        background:"linear-gradient(160deg,#243150,#1f2942)",
-        border:"1px solid rgba(71,85,105,0.4)",
-        borderRadius:14,padding:"18px 16px",
-        boxShadow:"0 20px 60px rgba(0,0,0,0.5)",
-      }}>
-        {/* Header with score */}
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"start",marginBottom:8}}>
-          <div style={{fontSize:10,color:"#94a3b8",letterSpacing:2,fontWeight:700}}>
-            📊 {t("matchdetails.title")}
-          </div>
-          <button onClick={onClose} style={{
-            background:"transparent",border:"none",color:"#94a3b8",fontSize:20,
-            cursor:"pointer",fontFamily:"inherit",padding:0,
-          }}>✕</button>
-        </div>
-
-        {/* Score banner */}
-        <div style={{
-          display:"flex",alignItems:"center",justifyContent:"center",gap:10,
-          padding:"14px 8px",marginBottom:16,
-          background:"rgba(15,23,42,0.5)",borderRadius:10,
-        }}>
-          <div style={{flex:1,textAlign:lang==="he"?"left":"right"}}>
-            <div style={{fontSize:13,color:"#fff",fontWeight:800}}>{home?.n}</div>
-            <div style={{fontSize:24,marginTop:2}}>{home?.f}</div>
-          </div>
-          <div style={{
-            fontSize:26,fontWeight:900,color:"#fbbf24",
-            fontVariantNumeric:"tabular-nums",padding:"0 8px",letterSpacing:-1,
-          }}>
-            {fixture.h ?? "—"} : {fixture.a ?? "—"}
-          </div>
-          <div style={{flex:1,textAlign:lang==="he"?"right":"left"}}>
-            <div style={{fontSize:13,color:"#fff",fontWeight:800}}>{away?.n}</div>
-            <div style={{fontSize:24,marginTop:2}}>{away?.f}</div>
-          </div>
-        </div>
-
-        {loading && (
-          <div style={{textAlign:"center",padding:"30px 0",color:"#94a3b8",fontSize:13}}>
-            ⏳ {t("matchdetails.loading")}
-          </div>
-        )}
-
-        {!loading && error && (
-          <div style={{
-            background:"rgba(239,68,68,0.1)",border:"1px solid rgba(239,68,68,0.3)",
-            borderRadius:10,padding:"14px",fontSize:12,color:"#f87171",textAlign:"center",
-          }}>
-            {error === "no_fixture_id" ? t("matchdetails.notReady") : t("matchdetails.error")}
-          </div>
-        )}
-
-        {!loading && !error && details && (
-          <>
-            {/* Goals */}
-            {goals.length > 0 && (
-              <div style={{marginBottom:16}}>
-                <div style={{fontSize:10,color:"#94a3b8",letterSpacing:2,fontWeight:700,marginBottom:8}}>
-                  ⚽ {t("matchdetails.goals")}
-                </div>
-                <div style={{display:"flex",flexDirection:"column",gap:5}}>
-                  {goals.map((g, i) => {
-                    const isHome = g.teamName === fixture.home || g.teamName === details.homeTeam;
-                    return (
-                      <div key={i} style={{
-                        display:"flex",alignItems:"center",gap:8,
-                        padding:"7px 10px",
-                        background:"rgba(15,23,42,0.4)",borderRadius:8,
-                        borderLeft: isHome ? "3px solid #22c55e" : "none",
-                        borderRight: !isHome ? "3px solid #3b82f6" : "none",
-                      }}>
-                        <span style={{
-                          fontSize:11,color:"#fbbf24",fontWeight:900,
-                          minWidth:32,fontVariantNumeric:"tabular-nums",
-                        }}>{g.minute}{g.extra}'</span>
-                        <span style={{fontSize:14}}>⚽</span>
-                        <div style={{flex:1,fontSize:12,color:"#fff",lineHeight:1.3}}>
-                          <div style={{fontWeight:700}}>{g.playerName || t("matchdetails.unknown")}</div>
-                          {g.assistName && (
-                            <div style={{fontSize:10,color:"#94a3b8"}}>
-                              {t("matchdetails.assist")}: {g.assistName}
-                            </div>
-                          )}
-                          {g.detail && g.detail !== "Normal Goal" && (
-                            <div style={{fontSize:9,color:"#fbbf24",fontStyle:"italic",marginTop:1}}>
-                              {g.detail}
-                            </div>
-                          )}
-                        </div>
-                        <span style={{fontSize:16}}>{isHome ? home?.f : away?.f}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {goals.length === 0 && (
-              <div style={{textAlign:"center",padding:"20px 0",color:"#94a3b8",fontSize:12}}>
-                {t("matchdetails.noGoals")}
-              </div>
-            )}
-          </>
-        )}
-      </div>
-    </div>
-  );
-}
-
 // ⏰ NEXT MATCH COUNTDOWN — ticking display of time until next match
 function NextMatchCountdown({ allMatches }) {
   const t = useT();
@@ -7299,7 +6830,7 @@ function NextMatchCountdown({ allMatches }) {
   );
 }
 
-function TodayScreen({ picks, actuals, onPick, onBack, onGoToBracket, leagueMembers = null, onRefresh, lastFetchAt, onShowDetails = null }) {
+function TodayScreen({ picks, actuals, onPick, onBack, onGoToBracket, leagueMembers = null, onRefresh, lastFetchAt }) {
   const t = useT();
 
   // Group all fixtures (group + knockout) by date
@@ -7379,7 +6910,6 @@ function TodayScreen({ picks, actuals, onPick, onBack, onGoToBracket, leagueMemb
           nextInputId={null}
           lockable={true}
           leagueMembers={leagueMembers}
-          onShowDetails={hasResult ? onShowDetails : null}
         />
       );
     }
@@ -7532,7 +7062,7 @@ function TodayScreen({ picks, actuals, onPick, onBack, onGoToBracket, leagueMemb
   );
 }
 
-function GroupView({ group, picks, actuals, standings, bestThirds, liveStandings, liveBestThirds, hasActuals, onPick, onNext, onPrev, onJump, isFirst, isLast, showResults, scope = "p", leagueMembers = null, onShowDetails = null }) {
+function GroupView({ group, picks, actuals, standings, bestThirds, liveStandings, liveBestThirds, hasActuals, onPick, onNext, onPrev, onJump, isFirst, isLast, showResults, scope = "p", leagueMembers = null }) {
   const t = useT();
   const { lang } = useContext(LangContext);
   const fixtures = FIXTURES.filter(f => f.group === group);
@@ -7643,7 +7173,6 @@ function GroupView({ group, picks, actuals, standings, bestThirds, liveStandings
                 nextInputId={nextId ? inputId(nextId, "h") : null}
                 lockable={scope === "p"}
                 leagueMembers={scope === "p" ? leagueMembers : null}
-                onShowDetails={onShowDetails}
               />
             );
           })}
@@ -10290,10 +9819,6 @@ export default function App() {
   const [groupIdx, setGroupIdx] = useState(saved?.groupIdx || 0);
   const [friends, setFriends] = useState(saved?.friends || []);
   const [actuals, setActuals] = useState(saved?.actuals || {});
-  // 📡 Latest liveData fetched from API — stored so we can look up fixture IDs for details
-  const [liveData, setLiveData] = useState(null);
-  // 🎯 Which fixture's details modal is open
-  const [matchDetailsFor, setMatchDetailsFor] = useState(null);
   const [actualKo, setActualKo] = useState(saved?.actualKo || {});
   // NEW: actual scores for knockout matches (parallel to actualKo which is just a/b winner)
   // Format: { "R32-1": { h: "2", a: "1" }, ... }
@@ -10325,79 +9850,6 @@ export default function App() {
   const [showProfile, setShowProfile] = useState(false);
   const [showRules, setShowRules] = useState(false);
   const [showAchievements, setShowAchievements] = useState(false);
-  const [showWrapped, setShowWrapped] = useState(false);
-
-  // 🎬 Compute the weekly Wrapped stats from current data
-  const wrappedStats = useMemo(() => {
-    const now = Date.now();
-    const weekAgo = now - 7 * 24 * 60 * 60 * 1000;
-    // Count predictions made (we don't have timestamps per pick, so count all completed)
-    let totalPicks = 0;
-    let exactCount = 0;
-    let winnerCount = 0;
-    let coinsEarned = 0;
-    for (const fid in picks) {
-      const p = picks[fid];
-      if (!p || p.h === "" || p.a === "") continue;
-      totalPicks++;
-      const a = actuals[fid];
-      if (a && a.h !== "" && a.a !== "") {
-        const ph = parseInt(p.h), pa = parseInt(p.a);
-        const ah = parseInt(a.h), aa = parseInt(a.a);
-        if (!isNaN(ph) && !isNaN(pa) && !isNaN(ah) && !isNaN(aa)) {
-          if (ph === ah && pa === aa) { exactCount++; coinsEarned += 200; }
-          else if (Math.sign(ph - pa) === Math.sign(ah - aa)) { winnerCount++; coinsEarned += 100; }
-        }
-      }
-    }
-    // Cards this week — count owned cards (proxy for this week if app is new)
-    const cardsOwned = Object.values(cardCollection || {}).reduce((a,b)=>a+b, 0);
-    const cardsThisWeek = Math.min(cardsOwned, 20); // cap for display
-    // Best card by rating
-    let bestCard = null;
-    let bestRating = 0;
-    for (const cid in (cardCollection || {})) {
-      if (cardCollection[cid] > 0) {
-        const card = CARDS.find(c => c.id === cid);
-        if (card) {
-          const r = getPlayerRating(card);
-          if (r > bestRating) { bestRating = r; bestCard = card; }
-        }
-      }
-    }
-    // Closing quote — based on performance
-    let quote = "Keep playing! 🎮";
-    if (exactCount >= 3) quote = "🔥 You're a legend!";
-    else if (exactCount >= 1) quote = "⭐ Pretty impressive!";
-    else if (winnerCount >= 5) quote = "👏 Consistent!";
-    else if (totalPicks >= 10) quote = "💪 Showing up!";
-    else if (totalPicks > 0) quote = "🌱 Just getting started!";
-    return {
-      name: name || "You",
-      totalPicks, exactCount, winnerCount,
-      coinsEarned, cardsThisWeek,
-      bestCard, quote,
-    };
-  }, [picks, actuals, cardCollection, name]);
-
-  // 🎬 Auto-show Wrapped on Sunday morning, once per week
-  useEffect(() => {
-    if (!name) return;
-    const d = new Date();
-    if (d.getDay() !== 0) return; // not Sunday (0 = Sunday)
-    if (wrappedStats.totalPicks === 0) return; // skip if user did nothing
-    try {
-      const lastShown = localStorage.getItem("wc2026_wrapped_lastshown_v1");
-      const todayKey = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
-      if (lastShown === todayKey) return;
-      // Wait a moment then show
-      const t = setTimeout(() => {
-        setShowWrapped(true);
-        localStorage.setItem("wc2026_wrapped_lastshown_v1", todayKey);
-      }, 1500);
-      return () => clearTimeout(t);
-    } catch {}
-  }, [name, wrappedStats.totalPicks]);
   // Track unlocked badge IDs (persisted in localStorage)
   // 💰 COINS — earned from correct predictions, spent on roulette spins
   // Format: { balance, earnedFromIds, gotStartingBonus }
@@ -10791,7 +10243,6 @@ export default function App() {
   const fetchAndApplyLive = async () => {
     try {
       const data = await fetchLiveResults();
-      setLiveData(data);
       const mapped = mapResultsToFixtures(data, FIXTURES);
       const newActuals = Object.keys(mapped).length > 0
         ? { ...mapped, ...actuals } // existing actuals (manual entries) win over auto
@@ -11408,7 +10859,6 @@ export default function App() {
           isFirst={groupIdx === 0}
           isLast={groupIdx === GROUP_KEYS.length - 1}
           leagueMembers={leagueData ? Object.values(leagueData.members || {}) : null}
-          onShowDetails={(fix) => setMatchDetailsFor(fix)}
         />
       )}
 
@@ -11421,16 +10871,6 @@ export default function App() {
           onGoToBracket={()=>setScreen("bracket")}
           leagueMembers={leagueData ? Object.values(leagueData.members || {}) : null}
           onRefresh={() => { showToast(t("toast.refreshing"), "info"); fetchAndApplyLive(); fetchAndApplyTopScorers(); }}
-          onShowDetails={(fix) => setMatchDetailsFor(fix)}
-        />
-      )}
-
-      {/* 📊 Match details modal (goal scorers) */}
-      {matchDetailsFor && (
-        <MatchDetailsModal
-          fixture={matchDetailsFor}
-          apiFixtureId={getApiFixtureId(liveData, matchDetailsFor)}
-          onClose={() => setMatchDetailsFor(null)}
         />
       )}
 
@@ -11576,18 +11016,9 @@ export default function App() {
         onShowTutorial={()=>setShowOnboarding(true)}
         onShowAchievements={()=>setShowAchievements(true)}
         onShowRoulette={()=>setShowRoulette(true)}
-        onShowWrapped={()=>setShowWrapped(true)}
         onLogout={handleLogout}
         onReset={handleReset}
       />
-
-      {/* 🎬 Sunday Wrapped */}
-      {showWrapped && (
-        <WrappedModal
-          stats={wrappedStats}
-          onClose={()=>setShowWrapped(false)}
-        />
-      )}
 
       {/* 🎰 Roulette */}
       {showRoulette && !spinResult && (
