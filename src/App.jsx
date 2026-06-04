@@ -8,7 +8,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.3.5";
+const APP_VERSION = "3.3.6";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -5218,13 +5218,13 @@ function WrappedModal({ stats, onClose }) {
       `}</style>
       <div onClick={e => e.stopPropagation()} style={{
         maxWidth:420,width:"100%",maxHeight:"95vh",overflowY:"auto",
-        background:"linear-gradient(160deg,#15803d 0%,#166534 40%,#14532d 100%)",
+        background:"linear-gradient(160deg,#0a0a0a 0%,#1a1a1a 50%,#0f0f0f 100%)",
         borderRadius:20,
         padding:"24px 18px 20px",
-        boxShadow:"0 20px 60px rgba(20,83,45,0.5), 0 0 80px rgba(251,191,36,0.15)",
+        boxShadow:"0 20px 60px rgba(0,0,0,0.7), 0 0 60px rgba(251,191,36,0.15)",
         animation:"wrappedSlideIn 0.5s cubic-bezier(0.2,0.7,0.3,1)",
         position:"relative",
-        border:"1px solid rgba(251,191,36,0.3)",
+        border:"1px solid rgba(251,191,36,0.35)",
         overflow:"hidden",
       }}>
         {/* Gold spotlight at top */}
@@ -5232,17 +5232,16 @@ function WrappedModal({ stats, onClose }) {
           position:"absolute",
           top:0,left:"50%",
           transform:"translateX(-50%)",
-          width:"140%",height:120,
-          background:"radial-gradient(ellipse at center top, rgba(251,191,36,0.4) 0%, rgba(251,191,36,0.15) 30%, transparent 60%)",
+          width:"160%",height:180,
+          background:"radial-gradient(ellipse at center top, rgba(251,191,36,0.25) 0%, rgba(251,191,36,0.08) 35%, transparent 65%)",
           pointerEvents:"none",
         }}/>
-        {/* Subtle pitch lines pattern */}
+        {/* Thin gold accent line under header */}
         <div style={{
-          position:"absolute",inset:0,
-          background:`
-            linear-gradient(180deg, transparent 49%, rgba(255,255,255,0.04) 50%, transparent 51%),
-            repeating-linear-gradient(90deg, transparent 0px, transparent 38px, rgba(255,255,255,0.03) 38px, rgba(255,255,255,0.03) 40px)
-          `,
+          position:"absolute",
+          top:90,left:"25%",right:"25%",
+          height:1,
+          background:"linear-gradient(90deg,transparent,rgba(251,191,36,0.5),transparent)",
           pointerEvents:"none",
         }}/>
         {/* Close X */}
@@ -5290,12 +5289,12 @@ function WrappedModal({ stats, onClose }) {
         <button onClick={handleShare} style={{
           width:"100%",
           padding:"13px 18px",
-          background:"linear-gradient(135deg,#fbbf24,#f59e0b)",
-          color:"#14532d",
+          background:"linear-gradient(135deg,#fbbf24,#d97706)",
+          color:"#0a0a0a",
           border:"none",borderRadius:12,
           fontSize:14,fontWeight:900,letterSpacing:1,
           cursor:"pointer",fontFamily:"inherit",
-          boxShadow:"0 8px 24px rgba(0,0,0,0.3), 0 0 20px rgba(251,191,36,0.3)",
+          boxShadow:"0 8px 24px rgba(0,0,0,0.5), 0 0 30px rgba(251,191,36,0.35), inset 0 1px 0 rgba(255,255,255,0.3)",
         }}>📤 {t("wrapped.shareBtn")}</button>
         </div>
       </div>
