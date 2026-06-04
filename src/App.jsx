@@ -8,7 +8,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.3.1";
+const APP_VERSION = "3.3.2";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -2755,13 +2755,56 @@ const CARD_DATA = [
 ];
 
 // Auto-filter to teams in the 2026 tournament + index by rarity
+// CARDS — IDs are based on ORIGINAL position in CARD_DATA (before filtering by qualified teams).
+// This ensures IDs stay STABLE even if a team's qualification status changes between app versions.
 const CARDS = CARD_DATA
-  .filter(([, team]) => _qualifiedTeamSet.has(team))
-  .map(([name, team, rarity, pos], i) => ({
-    id: `card-${i}`,
+  .map(([name, team, rarity, pos], origIdx) => ({
+    id: `card-${origIdx}`,
     name, team, rarity, pos,
     flag: ALL_TEAMS.find(t => t.n === team)?.f || "⚽",
-  }));
+    _qualified: _qualifiedTeamSet.has(team),
+  }))
+  .filter(c => c._qualified)
+  .map(c => { delete c._qualified; return c; });
+
+// 🔄 Card ID migration map: old (post-filter) ID → new (pre-filter) ID.
+const _oldStyleCards = CARD_DATA
+  .filter(([, team]) => _qualifiedTeamSet.has(team))
+  .map(([name, team], i) => ({ id: `card-${i}`, name, team }));
+
+const _newCardByNameTeam = new Map(CARDS.map(c => [`${c.name}|${c.team}`, c.id]));
+
+const CARD_ID_MIGRATION = {};
+for (const oldC of _oldStyleCards) {
+  const newId = _newCardByNameTeam.get(`${oldC.name}|${oldC.team}`);
+  if (newId && newId !== oldC.id) {
+    CARD_ID_MIGRATION[oldC.id] = newId;
+  }
+}
+
+/**
+ * Migrate a card collection object from old IDs to new IDs.
+ * Returns a NEW object — does not mutate input.
+ */
+function migrateCardCollection(coll) {
+  if (!coll || typeof coll !== "object") return coll;
+  // If no migration entries, nothing to do
+  if (Object.keys(CARD_ID_MIGRATION).length === 0) return coll;
+  // Detect: does collection contain any OLD-style IDs that don't match any current CARDS?
+  const currentIds = new Set(CARDS.map(c => c.id));
+  let needsMigration = false;
+  for (const k in coll) {
+    if (!currentIds.has(k) && CARD_ID_MIGRATION[k]) { needsMigration = true; break; }
+  }
+  if (!needsMigration) return coll;
+  // Build remapped collection
+  const out = {};
+  for (const k in coll) {
+    const remappedKey = CARD_ID_MIGRATION[k] || k;
+    out[remappedKey] = (out[remappedKey] || 0) + (coll[k] || 0);
+  }
+  return out;
+}
 
 const CARDS_BY_RARITY = {
   L: CARDS.filter(c => c.rarity === "L"),
@@ -9119,7 +9162,7 @@ function LeagueHub({
           {viewTab === "cards" && (() => {
             // For my own profile, use my local collection (fresh).
             // For friends, use what's synced to Firebase.
-            const theirCollection = m.isMe ? (cardCollection || {}) : (m.cardCollection || {});
+            const theirCollection = m.isMe ? (cardCollection || {}) : migrateCardCollection(m.cardCollection || {});
             const ownedCards = CARDS.filter(c => (theirCollection[c.id] || 0) > 0);
             // Sort owned by rarity (best first)
             const rarityOrder = { L: 0, E: 1, R: 2, U: 3, C: 4 };
@@ -10443,7 +10486,16 @@ export default function App() {
   const [cardCollection, setCardCollection] = useState(() => {
     try {
       const raw = localStorage.getItem("wc2026_cards_v2");
-      if (raw) return JSON.parse(raw);
+      if (raw) {
+        // 🔄 Migrate old-style IDs (card-{post-filter-index}) to new stable IDs
+        const parsed = JSON.parse(raw);
+        const migrated = migrateCardCollection(parsed);
+        // Persist migrated form so we only do this once
+        if (migrated !== parsed) {
+          try { localStorage.setItem("wc2026_cards_v2", JSON.stringify(migrated)); } catch {}
+        }
+        return migrated;
+      }
     } catch {}
     return {};
   });
@@ -10832,9 +10884,10 @@ export default function App() {
               if (myEntry.coinBalance != null && myEntry.coinBalance > 0) {
                 setCoins(prev => (prev?.balance || 0) === 0 ? { ...prev, balance: myEntry.coinBalance } : prev);
               }
-              // Restore card collection if empty locally
+              // Restore card collection if empty locally (with ID migration)
               if (myEntry.cardCollection && Object.keys(myEntry.cardCollection).length > 0) {
-                setCardCollection(prev => Object.keys(prev || {}).length === 0 ? myEntry.cardCollection : prev);
+                const migrated = migrateCardCollection(myEntry.cardCollection);
+                setCardCollection(prev => Object.keys(prev || {}).length === 0 ? migrated : prev);
               }
               // Restore picks
               if (myEntry.picks && Object.keys(myEntry.picks).length > 0) {
