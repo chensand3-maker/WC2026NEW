@@ -8,7 +8,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.3.2";
+const APP_VERSION = "3.3.3";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -8775,6 +8775,7 @@ function LeagueHub({
         totalPoints: ms.total + ks.total + bonusPoints,
         predictedCount,
         updatedAt: m.updatedAt,
+        cardCollection: m.cardCollection || {},
       };
     }).sort((a,b) => b.totalPoints - a.totalPoints);
 
