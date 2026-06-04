@@ -8,7 +8,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.2.1";
+const APP_VERSION = "3.3.0";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -232,6 +232,15 @@ const TRANSLATIONS = {
     "matchdetails.assist": "Assist",
     "matchdetails.unknown": "Unknown",
     "matchdetails.viewBtn": "View goal scorers",
+    "admin.title": "LEAGUE ADMIN",
+    "admin.info": "As the league creator, you can view all members' data and share their backup if they lose access.",
+    "admin.picks": "PICKS",
+    "admin.coins": "COINS",
+    "admin.cards": "CARDS",
+    "admin.badges": "BADGES",
+    "admin.shareBackup": "Share their backup",
+    "admin.noMembers": "No members yet",
+    "admin.menuItem": "👑 Manage members",
     "today.nextMatchIn": "NEXT MATCH IN",
     "today.days": "DAYS",
     "today.hours": "HRS",
@@ -743,6 +752,15 @@ const TRANSLATIONS = {
     "matchdetails.assist": "בישול",
     "matchdetails.unknown": "לא ידוע",
     "matchdetails.viewBtn": "ראה מי הבקיע",
+    "admin.title": "ניהול הליגה",
+    "admin.info": "כיוצר הליגה, אתה יכול לראות את הנתונים של כל החברים ולשלוח להם גיבוי במידה ואיבדו גישה.",
+    "admin.picks": "ניחושים",
+    "admin.coins": "מטבעות",
+    "admin.cards": "קלפים",
+    "admin.badges": "הישגים",
+    "admin.shareBackup": "שלח לו את הגיבוי",
+    "admin.noMembers": "אין עדיין חברים",
+    "admin.menuItem": "👑 ניהול חברים",
     "today.nextMatchIn": "המשחק הבא בעוד",
     "today.days": "ימים",
     "today.hours": "שעות",
@@ -3784,7 +3802,7 @@ function WorldLeaderboard({ userId, name, onClose }) {
 }
 
 // ─── SIDEBAR: hamburger menu drawer that slides in from one side ─────────────
-function Sidebar({ open, onClose, name, lang, setLang, onShowProfile, onShowRules, onShowBackup, onShowTutorial, onShowAchievements, onShowRoulette, onShowWrapped, onLogout, onReset, totalPoints, unlockedCount, coinBalance }) {
+function Sidebar({ open, onClose, name, lang, setLang, onShowProfile, onShowRules, onShowBackup, onShowTutorial, onShowAchievements, onShowRoulette, onShowWrapped, onShowAdmin, onLogout, onReset, totalPoints, unlockedCount, coinBalance }) {
   const t = useT();
   const isRTL = lang === "he";
 
@@ -3849,6 +3867,9 @@ function Sidebar({ open, onClose, name, lang, setLang, onShowProfile, onShowRule
           <SidebarItem icon="📊" label={t("sidebar.myStats")} onClick={()=>{onClose();onShowProfile();}}/>
           {onShowWrapped && (
             <SidebarItem icon="🎬" label={t("sidebar.wrapped")} onClick={()=>{onClose();onShowWrapped();}}/>
+          )}
+          {onShowAdmin && (
+            <SidebarItem icon="👑" label={t("admin.menuItem")} onClick={()=>{onClose();onShowAdmin();}}/>
           )}
           <SidebarItem
             icon="🏅"
@@ -5098,94 +5119,177 @@ function ConfettiBurst({ count = 40 }) {
 }
 
 // 🎬 SUNDAY WRAPPED — Spotify-Wrapped-style weekly recap
+// 🎬 SUNDAY WRAPPED — single-screen weekly recap card
 function WrappedModal({ stats, onClose }) {
   const t = useT();
-  const [slideIdx, setSlideIdx] = useState(0);
-
-  const slides = useMemo(() => {
-    const list = [
-      {
-        bg: "linear-gradient(160deg,#fbbf24,#d97706,#92400e)",
-        emoji: "🎬",
-        title: t("wrapped.title"),
-        subtitle: t("wrapped.subtitle"),
-        big: stats.name,
-        bigSize: 32,
-        small: t("wrapped.tapToContinue"),
-      },
-      {
-        bg: "linear-gradient(160deg,#22c55e,#15803d,#14532d)",
-        emoji: "🎯",
-        title: t("wrapped.predictionsTitle"),
-        subtitle: t("wrapped.predictionsSubtitle"),
-        big: String(stats.totalPicks),
-        bigSize: 96,
-        small: stats.totalPicks === 1 ? t("wrapped.predictionsSingular") : t("wrapped.predictionsPlural"),
-      },
-      {
-        bg: "linear-gradient(160deg,#fbbf24,#f59e0b,#92400e)",
-        emoji: "🎯",
-        title: t("wrapped.exactTitle"),
-        subtitle: t("wrapped.exactSubtitle"),
-        big: String(stats.exactCount),
-        bigSize: 96,
-        small: stats.exactCount > 0 ? t("wrapped.exactBrag") : t("wrapped.exactZero"),
-      },
-      {
-        bg: "linear-gradient(160deg,#a855f7,#7c3aed,#4c1d95)",
-        emoji: "🪙",
-        title: t("wrapped.coinsTitle"),
-        subtitle: t("wrapped.coinsSubtitle"),
-        big: `+${stats.coinsEarned}`,
-        bigSize: 72,
-        small: t("wrapped.coinsLabel"),
-      },
-      {
-        bg: "linear-gradient(160deg,#3b82f6,#2563eb,#1e3a8a)",
-        emoji: "🃏",
-        title: t("wrapped.cardsTitle"),
-        subtitle: t("wrapped.cardsSubtitle"),
-        big: String(stats.cardsThisWeek),
-        bigSize: 96,
-        small: stats.cardsThisWeek === 1 ? t("wrapped.cardsSingular") : t("wrapped.cardsPlural"),
-      },
-    ];
-    // Best card slide (only if at least one card)
-    if (stats.bestCard) {
-      list.push({
-        bg: "linear-gradient(160deg,#1e293b,#0f172a,#020617)",
-        emoji: "🏆",
-        title: t("wrapped.bestCardTitle"),
-        subtitle: t("wrapped.bestCardSubtitle"),
-        bigCard: stats.bestCard,
-        small: `${stats.bestCard.name} · ${stats.bestCard.team}`,
-      });
-    }
-    // Final slide with summary
-    list.push({
-      bg: "linear-gradient(160deg,#ec4899,#be185d,#831843)",
-      emoji: "✨",
-      title: t("wrapped.finalTitle"),
-      subtitle: t("wrapped.finalSubtitle"),
-      big: stats.quote,
-      bigSize: 24,
-      small: t("wrapped.shareIt"),
-      showShare: true,
-    });
-    return list;
-  }, [stats, t]);
-
-  const slide = slides[slideIdx];
-  const isLast = slideIdx === slides.length - 1;
-
-  const handleTap = (e) => {
-    // Auto-advance on tap
-    if (isLast) return;
-    setSlideIdx(i => Math.min(i + 1, slides.length - 1));
-  };
 
   const handleShare = () => {
-    const text = `🎬 השבוע שלי ב-Mundialito 2026:\n🎯 ${stats.exactCount} ניחושים מדויקים\n🪙 +${stats.coinsEarned} מטבעות\n🃏 ${stats.cardsThisWeek} קלפים חדשים\n\nתצטרפו אליי!`;
+    const text = `🎬 השבוע שלי ב-Mundialito 2026:\n📊 ${stats.totalPicks} ניחושים\n🎯 ${stats.exactCount} מדויקים\n🪙 +${stats.coinsEarned} מטבעות\n🃏 ${stats.cardsThisWeek} קלפים חדשים\n\nתצטרפו אליי!`;
+    if (navigator.share) {
+      navigator.share({ text }).catch(()=>{});
+    } else {
+      navigator.clipboard?.writeText(text);
+    }
+  };
+
+  const StatBox = ({ emoji, label, value, color }) => (
+    <div style={{
+      background:"rgba(255,255,255,0.08)",
+      border:"1px solid rgba(255,255,255,0.12)",
+      borderRadius:12,
+      padding:"14px 10px",
+      textAlign:"center",
+      backdropFilter:"blur(10px)",
+    }}>
+      <div style={{fontSize:24,marginBottom:4}}>{emoji}</div>
+      <div style={{
+        fontSize:26,fontWeight:900,color: color || "#fff",
+        lineHeight:1,fontVariantNumeric:"tabular-nums",
+        textShadow:"0 2px 8px rgba(0,0,0,0.3)",
+      }}>{value}</div>
+      <div style={{
+        fontSize:9,color:"rgba(255,255,255,0.7)",
+        letterSpacing:1.5,fontWeight:700,marginTop:6,
+      }}>{label}</div>
+    </div>
+  );
+
+  return (
+    <div onClick={onClose} style={{
+      position:"fixed",inset:0,zIndex:9600,
+      background:"rgba(0,0,0,0.85)",backdropFilter:"blur(8px)",
+      display:"flex",alignItems:"center",justifyContent:"center",
+      padding:14,animation:"goalFadeIn 0.3s ease-out",
+    }}>
+      <style>{`
+        @keyframes wrappedSlideIn {
+          from { opacity: 0; transform: scale(0.92) translateY(20px); }
+          to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        @keyframes statPop {
+          from { opacity: 0; transform: scale(0.5); }
+          to { opacity: 1; transform: scale(1); }
+        }
+      `}</style>
+      <div onClick={e => e.stopPropagation()} style={{
+        maxWidth:420,width:"100%",maxHeight:"95vh",overflowY:"auto",
+        background:"linear-gradient(160deg,#7c2d92 0%,#a855f7 50%,#ec4899 100%)",
+        borderRadius:20,
+        padding:"24px 18px 20px",
+        boxShadow:"0 20px 60px rgba(168,85,247,0.4), 0 0 80px rgba(236,72,153,0.2)",
+        animation:"wrappedSlideIn 0.5s cubic-bezier(0.2,0.7,0.3,1)",
+        position:"relative",
+        border:"1px solid rgba(255,255,255,0.18)",
+      }}>
+        {/* Close X */}
+        <button onClick={onClose} style={{
+          position:"absolute",top:12,right:12,
+          background:"rgba(0,0,0,0.3)",border:"none",
+          color:"#fff",fontSize:18,
+          width:30,height:30,borderRadius:15,
+          cursor:"pointer",fontFamily:"inherit",
+        }}>✕</button>
+
+        {/* Header */}
+        <div style={{textAlign:"center",marginBottom:18}}>
+          <div style={{fontSize:42,marginBottom:6}}>🎬</div>
+          <div style={{
+            fontSize:11,color:"rgba(255,255,255,0.85)",
+            letterSpacing:3,fontWeight:800,marginBottom:4,
+          }}>{t("wrapped.title")}</div>
+          <div style={{
+            fontSize:22,fontWeight:900,color:"#fff",
+            textShadow:"0 2px 10px rgba(0,0,0,0.3)",
+          }}>{stats.name}</div>
+        </div>
+
+        {/* Stats grid 2x2 */}
+        <div style={{
+          display:"grid",gridTemplateColumns:"1fr 1fr",
+          gap:10,marginBottom:14,
+        }}>
+          <StatBox emoji="📊" label={t("wrapped.predictionsTitle")} value={stats.totalPicks} />
+          <StatBox emoji="🎯" label={t("wrapped.exactTitle")} value={stats.exactCount} color="#fbbf24" />
+          <StatBox emoji="🪙" label={t("wrapped.coinsTitle")} value={`+${stats.coinsEarned}`} color="#fde68a" />
+          <StatBox emoji="🃏" label={t("wrapped.cardsTitle")} value={stats.cardsThisWeek} />
+        </div>
+
+        {/* Best card */}
+        {stats.bestCard && (
+          <div style={{
+            background:"rgba(0,0,0,0.25)",
+            borderRadius:12,
+            padding:"12px 10px",
+            marginBottom:14,
+            textAlign:"center",
+          }}>
+            <div style={{
+              fontSize:10,color:"rgba(255,255,255,0.7)",
+              letterSpacing:2,fontWeight:700,marginBottom:8,
+            }}>🏆 {t("wrapped.bestCardTitle")}</div>
+            <div style={{display:"flex",justifyContent:"center"}}>
+              <PlayerCard card={stats.bestCard} size="S" animated={false} />
+            </div>
+          </div>
+        )}
+
+        {/* Quote */}
+        <div style={{
+          textAlign:"center",
+          fontSize:16,fontWeight:800,color:"#fff",
+          marginBottom:16,padding:"0 10px",
+          textShadow:"0 2px 8px rgba(0,0,0,0.3)",
+        }}>{stats.quote}</div>
+
+        {/* Share button */}
+        <button onClick={handleShare} style={{
+          width:"100%",
+          padding:"13px 18px",
+          background:"#fff",
+          color:"#7c2d92",
+          border:"none",borderRadius:12,
+          fontSize:14,fontWeight:900,letterSpacing:1,
+          cursor:"pointer",fontFamily:"inherit",
+          boxShadow:"0 8px 24px rgba(0,0,0,0.25)",
+        }}>📤 {t("wrapped.shareBtn")}</button>
+      </div>
+    </div>
+  );
+}
+
+
+// 👑 LEAGUE ADMIN — view members + share backup with them
+function LeagueAdminModal({ leagueData, leagueCode, onClose }) {
+  const t = useT();
+  const { lang } = useContext(LangContext);
+  const [selectedMember, setSelectedMember] = useState(null);
+
+  const members = leagueData?.members ? Object.entries(leagueData.members) : [];
+  // Compute simple stats per member
+  const memberStats = members.map(([uid, m]) => {
+    const picks = m.picks || {};
+    const totalPicks = Object.keys(picks).filter(k => picks[k]?.h !== "" && picks[k]?.h !== undefined).length;
+    const cardCount = Object.values(m.cardCollection || {}).reduce((a,b)=>a+b, 0);
+    return {
+      uid,
+      name: m.name || "Unknown",
+      totalPicks,
+      coinBalance: m.coinBalance || 0,
+      cardCount,
+      achievements: (m.unlockedAchievements || []).length,
+      raw: m,
+    };
+  }).sort((a, b) => b.totalPicks - a.totalPicks);
+
+  const handleShareBackup = (member) => {
+    const data = {
+      version: "wc2026-backup-v1",
+      leagueCode,
+      name: member.name,
+      userId: member.uid,
+      ...member.raw,
+    };
+    const text = `🛡️ גיבוי של ${member.name} ב-Mundialito 2026\n\nשמור את הקוד הזה:\n\n${JSON.stringify(data)}\n\n📥 לשחזור: היכנס לאפליקציה → תפריט → "Backup My Progress" → "שחזר"`;
     if (navigator.share) {
       navigator.share({ text }).catch(()=>{});
     } else {
@@ -5194,118 +5298,99 @@ function WrappedModal({ stats, onClose }) {
   };
 
   return (
-    <div style={{
-      position:"fixed",inset:0,zIndex:9600,
-      background:"#000",
+    <div onClick={onClose} style={{
+      position:"fixed",inset:0,zIndex:9200,
+      background:"rgba(0,0,0,0.85)",backdropFilter:"blur(6px)",
       display:"flex",alignItems:"center",justifyContent:"center",
-      animation:"goalFadeIn 0.3s ease-out",
+      padding:14,animation:"goalFadeIn 0.25s ease-out",
     }}>
-      <style>{`
-        @keyframes wrappedSlideIn {
-          from { opacity: 0; transform: scale(0.95) translateY(20px); }
-          to { opacity: 1; transform: scale(1) translateY(0); }
-        }
-        @keyframes wrappedBig {
-          from { transform: scale(0.5) rotate(-10deg); opacity: 0; }
-          to { transform: scale(1) rotate(0deg); opacity: 1; }
-        }
-      `}</style>
-      {/* Close X */}
-      <button onClick={onClose} style={{
-        position:"absolute",top:14,right:14,zIndex:10,
-        background:"rgba(0,0,0,0.5)",border:"none",
-        color:"#fff",fontSize:22,
-        width:36,height:36,borderRadius:18,
-        cursor:"pointer",fontFamily:"inherit",
-      }}>✕</button>
-
-      {/* Progress bars at top */}
-      <div style={{
-        position:"absolute",top:14,left:14,right:60,
-        display:"flex",gap:4,zIndex:10,
+      <div onClick={e => e.stopPropagation()} style={{
+        maxWidth:500,width:"100%",maxHeight:"90vh",overflowY:"auto",
+        background:"linear-gradient(160deg,#243150,#1f2942)",
+        border:"1px solid rgba(168,85,247,0.4)",
+        borderRadius:14,padding:"18px 16px",
+        boxShadow:"0 20px 60px rgba(168,85,247,0.3)",
       }}>
-        {slides.map((_, i) => (
-          <div key={i} style={{
-            flex:1,height:3,
-            borderRadius:2,
-            background: i < slideIdx ? "#fff"
-              : i === slideIdx ? "rgba(255,255,255,0.7)"
-              : "rgba(255,255,255,0.25)",
-          }}/>
-        ))}
-      </div>
-
-      {/* Slide content (tap to advance) */}
-      <div
-        key={slideIdx}
-        onClick={handleTap}
-        style={{
-          width:"100%",maxWidth:420,height:"100%",maxHeight:780,
-          background: slide.bg,
-          display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",
-          padding:"60px 24px 30px",
-          cursor:"pointer",
-          animation:"wrappedSlideIn 0.5s cubic-bezier(0.2,0.7,0.3,1)",
-          textAlign:"center",
-          position:"relative",
-        }}
-      >
-        <div style={{fontSize:60,marginBottom:18,animation:"wrappedBig 0.7s cubic-bezier(0.4,2,0.6,1)"}}>
-          {slide.emoji}
-        </div>
-        <div style={{
-          fontSize:11,color:"rgba(255,255,255,0.85)",
-          letterSpacing:3,fontWeight:800,marginBottom:8,
-        }}>{slide.title}</div>
-        <div style={{
-          fontSize:14,color:"rgba(255,255,255,0.7)",
-          marginBottom:36,maxWidth:300,lineHeight:1.4,
-        }}>{slide.subtitle}</div>
-
-        {slide.bigCard ? (
-          <div style={{animation:"wrappedBig 0.7s cubic-bezier(0.4,2,0.6,1) 0.15s both"}}>
-            <PlayerCard card={slide.bigCard} size="M" animated={true} />
+        {/* Header */}
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+          <div>
+            <div style={{fontSize:10,color:"#a855f7",letterSpacing:2,fontWeight:700}}>
+              👑 {t("admin.title")}
+            </div>
+            <div style={{fontSize:18,fontWeight:900,color:"#fff",marginTop:2}}>
+              {leagueData?.name || leagueCode}
+            </div>
           </div>
-        ) : (
-          <div style={{
-            fontSize: slide.bigSize || 72,
-            fontWeight:900,color:"#fff",lineHeight:1.1,
-            textShadow:"0 4px 20px rgba(0,0,0,0.5)",
-            marginBottom:14,
-            animation:"wrappedBig 0.7s cubic-bezier(0.4,2,0.6,1) 0.15s both",
-            fontVariantNumeric:"tabular-nums",
-          }}>{slide.big}</div>
-        )}
+          <button onClick={onClose} style={{
+            background:"transparent",border:"none",color:"#94a3b8",fontSize:20,
+            cursor:"pointer",fontFamily:"inherit",padding:0,
+          }}>✕</button>
+        </div>
 
+        {/* Info banner */}
         <div style={{
-          fontSize:14,color:"rgba(255,255,255,0.9)",
-          marginTop:14,fontWeight:600,maxWidth:280,
-        }}>{slide.small}</div>
+          background:"rgba(168,85,247,0.1)",border:"1px solid rgba(168,85,247,0.25)",
+          borderRadius:10,padding:"10px 12px",marginBottom:14,
+          fontSize:11,color:"#c4b5fd",lineHeight:1.5,
+        }}>
+          💡 {t("admin.info")}
+        </div>
 
-        {/* Share button on last slide */}
-        {slide.showShare && (
-          <button
-            onClick={(e) => { e.stopPropagation(); handleShare(); }}
-            style={{
-              marginTop:30,
-              padding:"14px 28px",
-              background:"#fff",
-              color:"#1e2940",
-              border:"none",borderRadius:14,
-              fontSize:15,fontWeight:900,letterSpacing:1,
-              cursor:"pointer",fontFamily:"inherit",
-              boxShadow:"0 10px 30px rgba(0,0,0,0.3)",
-            }}
-          >📤 {t("wrapped.shareBtn")}</button>
-        )}
+        {/* Member list */}
+        <div style={{display:"flex",flexDirection:"column",gap:10}}>
+          {memberStats.map(m => (
+            <div key={m.uid} style={{
+              background:"rgba(15,23,42,0.5)",
+              border:"1px solid rgba(71,85,105,0.3)",
+              borderRadius:10,padding:"12px",
+            }}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+                <div style={{fontSize:14,fontWeight:800,color:"#fff"}}>
+                  🟢 {m.name}
+                </div>
+                <div style={{fontSize:9,color:"#64748b",fontFamily:"monospace"}}>
+                  {m.uid.substring(0, 8)}...
+                </div>
+              </div>
+              <div style={{
+                display:"grid",gridTemplateColumns:"repeat(4, 1fr)",
+                gap:6,marginBottom:10,
+              }}>
+                <div style={{textAlign:"center",padding:"4px 2px",background:"rgba(36,49,80,0.5)",borderRadius:6}}>
+                  <div style={{fontSize:13,fontWeight:900,color:"#22c55e"}}>{m.totalPicks}</div>
+                  <div style={{fontSize:8,color:"#64748b"}}>{t("admin.picks")}</div>
+                </div>
+                <div style={{textAlign:"center",padding:"4px 2px",background:"rgba(36,49,80,0.5)",borderRadius:6}}>
+                  <div style={{fontSize:13,fontWeight:900,color:"#fbbf24"}}>{m.coinBalance}</div>
+                  <div style={{fontSize:8,color:"#64748b"}}>{t("admin.coins")}</div>
+                </div>
+                <div style={{textAlign:"center",padding:"4px 2px",background:"rgba(36,49,80,0.5)",borderRadius:6}}>
+                  <div style={{fontSize:13,fontWeight:900,color:"#3b82f6"}}>{m.cardCount}</div>
+                  <div style={{fontSize:8,color:"#64748b"}}>{t("admin.cards")}</div>
+                </div>
+                <div style={{textAlign:"center",padding:"4px 2px",background:"rgba(36,49,80,0.5)",borderRadius:6}}>
+                  <div style={{fontSize:13,fontWeight:900,color:"#a855f7"}}>{m.achievements}</div>
+                  <div style={{fontSize:8,color:"#64748b"}}>{t("admin.badges")}</div>
+                </div>
+              </div>
+              <button onClick={() => handleShareBackup(m)} style={{
+                width:"100%",padding:"7px 10px",
+                background:"linear-gradient(180deg,rgba(168,85,247,0.2),rgba(168,85,247,0.1))",
+                border:"1px solid rgba(168,85,247,0.4)",
+                borderRadius:8,
+                color:"#c4b5fd",fontSize:11,fontWeight:700,
+                cursor:"pointer",fontFamily:"inherit",
+              }}>
+                📤 {t("admin.shareBackup")}
+              </button>
+            </div>
+          ))}
+        </div>
 
-        {/* Tap to continue hint */}
-        {!isLast && (
-          <div style={{
-            position:"absolute",bottom:30,
-            fontSize:11,color:"rgba(255,255,255,0.6)",
-            letterSpacing:2,
-          }}>{t("wrapped.tapToContinue")}</div>
+        {memberStats.length === 0 && (
+          <div style={{textAlign:"center",padding:30,color:"#64748b",fontSize:12}}>
+            {t("admin.noMembers")}
+          </div>
         )}
       </div>
     </div>
@@ -10326,6 +10411,7 @@ export default function App() {
   const [showRules, setShowRules] = useState(false);
   const [showAchievements, setShowAchievements] = useState(false);
   const [showWrapped, setShowWrapped] = useState(false);
+  const [showAdmin, setShowAdmin] = useState(false);
 
   // Track unlocked badge IDs (persisted in localStorage)
   // 💰 COINS — earned from correct predictions, spent on roulette spins
@@ -10732,6 +10818,45 @@ export default function App() {
           // Pull shared actuals from the ACTIVE league only (so commissioner can broadcast)
           if (code === activeLeagueCode && data.actuals) setActuals(data.actuals);
           if (code === activeLeagueCode && data.actualKo) setActualKo(data.actualKo);
+
+          // 🛡️ RESTORE BACKUP — if user re-joined with empty local state, pull from cloud
+          if (code === activeLeagueCode && data.members && userId) {
+            const myEntry = data.members[userId];
+            if (myEntry) {
+              // Restore coins if local is 0 and remote has more
+              if (myEntry.coinBalance != null && coinBalance === 0 && myEntry.coinBalance > 0) {
+                setCoinBalance(myEntry.coinBalance);
+              }
+              // Restore card collection if empty locally
+              if (myEntry.cardCollection && Object.keys(cardCollection || {}).length === 0
+                  && Object.keys(myEntry.cardCollection).length > 0) {
+                setCardCollection(myEntry.cardCollection);
+              }
+              // Restore picks if empty locally
+              if (myEntry.picks && Object.keys(picks || {}).length === 0
+                  && Object.keys(myEntry.picks).length > 0) {
+                setPicks(myEntry.picks);
+              }
+              // Restore koPicks
+              if (myEntry.koPicks && Object.keys(koPicks || {}).length === 0
+                  && Object.keys(myEntry.koPicks).length > 0) {
+                setKoPicks(myEntry.koPicks);
+              }
+              // Restore koWinners
+              if (myEntry.koWinners && Object.keys(koWinners || {}).length === 0
+                  && Object.keys(myEntry.koWinners).length > 0) {
+                setKoWinners(myEntry.koWinners);
+              }
+              // Restore bonus picks
+              if (myEntry.winnerPick && !winnerPick) setWinnerPick(myEntry.winnerPick);
+              if (myEntry.topScorerPick && !topScorerPick) setTopScorerPick(myEntry.topScorerPick);
+              // Restore achievements
+              if (Array.isArray(myEntry.unlockedAchievements) && unlockedAchievements.size === 0
+                  && myEntry.unlockedAchievements.length > 0) {
+                setUnlockedAchievements(new Set(myEntry.unlockedAchievements));
+              }
+            }
+          }
         },
         (err) => {
           console.error(`League sync error (${code}):`, err);
@@ -10744,17 +10869,28 @@ export default function App() {
   }, [leagueCodes.join("|"), activeLeagueCode]);
 
   // Push our picks to ALL leagues the user is in (debounced)
+  // 🛡️ Includes a full backup: picks, koPicks, koWinners, bonus picks, card collection,
+  // coins, achievements, and pickedAtHours. If a user loses their device or clears
+  // localStorage, they can restore by rejoining the same league with the same name.
   useEffect(() => {
     if (!leagueCodes.length || !name) return;
     const handle = setTimeout(() => {
       leagueCodes.forEach(code => {
-        // Always include cardCollection — even if empty, this guarantees friends see fresh data
-        updateMyPicks(code, userId, name, picks, koWinners, { winnerPick, topScorerPick, koPicks, cardCollection: cardCollection || {} })
+        updateMyPicks(code, userId, name, picks, koWinners, {
+          winnerPick,
+          topScorerPick,
+          koPicks,
+          cardCollection: cardCollection || {},
+          // 🛡️ Backup fields — restored on re-login
+          coinBalance: coinBalance || 0,
+          unlockedAchievements: Array.from(unlockedAchievements || []),
+          pickedAtHours: pickedAtHours || [],
+        })
           .catch(err => console.error(`Failed to push picks to ${code}:`, err));
       });
     }, 800);
     return () => clearTimeout(handle);
-  }, [leagueCodes.join("|"), userId, name, picks, koWinners, winnerPick, topScorerPick, cardCollection]);
+  }, [leagueCodes.join("|"), userId, name, picks, koWinners, winnerPick, topScorerPick, cardCollection, coinBalance, unlockedAchievements, pickedAtHours]);
 
   // ─── GLOBAL PROFILE: push to the worldwide leaderboard (every user) ──────
   // Independent of league membership — everyone is on the global board.
@@ -11578,9 +11714,19 @@ export default function App() {
         onShowAchievements={()=>setShowAchievements(true)}
         onShowRoulette={()=>setShowRoulette(true)}
         onShowWrapped={()=>setShowWrapped(true)}
+        onShowAdmin={leagueData?.createdBy === name ? () => setShowAdmin(true) : null}
         onLogout={handleLogout}
         onReset={handleReset}
       />
+
+      {/* 👑 League Admin */}
+      {showAdmin && leagueData && (
+        <LeagueAdminModal
+          leagueData={leagueData}
+          leagueCode={activeLeagueCode}
+          onClose={()=>setShowAdmin(false)}
+        />
+      )}
 
       {/* 🎬 Sunday Wrapped */}
       {showWrapped && (
