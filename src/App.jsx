@@ -8,7 +8,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.3.0";
+const APP_VERSION = "3.3.1";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -10802,6 +10802,10 @@ export default function App() {
     }
   }, [name, picks, koWinners, koPicks, groupIdx, friends, actuals, actualKo, actualKoScores, leagueName, leagueCode, leagueCodes, activeLeagueCode, winnerPick, topScorerPick, actualWinner, actualTopScorer]);
 
+  // 🛡️ Track whether we've already done restore from cloud (per league code)
+  // Without this, restore would loop with the push effect.
+  const restoredFromCloudRef = useRef(new Set());
+
   // ─── FIREBASE LEAGUE SYNC ──────────────────────────────────────────────────
   // Subscribe to ALL leagues the user has joined, in real-time
   useEffect(() => {
@@ -10819,41 +10823,37 @@ export default function App() {
           if (code === activeLeagueCode && data.actuals) setActuals(data.actuals);
           if (code === activeLeagueCode && data.actualKo) setActualKo(data.actualKo);
 
-          // 🛡️ RESTORE BACKUP — if user re-joined with empty local state, pull from cloud
-          if (code === activeLeagueCode && data.members && userId) {
+          // 🛡️ RESTORE BACKUP — only ONCE per league per session
+          if (code === activeLeagueCode && data.members && userId && !restoredFromCloudRef.current.has(code)) {
+            restoredFromCloudRef.current.add(code);
             const myEntry = data.members[userId];
             if (myEntry) {
-              // Restore coins if local is 0 and remote has more
-              if (myEntry.coinBalance != null && coinBalance === 0 && myEntry.coinBalance > 0) {
-                setCoinBalance(myEntry.coinBalance);
+              // Restore coins if local balance is 0 and remote has more
+              if (myEntry.coinBalance != null && myEntry.coinBalance > 0) {
+                setCoins(prev => (prev?.balance || 0) === 0 ? { ...prev, balance: myEntry.coinBalance } : prev);
               }
               // Restore card collection if empty locally
-              if (myEntry.cardCollection && Object.keys(cardCollection || {}).length === 0
-                  && Object.keys(myEntry.cardCollection).length > 0) {
-                setCardCollection(myEntry.cardCollection);
+              if (myEntry.cardCollection && Object.keys(myEntry.cardCollection).length > 0) {
+                setCardCollection(prev => Object.keys(prev || {}).length === 0 ? myEntry.cardCollection : prev);
               }
-              // Restore picks if empty locally
-              if (myEntry.picks && Object.keys(picks || {}).length === 0
-                  && Object.keys(myEntry.picks).length > 0) {
-                setPicks(myEntry.picks);
+              // Restore picks
+              if (myEntry.picks && Object.keys(myEntry.picks).length > 0) {
+                setPicks(prev => Object.keys(prev || {}).length === 0 ? myEntry.picks : prev);
               }
               // Restore koPicks
-              if (myEntry.koPicks && Object.keys(koPicks || {}).length === 0
-                  && Object.keys(myEntry.koPicks).length > 0) {
-                setKoPicks(myEntry.koPicks);
+              if (myEntry.koPicks && Object.keys(myEntry.koPicks).length > 0) {
+                setKoPicks(prev => Object.keys(prev || {}).length === 0 ? myEntry.koPicks : prev);
               }
               // Restore koWinners
-              if (myEntry.koWinners && Object.keys(koWinners || {}).length === 0
-                  && Object.keys(myEntry.koWinners).length > 0) {
-                setKoWinners(myEntry.koWinners);
+              if (myEntry.koWinners && Object.keys(myEntry.koWinners).length > 0) {
+                setKoWinners(prev => Object.keys(prev || {}).length === 0 ? myEntry.koWinners : prev);
               }
               // Restore bonus picks
-              if (myEntry.winnerPick && !winnerPick) setWinnerPick(myEntry.winnerPick);
-              if (myEntry.topScorerPick && !topScorerPick) setTopScorerPick(myEntry.topScorerPick);
+              if (myEntry.winnerPick) setWinnerPick(prev => prev || myEntry.winnerPick);
+              if (myEntry.topScorerPick) setTopScorerPick(prev => prev || myEntry.topScorerPick);
               // Restore achievements
-              if (Array.isArray(myEntry.unlockedAchievements) && unlockedAchievements.size === 0
-                  && myEntry.unlockedAchievements.length > 0) {
-                setUnlockedAchievements(new Set(myEntry.unlockedAchievements));
+              if (Array.isArray(myEntry.unlockedAchievements) && myEntry.unlockedAchievements.length > 0) {
+                setUnlockedAchievements(prev => prev.size === 0 ? new Set(myEntry.unlockedAchievements) : prev);
               }
             }
           }
@@ -10882,7 +10882,7 @@ export default function App() {
           koPicks,
           cardCollection: cardCollection || {},
           // 🛡️ Backup fields — restored on re-login
-          coinBalance: coinBalance || 0,
+          coinBalance: coins?.balance || 0,
           unlockedAchievements: Array.from(unlockedAchievements || []),
           pickedAtHours: pickedAtHours || [],
         })
@@ -10890,7 +10890,7 @@ export default function App() {
       });
     }, 800);
     return () => clearTimeout(handle);
-  }, [leagueCodes.join("|"), userId, name, picks, koWinners, winnerPick, topScorerPick, cardCollection, coinBalance, unlockedAchievements, pickedAtHours]);
+  }, [leagueCodes.join("|"), userId, name, picks, koWinners, winnerPick, topScorerPick, cardCollection, coins?.balance, unlockedAchievements, pickedAtHours]);
 
   // ─── GLOBAL PROFILE: push to the worldwide leaderboard (every user) ──────
   // Independent of league membership — everyone is on the global board.
