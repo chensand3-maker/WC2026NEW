@@ -8,7 +8,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.3.4";
+const APP_VERSION = "3.3.5";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -5218,14 +5218,33 @@ function WrappedModal({ stats, onClose }) {
       `}</style>
       <div onClick={e => e.stopPropagation()} style={{
         maxWidth:420,width:"100%",maxHeight:"95vh",overflowY:"auto",
-        background:"linear-gradient(160deg,#7c2d92 0%,#a855f7 50%,#ec4899 100%)",
+        background:"linear-gradient(160deg,#15803d 0%,#166534 40%,#14532d 100%)",
         borderRadius:20,
         padding:"24px 18px 20px",
-        boxShadow:"0 20px 60px rgba(168,85,247,0.4), 0 0 80px rgba(236,72,153,0.2)",
+        boxShadow:"0 20px 60px rgba(20,83,45,0.5), 0 0 80px rgba(251,191,36,0.15)",
         animation:"wrappedSlideIn 0.5s cubic-bezier(0.2,0.7,0.3,1)",
         position:"relative",
-        border:"1px solid rgba(255,255,255,0.18)",
+        border:"1px solid rgba(251,191,36,0.3)",
+        overflow:"hidden",
       }}>
+        {/* Gold spotlight at top */}
+        <div style={{
+          position:"absolute",
+          top:0,left:"50%",
+          transform:"translateX(-50%)",
+          width:"140%",height:120,
+          background:"radial-gradient(ellipse at center top, rgba(251,191,36,0.4) 0%, rgba(251,191,36,0.15) 30%, transparent 60%)",
+          pointerEvents:"none",
+        }}/>
+        {/* Subtle pitch lines pattern */}
+        <div style={{
+          position:"absolute",inset:0,
+          background:`
+            linear-gradient(180deg, transparent 49%, rgba(255,255,255,0.04) 50%, transparent 51%),
+            repeating-linear-gradient(90deg, transparent 0px, transparent 38px, rgba(255,255,255,0.03) 38px, rgba(255,255,255,0.03) 40px)
+          `,
+          pointerEvents:"none",
+        }}/>
         {/* Close X */}
         <button onClick={onClose} style={{
           position:"absolute",top:12,right:12,
@@ -5235,16 +5254,17 @@ function WrappedModal({ stats, onClose }) {
           cursor:"pointer",fontFamily:"inherit",
         }}>✕</button>
 
+        <div style={{position:"relative",zIndex:1}}>
         {/* Header */}
         <div style={{textAlign:"center",marginBottom:18}}>
-          <div style={{fontSize:42,marginBottom:6}}>🎬</div>
+          <div style={{fontSize:42,marginBottom:6}}>🏆</div>
           <div style={{
-            fontSize:11,color:"rgba(255,255,255,0.85)",
+            fontSize:11,color:"rgba(251,191,36,0.95)",
             letterSpacing:3,fontWeight:800,marginBottom:4,
           }}>{t("wrapped.title")}</div>
           <div style={{
             fontSize:22,fontWeight:900,color:"#fff",
-            textShadow:"0 2px 10px rgba(0,0,0,0.3)",
+            textShadow:"0 2px 10px rgba(0,0,0,0.4)",
           }}>{stats.name}</div>
         </div>
 
@@ -5270,13 +5290,14 @@ function WrappedModal({ stats, onClose }) {
         <button onClick={handleShare} style={{
           width:"100%",
           padding:"13px 18px",
-          background:"#fff",
-          color:"#7c2d92",
+          background:"linear-gradient(135deg,#fbbf24,#f59e0b)",
+          color:"#14532d",
           border:"none",borderRadius:12,
           fontSize:14,fontWeight:900,letterSpacing:1,
           cursor:"pointer",fontFamily:"inherit",
-          boxShadow:"0 8px 24px rgba(0,0,0,0.25)",
+          boxShadow:"0 8px 24px rgba(0,0,0,0.3), 0 0 20px rgba(251,191,36,0.3)",
         }}>📤 {t("wrapped.shareBtn")}</button>
+        </div>
       </div>
     </div>
   );
