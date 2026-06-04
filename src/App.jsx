@@ -8,7 +8,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.3.3";
+const APP_VERSION = "3.3.4";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -350,6 +350,7 @@ const TRANSLATIONS = {
     "wrapped.predictionsSingular": "prediction this week",
     "wrapped.predictionsPlural": "predictions this week",
     "wrapped.exactTitle": "EXACT SCORES",
+    "wrapped.winnersTitle": "WINNERS",
     "wrapped.exactSubtitle": "Bullseyes this week",
     "wrapped.exactBrag": "🔥 You're on fire!",
     "wrapped.exactZero": "Next week is yours!",
@@ -870,6 +871,7 @@ const TRANSLATIONS = {
     "wrapped.predictionsSingular": "ניחוש השבוע",
     "wrapped.predictionsPlural": "ניחושים השבוע",
     "wrapped.exactTitle": "ניחושים מדויקים",
+    "wrapped.winnersTitle": "מנצח נכון",
     "wrapped.exactSubtitle": "בולים השבוע",
     "wrapped.exactBrag": "🔥 בלתי ניתן לעצור!",
     "wrapped.exactZero": "השבוע הבא יהיה שלך!",
@@ -5167,7 +5169,7 @@ function WrappedModal({ stats, onClose }) {
   const t = useT();
 
   const handleShare = () => {
-    const text = `🎬 השבוע שלי ב-Mundialito 2026:\n📊 ${stats.totalPicks} ניחושים\n🎯 ${stats.exactCount} מדויקים\n🪙 +${stats.coinsEarned} מטבעות\n🃏 ${stats.cardsThisWeek} קלפים חדשים\n\nתצטרפו אליי!`;
+    const text = `🎬 השבוע שלי ב-Mundialito 2026:\n📊 ${stats.totalPicks} ניחושים\n🎯 ${stats.exactCount} מדויקים\n✅ ${stats.winnerCount} מנצח נכון\n\nתצטרפו אליי!`;
     if (navigator.share) {
       navigator.share({ text }).catch(()=>{});
     } else {
@@ -5248,33 +5250,13 @@ function WrappedModal({ stats, onClose }) {
 
         {/* Stats grid 2x2 */}
         <div style={{
-          display:"grid",gridTemplateColumns:"1fr 1fr",
-          gap:10,marginBottom:14,
+          display:"grid",gridTemplateColumns:"1fr 1fr 1fr",
+          gap:8,marginBottom:14,
         }}>
           <StatBox emoji="📊" label={t("wrapped.predictionsTitle")} value={stats.totalPicks} />
           <StatBox emoji="🎯" label={t("wrapped.exactTitle")} value={stats.exactCount} color="#fbbf24" />
-          <StatBox emoji="🪙" label={t("wrapped.coinsTitle")} value={`+${stats.coinsEarned}`} color="#fde68a" />
-          <StatBox emoji="🃏" label={t("wrapped.cardsTitle")} value={stats.cardsThisWeek} />
+          <StatBox emoji="✅" label={t("wrapped.winnersTitle")} value={stats.winnerCount} color="#22c55e" />
         </div>
-
-        {/* Best card */}
-        {stats.bestCard && (
-          <div style={{
-            background:"rgba(0,0,0,0.25)",
-            borderRadius:12,
-            padding:"12px 10px",
-            marginBottom:14,
-            textAlign:"center",
-          }}>
-            <div style={{
-              fontSize:10,color:"rgba(255,255,255,0.7)",
-              letterSpacing:2,fontWeight:700,marginBottom:8,
-            }}>🏆 {t("wrapped.bestCardTitle")}</div>
-            <div style={{display:"flex",justifyContent:"center"}}>
-              <PlayerCard card={stats.bestCard} size="S" animated={false} />
-            </div>
-          </div>
-        )}
 
         {/* Quote */}
         <div style={{
