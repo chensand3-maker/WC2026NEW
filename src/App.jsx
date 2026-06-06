@@ -8,7 +8,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.5.1";
+const APP_VERSION = "3.5.2";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -598,7 +598,7 @@ const TRANSLATIONS = {
     "bracket.knockoutStage": "שלב הנוקאאוט",
     "bracket.title": "🏆 העץ",
     "bracket.tapToAdvance": "הקלד תוצאות. הקבוצות עולות לפי התוצאות האמיתיות.",
-    "bracket.doublePoints": "🔥 נקודות כפולות · עד 40 נק' לבחירה",
+    "bracket.doublePoints": "🔥 כל ניחוש שווה כפול בנוקאאוט!",
     "bracket.r16": "שמינית",
     "bracket.qf": "רבע",
     "bracket.sf": "חצי",
