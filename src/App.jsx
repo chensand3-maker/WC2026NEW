@@ -8,7 +8,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.4.0";
+const APP_VERSION = "3.5.1";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -7368,6 +7368,7 @@ function NextMatchCountdown({ allMatches }) {
         <div style={{
           display:"flex",alignItems:"center",justifyContent:"center",
           gap:8,fontSize:13,color:"#fff",fontWeight:700,marginTop:4,
+          direction:"ltr",
         }}>
           <span>{home.f}</span>
           <span style={{color:"#94a3b8"}}>{home.n}</span>
