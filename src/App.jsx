@@ -9,7 +9,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.6.0";
+const APP_VERSION = "3.8.0";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -1318,18 +1318,19 @@ const POINTS = {
 
 // 💰 Coin economy
 const COINS = {
-  EXACT: 200,       // 🎯 perfect prediction (groups)
-  RESULT: 100,      // ✅ correct winner (groups)
-  KO_EXACT: 400,    // 🎯 perfect KO prediction (doubled — rarer)
-  KO_RESULT: 200,   // ✅ correct KO winner
+  EXACT: 500,       // 🎯 perfect prediction (groups)
+  RESULT: 250,      // ✅ correct winner (groups)
+  KO_EXACT: 1000,   // 🎯 perfect KO prediction (doubled — rarer)
+  KO_RESULT: 500,   // ✅ correct KO winner
   SPIN: 100,        // 🎰 cost of one roulette spin
+  DAILY_BONUS: 500, // 🎁 daily login bonus
   STARTING_BONUS: 1000, // 🎁 given when user first opens the app
-  // Duplicate-card refund by rarity (when you pull a card you already own)
-  DUP_COMMON: 20,
-  DUP_UNCOMMON: 50,
-  DUP_RARE: 100,
-  DUP_EPIC: 300,
-  DUP_LEGENDARY: 1000,
+  // Duplicate-card refund by rarity (doubled — to balance the rarer pulls)
+  DUP_COMMON: 40,
+  DUP_UNCOMMON: 100,
+  DUP_RARE: 200,
+  DUP_EPIC: 600,
+  DUP_LEGENDARY: 2000,
 };
 
 // ─── ACHIEVEMENTS ────────────────────────────────────────────────────────────
@@ -2818,7 +2819,8 @@ const CARDS_BY_RARITY = {
 };
 
 // Rarity probabilities (must sum to 100) — Legendary intentionally very rare
-const RARITY_ODDS = { L: 3, E: 12, R: 22, U: 28, C: 35 };
+// Regular spin odds (harder to get top tier — legendary stays at 2%, rest reduced)
+const RARITY_ODDS = { L: 2, E: 5, R: 15, U: 28, C: 50 };
 
 // Visual config per rarity tier — used by the card UI later
 const RARITY_CONFIG = {
@@ -2840,22 +2842,55 @@ function rollOneCard() {
   }
   const pool = CARDS_BY_RARITY[rarity];
   if (!pool || pool.length === 0) {
-    // Fallback if pool is empty (shouldn't happen)
     const all = CARDS;
     return all[Math.floor(Math.random() * all.length)];
   }
   return pool[Math.floor(Math.random() * pool.length)];
 }
 
-// 🎮 Player rating (FIFA-style 55-99 score) — deterministic from card name
-// Same player always gets the same rating, scaled by rarity tier
+// 🎮 Player rating (FIFA-style 55-99 score)
+// New bands per user request: Legendary 95-99, Epic 85-94, Rare 75-84, Uncommon 65-74, Common 55-64
 const RATING_RANGES = {
-  L: { min: 88, max: 99 },  // Legendary
-  E: { min: 80, max: 87 },  // Epic
-  R: { min: 72, max: 79 },  // Rare
-  U: { min: 64, max: 71 },  // Uncommon
-  C: { min: 55, max: 63 },  // Common
+  L: { min: 95, max: 99 },  // Legendary
+  E: { min: 85, max: 94 },  // Epic
+  R: { min: 75, max: 84 },  // Rare
+  U: { min: 65, max: 74 },  // Uncommon
+  C: { min: 55, max: 64 },  // Common
 };
+
+// Manual ratings for the top players — locked to specific values to feel like FC25
+// (within our 55-99 scale, scaled up so the best player gets 99).
+const MANUAL_RATINGS = {
+  // Legendary tier (95-99)
+  "Kylian Mbappé": 99,
+  "Erling Haaland": 99,
+  "Vinícius Júnior": 98,
+  "Jude Bellingham": 98,
+  "Lamine Yamal": 98,
+  "Mohamed Salah": 97,
+  "Rodri": 97,
+  "Pedri": 96,
+  "Lionel Messi": 96,
+  "Virgil van Dijk": 96,
+  "Achraf Hakimi": 95,
+  "Cristiano Ronaldo": 95,
+  "Luka Modrić": 95,
+  "Harry Kane": 96,
+  "Son Heung-min": 95,
+  // Epic tier (85-94)
+  "Thibaut Courtois": 90,
+  "Lautaro Martínez": 91,
+  "Julián Álvarez": 90,
+  "Emiliano Martínez": 89,
+  "Antoine Griezmann": 88,
+  "Ousmane Dembélé": 90,
+  "Aurélien Tchouaméni": 88,
+  "Bukayo Saka": 90,
+  "Phil Foden": 89,
+  "Declan Rice": 88,
+  "Raphinha": 88,
+};
+
 // Hash a string into a deterministic integer
 function _stringHash(str) {
   let h = 0;
@@ -2865,12 +2900,13 @@ function _stringHash(str) {
   }
   return Math.abs(h);
 }
-// Each player gets a deterministic rating + perfect-99 lottery (1 in 15 for legendary, otherwise capped at range)
+// Each player gets a deterministic rating. Manual override applies first (top stars),
+// otherwise hash within the rarity range gives a stable rating.
 function getPlayerRating(card) {
+  // Manual override for top players (matches FC25 prestige)
+  if (MANUAL_RATINGS[card.name] != null) return MANUAL_RATINGS[card.name];
   const range = RATING_RANGES[card.rarity] || RATING_RANGES.C;
   const hash = _stringHash(card.name);
-  // Legendary: 1-in-15 chance of getting the perfect 99
-  if (card.rarity === "L" && (hash % 15) === 0) return 99;
   const span = range.max - range.min;
   return range.min + (hash % (span + 1));
 }
@@ -4287,19 +4323,11 @@ function RouletteModal({ coins, isSpinning, pendingCard, onSpin, onClose, onShow
     if (!canSpin) return;
     setLeverPulled(true);
     playLever();
-    // After lever animation completes, trigger the spin
-    setTimeout(() => {
-      onSpin();
-    }, 300);
-    // Reset lever after a moment so it animates back up
+    setTimeout(() => { onSpin(); }, 300);
     setTimeout(() => setLeverPulled(false), 800);
   };
 
-  // The spin button also triggers the lever for satisfaction
-  const handleSpinClick = () => {
-    if (!canSpin) return;
-    handleLeverPull();
-  };
+  const handleSpinClick = () => { handleLeverPull(); };
 
   return (
     <div onClick={() => !isSpinning && onClose()} style={{
@@ -5935,6 +5963,7 @@ function CardRevealModal({ result, onClose, freshSpin = false }) {
           textAlign:"center",
           animation: "textChar 0.5s ease-out 0.5s both",
           opacity: 1,
+          direction:"ltr",
         }}>
           {isLegendary ? "🏆 LEGENDARY 🏆" : `${cfg.emoji} ${cfg.label}!`}
         </div>
@@ -10604,6 +10633,7 @@ export default function App() {
   const [showAdmin, setShowAdmin] = useState(false);
   const [showAdminGift, setShowAdminGift] = useState(false);
   const [giftToast, setGiftToast] = useState(null); // {amount, reason}
+  const [dailyBonusToast, setDailyBonusToast] = useState(null); // {amount}
 
   // Track unlocked badge IDs (persisted in localStorage)
   // 💰 COINS — earned from correct predictions, spent on roulette spins
@@ -10984,6 +11014,26 @@ export default function App() {
       localStorage.setItem("wc2026_claimed_gifts_v1", JSON.stringify(Array.from(claimed)));
     } catch {}
   }, [leagueData?.gifts]);
+
+  // 🎁 DAILY BONUS — give 500 coins once per calendar day (Israel time)
+  // Uses ISO date string "YYYY-MM-DD" so it resets at midnight local time.
+  useEffect(() => {
+    if (!name) return; // don't fire on welcome screen
+    let lastClaim = "";
+    try { lastClaim = localStorage.getItem("wc2026_daily_bonus_last_v1") || ""; } catch {}
+    const today = new Date().toISOString().slice(0, 10); // "YYYY-MM-DD"
+    if (lastClaim === today) return; // already claimed today
+
+    // Claim it
+    try { localStorage.setItem("wc2026_daily_bonus_last_v1", today); } catch {}
+    // Small delay so user sees the bonus arriving (not instantly with app load)
+    const timer = setTimeout(() => {
+      setCoins(prev => ({ ...prev, balance: (prev?.balance || 0) + COINS.DAILY_BONUS }));
+      setDailyBonusToast({ amount: COINS.DAILY_BONUS });
+      setTimeout(() => setDailyBonusToast(null), 5000);
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, [name]);
 
   const [leagueError, setLeagueError] = useState("");
   const [liveFetchAt, setLiveFetchAt] = useState(null); // timestamp of last successful fetch
@@ -11995,6 +12045,31 @@ export default function App() {
             <div style={{fontSize:24,marginBottom:4}}>🎁</div>
             <div style={{fontSize:18,fontWeight:900}}>+{giftToast.amount} 🪙</div>
             <div style={{fontSize:12,fontWeight:700,marginTop:4,opacity:0.85}}>{giftToast.reason}</div>
+          </div>
+        </>
+      )}
+
+      {/* 🎁 Daily Bonus Toast */}
+      {dailyBonusToast && (
+        <>
+          <style>{`@keyframes dailyBonusIn { 0% { opacity: 0; transform: translate(-50%, -40px) scale(0.85); } 60% { transform: translate(-50%, 8px) scale(1.05); } 100% { opacity: 1; transform: translate(-50%, 0) scale(1); } }`}</style>
+          <div style={{
+            position:"fixed",top:24,left:"50%",
+            zIndex:10000,
+            background:"linear-gradient(135deg,#22c55e,#16a34a)",
+            color:"#fff",
+            padding:"16px 24px",borderRadius:14,
+            boxShadow:"0 12px 40px rgba(0,0,0,0.5), 0 0 40px rgba(34,197,94,0.5)",
+            fontSize:14,fontWeight:900,
+            animation:"dailyBonusIn 0.6s cubic-bezier(0.2,0.7,0.3,1) forwards",
+            maxWidth:"90vw",textAlign:"center",direction:"rtl",
+            transform:"translateX(-50%)",
+            border:"2px solid rgba(255,255,255,0.3)",
+          }}>
+            <div style={{fontSize:28,marginBottom:4}}>☀️</div>
+            <div style={{fontSize:11,letterSpacing:2,fontWeight:800,opacity:0.85}}>בונוס יומי!</div>
+            <div style={{fontSize:22,fontWeight:900,marginTop:4}}>+{dailyBonusToast.amount} 🪙</div>
+            <div style={{fontSize:11,fontWeight:700,marginTop:4,opacity:0.85}}>תחזור מחר לעוד!</div>
           </div>
         </>
       )}
