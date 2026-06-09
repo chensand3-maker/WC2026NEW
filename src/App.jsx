@@ -9,7 +9,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.8.5";
+const APP_VERSION = "3.8.6";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -11578,14 +11578,43 @@ export default function App() {
     setScreen("today");
   };
   const handleRestore = (restored) => {
-    setName(restored.name || "");
-    // 🆔 Restore userId so the user is recognized as the same person across browsers/devices
-    if (restored.userId) {
-      setUserId(restored.userId);
-    }
-    // 🎁 When restoring on a fresh browser, mark all existing league gifts as already claimed
-    // so they don't re-apply (the coinBalance in the backup already includes them).
+    // 🛡️ If restoring an account on a fresh browser, the local state and userId are
+    // brand new (random). Pushing them to Firebase first would create a duplicate
+    // member entry. Save everything to localStorage directly and reload — that way
+    // the app boots up clean with the restored userId from the start.
     try {
+      // 🆔 Save the FULL state to localStorage so the next page-load picks it up
+      saveState({
+        name: restored.name || "",
+        picks: restored.picks || {},
+        koWinners: restored.koWinners || {},
+        koPicks: restored.koPicks || {},
+        winnerPick: restored.winnerPick || null,
+        topScorerPick: restored.topScorerPick || null,
+        leagueName: restored.leagueName || "",
+        leagueCodes: Array.isArray(restored.leagueCodes) ? restored.leagueCodes
+                    : restored.leagueCode ? [restored.leagueCode] : [],
+        leagueCode: restored.leagueCode || "",
+        activeLeagueCode: restored.activeLeagueCode || restored.leagueCode || "",
+        userId: restored.userId || userId,
+        groupIdx: 0, friends: [], actuals: {}, actualKo: {}, actualKoScores: {},
+        actualWinner: "", actualTopScorer: null,
+      });
+      // Coins
+      if (typeof restored.coinBalance === "number" && restored.coinBalance > 0) {
+        const newCoins = { balance: restored.coinBalance, earnedFromIds: {}, gotStartingBonus: true };
+        try { localStorage.setItem("wc2026_coins_v7", JSON.stringify(newCoins)); } catch {}
+      }
+      // Cards
+      if (restored.cardCollection && Object.keys(restored.cardCollection).length > 0) {
+        const migrated = migrateCardCollection(restored.cardCollection);
+        try { localStorage.setItem("wc2026_cards_v2", JSON.stringify(migrated)); } catch {}
+      }
+      // Achievements
+      if (Array.isArray(restored.unlockedAchievements) && restored.unlockedAchievements.length > 0) {
+        try { localStorage.setItem("wc2026_achv_v1", JSON.stringify(restored.unlockedAchievements)); } catch {}
+      }
+      // 🎁 Mark all existing league gifts as already claimed (the coinBalance includes them)
       const code = restored.leagueCode || restored.activeLeagueCode || (restored.leagueCodes?.[0]);
       if (code && allLeagueData[code]?.gifts) {
         const existingIds = (allLeagueData[code].gifts || []).map(g => g?.id).filter(Boolean);
@@ -11593,47 +11622,14 @@ export default function App() {
           localStorage.setItem("wc2026_claimed_gifts_v1", JSON.stringify(existingIds));
         }
       }
-      // Also mark today's daily bonus as already claimed (it's included in the backup's coinBalance)
+      // Mark today's daily bonus as already claimed
       const today = new Date().toISOString().slice(0, 10);
       localStorage.setItem("wc2026_daily_bonus_last_v1", today);
-    } catch {}
-    setPicks(restored.picks || {});
-    setKoWinners(restored.koWinners || {});
-    setKoPicks(restored.koPicks || {});
-    setGroupIdx(restored.groupIdx || 0);
-    setFriends(restored.friends || []);
-    setActuals(restored.actuals || {});
-    setActualKo(restored.actualKo || {});
-    setLeagueName(restored.leagueName || "");
-    // Restore leagues - support both old single-code format and new array format
-    if (Array.isArray(restored.leagueCodes)) {
-      setLeagueCodes(restored.leagueCodes);
-      setActiveLeagueCode(restored.activeLeagueCode || restored.leagueCodes[0] || "");
-    } else if (restored.leagueCode) {
-      setLeagueCodes([restored.leagueCode]);
-      setActiveLeagueCode(restored.leagueCode);
-    } else {
-      setLeagueCodes([]);
-      setActiveLeagueCode("");
+    } catch (e) {
+      console.error("Restore save failed:", e);
     }
-    setWinnerPick(restored.winnerPick || null);
-    setTopScorerPick(restored.topScorerPick || null);
-    // 💰 Restore coins, cards, achievements if present in backup (from admin-sent JSON)
-    if (typeof restored.coinBalance === "number" && restored.coinBalance > 0) {
-      const newCoins = { balance: restored.coinBalance, earnedFromIds: {}, gotStartingBonus: true };
-      setCoins(newCoins);
-      try { localStorage.setItem("wc2026_coins_v7", JSON.stringify(newCoins)); } catch {}
-    }
-    if (restored.cardCollection && Object.keys(restored.cardCollection).length > 0) {
-      const migrated = migrateCardCollection(restored.cardCollection);
-      setCardCollection(migrated);
-      try { localStorage.setItem("wc2026_cards_v2", JSON.stringify(migrated)); } catch {}
-    }
-    if (Array.isArray(restored.unlockedAchievements) && restored.unlockedAchievements.length > 0) {
-      setUnlockedAchievements(new Set(restored.unlockedAchievements));
-      try { localStorage.setItem("wc2026_achv_v1", JSON.stringify(restored.unlockedAchievements)); } catch {}
-    }
-    setScreen("today");
+    // 🔄 Reload — boots with restored data, no duplicate Firebase record
+    window.location.reload();
   };
   const handleReset = () => {
     setConfirmAction({
