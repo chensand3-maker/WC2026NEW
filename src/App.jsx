@@ -9,7 +9,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.8.3";
+const APP_VERSION = "3.8.5";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -1802,6 +1802,7 @@ function decodePicks(code) {
         if (obj && obj.version === "wc2026-backup-v1") {
           return {
             name: obj.name || "Friend",
+            userId: obj.userId || null,
             picks: obj.picks || {},
             koWinners: obj.koWinners || {},
             koPicks: obj.koPicks || {},
@@ -5398,6 +5399,19 @@ function LeagueAdminModal({ leagueData, leagueCode, onClose }) {
     }
   };
 
+  const [removingUid, setRemovingUid] = useState(null);
+  const handleRemove = async (member) => {
+    const ok = confirm(`להסיר את ${member.name} מהליגה?\n\nהפעולה לא הפיכה — כל הניחושים והנתונים שלו יימחקו מהליגה.`);
+    if (!ok) return;
+    setRemovingUid(member.uid);
+    try {
+      await leaveLeague(leagueCode, member.uid);
+    } catch (err) {
+      alert("שגיאה: " + (err.message || "נסה שוב"));
+    }
+    setRemovingUid(null);
+  };
+
   return (
     <div onClick={onClose} style={{
       position:"fixed",inset:0,zIndex:9200,
@@ -5474,16 +5488,33 @@ function LeagueAdminModal({ leagueData, leagueCode, onClose }) {
                   <div style={{fontSize:8,color:"#64748b"}}>{t("admin.badges")}</div>
                 </div>
               </div>
-              <button onClick={() => handleShareBackup(m)} style={{
-                width:"100%",padding:"7px 10px",
-                background:"linear-gradient(180deg,rgba(168,85,247,0.2),rgba(168,85,247,0.1))",
-                border:"1px solid rgba(168,85,247,0.4)",
-                borderRadius:8,
-                color:"#c4b5fd",fontSize:11,fontWeight:700,
-                cursor:"pointer",fontFamily:"inherit",
-              }}>
-                📤 {t("admin.shareBackup")}
-              </button>
+              <div style={{display:"flex",gap:6}}>
+                <button onClick={() => handleShareBackup(m)} style={{
+                  flex:1,padding:"7px 10px",
+                  background:"linear-gradient(180deg,rgba(168,85,247,0.2),rgba(168,85,247,0.1))",
+                  border:"1px solid rgba(168,85,247,0.4)",
+                  borderRadius:8,
+                  color:"#c4b5fd",fontSize:11,fontWeight:700,
+                  cursor:"pointer",fontFamily:"inherit",
+                }}>
+                  📤 {t("admin.shareBackup")}
+                </button>
+                <button
+                  onClick={() => handleRemove(m)}
+                  disabled={removingUid === m.uid}
+                  style={{
+                    padding:"7px 12px",
+                    background:"linear-gradient(180deg,rgba(239,68,68,0.2),rgba(239,68,68,0.1))",
+                    border:"1px solid rgba(239,68,68,0.4)",
+                    borderRadius:8,
+                    color:"#fca5a5",fontSize:11,fontWeight:700,
+                    cursor: removingUid === m.uid ? "wait" : "pointer",
+                    fontFamily:"inherit",
+                    opacity: removingUid === m.uid ? 0.5 : 1,
+                  }}>
+                  {removingUid === m.uid ? "..." : "🗑️ הסר"}
+                </button>
+              </div>
             </div>
           ))}
         </div>
@@ -10340,6 +10371,7 @@ function decodeBackup(code) {
       if (obj && obj.version === "wc2026-backup-v1") {
         return {
           name: obj.name || "",
+          userId: obj.userId || null,
           picks: obj.picks || {},
           koPicks: obj.koPicks || {},
           koWinners: obj.koWinners || {},
@@ -11004,7 +11036,7 @@ export default function App() {
   // Cache of league data for each league code: { code -> data }
   const [allLeagueData, setAllLeagueData] = useState({});
   const MAX_LEAGUES = 5;
-  const [userId] = useState(() => saved?.userId || `u_${Date.now()}_${Math.random().toString(36).slice(2,8)}`);
+  const [userId, setUserId] = useState(() => saved?.userId || `u_${Date.now()}_${Math.random().toString(36).slice(2,8)}`);
   // Backwards-compatibility shims: rest of App.jsx still uses `leagueCode` / `setLeagueCode`
   // for the *currently active* league. These will continue to work transparently.
   const leagueCode = activeLeagueCode;
@@ -11547,6 +11579,24 @@ export default function App() {
   };
   const handleRestore = (restored) => {
     setName(restored.name || "");
+    // 🆔 Restore userId so the user is recognized as the same person across browsers/devices
+    if (restored.userId) {
+      setUserId(restored.userId);
+    }
+    // 🎁 When restoring on a fresh browser, mark all existing league gifts as already claimed
+    // so they don't re-apply (the coinBalance in the backup already includes them).
+    try {
+      const code = restored.leagueCode || restored.activeLeagueCode || (restored.leagueCodes?.[0]);
+      if (code && allLeagueData[code]?.gifts) {
+        const existingIds = (allLeagueData[code].gifts || []).map(g => g?.id).filter(Boolean);
+        if (existingIds.length > 0) {
+          localStorage.setItem("wc2026_claimed_gifts_v1", JSON.stringify(existingIds));
+        }
+      }
+      // Also mark today's daily bonus as already claimed (it's included in the backup's coinBalance)
+      const today = new Date().toISOString().slice(0, 10);
+      localStorage.setItem("wc2026_daily_bonus_last_v1", today);
+    } catch {}
     setPicks(restored.picks || {});
     setKoWinners(restored.koWinners || {});
     setKoPicks(restored.koPicks || {});
