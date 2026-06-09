@@ -9,7 +9,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.8.2";
+const APP_VERSION = "3.8.3";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -1795,6 +1795,30 @@ function encodePicks(name, picks, koWinners) {
 function decodePicks(code) {
   try {
     const c = code.trim();
+    // 👑 Admin-sent JSON backup format — also accepted on the welcome screen
+    if (c.startsWith("{") && c.includes("wc2026-backup-v1")) {
+      try {
+        const obj = JSON.parse(c);
+        if (obj && obj.version === "wc2026-backup-v1") {
+          return {
+            name: obj.name || "Friend",
+            picks: obj.picks || {},
+            koWinners: obj.koWinners || {},
+            koPicks: obj.koPicks || {},
+            winnerPick: obj.winnerPick || null,
+            topScorerPick: obj.topScorerPick || null,
+            leagueCode: obj.leagueCode || "",
+            leagueCodes: obj.leagueCode ? [obj.leagueCode] : [],
+            activeLeagueCode: obj.leagueCode || "",
+            cardCollection: obj.cardCollection || {},
+            coinBalance: obj.coinBalance,
+            unlockedAchievements: obj.unlockedAchievements || [],
+            pickedAtHours: obj.pickedAtHours || [],
+          };
+        }
+      } catch { /* fall through */ }
+      return null;
+    }
     if (!c.startsWith("WC26P|")) return null;
     const parts = c.split("|");
     if (parts.length < 3) return null;
@@ -11510,6 +11534,12 @@ export default function App() {
 
   const handleStart = (n) => { setName(n); setScreen("today"); };
   const handleImport = (d) => {
+    // If the user pasted their own full JSON backup, restore everything (no "'s copy")
+    if (d.coinBalance != null || (d.cardCollection && Object.keys(d.cardCollection).length > 0)) {
+      handleRestore(d);
+      return;
+    }
+    // Otherwise — this is a friend's pick code, make a copy
     setName(d.name + "'s copy");
     setPicks(d.picks);
     setKoWinners(d.koWinners);
