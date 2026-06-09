@@ -9,7 +9,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.8.0";
+const APP_VERSION = "3.8.2";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -10308,6 +10308,32 @@ function encodeBackup(state) {
 function decodeBackup(code) {
   if (!code) return null;
   const c = code.trim();
+  // 👑 Admin-sent JSON backup format (from "League Admin → Send backup to member")
+  // Shape: {"version":"wc2026-backup-v1","leagueCode":...,"name":...,"picks":{},"koPicks":{},...}
+  if (c.startsWith("{") && c.includes("wc2026-backup-v1")) {
+    try {
+      const obj = JSON.parse(c);
+      if (obj && obj.version === "wc2026-backup-v1") {
+        return {
+          name: obj.name || "",
+          picks: obj.picks || {},
+          koPicks: obj.koPicks || {},
+          koWinners: obj.koWinners || {},
+          winnerPick: obj.winnerPick || null,
+          topScorerPick: obj.topScorerPick || null,
+          leagueCodes: obj.leagueCode ? [obj.leagueCode] : [],
+          leagueCode: obj.leagueCode || "",
+          activeLeagueCode: obj.leagueCode || "",
+          // Optional advanced restore fields (some may not be supported by onRestore)
+          cardCollection: obj.cardCollection || {},
+          coinBalance: obj.coinBalance,
+          unlockedAchievements: obj.unlockedAchievements || [],
+          pickedAtHours: obj.pickedAtHours || [],
+        };
+      }
+    } catch { /* fall through */ }
+    return null;
+  }
   // Legacy Base64 format
   if (c.startsWith("WC26B|")) {
     try { return JSON.parse(decodeURIComponent(escape(atob(c.slice(6))))); }
@@ -11005,7 +11031,11 @@ export default function App() {
     }
 
     if (totalAdded > 0) {
-      setCoins(prev => ({ ...prev, balance: (prev?.balance || 0) + totalAdded }));
+      setCoins(prev => {
+        const updated = { ...prev, balance: (prev?.balance || 0) + totalAdded };
+        try { localStorage.setItem("wc2026_coins_v7", JSON.stringify(updated)); } catch {}
+        return updated;
+      });
       setGiftToast({ amount: totalAdded, reason: lastReason });
       setTimeout(() => setGiftToast(null), 5000);
     }
@@ -11028,7 +11058,11 @@ export default function App() {
     try { localStorage.setItem("wc2026_daily_bonus_last_v1", today); } catch {}
     // Small delay so user sees the bonus arriving (not instantly with app load)
     const timer = setTimeout(() => {
-      setCoins(prev => ({ ...prev, balance: (prev?.balance || 0) + COINS.DAILY_BONUS }));
+      setCoins(prev => {
+        const updated = { ...prev, balance: (prev?.balance || 0) + COINS.DAILY_BONUS };
+        try { localStorage.setItem("wc2026_coins_v7", JSON.stringify(updated)); } catch {}
+        return updated;
+      });
       setDailyBonusToast({ amount: COINS.DAILY_BONUS });
       setTimeout(() => setDailyBonusToast(null), 5000);
     }, 1500);
@@ -11117,7 +11151,12 @@ export default function App() {
             if (myEntry) {
               // Restore coins if local balance is 0 and remote has more
               if (myEntry.coinBalance != null && myEntry.coinBalance > 0) {
-                setCoins(prev => (prev?.balance || 0) === 0 ? { ...prev, balance: myEntry.coinBalance } : prev);
+                setCoins(prev => {
+                  if ((prev?.balance || 0) !== 0) return prev;
+                  const updated = { ...prev, balance: myEntry.coinBalance };
+                  try { localStorage.setItem("wc2026_coins_v7", JSON.stringify(updated)); } catch {}
+                  return updated;
+                });
               }
               // Restore card collection if empty locally (with ID migration)
               if (myEntry.cardCollection && Object.keys(myEntry.cardCollection).length > 0) {
@@ -11499,6 +11538,21 @@ export default function App() {
     }
     setWinnerPick(restored.winnerPick || null);
     setTopScorerPick(restored.topScorerPick || null);
+    // 💰 Restore coins, cards, achievements if present in backup (from admin-sent JSON)
+    if (typeof restored.coinBalance === "number" && restored.coinBalance > 0) {
+      const newCoins = { balance: restored.coinBalance, earnedFromIds: {}, gotStartingBonus: true };
+      setCoins(newCoins);
+      try { localStorage.setItem("wc2026_coins_v7", JSON.stringify(newCoins)); } catch {}
+    }
+    if (restored.cardCollection && Object.keys(restored.cardCollection).length > 0) {
+      const migrated = migrateCardCollection(restored.cardCollection);
+      setCardCollection(migrated);
+      try { localStorage.setItem("wc2026_cards_v2", JSON.stringify(migrated)); } catch {}
+    }
+    if (Array.isArray(restored.unlockedAchievements) && restored.unlockedAchievements.length > 0) {
+      setUnlockedAchievements(new Set(restored.unlockedAchievements));
+      try { localStorage.setItem("wc2026_achv_v1", JSON.stringify(restored.unlockedAchievements)); } catch {}
+    }
     setScreen("today");
   };
   const handleReset = () => {
