@@ -3,12 +3,13 @@ import {
   generateLeagueCode, createLeague, joinLeague,
   updateMyPicks, leaveLeague, subscribeLeague, updateActualResults,
   updateMyGlobalProfile, deleteMyGlobalProfile, fetchGlobalLeaderboard, renameLeague,
+  sendGiftToLeague,
 } from "./firebase";
 import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnockoutToBracket, fetchTopScorers, fetchMatchDetails, getApiFixtureId } from "./liveResults";
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.5.2";
+const APP_VERSION = "3.6.0";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -3847,7 +3848,7 @@ function WorldLeaderboard({ userId, name, onClose }) {
 }
 
 // ─── SIDEBAR: hamburger menu drawer that slides in from one side ─────────────
-function Sidebar({ open, onClose, name, lang, setLang, onShowProfile, onShowRules, onShowBackup, onShowTutorial, onShowAchievements, onShowRoulette, onShowWrapped, onShowAdmin, onLogout, onReset, totalPoints, unlockedCount, coinBalance }) {
+function Sidebar({ open, onClose, name, lang, setLang, onShowProfile, onShowRules, onShowBackup, onShowTutorial, onShowAchievements, onShowRoulette, onShowWrapped, onShowAdmin, onShowAdminGift, onLogout, onReset, totalPoints, unlockedCount, coinBalance }) {
   const t = useT();
   const isRTL = lang === "he";
 
@@ -3915,6 +3916,9 @@ function Sidebar({ open, onClose, name, lang, setLang, onShowProfile, onShowRule
           )}
           {onShowAdmin && (
             <SidebarItem icon="👑" label={t("admin.menuItem")} onClick={()=>{onClose();onShowAdmin();}}/>
+          )}
+          {onShowAdminGift && (
+            <SidebarItem icon="🎁" label="שלח מתנה לליגה" onClick={()=>{onClose();onShowAdminGift();}}/>
           )}
           <SidebarItem
             icon="🏅"
@@ -5437,6 +5441,145 @@ function LeagueAdminModal({ leagueData, leagueCode, onClose }) {
             {t("admin.noMembers")}
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+// ─── 🎁 ADMIN GIFT MODAL — broadcast coins to all league members ──────────────
+function AdminGiftModal({ leagueCode, userName, onClose }) {
+  const [selectedPreset, setSelectedPreset] = useState(null);
+  const [customReason, setCustomReason] = useState("");
+  const [sending, setSending] = useState(false);
+  const [sentMsg, setSentMsg] = useState("");
+
+  const PRESETS = [
+    { id: "morning", emoji: "☀️", label: "בונוס בוקר טוב", amount: 100, defaultReason: "בוקר טוב מונדיאליטו!" },
+    { id: "matchday", emoji: "⚽", label: "יום משחק", amount: 200, defaultReason: "בונוס יום משחק!" },
+    { id: "weekly", emoji: "🏆", label: "בונוס שבועי", amount: 500, defaultReason: "בונוס נוכחות שבועי!" },
+    { id: "celebration", emoji: "🎉", label: "חגיגה", amount: 1000, defaultReason: "חגיגה לליגה!" },
+    { id: "huge", emoji: "💎", label: "פרס יוצא דופן", amount: 2000, defaultReason: "פרס ענק!" },
+  ];
+
+  const handleSend = async () => {
+    if (!selectedPreset) return;
+    setSending(true);
+    const gift = {
+      id: `gift_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+      amount: selectedPreset.amount,
+      reason: (customReason.trim() || selectedPreset.defaultReason),
+      sentBy: userName,
+      sentAt: Date.now(),
+    };
+    try {
+      await sendGiftToLeague(leagueCode, gift);
+      setSentMsg(`✅ נשלח! כולם קיבלו ${selectedPreset.amount} 🪙`);
+      setTimeout(() => { onClose(); }, 1800);
+    } catch (err) {
+      setSentMsg(`❌ שגיאה: ${err.message || "נסה שוב"}`);
+      setSending(false);
+    }
+  };
+
+  return (
+    <div onClick={onClose} style={{
+      position:"fixed",inset:0,background:"rgba(0,0,0,0.75)",
+      zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center",
+      padding:18,direction:"rtl",
+    }}>
+      <div onClick={e => e.stopPropagation()} style={{
+        maxWidth:440,width:"100%",maxHeight:"95vh",overflowY:"auto",
+        background:"linear-gradient(160deg,#0a0a0a 0%,#1a1a1a 50%,#0f0f0f 100%)",
+        borderRadius:20,padding:"24px 18px 20px",position:"relative",
+        border:"1px solid rgba(251,191,36,0.35)",
+        boxShadow:"0 20px 60px rgba(0,0,0,0.7), 0 0 60px rgba(251,191,36,0.2)",
+      }}>
+        <button onClick={onClose} style={{
+          position:"absolute",top:14,left:14,background:"rgba(255,255,255,0.1)",
+          border:"none",borderRadius:"50%",width:32,height:32,
+          color:"#fff",fontSize:18,cursor:"pointer",fontFamily:"inherit",
+        }}>✕</button>
+
+        <div style={{textAlign:"center",marginBottom:18}}>
+          <div style={{fontSize:42,marginBottom:6}}>🎁</div>
+          <div style={{fontSize:11,color:"rgba(251,191,36,0.95)",letterSpacing:3,fontWeight:800,marginBottom:4}}>ADMIN</div>
+          <div style={{fontSize:22,fontWeight:900,color:"#fff"}}>שלח מתנה לליגה</div>
+          <div style={{fontSize:12,color:"#94a3b8",marginTop:4}}>בחר תבנית — כולם יקבלו אוטומטית</div>
+        </div>
+
+        {/* Preset cards */}
+        <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:14}}>
+          {PRESETS.map(p => {
+            const isSelected = selectedPreset?.id === p.id;
+            return (
+              <button key={p.id} onClick={() => setSelectedPreset(p)} style={{
+                display:"flex",alignItems:"center",gap:12,
+                padding:"12px 14px",
+                background: isSelected ? "rgba(251,191,36,0.18)" : "rgba(255,255,255,0.05)",
+                border: isSelected ? "2px solid #fbbf24" : "1px solid rgba(255,255,255,0.1)",
+                borderRadius:12,cursor:"pointer",fontFamily:"inherit",
+                textAlign:"right",
+              }}>
+                <div style={{fontSize:28}}>{p.emoji}</div>
+                <div style={{flex:1,textAlign:"right"}}>
+                  <div style={{fontSize:14,fontWeight:800,color:"#fff"}}>{p.label}</div>
+                  <div style={{fontSize:11,color:"#94a3b8",marginTop:2}}>{p.defaultReason}</div>
+                </div>
+                <div style={{fontSize:18,fontWeight:900,color:"#fbbf24"}}>+{p.amount} 🪙</div>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Optional custom reason */}
+        {selectedPreset && (
+          <div style={{marginBottom:14}}>
+            <div style={{fontSize:11,color:"#94a3b8",marginBottom:6,fontWeight:700}}>סיבה מותאמת (אופציונלי):</div>
+            <input
+              type="text"
+              value={customReason}
+              onChange={e => setCustomReason(e.target.value)}
+              placeholder={selectedPreset.defaultReason}
+              maxLength={60}
+              style={{
+                width:"100%",padding:"10px 12px",
+                background:"rgba(255,255,255,0.05)",
+                border:"1px solid rgba(255,255,255,0.15)",
+                borderRadius:8,color:"#fff",fontSize:13,
+                fontFamily:"inherit",direction:"rtl",
+                boxSizing:"border-box",
+              }}
+            />
+          </div>
+        )}
+
+        {sentMsg && (
+          <div style={{
+            padding:"10px 12px",borderRadius:8,marginBottom:10,
+            background: sentMsg.startsWith("✅") ? "rgba(34,197,94,0.15)" : "rgba(239,68,68,0.15)",
+            color: sentMsg.startsWith("✅") ? "#22c55e" : "#ef4444",
+            fontSize:13,fontWeight:700,textAlign:"center",
+          }}>{sentMsg}</div>
+        )}
+
+        <button
+          onClick={handleSend}
+          disabled={!selectedPreset || sending}
+          style={{
+            width:"100%",padding:"13px 18px",
+            background: (!selectedPreset || sending)
+              ? "rgba(255,255,255,0.1)"
+              : "linear-gradient(135deg,#fbbf24,#d97706)",
+            color: (!selectedPreset || sending) ? "#64748b" : "#0a0a0a",
+            border:"none",borderRadius:12,
+            fontSize:14,fontWeight:900,letterSpacing:1,
+            cursor: (!selectedPreset || sending) ? "not-allowed" : "pointer",
+            fontFamily:"inherit",
+            boxShadow: (!selectedPreset || sending) ? "none" :
+              "0 8px 24px rgba(0,0,0,0.5), 0 0 30px rgba(251,191,36,0.35)",
+          }}>
+          {sending ? "שולח..." : selectedPreset ? `🚀 שלח ${selectedPreset.amount} 🪙 לכולם` : "בחר תבנית למעלה"}
+        </button>
       </div>
     </div>
   );
@@ -10459,6 +10602,8 @@ export default function App() {
   const [showAchievements, setShowAchievements] = useState(false);
   const [showWrapped, setShowWrapped] = useState(false);
   const [showAdmin, setShowAdmin] = useState(false);
+  const [showAdminGift, setShowAdminGift] = useState(false);
+  const [giftToast, setGiftToast] = useState(null); // {amount, reason}
 
   // Track unlocked badge IDs (persisted in localStorage)
   // 💰 COINS — earned from correct predictions, spent on roulette spins
@@ -10804,6 +10949,42 @@ export default function App() {
     if (!activeLeagueCode) return;
     setAllLeagueData(prev => ({ ...prev, [activeLeagueCode]: data }));
   };
+
+  // 🎁 ADMIN GIFTS — when a new gift arrives in leagueData.gifts, add coins
+  // and show a toast. Track claimed gift IDs in localStorage so we never apply twice.
+  useEffect(() => {
+    if (!leagueData?.gifts || !Array.isArray(leagueData.gifts)) return;
+    let claimed;
+    try {
+      claimed = new Set(JSON.parse(localStorage.getItem("wc2026_claimed_gifts_v1") || "[]"));
+    } catch { claimed = new Set(); }
+
+    const newGifts = leagueData.gifts.filter(g => g && g.id && !claimed.has(g.id));
+    if (newGifts.length === 0) return;
+
+    // Apply each new gift
+    let totalAdded = 0;
+    let lastReason = "";
+    for (const g of newGifts) {
+      const amount = Math.max(0, Math.floor(g.amount || 0));
+      if (amount > 0) {
+        totalAdded += amount;
+        lastReason = g.reason || "מתנה!";
+      }
+      claimed.add(g.id);
+    }
+
+    if (totalAdded > 0) {
+      setCoins(prev => ({ ...prev, balance: (prev?.balance || 0) + totalAdded }));
+      setGiftToast({ amount: totalAdded, reason: lastReason });
+      setTimeout(() => setGiftToast(null), 5000);
+    }
+
+    try {
+      localStorage.setItem("wc2026_claimed_gifts_v1", JSON.stringify(Array.from(claimed)));
+    } catch {}
+  }, [leagueData?.gifts]);
+
   const [leagueError, setLeagueError] = useState("");
   const [liveFetchAt, setLiveFetchAt] = useState(null); // timestamp of last successful fetch
   const [liveError, setLiveError] = useState("");
@@ -11772,6 +11953,7 @@ export default function App() {
         onShowRoulette={()=>setShowRoulette(true)}
         onShowWrapped={()=>setShowWrapped(true)}
         onShowAdmin={leagueData?.createdBy === name ? () => setShowAdmin(true) : null}
+        onShowAdminGift={leagueData?.createdBy === name && activeLeagueCode ? () => setShowAdminGift(true) : null}
         onLogout={handleLogout}
         onReset={handleReset}
       />
@@ -11783,6 +11965,38 @@ export default function App() {
           leagueCode={activeLeagueCode}
           onClose={()=>setShowAdmin(false)}
         />
+      )}
+
+      {/* 🎁 Admin Gift to League */}
+      {showAdminGift && activeLeagueCode && (
+        <AdminGiftModal
+          leagueCode={activeLeagueCode}
+          userName={name}
+          onClose={()=>setShowAdminGift(false)}
+        />
+      )}
+
+      {/* 🎁 Gift received toast */}
+      {giftToast && (
+        <>
+          <style>{`@keyframes giftToastIn { from { opacity: 0; transform: translate(-50%, -30px); } to { opacity: 1; transform: translate(-50%, 0); } }`}</style>
+          <div style={{
+            position:"fixed",top:20,left:"50%",
+            zIndex:10000,
+            background:"linear-gradient(135deg,#fbbf24,#d97706)",
+            color:"#0a0a0a",
+            padding:"14px 22px",borderRadius:14,
+            boxShadow:"0 12px 40px rgba(0,0,0,0.5), 0 0 40px rgba(251,191,36,0.4)",
+            fontSize:14,fontWeight:900,
+            animation:"giftToastIn 0.4s cubic-bezier(0.2,0.7,0.3,1) forwards",
+            maxWidth:"90vw",textAlign:"center",direction:"rtl",
+            transform:"translateX(-50%)",
+          }}>
+            <div style={{fontSize:24,marginBottom:4}}>🎁</div>
+            <div style={{fontSize:18,fontWeight:900}}>+{giftToast.amount} 🪙</div>
+            <div style={{fontSize:12,fontWeight:700,marginTop:4,opacity:0.85}}>{giftToast.reason}</div>
+          </div>
+        </>
       )}
 
       {/* 🎬 Sunday Wrapped */}

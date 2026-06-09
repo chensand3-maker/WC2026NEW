@@ -7,7 +7,6 @@ import {
   collection, getDoc, serverTimestamp, deleteField, deleteDoc,
 } from "firebase/firestore";
 
-// 🔧 PASTE YOUR FIREBASE CONFIG HERE (see SETUP.md step 2)
 const firebaseConfig = {
   apiKey: "AIzaSyD4HwvAZZCNwgVMh_h6zsyZ17lzl69_OrM",
   authDomain: "wc-2026-8b41e.firebaseapp.com",
@@ -20,7 +19,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// ─── League codes: short, memorable, easy to share ────────────────────────────
+// ─── League codes ──────────────────────────────────────────────────────────────
 
 const WORDS_A = ["GOLDEN","FIERY","WILD","COSMIC","ROYAL","BRAVE","SILVER","SWIFT","MIGHTY","LUCKY"];
 const WORDS_B = ["TIGER","EAGLE","LION","FALCON","WOLF","SHARK","PANDA","BULL","HAWK","DRAGON"];
@@ -41,7 +40,7 @@ export async function createLeague(code, leagueName, creator) {
     name: leagueName,
     createdBy: creator,
     createdAt: serverTimestamp(),
-    members: {}, // { userId: { name, picks, koWinners, updatedAt } }
+    members: {},
   });
   return code;
 }
@@ -60,7 +59,7 @@ export async function updateMyPicks(code, userId, name, picks, koWinners, extras
       name,
       picks,
       koWinners,
-      ...extras, // e.g. winnerPick, topScorerPick
+      ...extras,
       updatedAt: Date.now(),
     },
   });
@@ -78,7 +77,6 @@ export async function leaveLeague(code, userId) {
   });
 }
 
-// Real-time subscription: calls onUpdate whenever any member changes their picks
 export function subscribeLeague(code, onUpdate, onError) {
   const ref = doc(db, "leagues", code);
   return onSnapshot(
@@ -102,9 +100,26 @@ export async function updateActualResults(code, actuals, actualKo) {
   });
 }
 
-// ─── GLOBAL LEADERBOARD: every user across the whole world ─────────────────
-// Each user has a doc in /users/{userId} with their picks + total points.
-// This is updated every time the user makes a pick (debounced via the App).
+// ─── 🎁 ADMIN GIFTS (broadcast coins to all members) ──────────────────────────
+// Admin sends a gift → it's appended to the league's `gifts` array.
+// Each member's app sees the new gift (via subscribeLeague), adds coins locally,
+// and remembers it in localStorage so it never applies twice.
+//
+// Gift shape: { id, amount, reason, sentBy, sentAt }
+
+export async function sendGiftToLeague(code, gift) {
+  const ref = doc(db, "leagues", code);
+  const snap = await getDoc(ref);
+  if (!snap.exists()) throw new Error("League not found");
+  const data = snap.data();
+  const existingGifts = Array.isArray(data.gifts) ? data.gifts : [];
+  // Keep only the last 30 gifts (prevent bloat)
+  const trimmed = existingGifts.slice(-29);
+  const newGifts = [...trimmed, gift];
+  await updateDoc(ref, { gifts: newGifts });
+}
+
+// ─── GLOBAL LEADERBOARD ─────────────────────────────────────────────────────
 
 export async function updateMyGlobalProfile(userId, name, picks, koWinners, extras = {}) {
   const ref = doc(db, "users", userId);
@@ -112,13 +127,11 @@ export async function updateMyGlobalProfile(userId, name, picks, koWinners, extr
     name,
     picks,
     koWinners,
-    ...extras, // winnerPick, topScorerPick, totalPoints
+    ...extras,
     updatedAt: Date.now(),
   }, { merge: true });
 }
 
-// Delete this user's profile entirely — used when the user resets their account.
-// Removes them from the global leaderboard.
 export async function deleteMyGlobalProfile(userId) {
   if (!userId) return;
   const ref = doc(db, "users", userId);
@@ -129,19 +142,14 @@ export async function deleteMyGlobalProfile(userId) {
   }
 }
 
-// Fetch the top N users by total points + the requesting user's rank
-// Returns: { top: [...users], myRank, totalUsers, fetchedAt }
 import { query, orderBy, limit, getDocs } from "firebase/firestore";
 
 export async function fetchGlobalLeaderboard(topN = 10, myUserId = null) {
   const usersRef = collection(db, "users");
-  // Get top N by totalPoints. Over-fetch to allow for filtering out ghost profiles
-  // (users who deleted their account but old docs still exist).
   const topQuery = query(usersRef, orderBy("totalPoints", "desc"), limit(topN * 3 + 20));
   const topSnap = await getDocs(topQuery);
   const isReal = (d) => {
     const data = d.data() || {};
-    // Filter out profiles with no name OR no actual activity
     if (!data.name || !data.name.trim()) return false;
     const hasPicks = data.picks && Object.keys(data.picks).length > 0;
     const hasKoPicks = data.koPicks && Object.keys(data.koPicks).length > 0;
@@ -153,7 +161,6 @@ export async function fetchGlobalLeaderboard(topN = 10, myUserId = null) {
     .slice(0, topN)
     .map((d, i) => ({ uid: d.id, rank: i + 1, ...d.data() }));
 
-  // Get total user count + my rank — also filter ghosts
   let totalUsers = 0;
   let myRank = null;
   let myPoints = 0;
