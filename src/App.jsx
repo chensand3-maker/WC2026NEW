@@ -10,7 +10,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.17.2";
+const APP_VERSION = "3.18.0";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -6027,8 +6027,13 @@ function LuckyWheelModal({ onClose, onWin, freePlaysLeft, coinBalance, onUseFree
   const timerRef = useRef(null);
 
   // Pick a card from the "regular" mundial pool only (no friends/legends/Israelis)
+  // Only cards with rating 60-99 (so guesses are actually challenging)
   const pickRandomCard = () => {
-    return CARDS[Math.floor(Math.random() * CARDS.length)];
+    const pool = CARDS.filter(c => {
+      const r = getPlayerRating(c);
+      return r >= 60 && r <= 99;
+    });
+    return pool[Math.floor(Math.random() * pool.length)];
   };
 
   const startGame = (isFree) => {
@@ -6056,6 +6061,10 @@ function LuckyWheelModal({ onClose, onWin, freePlaysLeft, coinBalance, onUseFree
       // Time's up — count as wrong
       handleChoice(null);
       return;
+    }
+    // Vibrate in last 3 seconds for urgency
+    if (timeLeft <= 3) {
+      try { navigator.vibrate?.(40); } catch {}
     }
     timerRef.current = setTimeout(() => setTimeLeft(t => t - 1), 1000);
     return () => clearTimeout(timerRef.current);
@@ -6240,16 +6249,78 @@ function LuckyWheelModal({ onClose, onWin, freePlaysLeft, coinBalance, onUseFree
         )}
 
         {gameState === "playing" && (
-          <div>
+          <div style={{position:"relative"}}>
+            {/* 🔥 Fire emojis on the sides for long streaks */}
+            {streak >= 15 && (
+              <>
+                <div style={{
+                  position:"absolute",left:-8,top:"50%",transform:"translateY(-50%)",
+                  fontSize:32,animation:"flameDance 1s ease-in-out infinite",
+                  pointerEvents:"none",zIndex:1,
+                }}>🔥</div>
+                <div style={{
+                  position:"absolute",right:-8,top:"50%",transform:"translateY(-50%)",
+                  fontSize:32,animation:"flameDance 1s ease-in-out infinite 0.3s",
+                  pointerEvents:"none",zIndex:1,
+                }}>🔥</div>
+                <style>{`
+                  @keyframes flameDance {
+                    0%, 100% { transform: translateY(-50%) scale(1) rotate(-3deg); }
+                    50% { transform: translateY(-55%) scale(1.15) rotate(3deg); }
+                  }
+                `}</style>
+              </>
+            )}
+
             {/* Streak + timer */}
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10,padding:"0 4px"}}>
-              <div style={{fontSize:13,fontWeight:900,color:"#fbbf24"}}>🔥 רצף: {streak}</div>
               <div style={{
-                fontSize:14,fontWeight:900,
-                color: timeLeft <= 3 ? "#ef4444" : "#22c55e",
+                fontSize: streak >= 10 ? 16 : 13,
+                fontWeight:900,
+                color:"#fbbf24",
+                animation: streak >= 10 ? "streakPulse 1s ease-in-out infinite" : "none",
+              }}>🔥 רצף: {streak}</div>
+              <div style={{
+                fontSize: timeLeft <= 3 ? 20 : 14,
+                fontWeight:900,
+                color: timeLeft <= 3 ? "#ef4444" : timeLeft <= 6 ? "#fbbf24" : "#22c55e",
                 fontVariantNumeric:"tabular-nums",
+                animation: timeLeft <= 3 ? "timerPulse 0.5s ease-in-out infinite" : "none",
+                textShadow: timeLeft <= 3 ? "0 0 12px rgba(239,68,68,0.8)" : "none",
               }}>⏱️ {timeLeft}s</div>
             </div>
+            <style>{`
+              @keyframes streakPulse {
+                0%, 100% { transform: scale(1); text-shadow: 0 0 0 transparent; }
+                50% { transform: scale(1.08); text-shadow: 0 0 16px rgba(251,191,36,0.7); }
+              }
+              @keyframes timerPulse {
+                0%, 100% { transform: scale(1); }
+                50% { transform: scale(1.2); }
+              }
+              @keyframes questionShake {
+                0%, 100% { transform: translate(0, 0) rotate(0deg); }
+                25% { transform: translate(-2px, 1px) rotate(-2deg); }
+                50% { transform: translate(2px, -1px) rotate(2deg); }
+                75% { transform: translate(-1px, -2px) rotate(-1deg); }
+              }
+              @keyframes cardFlip {
+                0% { transform: rotateY(0deg) scale(0.95); opacity: 0; }
+                50% { transform: rotateY(90deg) scale(1); }
+                100% { transform: rotateY(0deg) scale(1); opacity: 1; }
+              }
+              @keyframes correctGlow {
+                0% { box-shadow: 0 0 0 0 rgba(34,197,94,0.7); }
+                100% { box-shadow: 0 0 0 40px rgba(34,197,94,0); }
+              }
+              @keyframes wrongShake {
+                0%, 100% { transform: translateX(0); }
+                20% { transform: translateX(-12px); }
+                40% { transform: translateX(12px); }
+                60% { transform: translateX(-8px); }
+                80% { transform: translateX(8px); }
+              }
+            `}</style>
 
             {/* Current prize + next milestone */}
             {(() => {
@@ -6261,9 +6332,13 @@ function LuckyWheelModal({ onClose, onWin, freePlaysLeft, coinBalance, onUseFree
                 <div style={{
                   display:"flex",justifyContent:"space-between",alignItems:"center",
                   marginBottom:14,padding:"8px 12px",
-                  background:"rgba(15,23,42,0.7)",
+                  background: streak >= 5
+                    ? "linear-gradient(90deg, rgba(251,191,36,0.15), rgba(15,23,42,0.7), rgba(251,191,36,0.15))"
+                    : "rgba(15,23,42,0.7)",
+                  backgroundSize: streak >= 5 ? "200% 100%" : "100% 100%",
+                  animation: streak >= 5 ? "shimmerBg 3s linear infinite" : "none",
                   borderRadius:10,
-                  border:"1px solid rgba(251,191,36,0.2)",
+                  border:`1px solid rgba(251,191,36,${streak >= 5 ? 0.5 : 0.2})`,
                 }}>
                   <div style={{textAlign:"center",flex:1}}>
                     <div style={{fontSize:9,color:"#94a3b8",fontWeight:700,letterSpacing:1}}>בכיס</div>
@@ -6283,12 +6358,26 @@ function LuckyWheelModal({ onClose, onWin, freePlaysLeft, coinBalance, onUseFree
                 </div>
               );
             })()}
+            <style>{`
+              @keyframes shimmerBg {
+                0% { background-position: 0% 50%; }
+                100% { background-position: 200% 50%; }
+              }
+            `}</style>
 
             {/* Two cards */}
             <div style={{display:"flex",justifyContent:"space-around",alignItems:"center",gap:8,marginBottom:18}}>
               {renderMiniCard(currentCard)}
               <div style={{fontSize:24,color:"#fbbf24"}}>VS</div>
-              {revealing && nextCard ? renderMiniCard(nextCard) : renderQuestionCard()}
+              <div style={{
+                width:"45%",maxWidth:170,
+                animation: revealing && nextCard
+                  ? `cardFlip 0.6s ease-out, ${lastResult === "correct" ? "correctGlow 0.8s ease-out" : "wrongShake 0.5s ease-in-out"}`
+                  : !revealing ? "questionShake 0.6s ease-in-out infinite" : "none",
+                borderRadius:14,
+              }}>
+                {revealing && nextCard ? renderMiniCard(nextCard) : renderQuestionCard()}
+              </div>
             </div>
 
             {revealing ? (
