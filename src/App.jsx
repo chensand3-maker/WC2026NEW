@@ -10,7 +10,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.12.0";
+const APP_VERSION = "3.12.1";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -6026,6 +6026,21 @@ function GlobalAdminModal({ onClose }) {
                 const isDup = groupedByName[nameKey] && groupedByName[nameKey].length > 1;
                 const points = u.totalPoints || 0;
                 const numPicks = u.picks ? Object.keys(u.picks).length : 0;
+                const numCards = u.cardCollection
+                  ? Object.values(u.cardCollection).reduce((s, n) => s + (n || 0), 0)
+                  : 0;
+                const coinBal = u.coinBalance || 0;
+                // Last seen — updatedAt might be a Firestore Timestamp or a number
+                let lastSeen = "";
+                try {
+                  const t = u.updatedAt?.toMillis ? u.updatedAt.toMillis() : u.updatedAt;
+                  if (t) {
+                    const days = Math.floor((Date.now() - t) / (1000 * 60 * 60 * 24));
+                    if (days === 0) lastSeen = "היום";
+                    else if (days === 1) lastSeen = "אתמול";
+                    else lastSeen = `לפני ${days} ימים`;
+                  }
+                } catch {}
                 return (
                   <div key={u.uid} style={{
                     background: isDup ? "rgba(239,68,68,0.08)" : "rgba(36,49,80,0.5)",
@@ -6041,9 +6056,17 @@ function GlobalAdminModal({ onClose }) {
                       <div style={{fontSize:9,color:"#64748b",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
                         {u.uid}
                       </div>
-                      <div style={{fontSize:10,color:"#94a3b8",marginTop:2}}>
-                        🏆 {points} pts · ⚽ {numPicks} ניחושים
+                      <div style={{fontSize:10,color:"#94a3b8",marginTop:3,display:"flex",flexWrap:"wrap",gap:6}}>
+                        <span>🏆 {points}</span>
+                        <span>⚽ {numPicks}</span>
+                        <span>🃏 {numCards}</span>
+                        <span>🪙 {coinBal}</span>
                       </div>
+                      {lastSeen && (
+                        <div style={{fontSize:9,color:"#64748b",marginTop:2}}>
+                          ⏰ {lastSeen}
+                        </div>
+                      )}
                     </div>
                     <button
                       onClick={() => handleDelete(u)}
