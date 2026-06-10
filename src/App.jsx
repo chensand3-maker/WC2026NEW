@@ -4,12 +4,13 @@ import {
   updateMyPicks, leaveLeague, subscribeLeague, updateActualResults,
   updateMyGlobalProfile, deleteMyGlobalProfile, fetchGlobalLeaderboard, renameLeague,
   sendGiftToLeague,
+  fetchAllGlobalUsers, deleteGlobalUser,
 } from "./firebase";
 import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnockoutToBracket, fetchTopScorers, fetchMatchDetails, getApiFixtureId } from "./liveResults";
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.11.1";
+const APP_VERSION = "3.12.0";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -4183,7 +4184,7 @@ function WorldLeaderboard({ userId, name, onClose }) {
 }
 
 // ─── SIDEBAR: hamburger menu drawer that slides in from one side ─────────────
-function Sidebar({ open, onClose, name, lang, setLang, onShowProfile, onShowRules, onShowBackup, onShowTutorial, onShowAchievements, onShowRoulette, onShowWrapped, onShowAdmin, onShowAdminGift, onLogout, onReset, totalPoints, unlockedCount, coinBalance }) {
+function Sidebar({ open, onClose, name, lang, setLang, onShowProfile, onShowRules, onShowBackup, onShowTutorial, onShowAchievements, onShowRoulette, onShowWrapped, onShowAdmin, onShowAdminGift, onShowGlobalAdmin, onLogout, onReset, totalPoints, unlockedCount, coinBalance }) {
   const t = useT();
   const isRTL = lang === "he";
 
@@ -4254,6 +4255,9 @@ function Sidebar({ open, onClose, name, lang, setLang, onShowProfile, onShowRule
           )}
           {onShowAdminGift && (
             <SidebarItem icon="🎁" label="שלח מתנה לליגה" onClick={()=>{onClose();onShowAdminGift();}}/>
+          )}
+          {onShowGlobalAdmin && (
+            <SidebarItem icon="🌍" label="ניהול גלובלי" onClick={()=>{onClose();onShowGlobalAdmin();}}/>
           )}
           <SidebarItem
             icon="🏅"
@@ -5850,6 +5854,223 @@ function LeagueAdminModal({ leagueData, leagueCode, onClose }) {
           <div style={{textAlign:"center",padding:30,color:"#64748b",fontSize:12}}>
             {t("admin.noMembers")}
           </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── 🌍 GLOBAL ADMIN MODAL — manage all users in Firebase (requires secret code) ─
+function GlobalAdminModal({ onClose }) {
+  const [unlocked, setUnlocked] = useState(false);
+  const [codeInput, setCodeInput] = useState("");
+  const [codeError, setCodeError] = useState("");
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [removingUid, setRemovingUid] = useState(null);
+  const [search, setSearch] = useState("");
+
+  // 🔐 Secret code — only Chen knows it
+  const ADMIN_CODE = "Chen-Boss-2026";
+
+  const tryUnlock = () => {
+    if (codeInput.trim() === ADMIN_CODE) {
+      setUnlocked(true);
+      setCodeError("");
+      loadUsers();
+    } else {
+      setCodeError("קוד שגוי");
+    }
+  };
+
+  const loadUsers = async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const all = await fetchAllGlobalUsers();
+      // Sort by name (case-insensitive)
+      all.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+      setUsers(all);
+    } catch (e) {
+      setError(e.message || "טעינה נכשלה");
+    }
+    setLoading(false);
+  };
+
+  const handleDelete = async (user) => {
+    const ok = confirm(`למחוק את "${user.name || user.uid}" מהדירוג העולמי?\n\nUserId: ${user.uid}\n\nהפעולה לא הפיכה — הנתונים שלו יימחקו מהענן.`);
+    if (!ok) return;
+    setRemovingUid(user.uid);
+    try {
+      await deleteGlobalUser(user.uid);
+      setUsers(prev => prev.filter(u => u.uid !== user.uid));
+      // Bust the world leaderboard cache so it refreshes
+      try { localStorage.removeItem("wc2026_world_v2"); } catch {}
+    } catch (e) {
+      alert("שגיאה: " + (e.message || "נסה שוב"));
+    }
+    setRemovingUid(null);
+  };
+
+  // Group users by name to find duplicates
+  const groupedByName = useMemo(() => {
+    const groups = {};
+    for (const u of users) {
+      const key = (u.name || "(ללא שם)").trim().toLowerCase();
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(u);
+    }
+    return groups;
+  }, [users]);
+
+  const filteredUsers = useMemo(() => {
+    if (!search.trim()) return users;
+    const q = search.toLowerCase();
+    return users.filter(u =>
+      (u.name || "").toLowerCase().includes(q) ||
+      u.uid.toLowerCase().includes(q)
+    );
+  }, [users, search]);
+
+  return (
+    <div style={{
+      position:"fixed",inset:0,background:"rgba(7,13,30,0.97)",
+      zIndex:9999,overflowY:"auto",
+      padding:"20px 16px",
+    }}>
+      <div style={{maxWidth:520,margin:"0 auto"}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:18}}>
+          <div style={{fontSize:18,fontWeight:900,color:"#fbbf24"}}>🌍 ניהול גלובלי</div>
+          <button onClick={onClose} style={{background:"transparent",border:"none",color:"#cbd5e1",fontSize:24,cursor:"pointer"}}>✕</button>
+        </div>
+
+        {!unlocked ? (
+          // 🔐 Code entry screen
+          <div style={{
+            background:"rgba(15,23,42,0.7)",
+            border:"1px solid rgba(251,191,36,0.3)",
+            borderRadius:14,padding:"24px 18px",
+            textAlign:"center",
+          }}>
+            <div style={{fontSize:42,marginBottom:14}}>🔐</div>
+            <div style={{fontSize:14,color:"#cbd5e1",marginBottom:18,lineHeight:1.5}}>
+              אזור אדמין בלבד — הקלד את הקוד הסודי
+            </div>
+            <input
+              type="password"
+              value={codeInput}
+              onChange={e => { setCodeInput(e.target.value); setCodeError(""); }}
+              onKeyDown={e => { if (e.key === "Enter") tryUnlock(); }}
+              placeholder="הקוד הסודי"
+              style={{
+                width:"100%",padding:"12px",borderRadius:10,
+                background:"rgba(36,49,80,0.5)",
+                border:`1px solid ${codeError ? "#ef4444" : "rgba(251,191,36,0.3)"}`,
+                color:"#fff",fontSize:14,fontFamily:"inherit",
+                textAlign:"center",letterSpacing:2,
+                boxSizing:"border-box",marginBottom:14,
+              }}
+            />
+            {codeError && (
+              <div style={{color:"#fca5a5",fontSize:12,marginBottom:14}}>⚠️ {codeError}</div>
+            )}
+            <button onClick={tryUnlock} style={{
+              width:"100%",padding:"12px",borderRadius:10,
+              background:"linear-gradient(135deg,#fbbf24,#f59e0b)",
+              color:"#1e2940",border:"none",
+              fontSize:14,fontWeight:900,
+              cursor:"pointer",fontFamily:"inherit",
+            }}>🔓 פתח</button>
+          </div>
+        ) : (
+          // 🔓 Admin panel
+          <>
+            <div style={{
+              background:"rgba(34,197,94,0.1)",
+              border:"1px solid rgba(34,197,94,0.4)",
+              borderRadius:10,padding:"10px 12px",marginBottom:14,
+              fontSize:12,color:"#86efac",
+            }}>
+              🔓 פתוח. סה"כ {users.length} משתמשים בענן.
+            </div>
+
+            <input
+              type="text"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="🔍 חפש לפי שם או ID"
+              style={{
+                width:"100%",padding:"10px",borderRadius:10,
+                background:"rgba(36,49,80,0.5)",
+                border:"1px solid rgba(71,85,105,0.5)",
+                color:"#fff",fontSize:13,fontFamily:"inherit",
+                boxSizing:"border-box",marginBottom:12,
+              }}
+            />
+
+            {loading && (
+              <div style={{textAlign:"center",padding:30,color:"#94a3b8"}}>⏳ טוען...</div>
+            )}
+            {error && (
+              <div style={{
+                background:"rgba(239,68,68,0.15)",
+                border:"1px solid rgba(239,68,68,0.4)",
+                borderRadius:10,padding:12,color:"#fca5a5",fontSize:13,marginBottom:14,
+              }}>⚠️ {error}</div>
+            )}
+
+            <div style={{display:"flex",flexDirection:"column",gap:8}}>
+              {filteredUsers.map(u => {
+                const nameKey = (u.name || "(ללא שם)").trim().toLowerCase();
+                const isDup = groupedByName[nameKey] && groupedByName[nameKey].length > 1;
+                const points = u.totalPoints || 0;
+                const numPicks = u.picks ? Object.keys(u.picks).length : 0;
+                return (
+                  <div key={u.uid} style={{
+                    background: isDup ? "rgba(239,68,68,0.08)" : "rgba(36,49,80,0.5)",
+                    border:`1px solid ${isDup ? "rgba(239,68,68,0.4)" : "rgba(71,85,105,0.3)"}`,
+                    borderRadius:10,padding:"10px 12px",
+                    display:"flex",alignItems:"center",gap:10,
+                  }}>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{fontSize:13,fontWeight:800,color:"#fff",marginBottom:2,display:"flex",alignItems:"center",gap:6}}>
+                        {u.name || "(ללא שם)"}
+                        {isDup && <span style={{fontSize:9,background:"#ef4444",color:"#fff",padding:"1px 5px",borderRadius:4,fontWeight:900}}>כפול</span>}
+                      </div>
+                      <div style={{fontSize:9,color:"#64748b",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                        {u.uid}
+                      </div>
+                      <div style={{fontSize:10,color:"#94a3b8",marginTop:2}}>
+                        🏆 {points} pts · ⚽ {numPicks} ניחושים
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => handleDelete(u)}
+                      disabled={removingUid === u.uid}
+                      style={{
+                        padding:"7px 12px",
+                        background:"linear-gradient(180deg,rgba(239,68,68,0.25),rgba(239,68,68,0.1))",
+                        border:"1px solid rgba(239,68,68,0.4)",
+                        borderRadius:8,
+                        color:"#fca5a5",fontSize:11,fontWeight:700,
+                        cursor: removingUid === u.uid ? "wait" : "pointer",
+                        fontFamily:"inherit",
+                        opacity: removingUid === u.uid ? 0.5 : 1,
+                        flexShrink:0,
+                      }}>
+                      {removingUid === u.uid ? "..." : "🗑️"}
+                    </button>
+                  </div>
+                );
+              })}
+              {!loading && filteredUsers.length === 0 && (
+                <div style={{textAlign:"center",padding:30,color:"#64748b",fontSize:13}}>
+                  אין משתמשים תואמים
+                </div>
+              )}
+            </div>
+          </>
         )}
       </div>
     </div>
@@ -11223,6 +11444,7 @@ export default function App() {
   const [showWrapped, setShowWrapped] = useState(false);
   const [showAdmin, setShowAdmin] = useState(false);
   const [showAdminGift, setShowAdminGift] = useState(false);
+  const [showGlobalAdmin, setShowGlobalAdmin] = useState(false);
   const [giftToast, setGiftToast] = useState(null); // {amount, reason}
   const [dailyBonusToast, setDailyBonusToast] = useState(null); // {amount}
 
@@ -12713,6 +12935,7 @@ export default function App() {
         onShowWrapped={()=>setShowWrapped(true)}
         onShowAdmin={leagueData?.createdBy === name ? () => setShowAdmin(true) : null}
         onShowAdminGift={leagueData?.createdBy === name && activeLeagueCode ? () => setShowAdminGift(true) : null}
+        onShowGlobalAdmin={()=>setShowGlobalAdmin(true)}
         onLogout={handleLogout}
         onReset={handleReset}
       />
@@ -12733,6 +12956,11 @@ export default function App() {
           userName={name}
           onClose={()=>setShowAdminGift(false)}
         />
+      )}
+
+      {/* 🌍 Global Admin (secret code) */}
+      {showGlobalAdmin && (
+        <GlobalAdminModal onClose={()=>setShowGlobalAdmin(false)} />
       )}
 
       {/* 🎁 Gift received toast */}

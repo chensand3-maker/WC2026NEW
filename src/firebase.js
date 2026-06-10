@@ -179,3 +179,18 @@ export async function fetchGlobalLeaderboard(topN = 10, myUserId = null) {
 
   return { top, myRank, myPoints, totalUsers, fetchedAt: Date.now() };
 }
+
+// 🔐 ADMIN: Fetch all users (every user document) — for global admin only.
+// Returns full user records, sorted by name. NO points filter — includes empties too.
+export async function fetchAllGlobalUsers() {
+  const usersRef = collection(db, "users");
+  const q = query(usersRef, limit(5000));
+  const snap = await getDocs(q);
+  return snap.docs.map(d => ({ uid: d.id, ...d.data() }));
+}
+
+// 🔐 ADMIN: Delete a user from the global "users" collection.
+export async function deleteGlobalUser(userId) {
+  if (!userId) throw new Error("userId required");
+  await deleteDoc(doc(db, "users", userId));
+}
