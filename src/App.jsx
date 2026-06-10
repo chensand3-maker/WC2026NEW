@@ -9,7 +9,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.8.6";
+const APP_VERSION = "3.9.1";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -1331,6 +1331,7 @@ const COINS = {
   DUP_RARE: 200,
   DUP_EPIC: 600,
   DUP_LEGENDARY: 2000,
+  DUP_LEGEND: 1500,    // 🟢 Hall of Fame legends — same tier as Legendary, slight bonus
 };
 
 // ─── ACHIEVEMENTS ────────────────────────────────────────────────────────────
@@ -2439,6 +2440,78 @@ const TOP_SCORER_CANDIDATES = TOP_SCORER_CANDIDATES_RAW.filter(p => _qualifiedTe
 // Rarities: "L"=Legendary, "E"=Epic, "R"=Rare, "U"=Uncommon, "C"=Common
 // Positions: "GK"=Goalkeeper, "D"=Defender, "M"=Midfielder, "F"=Forward
 // IMPORTANT: only includes teams that qualified for WC 2026 (48 nations).
+// 🟢 LEGENDS — Hall of Fame players from past World Cups
+// These bypass the "qualified team" filter (they're historical, not current squads).
+// Rarity: "G" (Green/Legend) — a new tier above Legendary.
+const LEGEND_CARDS_RAW = [
+  // 🇧🇷 Brazil
+  ["Pelé", "Brazil", "F"],
+  ["Ronaldo", "Brazil", "F"],
+  ["Ronaldinho", "Brazil", "M"],
+  ["Romário", "Brazil", "F"],
+  ["Cafú", "Brazil", "D"],
+  ["Roberto Carlos", "Brazil", "D"],
+  ["Kaká", "Brazil", "M"],
+  // 🇦🇷 Argentina
+  ["Diego Maradona", "Argentina", "F"],
+  ["Gabriel Batistuta", "Argentina", "F"],
+  ["Alfredo Di Stéfano", "Argentina", "F"],
+  // 🇩🇪 Germany
+  ["Franz Beckenbauer", "Germany", "D"],
+  ["Oliver Kahn", "Germany", "GK"],
+  ["Miroslav Klose", "Germany", "F"],
+  // 🇫🇷 France
+  ["Zinedine Zidane", "France", "M"],
+  ["Thierry Henry", "France", "F"],
+  ["Michel Platini", "France", "M"],
+  // 🇳🇱 Netherlands
+  ["Johan Cruyff", "Netherlands", "F"],
+  ["Marco van Basten", "Netherlands", "F"],
+  ["Ruud Gullit", "Netherlands", "M"],
+  // 🇮🇹 Italy
+  ["Paolo Maldini", "Italy", "D"],
+  ["Roberto Baggio", "Italy", "F"],
+  ["Gianluigi Buffon", "Italy", "GK"],
+  ["Andrea Pirlo", "Italy", "M"],
+  ["Francesco Totti", "Italy", "F"],
+  ["Javier Zanetti", "Italy", "D"],
+  // 🇪🇸 Spain
+  ["Xavi Hernández", "Spain", "M"],
+  ["Andrés Iniesta", "Spain", "M"],
+  ["Iker Casillas", "Spain", "GK"],
+  // 🏴 England
+  ["David Beckham", "England", "M"],
+  ["Bobby Charlton", "England", "M"],
+  // 🇵🇹 Portugal
+  ["Eusébio", "Portugal", "F"],
+  ["Luís Figo", "Portugal", "M"],
+  // 🇸🇪 Sweden
+  ["Zlatan Ibrahimović", "Sweden", "F"],
+  // 🇨🇮 Ivory Coast
+  ["Didier Drogba", "Ivory Coast", "F"],
+  // 🇩🇰 Denmark
+  ["Peter Schmeichel", "Denmark", "GK"],
+  // 🇭🇺 Hungary
+  ["Ferenc Puskás", "Hungary", "F"],
+];
+
+// Flag lookup for legend nations (some didn't qualify for WC 2026)
+const LEGEND_FLAGS = {
+  "Brazil": "🇧🇷", "Argentina": "🇦🇷", "Germany": "🇩🇪", "France": "🇫🇷",
+  "Netherlands": "🇳🇱", "Italy": "🇮🇹", "Spain": "🇪🇸", "England": "🏴󠁧󠁢󠁥󠁮󠁧󠁿",
+  "Portugal": "🇵🇹", "Sweden": "🇸🇪", "Ivory Coast": "🇨🇮", "Denmark": "🇩🇰",
+  "Hungary": "🇭🇺",
+};
+
+// Build LEGEND_CARDS with stable IDs (legend-0, legend-1, ...)
+const LEGEND_CARDS = LEGEND_CARDS_RAW.map(([name, team, pos], i) => ({
+  id: `legend-${i}`,
+  name, team, pos,
+  rarity: "G",
+  flag: LEGEND_FLAGS[team] || ALL_TEAMS.find(t => t.n === team)?.f || "⚽",
+  isLegend: true,
+}));
+
 const CARD_DATA = [
   // ─── LEGENDARY (15) — the icons ─────────────────────────────────
   ["Lionel Messi", "Argentina", "L", "F"],
@@ -2836,6 +2909,7 @@ function migrateCardCollection(coll) {
 }
 
 const CARDS_BY_RARITY = {
+  G: LEGEND_CARDS,  // 🟢 Legends — historical hall of fame
   L: CARDS.filter(c => c.rarity === "L"),
   E: CARDS.filter(c => c.rarity === "E"),
   R: CARDS.filter(c => c.rarity === "R"),
@@ -2849,6 +2923,7 @@ const RARITY_ODDS = { L: 2, E: 5, R: 15, U: 28, C: 50 };
 
 // Visual config per rarity tier — used by the card UI later
 const RARITY_CONFIG = {
+  G: { label: "LEGEND",    color: "#22c55e", bgGrad: "linear-gradient(135deg,#14532d,#16a34a,#bbf7d0,#16a34a,#14532d)", glow: "rgba(34,197,94,0.7)", emoji: "🟢", coins: 1500 },
   L: { label: "LEGENDARY", color: "#fbbf24", bgGrad: "linear-gradient(135deg,#78350f,#fbbf24,#fde68a,#fbbf24,#78350f)", glow: "rgba(251,191,36,0.8)", emoji: "🏆", coins: 1000 },
   E: { label: "EPIC",      color: "#a855f7", bgGrad: "linear-gradient(135deg,#581c87,#9333ea,#581c87)", glow: "rgba(168,85,247,0.5)", emoji: "💎", coins: 300 },
   R: { label: "RARE",      color: "#ef4444", bgGrad: "linear-gradient(135deg,#7f1d1d,#dc2626,#7f1d1d)", glow: "rgba(239,68,68,0.5)", emoji: "🔥", coins: 100 },
@@ -2876,6 +2951,7 @@ function rollOneCard() {
 // 🎮 Player rating (FIFA-style 55-99 score)
 // New bands per user request: Legendary 95-99, Epic 85-94, Rare 75-84, Uncommon 65-74, Common 55-64
 const RATING_RANGES = {
+  G: { min: 90, max: 99 },  // Legend — hall of fame, spans wider range
   L: { min: 95, max: 99 },  // Legendary
   E: { min: 85, max: 94 },  // Epic
   R: { min: 75, max: 84 },  // Rare
@@ -2886,6 +2962,43 @@ const RATING_RANGES = {
 // Manual ratings for the top players — locked to specific values to feel like FC25
 // (within our 55-99 scale, scaled up so the best player gets 99).
 const MANUAL_RATINGS = {
+  // 🟢 Legends (Hall of Fame) — ratings 90-99 by relative greatness
+  "Pelé": 99,
+  "Diego Maradona": 99,
+  "Johan Cruyff": 98,
+  "Ronaldo": 98,                  // R9 — Phenomeno
+  "Zinedine Zidane": 98,
+  "Alfredo Di Stéfano": 97,
+  "Franz Beckenbauer": 97,
+  "Ferenc Puskás": 97,
+  "Ronaldinho": 96,
+  "Marco van Basten": 96,
+  "Xavi Hernández": 96,
+  "Andrés Iniesta": 96,
+  "Andrea Pirlo": 96,
+  "Paolo Maldini": 96,
+  "Gianluigi Buffon": 96,
+  "Thierry Henry": 95,
+  "Michel Platini": 95,
+  "Eusébio": 95,
+  "Bobby Charlton": 95,
+  "Romário": 94,
+  "Iker Casillas": 94,
+  "Francesco Totti": 94,
+  "Roberto Baggio": 94,
+  "Ruud Gullit": 93,
+  "Kaká": 93,
+  "Roberto Carlos": 93,
+  "Cafú": 93,
+  "Luís Figo": 93,
+  "Zlatan Ibrahimović": 93,
+  "Oliver Kahn": 93,
+  "Peter Schmeichel": 92,
+  "Gabriel Batistuta": 92,
+  "Didier Drogba": 92,
+  "David Beckham": 92,
+  "Miroslav Klose": 91,
+  "Javier Zanetti": 91,
   // Legendary tier (95-99)
   "Kylian Mbappé": 99,
   "Erling Haaland": 99,
@@ -4331,7 +4444,7 @@ function playWinSound(rarity) {
 
 // 🎁 DAILY BONUS MODAL — shows the 7-day reward grid + claim button
 
-function RouletteModal({ coins, isSpinning, pendingCard, onSpin, onClose, onShowCollection }) {
+function RouletteModal({ coins, isSpinning, pendingCard, onSpin, onLegendsSpin, legendsSpinAvailable, spinCount, onClose, onShowCollection }) {
   const t = useT();
   const canSpin = coins.balance >= COINS.SPIN && !isSpinning;
   const [leverPulled, setLeverPulled] = useState(false);
@@ -4596,6 +4709,47 @@ function RouletteModal({ coins, isSpinning, pendingCard, onSpin, onClose, onShow
         }}>
           {isSpinning ? `🎰 ${t("roulette.spinning")}` : canSpin ? `🎰 ${t("roulette.spinBtn")}` : `🪙 ${t("roulette.notEnough")}`}
         </button>
+
+        {/* 🟢 Legends Spin — appears after 5 regular spins */}
+        {legendsSpinAvailable ? (
+          <button onClick={() => !isSpinning && onLegendsSpin?.()} disabled={isSpinning} style={{
+            width:"100%",marginTop:10,padding:"14px",borderRadius:12,
+            background:"linear-gradient(135deg,#15803d,#22c55e,#bbf7d0,#22c55e,#15803d)",
+            backgroundSize:"200% 200%",
+            color:"#0a0a0a",
+            border:"2px solid #22c55e",
+            fontSize:15,fontWeight:900,
+            fontFamily:"inherit",cursor: isSpinning ? "not-allowed" : "pointer",
+            boxShadow:"0 8px 24px rgba(34,197,94,0.6), 0 0 30px rgba(34,197,94,0.4)",
+            letterSpacing:1,
+            animation: isSpinning ? "none" : "legendShimmer 3s linear infinite",
+          }}>
+            🟢 LEGENDS SPIN — חינם!
+          </button>
+        ) : (
+          <div style={{
+            marginTop:10,padding:"10px 12px",
+            background:"rgba(34,197,94,0.08)",
+            border:"1px solid rgba(34,197,94,0.25)",
+            borderRadius:10,
+            fontSize:11,color:"#86efac",
+            textAlign:"center",fontWeight:700,
+          }}>
+            🟢 ספין אגדה חינם — עוד {Math.max(0, 5 - (spinCount || 0))} ספינים
+            <div style={{
+              marginTop:6,height:5,background:"rgba(255,255,255,0.1)",
+              borderRadius:3,overflow:"hidden",
+            }}>
+              <div style={{
+                width:`${Math.min(100, ((spinCount || 0) / 5) * 100)}%`,
+                height:"100%",
+                background:"linear-gradient(90deg,#22c55e,#bbf7d0)",
+                transition:"width 0.4s ease",
+              }}/>
+            </div>
+          </div>
+        )}
+        <style>{`@keyframes legendShimmer { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }`}</style>
 
         <button onClick={onShowCollection} style={{
           width:"100%",marginTop:8,padding:"10px",borderRadius:10,
@@ -10837,6 +10991,15 @@ export default function App() {
   const [spinResult, setSpinResult] = useState(null);       // the card just won
   const [isSpinning, setIsSpinning] = useState(false);      // animation playing
   const [pendingCard, setPendingCard] = useState(null);     // card chosen upfront; reels stop on it
+  // 🟢 Legends spin counter — every 5 regular spins → 1 free Legends spin
+  const [spinCount, setSpinCount] = useState(() => {
+    try { return parseInt(localStorage.getItem("wc2026_spin_count_v1") || "0", 10) || 0; }
+    catch { return 0; }
+  });
+  const [legendsSpinAvailable, setLegendsSpinAvailable] = useState(() => {
+    try { return localStorage.getItem("wc2026_legends_spin_v1") === "1"; }
+    catch { return false; }
+  });
   const [showCollection, setShowCollection] = useState(false); // collection viewer
 
   // Spend coins, roll a card, save to collection
@@ -10852,6 +11015,14 @@ export default function App() {
     const updatedCoins = { ...coins, balance: newBalance };
     setCoins(updatedCoins);
     try { localStorage.setItem("wc2026_coins_v7", JSON.stringify(updatedCoins)); } catch {}
+    // 🟢 Increment spin counter — every 5 regular spins unlocks a free Legends Spin
+    const newCount = spinCount + 1;
+    setSpinCount(newCount);
+    try { localStorage.setItem("wc2026_spin_count_v1", String(newCount)); } catch {}
+    if (newCount >= 5 && !legendsSpinAvailable) {
+      setLegendsSpinAvailable(true);
+      try { localStorage.setItem("wc2026_legends_spin_v1", "1"); } catch {}
+    }
     // After all reels have stopped (5 seconds total), reveal the card
     setTimeout(() => {
       const isDuplicate = (cardCollection[card.id] || 0) > 0;
@@ -10877,6 +11048,44 @@ export default function App() {
         else if (card.rarity === "E") navigator.vibrate?.([20, 40, 50]);
         else navigator.vibrate?.(20);
       } catch {}
+    }, 8000);
+  };
+
+  // 🟢 Legends Spin — FREE spin, only Legend cards. Available every 5 regular spins.
+  const handleLegendsSpin = () => {
+    if (!legendsSpinAvailable || isSpinning) return;
+    // Roll a random Legend
+    const pool = CARDS_BY_RARITY.G || [];
+    if (pool.length === 0) return;
+    const card = pool[Math.floor(Math.random() * pool.length)];
+    setPendingCard(card);
+    setIsSpinning(true);
+    setSpinResult(null);
+    // Consume the legends spin + reset spin counter
+    setLegendsSpinAvailable(false);
+    setSpinCount(0);
+    try {
+      localStorage.removeItem("wc2026_legends_spin_v1");
+      localStorage.setItem("wc2026_spin_count_v1", "0");
+    } catch {}
+    // After reels stop, reveal
+    setTimeout(() => {
+      const isDuplicate = (cardCollection[card.id] || 0) > 0;
+      const newCollection = { ...cardCollection, [card.id]: (cardCollection[card.id] || 0) + 1 };
+      setCardCollection(newCollection);
+      try { localStorage.setItem("wc2026_cards_v2", JSON.stringify(newCollection)); } catch {}
+      let refund = 0;
+      if (isDuplicate) {
+        refund = COINS.DUP_LEGEND;
+        const refundedBalance = (coins?.balance || 0) + refund;
+        const withRefund = { ...coins, balance: refundedBalance };
+        setCoins(withRefund);
+        try { localStorage.setItem("wc2026_coins_v7", JSON.stringify(withRefund)); } catch {}
+      }
+      setSpinResult({ card, isDuplicate, refund });
+      setIsSpinning(false);
+      setPendingCard(null);
+      try { navigator.vibrate?.([40, 60, 40, 60, 100, 60, 150]); } catch {}
     }, 8000);
   };
 
@@ -12219,6 +12428,9 @@ export default function App() {
           isSpinning={isSpinning}
           pendingCard={pendingCard}
           onSpin={handleSpin}
+          onLegendsSpin={handleLegendsSpin}
+          legendsSpinAvailable={legendsSpinAvailable}
+          spinCount={spinCount}
           onClose={()=>setShowRoulette(false)}
           onShowCollection={()=>setShowCollection(true)}
         />
