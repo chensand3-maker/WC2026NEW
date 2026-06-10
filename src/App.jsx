@@ -10,7 +10,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.12.1";
+const APP_VERSION = "3.13.4";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -1333,6 +1333,7 @@ const COINS = {
   DUP_EPIC: 600,
   DUP_LEGENDARY: 2000,
   DUP_LEGEND: 500,     // 🟢 Hall of Fame legends — modest refund (free spin already!)
+  DUP_FRIEND: 1000,    // 🎴 Friend cards — rare so a decent refund
   DUP_TRASH: 50,       // 🗑️ Israeli "legends" — small refund (it's a joke tier)
 };
 
@@ -2529,6 +2530,33 @@ const LEGEND_CARDS = LEGEND_CARDS_RAW.map(([name, team, pos], i) => ({
   isLegend: true,
 }));
 
+// 🎴 FRIEND CARDS — special cards of the league members. Rarity: "F" (Friend).
+// Special variants: "lafamilia" (black/yellow) and "pokemon" (Pokemon trainer theme).
+const FRIEND_CARDS_RAW = [
+  // [name, position, rating, subtitle/team, variant]
+  ["Adiv Elmakias",     "M",  99, "Snowy Power Pole",          "default"],
+  ["Or Ran Attia",      "M",  99, "Chicken Breast & Toothpick","default"],
+  ["Shay Ben Harosh",   "F",  99, "Fish Soup",                 "default"],
+  ["Itay Quatinsky",    "M",  99, "La Familia",                "lafamilia"],
+  ["Yossi Higri",       "M",  99, "Napkins",                   "default"],
+  ["Eliran Cohen",      "M",  99, "One Plate",                 "pokemon"],
+  ["Chen Sandgarten",   "D",  99, "Pikatofu",                  "default"],
+  ["Malki Rada",        "D",  99, "Malki Bryant",              "default"],
+];
+
+const FRIEND_CARDS = FRIEND_CARDS_RAW.map(([name, pos, rating, subtitle, variant], i) => ({
+  id: `friend-${i}`,
+  name,
+  team: subtitle, // Used as the bottom-line label instead of country
+  pos,
+  rarity: "F",
+  flag: variant === "lafamilia" ? "🦁" : variant === "pokemon" ? "🔴" : "🇮🇱",
+  isLegend: false,
+  isFriend: true,
+  variant,
+  manualRating: rating,
+}));
+
 // 🗑️ ISRAELI TRASH LEGENDS — local heroes with low ratings, for fun.
 const ISRAELI_LEGENDS_RAW = [
   ["Eyal Berkovic", "Israel", "M"],
@@ -2950,7 +2978,8 @@ function migrateCardCollection(coll) {
 }
 
 const CARDS_BY_RARITY = {
-  G: LEGEND_CARDS,  // 🟢 Legends — historical hall of fame
+  G: LEGEND_CARDS,    // 🟢 Legends — historical hall of fame
+  F: FRIEND_CARDS,    // 🎴 Friends — league members (white card)
   T: ISRAELI_LEGENDS, // 🗑️ Trash — Israeli "heroes"
   L: CARDS.filter(c => c.rarity === "L"),
   E: CARDS.filter(c => c.rarity === "E"),
@@ -2966,6 +2995,7 @@ const RARITY_ODDS = { L: 2, E: 5, R: 15, U: 28, C: 50 };
 // Visual config per rarity tier — used by the card UI later
 const RARITY_CONFIG = {
   G: { label: "LEGEND",    color: "#22c55e", bgGrad: "linear-gradient(135deg,#14532d,#16a34a,#bbf7d0,#16a34a,#14532d)", glow: "rgba(34,197,94,0.7)", emoji: "🟢", coins: 500 },
+  F: { label: "FRIEND",    color: "#ffffff", bgGrad: "linear-gradient(135deg,#f8fafc,#ffffff,#e2e8f0,#ffffff,#f8fafc)", glow: "rgba(255,255,255,0.7)", emoji: "⭐", coins: 800 },
   T: { label: "ISRAEL",    color: "#a16207", bgGrad: "linear-gradient(135deg,#3f3f46,#78716c,#a8a29e,#78716c,#3f3f46)", glow: "rgba(120,113,108,0.5)", emoji: "🗑️", coins: 50 },
   L: { label: "LEGENDARY", color: "#fbbf24", bgGrad: "linear-gradient(135deg,#78350f,#fbbf24,#fde68a,#fbbf24,#78350f)", glow: "rgba(251,191,36,0.8)", emoji: "🏆", coins: 1000 },
   E: { label: "EPIC",      color: "#a855f7", bgGrad: "linear-gradient(135deg,#581c87,#9333ea,#581c87)", glow: "rgba(168,85,247,0.5)", emoji: "💎", coins: 300 },
@@ -2995,6 +3025,7 @@ function rollOneCard() {
 // New bands per user request: Legendary 95-99, Epic 85-94, Rare 75-84, Uncommon 65-74, Common 55-64
 const RATING_RANGES = {
   G: { min: 90, max: 99 },  // Legend — hall of fame, spans wider range
+  F: { min: 95, max: 99 },  // 🎴 Friends — all 99 by default (overridden by manualRating)
   T: { min: 10, max: 40 },  // 🗑️ Trash — Israeli "legends" with low ratings
   L: { min: 95, max: 99 },  // Legendary
   E: { min: 85, max: 94 },  // Epic
@@ -3203,6 +3234,8 @@ function _stringHash(str) {
 // Each player gets a deterministic rating. Manual override applies first (top stars),
 // otherwise hash within the rarity range gives a stable rating.
 function getPlayerRating(card) {
+  // Built-in manualRating on the card itself (used by FRIEND_CARDS)
+  if (card.manualRating != null) return card.manualRating;
   // Manual override for top players (matches FC25 prestige)
   if (MANUAL_RATINGS[card.name] != null) return MANUAL_RATINGS[card.name];
   const range = RATING_RANGES[card.rarity] || RATING_RANGES.C;
@@ -5102,7 +5135,26 @@ function getPlayerStats(card) {
 }
 
 function PlayerCard({ card, size = "L", animated = false, flippable = false }) {
-  const cfg = RARITY_CONFIG[card.rarity];
+  const isFriend = card.rarity === "F";
+  const variant = card.variant || "default"; // "default", "lafamilia", "pokemon"
+  // Friend cards can override the base config based on variant
+  let cfg = RARITY_CONFIG[card.rarity];
+  if (isFriend) {
+    if (variant === "lafamilia") {
+      cfg = { ...cfg,
+        bgGrad: "linear-gradient(135deg,#0a0a0a,#1c1917,#facc15,#1c1917,#0a0a0a)",
+        color: "#facc15",
+        glow: "rgba(250,204,21,0.7)",
+      };
+    } else if (variant === "pokemon") {
+      cfg = { ...cfg,
+        bgGrad: "linear-gradient(135deg,#7f1d1d,#dc2626,#fef2f2,#dc2626,#7f1d1d)",
+        color: "#fef2f2",
+        glow: "rgba(220,38,38,0.7)",
+      };
+    }
+    // default keeps the white card from RARITY_CONFIG.F
+  }
   const isLegend = card.rarity === "G";
   const isLegendary = card.rarity === "L";
   const rating = getPlayerRating(card);
@@ -5418,7 +5470,11 @@ function PlayerCard({ card, size = "L", animated = false, flippable = false }) {
           <div style={{
             fontSize: dims.flag,
             filter:"drop-shadow(0 4px 8px rgba(0,0,0,0.5))",
-          }}>{card.flag}</div>
+          }}>{
+            isFriend
+              ? (variant === "lafamilia" ? "🦁" : variant === "pokemon" ? "🔴" : "🇮🇱")
+              : card.flag
+          }</div>
         </div>
       </div>
 
@@ -6244,6 +6300,7 @@ function CardRevealModal({ result, onClose, freshSpin = false }) {
   const { card, isDuplicate, refund } = result;
   const cfg = RARITY_CONFIG[card.rarity];
   const isLegend = card.rarity === "G";       // 🟢 Hall of Fame
+  const isFriend = card.rarity === "F";       // 🎴 League friends
   const isTrash = card.rarity === "T";        // 🗑️ Israeli "legends"
   const isLegendary = card.rarity === "L";
   const isEpic = card.rarity === "E";
@@ -6629,7 +6686,7 @@ function CardRevealModal({ result, onClose, freshSpin = false }) {
           opacity: 1,
           direction:"ltr",
         }}>
-          {isLegend ? "🟢 LEGEND 🟢" : isTrash ? "🗑️ 🇮🇱 🗑️" : isLegendary ? "🏆 LEGENDARY 🏆" : `${cfg.emoji} ${cfg.label}!`}
+          {isLegend ? "🟢 LEGEND 🟢" : isFriend ? "🎴 FRIEND CARD 🎴" : isTrash ? "🗑️ 🇮🇱 🗑️" : isLegendary ? "🏆 LEGENDARY 🏆" : `${cfg.emoji} ${cfg.label}!`}
         </div>
       )}
 
@@ -6701,7 +6758,7 @@ function CollectionModal({ collection, onClose }) {
       return a.name.localeCompare(b.name);
     };
     // Pool is determined by section
-    const pool = section === "legends" ? [...LEGEND_CARDS, ...ISRAELI_LEGENDS] : CARDS;
+    const pool = section === "legends" ? [...LEGEND_CARDS, ...ISRAELI_LEGENDS, ...FRIEND_CARDS] : CARDS;
     let cards;
     if (filter === "all") cards = pool;
     else if (filter === "owned") cards = pool.filter(c => (collection[c.id] || 0) > 0);
@@ -6711,7 +6768,7 @@ function CollectionModal({ collection, onClose }) {
   }, [section, filter, collection]);
 
   // Stats — per section
-  const sectionPool = section === "legends" ? [...LEGEND_CARDS, ...ISRAELI_LEGENDS] : CARDS;
+  const sectionPool = section === "legends" ? [...LEGEND_CARDS, ...ISRAELI_LEGENDS, ...FRIEND_CARDS] : CARDS;
   const ownedCount = sectionPool.filter(c => (collection[c.id] || 0) > 0).length;
   const totalCount = sectionPool.length;
   const pct = Math.round((ownedCount / totalCount) * 100);
@@ -6816,6 +6873,8 @@ function CollectionModal({ collection, onClose }) {
           <div style={{flex:1,overflowY:"auto",padding:"4px"}}>
             {(() => {
               const legends = filteredCards.filter(c => c.rarity === "G");
+              // 🎴 Friends — ONLY show ones the user has unlocked (they're a surprise)
+              const friends = filteredCards.filter(c => c.rarity === "F" && (collection[c.id] || 0) > 0);
               const israelis = filteredCards.filter(c => c.rarity === "T");
               const renderCard = (card) => {
                 const count = collection[card.id] || 0;
@@ -6841,6 +6900,16 @@ function CollectionModal({ collection, onClose }) {
               };
               return (
                 <>
+                  {friends.length > 0 && (
+                    <>
+                      <div style={{fontSize:10,color:"#f8fafc",letterSpacing:2,fontWeight:800,marginBottom:8,marginTop:4}}>
+                        🎴 חברי הליגה ({friends.length})
+                      </div>
+                      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill, minmax(95px, 1fr))",gap:8,marginBottom:16}}>
+                        {friends.map(renderCard)}
+                      </div>
+                    </>
+                  )}
                   {legends.length > 0 && (
                     <>
                       <div style={{fontSize:10,color:"#22c55e",letterSpacing:2,fontWeight:800,marginBottom:8,marginTop:4}}>
@@ -10167,8 +10236,9 @@ function LeagueHub({
 
                     {/* All owned cards grid — split into Players + Legends + Israel */}
                     {(() => {
-                      const ownedPlayers = ownedCards.filter(c => c.rarity !== "G" && c.rarity !== "T");
+                      const ownedPlayers = ownedCards.filter(c => c.rarity !== "G" && c.rarity !== "T" && c.rarity !== "F");
                       const ownedLegends = ownedCards.filter(c => c.rarity === "G");
+                      const ownedFriends = ownedCards.filter(c => c.rarity === "F");
                       const ownedTrash = ownedCards.filter(c => c.rarity === "T");
                       return (
                         <>
@@ -10240,6 +10310,31 @@ function LeagueHub({
                                       <PlayerCard card={card} size="S" animated={true} />
                                       {count > 1 && (
                                         <div style={{position:"absolute",top:4,right:4,background:"#a16207",color:"#fff",fontSize:9,fontWeight:900,borderRadius:8,padding:"2px 5px",border:"1px solid #1e2940"}}>×{count}</div>
+                                      )}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </>
+                          )}
+                          {ownedFriends.length > 0 && (
+                            <>
+                              <div style={{fontSize:10,color:"#f8fafc",letterSpacing:2,fontWeight:800,marginBottom:8,marginTop:4}}>
+                                🎴 חברי הליגה ({ownedFriends.length})
+                              </div>
+                              <div style={{
+                                display:"grid",
+                                gridTemplateColumns:"repeat(auto-fill, minmax(95px, 1fr))",
+                                gap:8,padding:"4px",
+                              }}>
+                                {ownedFriends.map(card => {
+                                  const count = theirCollection[card.id] || 0;
+                                  return (
+                                    <button key={card.id} onClick={()=>setCardPreview(card)} className="card-tilt"
+                                      style={{position:"relative",background:"transparent",border:"none",cursor:"pointer",padding:0,fontFamily:"inherit"}}>
+                                      <PlayerCard card={card} size="S" animated={true} />
+                                      {count > 1 && (
+                                        <div style={{position:"absolute",top:4,right:4,background:"#fbbf24",color:"#1e2940",fontSize:9,fontWeight:900,borderRadius:8,padding:"2px 5px",border:"1px solid #1e2940"}}>×{count}</div>
                                       )}
                                     </button>
                                   );
@@ -11665,8 +11760,19 @@ export default function App() {
   const handleLegendsSpin = () => {
     if (!legendsSpinAvailable || isSpinning) return;
     // 40% chance of Israeli "trash legend" instead of a real one (for laughs)
-    const goTrash = Math.random() < 0.40;
-    const pool = goTrash ? (CARDS_BY_RARITY.T || []) : (CARDS_BY_RARITY.G || []);
+    // Roll the card pool:
+    //   5% Friend cards (🎴 white)
+    //   38% Israeli trash (🗑️) — was 40% before friends came in
+    //   57% Real legend (🟢)
+    const roll = Math.random();
+    let pool;
+    if (roll < 0.05) {
+      pool = CARDS_BY_RARITY.F || [];
+    } else if (roll < 0.43) {
+      pool = CARDS_BY_RARITY.T || [];
+    } else {
+      pool = CARDS_BY_RARITY.G || [];
+    }
     if (pool.length === 0) return;
     const card = pool[Math.floor(Math.random() * pool.length)];
     setPendingCard(card);
@@ -11687,7 +11793,9 @@ export default function App() {
       try { localStorage.setItem("wc2026_cards_v2", JSON.stringify(newCollection)); } catch {}
       let refund = 0;
       if (isDuplicate) {
-        refund = card.rarity === "T" ? RARITY_CONFIG.T.coins : COINS.DUP_LEGEND;
+        refund = card.rarity === "T" ? RARITY_CONFIG.T.coins
+               : card.rarity === "F" ? COINS.DUP_FRIEND
+               : COINS.DUP_LEGEND;
         const refundedBalance = (coins?.balance || 0) + refund;
         const withRefund = { ...coins, balance: refundedBalance };
         setCoins(withRefund);
