@@ -10,7 +10,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.13.4";
+const APP_VERSION = "3.14.0";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -2534,23 +2534,28 @@ const LEGEND_CARDS = LEGEND_CARDS_RAW.map(([name, team, pos], i) => ({
 // Special variants: "lafamilia" (black/yellow) and "pokemon" (Pokemon trainer theme).
 const FRIEND_CARDS_RAW = [
   // [name, position, rating, subtitle/team, variant]
-  ["Adiv Elmakias",     "M",  99, "Snowy Power Pole",          "default"],
-  ["Or Ran Attia",      "M",  99, "Chicken Breast & Toothpick","default"],
-  ["Shay Ben Harosh",   "F",  99, "Fish Soup",                 "default"],
+  ["Adiv Elmakias",     "M",  99, "Snowy Power Pole",          "maccabi_ta"],
+  ["Or Ran Attia",      "M",  99, "Chicken Breast & Toothpick","maccabi_ta"],
+  ["Shay Ben Harosh",   "F",  99, "Fish Soup",                 "beitar"],
   ["Itay Quatinsky",    "M",  99, "La Familia",                "lafamilia"],
-  ["Yossi Higri",       "M",  99, "Napkins",                   "default"],
+  ["Yossi Higri",       "M",  99, "Napkins",                   "maccabi_haifa"],
   ["Eliran Cohen",      "M",  99, "One Plate",                 "pokemon"],
-  ["Chen Sandgarten",   "D",  99, "Pikatofu",                  "default"],
-  ["Malki Rada",        "D",  99, "Malki Bryant",              "default"],
+  ["Chen Sandgarten",   "D",  99, "Pikatofu",                  "real_madrid"],
+  ["Malki Rada",        "D",  99, "Malki Bryant",              "maccabi_ta"],
 ];
 
 const FRIEND_CARDS = FRIEND_CARDS_RAW.map(([name, pos, rating, subtitle, variant], i) => ({
   id: `friend-${i}`,
   name,
-  team: subtitle, // Used as the bottom-line label instead of country
+  team: subtitle,
   pos,
   rarity: "F",
-  flag: variant === "lafamilia" ? "🦁" : variant === "pokemon" ? "🔴" : "🇮🇱",
+  flag: variant === "lafamilia" || variant === "beitar" ? "🦁"
+      : variant === "pokemon" ? "🔴"
+      : variant === "maccabi_ta" ? "💛"
+      : variant === "maccabi_haifa" ? "💚"
+      : variant === "real_madrid" ? "👑"
+      : "🇮🇱",
   isLegend: false,
   isFriend: true,
   variant,
@@ -5136,24 +5141,47 @@ function getPlayerStats(card) {
 
 function PlayerCard({ card, size = "L", animated = false, flippable = false }) {
   const isFriend = card.rarity === "F";
-  const variant = card.variant || "default"; // "default", "lafamilia", "pokemon"
+  const variant = card.variant || "default";
   // Friend cards can override the base config based on variant
   let cfg = RARITY_CONFIG[card.rarity];
   if (isFriend) {
-    if (variant === "lafamilia") {
+    if (variant === "lafamilia" || variant === "beitar") {
+      // 🟡⚫ Beitar Jerusalem — yellow & black
       cfg = { ...cfg,
         bgGrad: "linear-gradient(135deg,#0a0a0a,#1c1917,#facc15,#1c1917,#0a0a0a)",
         color: "#facc15",
         glow: "rgba(250,204,21,0.7)",
       };
     } else if (variant === "pokemon") {
+      // 🔴⚪ Pokemon trainer — red & white
       cfg = { ...cfg,
         bgGrad: "linear-gradient(135deg,#7f1d1d,#dc2626,#fef2f2,#dc2626,#7f1d1d)",
         color: "#fef2f2",
         glow: "rgba(220,38,38,0.7)",
       };
+    } else if (variant === "maccabi_ta") {
+      // 🟡🔵 Maccabi Tel Aviv — yellow & blue
+      cfg = { ...cfg,
+        bgGrad: "linear-gradient(135deg,#1e3a8a,#2563eb,#fde047,#2563eb,#1e3a8a)",
+        color: "#fde047",
+        glow: "rgba(253,224,71,0.7)",
+      };
+    } else if (variant === "maccabi_haifa") {
+      // 🟢⚪ Maccabi Haifa — green & white
+      cfg = { ...cfg,
+        bgGrad: "linear-gradient(135deg,#064e3b,#16a34a,#f0fdf4,#16a34a,#064e3b)",
+        color: "#f0fdf4",
+        glow: "rgba(22,163,74,0.7)",
+      };
+    } else if (variant === "real_madrid") {
+      // ⚪ Real Madrid — pure white with subtle silver/gold accents
+      cfg = { ...cfg,
+        bgGrad: "linear-gradient(135deg,#ffffff,#f8fafc,#e2e8f0,#f8fafc,#ffffff)",
+        color: "#1e293b",
+        glow: "rgba(255,255,255,0.9)",
+      };
     }
-    // default keeps the white card from RARITY_CONFIG.F
+    // default also stays white from RARITY_CONFIG.F
   }
   const isLegend = card.rarity === "G";
   const isLegendary = card.rarity === "L";
@@ -5472,7 +5500,12 @@ function PlayerCard({ card, size = "L", animated = false, flippable = false }) {
             filter:"drop-shadow(0 4px 8px rgba(0,0,0,0.5))",
           }}>{
             isFriend
-              ? (variant === "lafamilia" ? "🦁" : variant === "pokemon" ? "🔴" : "🇮🇱")
+              ? (variant === "lafamilia" || variant === "beitar" ? "🦁"
+                : variant === "pokemon" ? "🔴"
+                : variant === "maccabi_ta" ? "💛"
+                : variant === "maccabi_haifa" ? "💚"
+                : variant === "real_madrid" ? "👑"
+                : "🇮🇱")
               : card.flag
           }</div>
         </div>
