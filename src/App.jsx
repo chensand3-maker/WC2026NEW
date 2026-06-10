@@ -10,7 +10,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.14.0";
+const APP_VERSION = "3.15.0";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -4222,7 +4222,7 @@ function WorldLeaderboard({ userId, name, onClose }) {
 }
 
 // ─── SIDEBAR: hamburger menu drawer that slides in from one side ─────────────
-function Sidebar({ open, onClose, name, lang, setLang, onShowProfile, onShowRules, onShowBackup, onShowTutorial, onShowAchievements, onShowRoulette, onShowWrapped, onShowAdmin, onShowAdminGift, onShowGlobalAdmin, onLogout, onReset, totalPoints, unlockedCount, coinBalance }) {
+function Sidebar({ open, onClose, name, lang, setLang, onShowProfile, onShowRules, onShowBackup, onShowTutorial, onShowAchievements, onShowRoulette, onShowWrapped, onShowAdmin, onShowAdminGift, onShowGlobalAdmin, onShowLuckyWheel, wheelAvailable, onLogout, onReset, totalPoints, unlockedCount, coinBalance }) {
   const t = useT();
   const isRTL = lang === "he";
 
@@ -4306,6 +4306,11 @@ function Sidebar({ open, onClose, name, lang, setLang, onShowProfile, onShowRule
             icon="🎰"
             label={`${t("sidebar.roulette")}${coinBalance ? ` · 🪙 ${coinBalance}` : ""}`}
             onClick={()=>{onClose();onShowRoulette();}}
+          />
+          <SidebarItem
+            icon="🎡"
+            label={`גלגל המזל${wheelAvailable ? " · 🟢 זמין!" : ""}`}
+            onClick={()=>{onClose();onShowLuckyWheel();}}
           />
           <SidebarItem icon="🎓" label={t("sidebar.tutorial")} onClick={()=>{onClose();onShowTutorial();}}/>
           <SidebarItem icon="ⓘ" label={t("sidebar.scoringRules")} onClick={()=>{onClose();onShowRules();}}/>
@@ -5943,6 +5948,171 @@ function LeagueAdminModal({ leagueData, leagueCode, onClose }) {
           <div style={{textAlign:"center",padding:30,color:"#64748b",fontSize:12}}>
             {t("admin.noMembers")}
           </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── 🎡 LUCKY WHEEL — daily spin for coins or cards ───────────────────────────
+const WHEEL_PRIZES = [
+  { id: "c100",  type: "coins",  amount: 100,  weight: 25, label: "100 🪙",  color: "#94a3b8" },
+  { id: "c300",  type: "coins",  amount: 300,  weight: 20, label: "300 🪙",  color: "#60a5fa" },
+  { id: "c600",  type: "coins",  amount: 600,  weight: 15, label: "600 🪙",  color: "#3b82f6" },
+  { id: "common",type: "card",   rarity: "C",  weight: 12, label: "⚪ Common", color: "#cbd5e1" },
+  { id: "c1500", type: "coins",  amount: 1500, weight: 10, label: "1500 🪙", color: "#22c55e" },
+  { id: "unc",   type: "card",   rarity: "U",  weight: 8,  label: "💧 Uncommon", color: "#06b6d4" },
+  { id: "c3000", type: "coins",  amount: 3000, weight: 5,  label: "3000 🪙", color: "#16a34a" },
+  { id: "rare",  type: "card",   rarity: "R",  weight: 3,  label: "🔥 Rare",  color: "#ef4444" },
+  { id: "epic",  type: "card",   rarity: "E",  weight: 1.5,label: "💎 Epic",  color: "#a855f7" },
+  { id: "legen", type: "card",   rarity: "L",  weight: 0.5,label: "🏆 LEGENDARY", color: "#fbbf24" },
+];
+
+function pickWheelPrize() {
+  const total = WHEEL_PRIZES.reduce((s, p) => s + p.weight, 0);
+  let roll = Math.random() * total;
+  for (const p of WHEEL_PRIZES) {
+    roll -= p.weight;
+    if (roll <= 0) return p;
+  }
+  return WHEEL_PRIZES[0];
+}
+
+function LuckyWheelModal({ onClose, onPrizeWon, isAvailable, extraSpins }) {
+  const [spinning, setSpinning] = useState(false);
+  const [rotation, setRotation] = useState(0);
+  const [result, setResult] = useState(null);
+
+  const segmentAngle = 360 / WHEEL_PRIZES.length;
+
+  const handleSpin = () => {
+    if (!isAvailable || spinning) return;
+    setSpinning(true);
+    setResult(null);
+    const prize = pickWheelPrize();
+    const prizeIdx = WHEEL_PRIZES.findIndex(p => p.id === prize.id);
+    // Calculate final rotation: 6+ full spins, then land on prize
+    const targetSegmentCenter = prizeIdx * segmentAngle + segmentAngle / 2;
+    const finalRotation = 360 * 6 + (360 - targetSegmentCenter);
+    setRotation(finalRotation);
+    setTimeout(() => {
+      setResult(prize);
+      setSpinning(false);
+      onPrizeWon(prize);
+      try { navigator.vibrate?.([40, 60, 100]); } catch {}
+    }, 4500);
+  };
+
+  return (
+    <div onClick={onClose} style={{
+      position:"fixed",inset:0,background:"rgba(7,13,30,0.95)",
+      zIndex:9999,display:"flex",flexDirection:"column",
+      alignItems:"center",justifyContent:"center",padding:"20px 16px",
+    }}>
+      <div onClick={e=>e.stopPropagation()} style={{
+        maxWidth:420,width:"100%",
+        background:"linear-gradient(160deg,#1e293b,#0f172a)",
+        borderRadius:18,padding:"24px 18px",
+        border:"2px solid rgba(251,191,36,0.4)",
+        boxShadow:"0 20px 60px rgba(0,0,0,0.6)",
+        textAlign:"center",
+      }}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+          <div style={{fontSize:18,fontWeight:900,color:"#fbbf24"}}>🎡 גלגל המזל</div>
+          <button onClick={onClose} style={{background:"transparent",border:"none",color:"#cbd5e1",fontSize:24,cursor:"pointer"}}>✕</button>
+        </div>
+
+        {/* The wheel itself */}
+        <div style={{position:"relative",width:280,height:280,margin:"20px auto"}}>
+          {/* Arrow indicator (pointing down to wheel) */}
+          <div style={{
+            position:"absolute",top:-8,left:"50%",
+            transform:"translateX(-50%)",
+            width:0,height:0,
+            borderLeft:"14px solid transparent",
+            borderRight:"14px solid transparent",
+            borderTop:"24px solid #fbbf24",
+            zIndex:10,
+            filter:"drop-shadow(0 2px 6px rgba(0,0,0,0.6))",
+          }}/>
+          {/* The wheel */}
+          <div style={{
+            width:280,height:280,borderRadius:"50%",
+            position:"relative",overflow:"hidden",
+            transform:`rotate(${rotation}deg)`,
+            transition: spinning ? "transform 4.5s cubic-bezier(0.17, 0.67, 0.16, 1.01)" : "none",
+            boxShadow:"0 0 30px rgba(251,191,36,0.4), inset 0 0 30px rgba(0,0,0,0.5)",
+            border:"4px solid #fbbf24",
+          }}>
+            {WHEEL_PRIZES.map((p, i) => {
+              const startAngle = i * segmentAngle;
+              return (
+                <div key={p.id} style={{
+                  position:"absolute",inset:0,
+                  clipPath:`polygon(50% 50%, ${50 + 50 * Math.sin((startAngle) * Math.PI / 180)}% ${50 - 50 * Math.cos((startAngle) * Math.PI / 180)}%, ${50 + 50 * Math.sin((startAngle + segmentAngle) * Math.PI / 180)}% ${50 - 50 * Math.cos((startAngle + segmentAngle) * Math.PI / 180)}%)`,
+                  background: p.color,
+                }}>
+                  <div style={{
+                    position:"absolute",
+                    top:"50%",left:"50%",
+                    transform:`translate(-50%, -50%) rotate(${startAngle + segmentAngle/2}deg) translateY(-90px)`,
+                    fontSize:11,fontWeight:900,color:"#0a0a0a",
+                    whiteSpace:"nowrap",
+                    textShadow:"0 1px 2px rgba(255,255,255,0.5)",
+                  }}>{p.label}</div>
+                </div>
+              );
+            })}
+            {/* Center cap */}
+            <div style={{
+              position:"absolute",top:"50%",left:"50%",
+              transform:"translate(-50%, -50%)",
+              width:50,height:50,borderRadius:"50%",
+              background:"linear-gradient(135deg,#fbbf24,#d97706)",
+              border:"3px solid #1e293b",
+              display:"flex",alignItems:"center",justifyContent:"center",
+              fontSize:22,
+            }}>🎯</div>
+          </div>
+        </div>
+
+        {/* Spin button or result */}
+        {result ? (
+          <div>
+            <div style={{
+              fontSize:16,fontWeight:900,color:"#22c55e",marginBottom:6,
+            }}>🎉 זכית!</div>
+            <div style={{
+              fontSize:24,fontWeight:900,color:result.color,marginBottom:14,
+            }}>{result.label}</div>
+            <button onClick={onClose} style={{
+              padding:"10px 30px",borderRadius:10,
+              background:"linear-gradient(135deg,#22c55e,#16a34a)",
+              color:"#fff",border:"none",
+              fontSize:14,fontWeight:900,cursor:"pointer",fontFamily:"inherit",
+            }}>סגור</button>
+          </div>
+        ) : (
+          <>
+            <button onClick={handleSpin} disabled={!isAvailable || spinning} style={{
+              width:"100%",padding:"14px",borderRadius:12,
+              background: isAvailable && !spinning
+                ? "linear-gradient(135deg,#fbbf24,#f59e0b)"
+                : "rgba(71,85,105,0.4)",
+              color: isAvailable && !spinning ? "#1e2940" : "#64748b",
+              border:"none",fontSize:16,fontWeight:900,
+              cursor: isAvailable && !spinning ? "pointer" : "not-allowed",
+              fontFamily:"inherit",letterSpacing:1,
+              boxShadow: isAvailable && !spinning ? "0 8px 24px rgba(251,191,36,0.4)" : "none",
+            }}>
+              {spinning ? "🎡 מסתובב..." : isAvailable ? "🎡 סובב את הגלגל!" : "⏰ זמין שוב מחר"}
+            </button>
+            {extraSpins > 0 && (
+              <div style={{marginTop:8,fontSize:11,color:"#22c55e",fontWeight:700}}>
+                🎁 יש לך עוד {extraSpins} ספינים מתנה
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
@@ -11598,6 +11768,7 @@ export default function App() {
   const [showGlobalAdmin, setShowGlobalAdmin] = useState(false);
   const [giftToast, setGiftToast] = useState(null); // {amount, reason}
   const [dailyBonusToast, setDailyBonusToast] = useState(null); // {amount}
+  const [wheelPopupShown, setWheelPopupShown] = useState(false); // shown once per session
 
   // Track unlocked badge IDs (persisted in localStorage)
   // 💰 COINS — earned from correct predictions, spent on roulette spins
@@ -11716,6 +11887,22 @@ export default function App() {
   }, [name, wrappedStats.totalPicks]);
   // 🎰 Roulette UI state
   const [showRoulette, setShowRoulette] = useState(false);  // is the roulette screen open?
+  // 🎡 Daily Lucky Wheel
+  const [showLuckyWheel, setShowLuckyWheel] = useState(false);
+  const [luckyWheelLastSpin, setLuckyWheelLastSpin] = useState(() => {
+    try { return parseInt(localStorage.getItem("wc2026_wheel_last_v1") || "0", 10) || 0; }
+    catch { return 0; }
+  });
+  const [luckyWheelExtraSpins, setLuckyWheelExtraSpins] = useState(() => {
+    try { return parseInt(localStorage.getItem("wc2026_wheel_extra_v1") || "0", 10) || 0; }
+    catch { return 0; }
+  });
+  // Compute if wheel is available (24h passed OR has extra spins)
+  const wheelAvailable = useMemo(() => {
+    if (luckyWheelExtraSpins > 0) return true;
+    const HOURS_24 = 24 * 60 * 60 * 1000;
+    return (Date.now() - luckyWheelLastSpin) >= HOURS_24;
+  }, [luckyWheelLastSpin, luckyWheelExtraSpins]);
   const [spinResult, setSpinResult] = useState(null);       // the card just won
   const [isSpinning, setIsSpinning] = useState(false);      // animation playing
   const [pendingCard, setPendingCard] = useState(null);     // card chosen upfront; reels stop on it
@@ -11787,6 +11974,41 @@ export default function App() {
         else navigator.vibrate?.(20);
       } catch {}
     }, 8000);
+  };
+
+  // 🎡 Lucky Wheel — award the prize, consume a spin
+  const handleWheelPrize = (prize) => {
+    // Consume spin: either extra spin or set last spin time
+    if (luckyWheelExtraSpins > 0) {
+      const newExtra = luckyWheelExtraSpins - 1;
+      setLuckyWheelExtraSpins(newExtra);
+      try { localStorage.setItem("wc2026_wheel_extra_v1", String(newExtra)); } catch {}
+    } else {
+      const now = Date.now();
+      setLuckyWheelLastSpin(now);
+      try { localStorage.setItem("wc2026_wheel_last_v1", String(now)); } catch {}
+    }
+    if (prize.type === "coins") {
+      // Award coins
+      setCoins(prev => {
+        const updated = { ...prev, balance: (prev?.balance || 0) + prize.amount };
+        try { localStorage.setItem("wc2026_coins_v7", JSON.stringify(updated)); } catch {}
+        return updated;
+      });
+    } else if (prize.type === "card") {
+      // Award a random card of the chosen rarity
+      const pool = CARDS_BY_RARITY[prize.rarity] || [];
+      if (pool.length > 0) {
+        const card = pool[Math.floor(Math.random() * pool.length)];
+        const newCollection = { ...cardCollection, [card.id]: (cardCollection[card.id] || 0) + 1 };
+        setCardCollection(newCollection);
+        try { localStorage.setItem("wc2026_cards_v2", JSON.stringify(newCollection)); } catch {}
+        // Show reveal modal after wheel closes
+        setTimeout(() => {
+          setSpinResult({ card, isDuplicate: (cardCollection[card.id] || 0) > 0, refund: 0 });
+        }, 600);
+      }
+    }
   };
 
   // 🟢 Legends Spin — FREE spin, only Legend cards. Available every 5 regular spins.
@@ -12065,6 +12287,16 @@ export default function App() {
       localStorage.setItem("wc2026_claimed_gifts_v1", JSON.stringify(Array.from(claimed)));
     } catch {}
   }, [leagueData?.gifts]);
+
+  // 🎡 Show wheel popup once per session when wheel is available
+  useEffect(() => {
+    if (!name || !wheelAvailable || wheelPopupShown || showLuckyWheel) return;
+    // Wait a bit after login to avoid flashing right at startup
+    const timer = setTimeout(() => {
+      setWheelPopupShown(true);
+    }, 3000);
+    return () => clearTimeout(timer);
+  }, [name, wheelAvailable, wheelPopupShown, showLuckyWheel]);
 
   // 🎁 DAILY BONUS — give 500 coins once per calendar day (Israel time)
   // Uses ISO date string "YYYY-MM-DD" so it resets at midnight local time.
@@ -13100,6 +13332,8 @@ export default function App() {
         onShowAdmin={leagueData?.createdBy === name ? () => setShowAdmin(true) : null}
         onShowAdminGift={leagueData?.createdBy === name && activeLeagueCode ? () => setShowAdminGift(true) : null}
         onShowGlobalAdmin={()=>setShowGlobalAdmin(true)}
+        onShowLuckyWheel={()=>setShowLuckyWheel(true)}
+        wheelAvailable={wheelAvailable}
         onLogout={handleLogout}
         onReset={handleReset}
       />
@@ -13125,6 +13359,69 @@ export default function App() {
       {/* 🌍 Global Admin (secret code) */}
       {showGlobalAdmin && (
         <GlobalAdminModal onClose={()=>setShowGlobalAdmin(false)} />
+      )}
+
+      {/* 🎡 Lucky Wheel */}
+      {showLuckyWheel && (
+        <LuckyWheelModal
+          onClose={()=>setShowLuckyWheel(false)}
+          onPrizeWon={handleWheelPrize}
+          isAvailable={wheelAvailable}
+          extraSpins={luckyWheelExtraSpins}
+        />
+      )}
+
+      {/* 🎡 Wheel available popup — shows once per session */}
+      {wheelPopupShown && wheelAvailable && !showLuckyWheel && (
+        <div onClick={() => setWheelPopupShown(false)} style={{
+          position:"fixed",inset:0,background:"rgba(7,13,30,0.85)",
+          zIndex:10000,display:"flex",alignItems:"center",justifyContent:"center",
+          padding:20,
+          animation:"fadeIn 0.3s ease",
+        }}>
+          <style>{`
+            @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+            @keyframes wheelBounce {
+              0% { transform: scale(0.5) rotate(-180deg); opacity: 0; }
+              60% { transform: scale(1.1) rotate(20deg); }
+              100% { transform: scale(1) rotate(0deg); opacity: 1; }
+            }
+          `}</style>
+          <div onClick={e=>e.stopPropagation()} style={{
+            maxWidth:340,width:"100%",
+            background:"linear-gradient(160deg,#1e293b,#0f172a)",
+            borderRadius:20,padding:"28px 24px",
+            border:"2px solid #fbbf24",
+            boxShadow:"0 20px 60px rgba(0,0,0,0.7), 0 0 40px rgba(251,191,36,0.4)",
+            textAlign:"center",
+            animation:"wheelBounce 0.7s cubic-bezier(0.2,0.7,0.3,1)",
+          }}>
+            <div style={{fontSize:64,marginBottom:14}}>🎡</div>
+            <div style={{fontSize:20,fontWeight:900,color:"#fbbf24",marginBottom:8,letterSpacing:1}}>
+              גלגל המזל זמין!
+            </div>
+            <div style={{fontSize:13,color:"#cbd5e1",marginBottom:20,lineHeight:1.5}}>
+              🎁 סובב את הגלגל וקבל מטבעות או קלף נדיר!
+            </div>
+            <button onClick={() => {
+              setWheelPopupShown(false);
+              setShowLuckyWheel(true);
+            }} style={{
+              width:"100%",padding:"14px",borderRadius:12,
+              background:"linear-gradient(135deg,#fbbf24,#f59e0b)",
+              color:"#1e2940",border:"none",
+              fontSize:15,fontWeight:900,cursor:"pointer",
+              fontFamily:"inherit",letterSpacing:1,
+              boxShadow:"0 8px 24px rgba(251,191,36,0.4)",
+              marginBottom:10,
+            }}>🎡 סובב עכשיו!</button>
+            <button onClick={() => setWheelPopupShown(false)} style={{
+              padding:"10px",
+              background:"transparent",color:"#94a3b8",border:"none",
+              fontSize:12,cursor:"pointer",fontFamily:"inherit",
+            }}>אולי אחר כך</button>
+          </div>
+        </div>
       )}
 
       {/* 🎁 Gift received toast */}
