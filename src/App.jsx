@@ -10,7 +10,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.16.2";
+const APP_VERSION = "3.16.3";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -1325,6 +1325,7 @@ const COINS = {
   KO_RESULT: 500,   // ✅ correct KO winner
   SPIN: 100,        // 🎰 cost of one roulette spin
   DAILY_BONUS: 500, // 🎁 daily login bonus
+  SCRATCH_PRICE: 200, // 🃏 buy extra scratch card after daily free
   STARTING_BONUS: 1000, // 🎁 given when user first opens the app
   // Duplicate-card refund by rarity (doubled — to balance the rarer pulls)
   DUP_COMMON: 40,
@@ -6012,7 +6013,7 @@ function pickWheelPrize() {
   return WHEEL_PRIZES[0];
 }
 
-function LuckyWheelModal({ onClose, onPrizeWon, isAvailable, extraSpins }) {
+function LuckyWheelModal({ onClose, onPrizeWon, isAvailable, extraSpins, coinBalance, onBuyTicket }) {
   const [prize, setPrize] = useState(null);
   const [scratched, setScratched] = useState(0); // 0-100% scratched
   const [revealed, setRevealed] = useState(false);
@@ -6072,7 +6073,7 @@ function LuckyWheelModal({ onClose, onPrizeWon, isAvailable, extraSpins }) {
     const ctx = canvas.getContext("2d");
     ctx.globalCompositeOperation = "destination-out";
     ctx.beginPath();
-    ctx.arc(x, y, 35, 0, Math.PI * 2);
+    ctx.arc(x, y, 22, 0, Math.PI * 2);
     ctx.fill();
     // Count how much is scratched (occasionally)
     if (Math.random() < 0.15) {
@@ -6138,11 +6139,33 @@ function LuckyWheelModal({ onClose, onPrizeWon, isAvailable, extraSpins }) {
         </div>
 
         {!isAvailable ? (
-          // Not available
-          <div style={{padding:"40px 20px"}}>
-            <div style={{fontSize:64,marginBottom:14,opacity:0.5}}>⏰</div>
-            <div style={{fontSize:14,color:"#cbd5e1",lineHeight:1.5}}>
-              חזור מחר לכרטיס חדש!
+          // Not available — offer to buy
+          <div style={{padding:"30px 20px"}}>
+            <div style={{fontSize:60,marginBottom:14,opacity:0.6}}>⏰</div>
+            <div style={{fontSize:14,color:"#cbd5e1",lineHeight:1.5,marginBottom:20}}>
+              הכרטיס היומי החינמי נוצל.<br/>
+              חזור מחר או קנה כרטיס נוסף!
+            </div>
+            <button
+              onClick={onBuyTicket}
+              disabled={(coinBalance || 0) < COINS.SCRATCH_PRICE}
+              style={{
+                width:"100%",padding:"14px",borderRadius:12,
+                background: (coinBalance || 0) >= COINS.SCRATCH_PRICE
+                  ? "linear-gradient(135deg,#fbbf24,#f59e0b)"
+                  : "rgba(71,85,105,0.4)",
+                color: (coinBalance || 0) >= COINS.SCRATCH_PRICE ? "#1e2940" : "#64748b",
+                border:"none",fontSize:15,fontWeight:900,
+                cursor: (coinBalance || 0) >= COINS.SCRATCH_PRICE ? "pointer" : "not-allowed",
+                fontFamily:"inherit",letterSpacing:1,
+                boxShadow: (coinBalance || 0) >= COINS.SCRATCH_PRICE ? "0 8px 24px rgba(251,191,36,0.4)" : "none",
+              }}>
+              {(coinBalance || 0) >= COINS.SCRATCH_PRICE
+                ? `🃏 קנה כרטיס · 🪙 ${COINS.SCRATCH_PRICE}`
+                : `🪙 חסר ${COINS.SCRATCH_PRICE - (coinBalance || 0)} מטבעות`}
+            </button>
+            <div style={{marginTop:8,fontSize:10,color:"#64748b"}}>
+              יתרה: 🪙 {coinBalance || 0}
             </div>
           </div>
         ) : (
@@ -6205,7 +6228,38 @@ function LuckyWheelModal({ onClose, onPrizeWon, isAvailable, extraSpins }) {
             </div>
 
             {revealed ? (
-              <div style={{marginTop:18}}>
+              <div style={{marginTop:18,position:"relative"}}>
+                {/* 🪙 Coin rain — only for coin prizes, count scales with amount */}
+                {prize?.type === "coins" && (() => {
+                  const coinCount = Math.min(60, Math.max(10, Math.round(prize.amount / 50)));
+                  return (
+                    <>
+                      <style>{`
+                        @keyframes coinRain {
+                          0%   { transform: translate(var(--rx), -120vh) rotate(0deg); opacity: 0; }
+                          10%  { opacity: 1; }
+                          100% { transform: translate(var(--rx), 0) rotate(720deg); opacity: 0.8; }
+                        }
+                      `}</style>
+                      {Array.from({length: coinCount}).map((_, i) => {
+                        const left = `${(i * 7.3) % 100}%`;
+                        const delay = `${(i * 0.05) % 1.5}s`;
+                        const duration = 1.4 + (i % 5) * 0.2;
+                        const drift = (i % 2 === 0 ? 1 : -1) * (10 + (i % 30));
+                        return (
+                          <div key={i} style={{
+                            position:"fixed",top:0,left,
+                            fontSize: 18 + (i % 3) * 6,
+                            zIndex:10500,
+                            pointerEvents:"none",
+                            "--rx": `${drift}px`,
+                            animation: `coinRain ${duration}s cubic-bezier(0.4,0,0.2,1) ${delay} forwards`,
+                          }}>🪙</div>
+                        );
+                      })}
+                    </>
+                  );
+                })()}
                 <div style={{
                   fontSize:18,fontWeight:900,color:"#22c55e",marginBottom:14,
                   animation:"fadeIn 0.5s ease",
@@ -12104,6 +12158,22 @@ export default function App() {
     }, 8000);
   };
 
+  // 🃏 Buy a scratch ticket with coins (when daily free is used)
+  const handleBuyTicket = () => {
+    if ((coins?.balance || 0) < COINS.SCRATCH_PRICE) return;
+    setCoins(prev => {
+      const updated = { ...prev, balance: (prev?.balance || 0) - COINS.SCRATCH_PRICE };
+      try { localStorage.setItem("wc2026_coins_v7", JSON.stringify(updated)); } catch {}
+      return updated;
+    });
+    // Grant an extra ticket
+    setLuckyWheelExtraSpins(prev => {
+      const n = (prev || 0) + 1;
+      try { localStorage.setItem("wc2026_wheel_extra_v1", String(n)); } catch {}
+      return n;
+    });
+  };
+
   // 🎡 Lucky Wheel — award the prize, consume a spin
   const handleWheelPrize = (prize) => {
     // Consume spin: either extra spin or set last spin time
@@ -13520,6 +13590,8 @@ export default function App() {
           onPrizeWon={handleWheelPrize}
           isAvailable={wheelAvailable}
           extraSpins={luckyWheelExtraSpins}
+          coinBalance={coins?.balance || 0}
+          onBuyTicket={handleBuyTicket}
         />
       )}
 
