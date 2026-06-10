@@ -9,7 +9,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.9.5";
+const APP_VERSION = "3.10.3";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -1332,6 +1332,7 @@ const COINS = {
   DUP_EPIC: 600,
   DUP_LEGENDARY: 2000,
   DUP_LEGEND: 1500,    // 🟢 Hall of Fame legends — same tier as Legendary, slight bonus
+  DUP_TRASH: 50,       // 🗑️ Israeli "legends" — small refund (it's a joke tier)
 };
 
 // ─── ACHIEVEMENTS ────────────────────────────────────────────────────────────
@@ -2512,6 +2513,30 @@ const LEGEND_CARDS = LEGEND_CARDS_RAW.map(([name, team, pos], i) => ({
   isLegend: true,
 }));
 
+// 🗑️ ISRAELI TRASH LEGENDS — local heroes with low ratings, for fun.
+const ISRAELI_LEGENDS_RAW = [
+  ["Eyal Berkovic", "Israel", "M"],
+  ["Eran Zahavi", "Israel", "F"],
+  ["Avi Nimni", "Israel", "M"],
+  ["Haim Revivo", "Israel", "M"],
+  ["Alon Mizrahi", "Israel", "F"],
+  ["Reuven Atar", "Israel", "F"],
+  ["Dudu Aouate", "Israel", "GK"],
+  ["Lior Refaelov", "Israel", "M"],
+  ["Eli Ohana", "Israel", "F"],
+  ["Yossi Benayoun", "Israel", "M"],
+  ["Arik Benado", "Israel", "D"],
+];
+
+const ISRAELI_LEGENDS = ISRAELI_LEGENDS_RAW.map(([name, team, pos], i) => ({
+  id: `trash-${i}`,
+  name, team, pos,
+  rarity: "T",
+  flag: "🇮🇱",
+  isLegend: false,
+  isTrash: true,
+}));
+
 const CARD_DATA = [
   // ─── LEGENDARY (15) — the icons ─────────────────────────────────
   ["Lionel Messi", "Argentina", "L", "F"],
@@ -2910,6 +2935,7 @@ function migrateCardCollection(coll) {
 
 const CARDS_BY_RARITY = {
   G: LEGEND_CARDS,  // 🟢 Legends — historical hall of fame
+  T: ISRAELI_LEGENDS, // 🗑️ Trash — Israeli "heroes"
   L: CARDS.filter(c => c.rarity === "L"),
   E: CARDS.filter(c => c.rarity === "E"),
   R: CARDS.filter(c => c.rarity === "R"),
@@ -2924,6 +2950,7 @@ const RARITY_ODDS = { L: 2, E: 5, R: 15, U: 28, C: 50 };
 // Visual config per rarity tier — used by the card UI later
 const RARITY_CONFIG = {
   G: { label: "LEGEND",    color: "#22c55e", bgGrad: "linear-gradient(135deg,#14532d,#16a34a,#bbf7d0,#16a34a,#14532d)", glow: "rgba(34,197,94,0.7)", emoji: "🟢", coins: 1500 },
+  T: { label: "ISRAEL",    color: "#a16207", bgGrad: "linear-gradient(135deg,#3f3f46,#78716c,#a8a29e,#78716c,#3f3f46)", glow: "rgba(120,113,108,0.5)", emoji: "🗑️", coins: 50 },
   L: { label: "LEGENDARY", color: "#fbbf24", bgGrad: "linear-gradient(135deg,#78350f,#fbbf24,#fde68a,#fbbf24,#78350f)", glow: "rgba(251,191,36,0.8)", emoji: "🏆", coins: 1000 },
   E: { label: "EPIC",      color: "#a855f7", bgGrad: "linear-gradient(135deg,#581c87,#9333ea,#581c87)", glow: "rgba(168,85,247,0.5)", emoji: "💎", coins: 300 },
   R: { label: "RARE",      color: "#ef4444", bgGrad: "linear-gradient(135deg,#7f1d1d,#dc2626,#7f1d1d)", glow: "rgba(239,68,68,0.5)", emoji: "🔥", coins: 100 },
@@ -2952,6 +2979,7 @@ function rollOneCard() {
 // New bands per user request: Legendary 95-99, Epic 85-94, Rare 75-84, Uncommon 65-74, Common 55-64
 const RATING_RANGES = {
   G: { min: 90, max: 99 },  // Legend — hall of fame, spans wider range
+  T: { min: 10, max: 40 },  // 🗑️ Trash — Israeli "legends" with low ratings
   L: { min: 95, max: 99 },  // Legendary
   E: { min: 85, max: 94 },  // Epic
   R: { min: 75, max: 84 },  // Rare
@@ -2962,6 +2990,17 @@ const RATING_RANGES = {
 // Manual ratings for the top players — locked to specific values to feel like FC25
 // (within our 55-99 scale, scaled up so the best player gets 99).
 const MANUAL_RATINGS = {
+  // 🗑️ Israeli "legends" — locked at low ratings (10-40) for comedy
+  "Eli Ohana": 38,
+  "Eran Zahavi": 40,
+  "Haim Revivo": 35,
+  "Ronny Rosenthal": 28,
+  "Dudu Aouate": 32,
+  "Yossi Benayoun": 36,
+  "Avi Nimni": 30,
+  "Shalom Tikva": 22,
+  "Gili Landau": 18,
+  "Moshe Sinai": 15,
   // 🟢 Legends (Hall of Fame) — ratings 90-99 by relative greatness
   "Pelé": 99,
   "Diego Maradona": 99,
@@ -2999,6 +3038,18 @@ const MANUAL_RATINGS = {
   "David Beckham": 92,
   "Miroslav Klose": 91,
   "Javier Zanetti": 91,
+  // 🗑️ Israeli "legends" — low ratings for comedy
+  "Eyal Berkovic": 38,
+  "Eran Zahavi": 40,        // top of the trash — actually decent
+  "Avi Nimni": 32,
+  "Haim Revivo": 35,
+  "Alon Mizrahi": 28,
+  "Reuven Atar": 25,
+  "Dudu Aouate": 36,        // GK
+  "Lior Refaelov": 33,
+  "Eli Ohana": 34,
+  "Yossi Benayoun": 39,
+  "Arik Benado": 22,
   // Legendary tier (95-99)
   "Kylian Mbappé": 99,
   "Erling Haaland": 99,
@@ -4725,6 +4776,9 @@ function RouletteModal({ coins, isSpinning, pendingCard, onSpin, onLegendsSpin, 
             animation: isSpinning ? "none" : "legendShimmer 3s linear infinite",
           }}>
             🟢 LEGENDS SPIN — חינם!
+            <div style={{fontSize:9,marginTop:3,opacity:0.8,letterSpacing:0.5,fontWeight:700}}>
+              אגדה אמיתית או... ישראלי 🗑️?
+            </div>
           </button>
         ) : (
           <div style={{
@@ -5836,6 +5890,7 @@ function CardRevealModal({ result, onClose, freshSpin = false }) {
   const { card, isDuplicate, refund } = result;
   const cfg = RARITY_CONFIG[card.rarity];
   const isLegend = card.rarity === "G";       // 🟢 Hall of Fame
+  const isTrash = card.rarity === "T";        // 🗑️ Israeli "legends"
   const isLegendary = card.rarity === "L";
   const isEpic = card.rarity === "E";
   const isRare = card.rarity === "R";
@@ -6220,7 +6275,7 @@ function CardRevealModal({ result, onClose, freshSpin = false }) {
           opacity: 1,
           direction:"ltr",
         }}>
-          {isLegend ? "🟢 LEGEND 🟢" : isLegendary ? "🏆 LEGENDARY 🏆" : `${cfg.emoji} ${cfg.label}!`}
+          {isLegend ? "🟢 LEGEND 🟢" : isTrash ? "🗑️ 🇮🇱 🗑️" : isLegendary ? "🏆 LEGENDARY 🏆" : `${cfg.emoji} ${cfg.label}!`}
         </div>
       )}
 
@@ -6292,7 +6347,7 @@ function CollectionModal({ collection, onClose }) {
       return a.name.localeCompare(b.name);
     };
     // Pool is determined by section
-    const pool = section === "legends" ? LEGEND_CARDS : CARDS;
+    const pool = section === "legends" ? [...LEGEND_CARDS, ...ISRAELI_LEGENDS] : CARDS;
     let cards;
     if (filter === "all") cards = pool;
     else if (filter === "owned") cards = pool.filter(c => (collection[c.id] || 0) > 0);
@@ -6302,7 +6357,7 @@ function CollectionModal({ collection, onClose }) {
   }, [section, filter, collection]);
 
   // Stats — per section
-  const sectionPool = section === "legends" ? LEGEND_CARDS : CARDS;
+  const sectionPool = section === "legends" ? [...LEGEND_CARDS, ...ISRAELI_LEGENDS] : CARDS;
   const ownedCount = sectionPool.filter(c => (collection[c.id] || 0) > 0).length;
   const totalCount = sectionPool.length;
   const pct = Math.round((ownedCount / totalCount) * 100);
@@ -6351,7 +6406,7 @@ function CollectionModal({ collection, onClose }) {
             background: section === "legends" ? "linear-gradient(135deg,#16a34a,#22c55e)" : "transparent",
             color: section === "legends" ? "#0a0a0a" : "#94a3b8",
             fontSize:12,fontWeight:900,cursor:"pointer",fontFamily:"inherit",
-          }}>🟢 אגדות</button>
+          }}>🟢 אגדות 🗑️</button>
         </div>
 
         {/* Progress */}
@@ -6402,7 +6457,62 @@ function CollectionModal({ collection, onClose }) {
           })}
         </div>
 
-        {/* Cards grid */}
+        {/* Cards grid — for legends section: split into Legends + Israel sub-sections */}
+        {section === "legends" ? (
+          <div style={{flex:1,overflowY:"auto",padding:"4px"}}>
+            {(() => {
+              const legends = filteredCards.filter(c => c.rarity === "G");
+              const israelis = filteredCards.filter(c => c.rarity === "T");
+              const renderCard = (card) => {
+                const count = collection[card.id] || 0;
+                const owned = count > 0;
+                return (
+                  <div key={card.id}
+                    onClick={() => owned && setPreviewCard(card)}
+                    className="card-tilt"
+                    style={{position:"relative",cursor:owned?"pointer":"default",
+                      opacity: owned ? 1 : 0.35,filter: owned ? "none" : "grayscale(1)",
+                    }}>
+                    <PlayerCard card={card} size="S" animated={owned} />
+                    {!owned && (
+                      <div style={{position:"absolute",top:0,left:0,right:0,bottom:0,
+                        display:"flex",alignItems:"center",justifyContent:"center",fontSize:24}}>🔒</div>
+                    )}
+                    {count > 1 && (
+                      <div style={{position:"absolute",top:4,right:4,background:"#fbbf24",color:"#1e2940",
+                        fontSize:9,fontWeight:900,borderRadius:8,padding:"2px 5px",border:"1px solid #1e2940"}}>×{count}</div>
+                    )}
+                  </div>
+                );
+              };
+              return (
+                <>
+                  {legends.length > 0 && (
+                    <>
+                      <div style={{fontSize:10,color:"#22c55e",letterSpacing:2,fontWeight:800,marginBottom:8,marginTop:4}}>
+                        🟢 אגדות הכדורגל ({legends.length})
+                      </div>
+                      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill, minmax(95px, 1fr))",gap:8,marginBottom:16}}>
+                        {legends.map(renderCard)}
+                      </div>
+                    </>
+                  )}
+                  {israelis.length > 0 && (
+                    <>
+                      <div style={{fontSize:10,color:"#a16207",letterSpacing:2,fontWeight:800,marginBottom:8,marginTop:4}}>
+                        🗑️ 🇮🇱 נבחרת ישראל 🇮🇱 🗑️ ({israelis.length})
+                      </div>
+                      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill, minmax(95px, 1fr))",gap:8}}>
+                        {israelis.map(renderCard)}
+                      </div>
+                    </>
+                  )}
+                </>
+              );
+            })()}
+          </div>
+        ) : (
+        /* Cards grid — regular players section */
         <div style={{
           flex:1,overflowY:"auto",
           display:"grid",
@@ -6445,6 +6555,7 @@ function CollectionModal({ collection, onClose }) {
             );
           })}
         </div>
+        )}
       </div>
 
       {/* 🎉 Preview reveal — replay the wow animation for an owned card */}
@@ -9627,11 +9738,11 @@ function LeagueHub({
             // For my own profile, use my local collection (fresh).
             // For friends, use what's synced to Firebase.
             const theirCollection = m.isMe ? (cardCollection || {}) : migrateCardCollection(m.cardCollection || {});
-            // Full pool = current players + legends
-            const fullPool = [...CARDS, ...LEGEND_CARDS];
+            // Full pool = current players + legends + Israeli trash
+            const fullPool = [...CARDS, ...LEGEND_CARDS, ...ISRAELI_LEGENDS];
             const ownedCards = fullPool.filter(c => (theirCollection[c.id] || 0) > 0);
-            // Sort owned by rarity (legends first, then best to common)
-            const rarityOrder = { G: 0, L: 1, E: 2, R: 3, U: 4, C: 5 };
+            // Sort owned by rarity (legends first, then best to common, then trash)
+            const rarityOrder = { G: 0, L: 1, E: 2, R: 3, U: 4, C: 5, T: 6 };
             ownedCards.sort((a, b) => {
               const r = rarityOrder[a.rarity] - rarityOrder[b.rarity];
               if (r !== 0) return r;
@@ -9643,7 +9754,7 @@ function LeagueHub({
             const topCard = ownedCards.length > 0
               ? ownedCards.reduce((best, c) => getPlayerRating(c) > getPlayerRating(best) ? c : best, ownedCards[0])
               : null;
-            // Rarity breakdown (include G now)
+            // Rarity breakdown (G/L/E/R/U/C — trash skipped in stats grid for clean look)
             const byRarity = ["G","L","E","R","U","C"].map(r => ({
               r, count: ownedCards.filter(c => c.rarity === r).length,
               total: CARDS_BY_RARITY[r]?.length || 0,
@@ -9700,10 +9811,11 @@ function LeagueHub({
                       </div>
                     )}
 
-                    {/* All owned cards grid — split into Players + Legends */}
+                    {/* All owned cards grid — split into Players + Legends + Israel */}
                     {(() => {
-                      const ownedPlayers = ownedCards.filter(c => c.rarity !== "G");
+                      const ownedPlayers = ownedCards.filter(c => c.rarity !== "G" && c.rarity !== "T");
                       const ownedLegends = ownedCards.filter(c => c.rarity === "G");
+                      const ownedTrash = ownedCards.filter(c => c.rarity === "T");
                       return (
                         <>
                           {ownedPlayers.length > 0 && (
@@ -9739,7 +9851,7 @@ function LeagueHub({
                               <div style={{
                                 display:"grid",
                                 gridTemplateColumns:"repeat(auto-fill, minmax(95px, 1fr))",
-                                gap:8,padding:"4px",
+                                gap:8,padding:"4px",marginBottom:14,
                               }}>
                                 {ownedLegends.map(card => {
                                   const count = theirCollection[card.id] || 0;
@@ -9749,6 +9861,31 @@ function LeagueHub({
                                       <PlayerCard card={card} size="S" animated={true} />
                                       {count > 1 && (
                                         <div style={{position:"absolute",top:4,right:4,background:"#22c55e",color:"#0a0a0a",fontSize:9,fontWeight:900,borderRadius:8,padding:"2px 5px",border:"1px solid #0a0a0a"}}>×{count}</div>
+                                      )}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </>
+                          )}
+                          {ownedTrash.length > 0 && (
+                            <>
+                              <div style={{fontSize:10,color:"#a16207",letterSpacing:2,fontWeight:800,marginBottom:8,marginTop:4}}>
+                                🗑️ 🇮🇱 נבחרת ישראל 🇮🇱 🗑️ ({ownedTrash.length})
+                              </div>
+                              <div style={{
+                                display:"grid",
+                                gridTemplateColumns:"repeat(auto-fill, minmax(95px, 1fr))",
+                                gap:8,padding:"4px",
+                              }}>
+                                {ownedTrash.map(card => {
+                                  const count = theirCollection[card.id] || 0;
+                                  return (
+                                    <button key={card.id} onClick={()=>setCardPreview(card)} className="card-tilt"
+                                      style={{position:"relative",background:"transparent",border:"none",cursor:"pointer",padding:0,fontFamily:"inherit"}}>
+                                      <PlayerCard card={card} size="S" animated={true} />
+                                      {count > 1 && (
+                                        <div style={{position:"absolute",top:4,right:4,background:"#a16207",color:"#fff",fontSize:9,fontWeight:900,borderRadius:8,padding:"2px 5px",border:"1px solid #1e2940"}}>×{count}</div>
                                       )}
                                     </button>
                                   );
@@ -11162,8 +11299,9 @@ export default function App() {
   // 🟢 Legends Spin — FREE spin, only Legend cards. Available every 5 regular spins.
   const handleLegendsSpin = () => {
     if (!legendsSpinAvailable || isSpinning) return;
-    // Roll a random Legend
-    const pool = CARDS_BY_RARITY.G || [];
+    // 40% chance of Israeli "trash legend" instead of a real one (for laughs)
+    const goTrash = Math.random() < 0.40;
+    const pool = goTrash ? (CARDS_BY_RARITY.T || []) : (CARDS_BY_RARITY.G || []);
     if (pool.length === 0) return;
     const card = pool[Math.floor(Math.random() * pool.length)];
     setPendingCard(card);
@@ -11184,7 +11322,7 @@ export default function App() {
       try { localStorage.setItem("wc2026_cards_v2", JSON.stringify(newCollection)); } catch {}
       let refund = 0;
       if (isDuplicate) {
-        refund = COINS.DUP_LEGEND;
+        refund = card.rarity === "T" ? RARITY_CONFIG.T.coins : COINS.DUP_LEGEND;
         const refundedBalance = (coins?.balance || 0) + refund;
         const withRefund = { ...coins, balance: refundedBalance };
         setCoins(withRefund);
@@ -11193,7 +11331,11 @@ export default function App() {
       setSpinResult({ card, isDuplicate, refund });
       setIsSpinning(false);
       setPendingCard(null);
-      try { navigator.vibrate?.([40, 60, 40, 60, 100, 60, 150]); } catch {}
+      // Trash gets a sad short buzz, legend gets the full pattern
+      try {
+        if (card.rarity === "T") navigator.vibrate?.(80);
+        else navigator.vibrate?.([40, 60, 40, 60, 100, 60, 150]);
+      } catch {}
     }, 8000);
   };
 
