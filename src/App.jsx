@@ -9,7 +9,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.9.2";
+const APP_VERSION = "3.9.3";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -6345,23 +6345,28 @@ function CollectionModal({ collection, onClose }) {
   const [previewCard, setPreviewCard] = useState(null); // tap a card to "reveal" it again
 
   const filteredCards = useMemo(() => {
-    // Sort by rarity: Legendary first, then Epic, Rare, Uncommon, Common
-    const rarityOrder = { L: 0, E: 1, R: 2, U: 3, C: 4 };
+    // Sort by rarity: Legend, Legendary, Epic, Rare, Uncommon, Common
+    const rarityOrder = { G: 0, L: 1, E: 2, R: 3, U: 4, C: 5 };
     const sorter = (a, b) => {
       const r = rarityOrder[a.rarity] - rarityOrder[b.rarity];
       if (r !== 0) return r;
       return a.name.localeCompare(b.name);
     };
+    // Full pool = CARDS (current players) + LEGEND_CARDS (hall of fame)
+    const fullPool = [...CARDS, ...LEGEND_CARDS];
     let cards;
-    if (filter === "all") cards = CARDS;
-    else if (filter === "owned") cards = CARDS.filter(c => (collection[c.id] || 0) > 0);
-    else if (filter === "missing") cards = CARDS.filter(c => (collection[c.id] || 0) === 0);
+    if (filter === "all") cards = fullPool;
+    else if (filter === "owned") cards = fullPool.filter(c => (collection[c.id] || 0) > 0);
+    else if (filter === "missing") cards = fullPool.filter(c => (collection[c.id] || 0) === 0);
+    else if (filter === "G") cards = LEGEND_CARDS;
     else cards = CARDS.filter(c => c.rarity === filter);
     return [...cards].sort(sorter);
   }, [filter, collection]);
 
-  const ownedCount = CARDS.filter(c => (collection[c.id] || 0) > 0).length;
-  const totalCount = CARDS.length;
+  // Stats — separate counts for current players and legends
+  const fullPool = [...CARDS, ...LEGEND_CARDS];
+  const ownedCount = fullPool.filter(c => (collection[c.id] || 0) > 0).length;
+  const totalCount = fullPool.length;
   const pct = Math.round((ownedCount / totalCount) * 100);
 
   return (
@@ -6409,6 +6414,7 @@ function CollectionModal({ collection, onClose }) {
             { id: "all", label: t("collection.all") },
             { id: "owned", label: `✓ ${t("collection.owned")}` },
             { id: "missing", label: `🔒 ${t("collection.missing")}` },
+            { id: "G", label: "🟢 LEGEND", color: RARITY_CONFIG.G.color },
             { id: "L", label: RARITY_CONFIG.L.label, color: RARITY_CONFIG.L.color },
             { id: "E", label: RARITY_CONFIG.E.label, color: RARITY_CONFIG.E.color },
             { id: "R", label: RARITY_CONFIG.R.label, color: RARITY_CONFIG.R.color },
@@ -9655,22 +9661,24 @@ function LeagueHub({
             // For my own profile, use my local collection (fresh).
             // For friends, use what's synced to Firebase.
             const theirCollection = m.isMe ? (cardCollection || {}) : migrateCardCollection(m.cardCollection || {});
-            const ownedCards = CARDS.filter(c => (theirCollection[c.id] || 0) > 0);
-            // Sort owned by rarity (best first)
-            const rarityOrder = { L: 0, E: 1, R: 2, U: 3, C: 4 };
+            // Full pool = current players + legends
+            const fullPool = [...CARDS, ...LEGEND_CARDS];
+            const ownedCards = fullPool.filter(c => (theirCollection[c.id] || 0) > 0);
+            // Sort owned by rarity (legends first, then best to common)
+            const rarityOrder = { G: 0, L: 1, E: 2, R: 3, U: 4, C: 5 };
             ownedCards.sort((a, b) => {
               const r = rarityOrder[a.rarity] - rarityOrder[b.rarity];
               if (r !== 0) return r;
               return b.name.localeCompare(a.name);
             });
-            const total = CARDS.length;
+            const total = fullPool.length;
             const pct = Math.round((ownedCards.length / total) * 100);
             // Highest-rated card (best brag)
             const topCard = ownedCards.length > 0
               ? ownedCards.reduce((best, c) => getPlayerRating(c) > getPlayerRating(best) ? c : best, ownedCards[0])
               : null;
-            // Rarity breakdown
-            const byRarity = ["L","E","R","U","C"].map(r => ({
+            // Rarity breakdown (include G now)
+            const byRarity = ["G","L","E","R","U","C"].map(r => ({
               r, count: ownedCards.filter(c => c.rarity === r).length,
               total: CARDS_BY_RARITY[r]?.length || 0,
             }));
