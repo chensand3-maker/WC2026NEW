@@ -9,7 +9,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.9.3";
+const APP_VERSION = "3.9.5";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -5165,29 +5165,11 @@ function PlayerCard({ card, size = "L", animated = false, flippable = false }) {
         </>
       )}
 
-      {/* 🟢 Legend sparkles + glowing orbs */}
+      {/* 🟢 Legend sparkles — subtle */}
       {isLegend && animated && (
         <>
-          <div style={{position:"absolute",top:18,right:60,fontSize:16,animation:"sparkle 1.4s ease-in-out infinite",zIndex:4,filter:"drop-shadow(0 0 6px #22c55e)"}}>🟢</div>
-          <div style={{position:"absolute",top:18,left:60,fontSize:14,animation:"sparkle 1.4s ease-in-out infinite 0.5s",zIndex:4,filter:"drop-shadow(0 0 6px #86efac)"}}>✨</div>
-          <div style={{position:"absolute",bottom:60,left:18,fontSize:14,animation:"sparkle 1.4s ease-in-out infinite 0.9s",zIndex:4,filter:"drop-shadow(0 0 6px #22c55e)"}}>✨</div>
-          <div style={{position:"absolute",bottom:60,right:18,fontSize:14,animation:"sparkle 1.4s ease-in-out infinite 0.3s",zIndex:4,filter:"drop-shadow(0 0 6px #bbf7d0)"}}>✨</div>
-          <div style={{position:"absolute",top:"45%",left:8,fontSize:12,animation:"sparkle 1.6s ease-in-out infinite 1.2s",zIndex:4,filter:"drop-shadow(0 0 5px #86efac)"}}>⭐</div>
-          <div style={{position:"absolute",top:"45%",right:8,fontSize:12,animation:"sparkle 1.6s ease-in-out infinite 0.7s",zIndex:4,filter:"drop-shadow(0 0 5px #86efac)"}}>⭐</div>
-          {/* Moving light sweep across the card */}
-          <div style={{
-            position:"absolute",inset:0,
-            background:"linear-gradient(110deg, transparent 30%, rgba(255,255,255,0.4) 50%, transparent 70%)",
-            animation:"legendSweep 3s ease-in-out infinite",
-            pointerEvents:"none",zIndex:5,
-            mixBlendMode:"overlay",
-          }}/>
-          <style>{`
-            @keyframes legendSweep {
-              0% { transform: translateX(-100%); }
-              60%, 100% { transform: translateX(100%); }
-            }
-          `}</style>
+          <div style={{position:"absolute",top:18,right:60,fontSize:14,animation:"sparkle 1.8s ease-in-out infinite",zIndex:4}}>✨</div>
+          <div style={{position:"absolute",bottom:60,left:18,fontSize:14,animation:"sparkle 1.8s ease-in-out infinite 1s",zIndex:4}}>✨</div>
         </>
       )}
 
@@ -5963,48 +5945,21 @@ function CardRevealModal({ result, onClose, freshSpin = false }) {
 
       {isLegend && (
         <>
-          {/* Green shockwave — bigger than legendary */}
+          {/* Green shockwave */}
           <div style={{
             position:"fixed",top:"50%",left:"50%",
-            width:100,height:100,borderRadius:"50%",
-            border:`7px solid ${cfg.color}`,
-            animation:"shockwave 1.8s ease-out",
+            width:80,height:80,borderRadius:"50%",
+            border:`6px solid ${cfg.color}`,
+            animation:"shockwave 1.5s ease-out",
             pointerEvents:"none",zIndex:9501,
           }}/>
-          <div style={{
-            position:"fixed",top:"50%",left:"50%",
-            width:60,height:60,borderRadius:"50%",
-            border:`4px solid #bbf7d0`,
-            animation:"shockwave 1.4s ease-out 0.3s",
-            pointerEvents:"none",zIndex:9501,
-          }}/>
-          {/* Rotating green light rays — 8 rays */}
-          <div style={{
-            position:"fixed",top:"50%",left:"50%",
-            width:"200vw",height:"200vh",
-            animation:"rayRotate 7s linear infinite",
-            pointerEvents:"none",zIndex:9501,
-            transform:"translate(-50%, -50%)",
-          }}>
-            {[...Array(8)].map((_, i) => (
-              <div key={`legendray-${i}`} style={{
-                position:"absolute",
-                top:"50%",left:"50%",
-                width:9,height:"100vh",
-                background:`linear-gradient(180deg, transparent, ${cfg.color}dd, transparent)`,
-                transformOrigin:"top center",
-                transform:`translate(-50%, 0) rotate(${i * 45}deg)`,
-                opacity:0.75,
-              }}/>
-            ))}
-          </div>
-          {/* Green falling confetti — 35 pieces */}
-          {[...Array(35)].map((_, i) => {
-            const size = [6, 10, 14][i % 3];
-            const color = ["#22c55e", "#86efac", "#bbf7d0", "#fbbf24"][i % 4];
-            const left = `${(i * 2.9) % 100}%`;
-            const delay = `${(i * 0.08) % 2}s`;
-            const duration = 2.5 + ((i % 7) * 0.2);
+          {/* Green falling confetti — fewer */}
+          {[...Array(18)].map((_, i) => {
+            const size = [8, 12][i % 2];
+            const color = ["#22c55e", "#86efac"][i % 2];
+            const left = `${(i * 5.5) % 100}%`;
+            const delay = `${(i * 0.1) % 2}s`;
+            const duration = 2.8 + ((i % 5) * 0.2);
             return (
               <div key={`legendconfetti-${i}`} style={{
                 position:"fixed",top:-20,left,
@@ -6012,27 +5967,11 @@ function CardRevealModal({ result, onClose, freshSpin = false }) {
                 background:color,
                 borderRadius: i % 2 === 0 ? "50%" : "2px",
                 animation:`fallParticle ${duration}s linear ${delay} infinite`,
-                opacity:0.85,
+                opacity:0.7,
                 pointerEvents:"none",zIndex:9502,
-                boxShadow: `0 0 8px ${color}`,
               }}/>
             );
           })}
-          {/* Pulsing green center glow */}
-          <div style={{
-            position:"fixed",top:"50%",left:"50%",
-            width:300,height:300,borderRadius:"50%",
-            background:`radial-gradient(circle, ${cfg.color}66 0%, transparent 70%)`,
-            transform:"translate(-50%, -50%)",
-            animation:"legendPulse 2s ease-in-out infinite",
-            pointerEvents:"none",zIndex:9499,
-          }}/>
-          <style>{`
-            @keyframes legendPulse {
-              0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.6; }
-              50% { transform: translate(-50%, -50%) scale(1.3); opacity: 1; }
-            }
-          `}</style>
         </>
       )}
 
@@ -6341,32 +6280,31 @@ function CardRevealModal({ result, onClose, freshSpin = false }) {
 // ─── 🃏 COLLECTION VIEWER ──────────────────────────────────────────────────
 function CollectionModal({ collection, onClose }) {
   const t = useT();
+  const [section, setSection] = useState("players"); // "players" | "legends"
   const [filter, setFilter] = useState("all");
-  const [previewCard, setPreviewCard] = useState(null); // tap a card to "reveal" it again
+  const [previewCard, setPreviewCard] = useState(null);
 
   const filteredCards = useMemo(() => {
-    // Sort by rarity: Legend, Legendary, Epic, Rare, Uncommon, Common
     const rarityOrder = { G: 0, L: 1, E: 2, R: 3, U: 4, C: 5 };
     const sorter = (a, b) => {
       const r = rarityOrder[a.rarity] - rarityOrder[b.rarity];
       if (r !== 0) return r;
       return a.name.localeCompare(b.name);
     };
-    // Full pool = CARDS (current players) + LEGEND_CARDS (hall of fame)
-    const fullPool = [...CARDS, ...LEGEND_CARDS];
+    // Pool is determined by section
+    const pool = section === "legends" ? LEGEND_CARDS : CARDS;
     let cards;
-    if (filter === "all") cards = fullPool;
-    else if (filter === "owned") cards = fullPool.filter(c => (collection[c.id] || 0) > 0);
-    else if (filter === "missing") cards = fullPool.filter(c => (collection[c.id] || 0) === 0);
-    else if (filter === "G") cards = LEGEND_CARDS;
-    else cards = CARDS.filter(c => c.rarity === filter);
+    if (filter === "all") cards = pool;
+    else if (filter === "owned") cards = pool.filter(c => (collection[c.id] || 0) > 0);
+    else if (filter === "missing") cards = pool.filter(c => (collection[c.id] || 0) === 0);
+    else cards = pool.filter(c => c.rarity === filter);
     return [...cards].sort(sorter);
-  }, [filter, collection]);
+  }, [section, filter, collection]);
 
-  // Stats — separate counts for current players and legends
-  const fullPool = [...CARDS, ...LEGEND_CARDS];
-  const ownedCount = fullPool.filter(c => (collection[c.id] || 0) > 0).length;
-  const totalCount = fullPool.length;
+  // Stats — per section
+  const sectionPool = section === "legends" ? LEGEND_CARDS : CARDS;
+  const ownedCount = sectionPool.filter(c => (collection[c.id] || 0) > 0).length;
+  const totalCount = sectionPool.length;
   const pct = Math.round((ownedCount / totalCount) * 100);
 
   return (
@@ -6397,30 +6335,58 @@ function CollectionModal({ collection, onClose }) {
           }}>✕</button>
         </div>
 
+        {/* 🎯 Section toggle — Players vs Legends */}
+        <div style={{
+          display:"flex",gap:0,marginBottom:10,
+          background:"rgba(36,49,80,0.6)",borderRadius:10,padding:3,
+        }}>
+          <button onClick={() => { setSection("players"); setFilter("all"); }} style={{
+            flex:1,padding:"8px 6px",border:"none",borderRadius:8,
+            background: section === "players" ? "linear-gradient(135deg,#fbbf24,#f59e0b)" : "transparent",
+            color: section === "players" ? "#1e2940" : "#94a3b8",
+            fontSize:12,fontWeight:900,cursor:"pointer",fontFamily:"inherit",
+          }}>⚽ שחקני המונדיאל</button>
+          <button onClick={() => { setSection("legends"); setFilter("all"); }} style={{
+            flex:1,padding:"8px 6px",border:"none",borderRadius:8,
+            background: section === "legends" ? "linear-gradient(135deg,#16a34a,#22c55e)" : "transparent",
+            color: section === "legends" ? "#0a0a0a" : "#94a3b8",
+            fontSize:12,fontWeight:900,cursor:"pointer",fontFamily:"inherit",
+          }}>🟢 אגדות</button>
+        </div>
+
         {/* Progress */}
         <div style={{background:"rgba(36,49,80,0.6)",borderRadius:10,padding:"10px 14px",marginBottom:12}}>
           <div style={{display:"flex",justifyContent:"space-between",fontSize:11,marginBottom:6}}>
             <span style={{color:"#cbd5e1",fontWeight:700}}>{ownedCount} / {totalCount} {t("collection.collected")}</span>
-            <span style={{color:"#fbbf24",fontWeight:800}}>{pct}%</span>
+            <span style={{color: section === "legends" ? "#22c55e" : "#fbbf24",fontWeight:800}}>{pct}%</span>
           </div>
           <div style={{height:6,background:"rgba(71,85,105,0.3)",borderRadius:3,overflow:"hidden"}}>
-            <div style={{width:`${pct}%`,height:"100%",background:"linear-gradient(90deg,#fbbf24,#f59e0b)",borderRadius:3,transition:"width 0.4s"}}/>
+            <div style={{
+              width:`${pct}%`,height:"100%",
+              background: section === "legends"
+                ? "linear-gradient(90deg,#22c55e,#86efac)"
+                : "linear-gradient(90deg,#fbbf24,#f59e0b)",
+              borderRadius:3,transition:"width 0.4s",
+            }}/>
           </div>
         </div>
 
-        {/* Filter pills */}
+        {/* Filter pills (rarity filters — but only relevant to current section) */}
         <div style={{display:"flex",gap:5,marginBottom:10,overflowX:"auto",paddingBottom:4}}>
-          {[
+          {(section === "legends" ? [
             { id: "all", label: t("collection.all") },
             { id: "owned", label: `✓ ${t("collection.owned")}` },
             { id: "missing", label: `🔒 ${t("collection.missing")}` },
-            { id: "G", label: "🟢 LEGEND", color: RARITY_CONFIG.G.color },
+          ] : [
+            { id: "all", label: t("collection.all") },
+            { id: "owned", label: `✓ ${t("collection.owned")}` },
+            { id: "missing", label: `🔒 ${t("collection.missing")}` },
             { id: "L", label: RARITY_CONFIG.L.label, color: RARITY_CONFIG.L.color },
             { id: "E", label: RARITY_CONFIG.E.label, color: RARITY_CONFIG.E.color },
             { id: "R", label: RARITY_CONFIG.R.label, color: RARITY_CONFIG.R.color },
             { id: "U", label: RARITY_CONFIG.U.label, color: RARITY_CONFIG.U.color },
             { id: "C", label: RARITY_CONFIG.C.label, color: RARITY_CONFIG.C.color },
-          ].map(f => {
+          ]).map(f => {
             const active = filter === f.id;
             return (
               <button key={f.id} onClick={()=>setFilter(f.id)} style={{
@@ -9703,18 +9669,18 @@ function LeagueHub({
                     </div>
 
                     {/* Rarity breakdown */}
-                    <div style={{display:"grid",gridTemplateColumns:"repeat(5, 1fr)",gap:5,marginBottom:14}}>
+                    <div style={{display:"grid",gridTemplateColumns:"repeat(6, 1fr)",gap:4,marginBottom:14}}>
                       {byRarity.map(br => {
                         const cfg = RARITY_CONFIG[br.r];
                         return (
                           <div key={br.r} style={{
-                            textAlign:"center",padding:"6px 4px",borderRadius:6,
+                            textAlign:"center",padding:"6px 2px",borderRadius:6,
                             background:`${cfg.color}15`,
                             border:`1px solid ${cfg.color}44`,
                           }}>
-                            <div style={{fontSize:14,marginBottom:2}}>{cfg.emoji}</div>
-                            <div style={{fontSize:11,color:"#fff",fontWeight:800,fontVariantNumeric:"tabular-nums"}}>
-                              {br.count}<span style={{color:"#94a3b8",fontSize:9}}>/{br.total}</span>
+                            <div style={{fontSize:13,marginBottom:2}}>{cfg.emoji}</div>
+                            <div style={{fontSize:10,color:"#fff",fontWeight:800,fontVariantNumeric:"tabular-nums"}}>
+                              {br.count}<span style={{color:"#94a3b8",fontSize:8}}>/{br.total}</span>
                             </div>
                           </div>
                         );
@@ -9734,38 +9700,65 @@ function LeagueHub({
                       </div>
                     )}
 
-                    {/* All owned cards grid */}
-                    <div style={{
-                      display:"grid",
-                      gridTemplateColumns:"repeat(auto-fill, minmax(95px, 1fr))",
-                      gap:8,padding:"4px",
-                    }}>
-                      {ownedCards.map(card => {
-                        const count = theirCollection[card.id] || 0;
-                        return (
-                          <button
-                            key={card.id}
-                            onClick={()=>setCardPreview(card)}
-                            className="card-tilt"
-                            style={{
-                              position:"relative",background:"transparent",border:"none",
-                              cursor:"pointer",padding:0,fontFamily:"inherit",
-                            }}
-                          >
-                            <PlayerCard card={card} size="S" animated={true} />
-                            {count > 1 && (
+                    {/* All owned cards grid — split into Players + Legends */}
+                    {(() => {
+                      const ownedPlayers = ownedCards.filter(c => c.rarity !== "G");
+                      const ownedLegends = ownedCards.filter(c => c.rarity === "G");
+                      return (
+                        <>
+                          {ownedPlayers.length > 0 && (
+                            <>
+                              <div style={{fontSize:10,color:"#fbbf24",letterSpacing:2,fontWeight:800,marginBottom:8,marginTop:4}}>
+                                ⚽ שחקני המונדיאל ({ownedPlayers.length})
+                              </div>
                               <div style={{
-                                position:"absolute",top:4,right:4,
-                                background:"#fbbf24",color:"#1e2940",
-                                fontSize:9,fontWeight:900,
-                                borderRadius:8,padding:"2px 5px",
-                                border:"1px solid #1e2940",
-                              }}>×{count}</div>
-                            )}
-                          </button>
-                        );
-                      })}
-                    </div>
+                                display:"grid",
+                                gridTemplateColumns:"repeat(auto-fill, minmax(95px, 1fr))",
+                                gap:8,padding:"4px",marginBottom:14,
+                              }}>
+                                {ownedPlayers.map(card => {
+                                  const count = theirCollection[card.id] || 0;
+                                  return (
+                                    <button key={card.id} onClick={()=>setCardPreview(card)} className="card-tilt"
+                                      style={{position:"relative",background:"transparent",border:"none",cursor:"pointer",padding:0,fontFamily:"inherit"}}>
+                                      <PlayerCard card={card} size="S" animated={true} />
+                                      {count > 1 && (
+                                        <div style={{position:"absolute",top:4,right:4,background:"#fbbf24",color:"#1e2940",fontSize:9,fontWeight:900,borderRadius:8,padding:"2px 5px",border:"1px solid #1e2940"}}>×{count}</div>
+                                      )}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </>
+                          )}
+                          {ownedLegends.length > 0 && (
+                            <>
+                              <div style={{fontSize:10,color:"#22c55e",letterSpacing:2,fontWeight:800,marginBottom:8,marginTop:4}}>
+                                🟢 אגדות ({ownedLegends.length})
+                              </div>
+                              <div style={{
+                                display:"grid",
+                                gridTemplateColumns:"repeat(auto-fill, minmax(95px, 1fr))",
+                                gap:8,padding:"4px",
+                              }}>
+                                {ownedLegends.map(card => {
+                                  const count = theirCollection[card.id] || 0;
+                                  return (
+                                    <button key={card.id} onClick={()=>setCardPreview(card)} className="card-tilt"
+                                      style={{position:"relative",background:"transparent",border:"none",cursor:"pointer",padding:0,fontFamily:"inherit"}}>
+                                      <PlayerCard card={card} size="S" animated={true} />
+                                      {count > 1 && (
+                                        <div style={{position:"absolute",top:4,right:4,background:"#22c55e",color:"#0a0a0a",fontSize:9,fontWeight:900,borderRadius:8,padding:"2px 5px",border:"1px solid #0a0a0a"}}>×{count}</div>
+                                      )}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </>
+                          )}
+                        </>
+                      );
+                    })()}
                   </>
                 )}
               </div>
