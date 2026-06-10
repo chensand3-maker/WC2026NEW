@@ -10,7 +10,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.16.0";
+const APP_VERSION = "3.16.1";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -5837,6 +5837,25 @@ function LeagueAdminModal({ leagueData, leagueCode, onClose }) {
     setRemovingUid(null);
   };
 
+  const [sendingTicketUid, setSendingTicketUid] = useState(null);
+  const handleSendTicket = async (member) => {
+    setSendingTicketUid(member.uid);
+    try {
+      await sendGiftToLeague(leagueCode, {
+        id: `tk_${Date.now()}_${Math.random().toString(36).slice(2,8)}`,
+        kind: "scratch",
+        amount: 1,
+        targetUid: member.uid,
+        reason: "🃏 כרטיס גירוד ממך!",
+        sentAt: Date.now(),
+      });
+      alert(`✅ נשלח כרטיס גירוד ל-${member.name}`);
+    } catch (err) {
+      alert("שגיאה: " + (err.message || "נסה שוב"));
+    }
+    setSendingTicketUid(null);
+  };
+
   return (
     <div onClick={onClose} style={{
       position:"fixed",inset:0,zIndex:9200,
@@ -5913,9 +5932,9 @@ function LeagueAdminModal({ leagueData, leagueCode, onClose }) {
                   <div style={{fontSize:8,color:"#64748b"}}>{t("admin.badges")}</div>
                 </div>
               </div>
-              <div style={{display:"flex",gap:6}}>
+              <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
                 <button onClick={() => handleShareBackup(m)} style={{
-                  flex:1,padding:"7px 10px",
+                  flex:1,minWidth:"45%",padding:"7px 10px",
                   background:"linear-gradient(180deg,rgba(168,85,247,0.2),rgba(168,85,247,0.1))",
                   border:"1px solid rgba(168,85,247,0.4)",
                   borderRadius:8,
@@ -5923,6 +5942,21 @@ function LeagueAdminModal({ leagueData, leagueCode, onClose }) {
                   cursor:"pointer",fontFamily:"inherit",
                 }}>
                   📤 {t("admin.shareBackup")}
+                </button>
+                <button
+                  onClick={() => handleSendTicket(m)}
+                  disabled={sendingTicketUid === m.uid}
+                  style={{
+                    flex:1,minWidth:"45%",padding:"7px 10px",
+                    background:"linear-gradient(180deg,rgba(251,191,36,0.2),rgba(251,191,36,0.1))",
+                    border:"1px solid rgba(251,191,36,0.4)",
+                    borderRadius:8,
+                    color:"#fbbf24",fontSize:11,fontWeight:700,
+                    cursor: sendingTicketUid === m.uid ? "wait" : "pointer",
+                    fontFamily:"inherit",
+                    opacity: sendingTicketUid === m.uid ? 0.5 : 1,
+                  }}>
+                  {sendingTicketUid === m.uid ? "..." : "🃏 כרטיס גירוד"}
                 </button>
                 <button
                   onClick={() => handleRemove(m)}
@@ -5937,7 +5971,7 @@ function LeagueAdminModal({ leagueData, leagueCode, onClose }) {
                     fontFamily:"inherit",
                     opacity: removingUid === m.uid ? 0.5 : 1,
                   }}>
-                  {removingUid === m.uid ? "..." : "🗑️ הסר"}
+                  {removingUid === m.uid ? "..." : "🗑️"}
                 </button>
               </div>
             </div>
@@ -12330,17 +12364,31 @@ export default function App() {
       claimed = new Set(JSON.parse(localStorage.getItem("wc2026_claimed_gifts_v1") || "[]"));
     } catch { claimed = new Set(); }
 
-    const newGifts = leagueData.gifts.filter(g => g && g.id && !claimed.has(g.id));
+    // Filter:
+    //   - new gifts not yet claimed
+    //   - if gift has a targetUid, only apply if it matches my userId
+    const newGifts = leagueData.gifts.filter(g =>
+      g && g.id && !claimed.has(g.id) &&
+      (!g.targetUid || g.targetUid === userId)
+    );
     if (newGifts.length === 0) return;
 
     // Apply each new gift
     let totalAdded = 0;
     let lastReason = "";
+    let ticketsAdded = 0;
     for (const g of newGifts) {
-      const amount = Math.max(0, Math.floor(g.amount || 0));
-      if (amount > 0) {
-        totalAdded += amount;
-        lastReason = g.reason || "מתנה!";
+      if (g.kind === "scratch") {
+        // 🃏 Scratch ticket — bump extra spins
+        const n = Math.max(1, Math.floor(g.amount || 1));
+        ticketsAdded += n;
+        lastReason = g.reason || "כרטיס גירוד!";
+      } else {
+        const amount = Math.max(0, Math.floor(g.amount || 0));
+        if (amount > 0) {
+          totalAdded += amount;
+          lastReason = g.reason || "מתנה!";
+        }
       }
       claimed.add(g.id);
     }
@@ -12355,10 +12403,20 @@ export default function App() {
       setTimeout(() => setGiftToast(null), 5000);
     }
 
+    if (ticketsAdded > 0) {
+      setLuckyWheelExtraSpins(prev => {
+        const n = (prev || 0) + ticketsAdded;
+        try { localStorage.setItem("wc2026_wheel_extra_v1", String(n)); } catch {}
+        return n;
+      });
+      setGiftToast({ amount: ticketsAdded, reason: `🃏 ${ticketsAdded} כרטיסי גירוד מתנה!` });
+      setTimeout(() => setGiftToast(null), 5000);
+    }
+
     try {
       localStorage.setItem("wc2026_claimed_gifts_v1", JSON.stringify(Array.from(claimed)));
     } catch {}
-  }, [leagueData?.gifts]);
+  }, [leagueData?.gifts, userId]);
 
   // 🎡 Show wheel popup once per session when wheel is available
   useEffect(() => {
