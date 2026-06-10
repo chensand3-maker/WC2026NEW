@@ -10,7 +10,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.15.0";
+const APP_VERSION = "3.15.1";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -5991,9 +5991,11 @@ function LuckyWheelModal({ onClose, onPrizeWon, isAvailable, extraSpins }) {
     setResult(null);
     const prize = pickWheelPrize();
     const prizeIdx = WHEEL_PRIZES.findIndex(p => p.id === prize.id);
-    // Calculate final rotation: 6+ full spins, then land on prize
-    const targetSegmentCenter = prizeIdx * segmentAngle + segmentAngle / 2;
-    const finalRotation = 360 * 6 + (360 - targetSegmentCenter);
+    // SVG segments start at top (12 o'clock = -90°). To land arrow on prizeIdx:
+    // We need the center of that segment to end up at top.
+    // Rotation amount: -(prizeIdx * segmentAngle + segmentAngle/2), plus 6 full spins.
+    const targetOffset = -(prizeIdx * segmentAngle + segmentAngle / 2);
+    const finalRotation = 360 * 6 + targetOffset;
     setRotation(finalRotation);
     setTimeout(() => {
       setResult(prize);
@@ -6023,57 +6025,87 @@ function LuckyWheelModal({ onClose, onPrizeWon, isAvailable, extraSpins }) {
         </div>
 
         {/* The wheel itself */}
-        <div style={{position:"relative",width:280,height:280,margin:"20px auto"}}>
+        <div style={{position:"relative",width:300,height:300,margin:"24px auto"}}>
+          {/* Outer glow ring */}
+          <div style={{
+            position:"absolute",inset:-8,borderRadius:"50%",
+            background:"radial-gradient(circle, rgba(251,191,36,0.3), transparent 70%)",
+            filter:"blur(8px)",
+          }}/>
           {/* Arrow indicator (pointing down to wheel) */}
           <div style={{
-            position:"absolute",top:-8,left:"50%",
+            position:"absolute",top:-12,left:"50%",
             transform:"translateX(-50%)",
             width:0,height:0,
-            borderLeft:"14px solid transparent",
-            borderRight:"14px solid transparent",
-            borderTop:"24px solid #fbbf24",
+            borderLeft:"16px solid transparent",
+            borderRight:"16px solid transparent",
+            borderTop:"28px solid #fbbf24",
             zIndex:10,
-            filter:"drop-shadow(0 2px 6px rgba(0,0,0,0.6))",
+            filter:"drop-shadow(0 3px 8px rgba(0,0,0,0.7))",
           }}/>
-          {/* The wheel */}
-          <div style={{
-            width:280,height:280,borderRadius:"50%",
-            position:"relative",overflow:"hidden",
+          {/* The wheel — SVG for clean segments */}
+          <svg width="300" height="300" viewBox="0 0 300 300" style={{
+            display:"block",
             transform:`rotate(${rotation}deg)`,
             transition: spinning ? "transform 4.5s cubic-bezier(0.17, 0.67, 0.16, 1.01)" : "none",
-            boxShadow:"0 0 30px rgba(251,191,36,0.4), inset 0 0 30px rgba(0,0,0,0.5)",
-            border:"4px solid #fbbf24",
+            filter:"drop-shadow(0 0 20px rgba(251,191,36,0.5))",
           }}>
+            <defs>
+              <filter id="wheelShadow">
+                <feDropShadow dx="0" dy="2" stdDeviation="3" floodOpacity="0.4"/>
+              </filter>
+            </defs>
             {WHEEL_PRIZES.map((p, i) => {
-              const startAngle = i * segmentAngle;
+              const startAngle = (i * segmentAngle) - 90; // -90 to start at top
+              const endAngle = startAngle + segmentAngle;
+              const startRad = startAngle * Math.PI / 180;
+              const endRad = endAngle * Math.PI / 180;
+              const r = 145;
+              const cx = 150, cy = 150;
+              const x1 = cx + r * Math.cos(startRad);
+              const y1 = cy + r * Math.sin(startRad);
+              const x2 = cx + r * Math.cos(endRad);
+              const y2 = cy + r * Math.sin(endRad);
+              const largeArc = segmentAngle > 180 ? 1 : 0;
+              const pathD = `M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 ${largeArc} 1 ${x2} ${y2} Z`;
+              // Text positioning — angle bisector, radius
+              const midAngle = startAngle + segmentAngle / 2;
+              const midRad = midAngle * Math.PI / 180;
+              const textR = 95;
+              const tx = cx + textR * Math.cos(midRad);
+              const ty = cy + textR * Math.sin(midRad);
+              const textRot = midAngle + 90; // perpendicular to radius
               return (
-                <div key={p.id} style={{
-                  position:"absolute",inset:0,
-                  clipPath:`polygon(50% 50%, ${50 + 50 * Math.sin((startAngle) * Math.PI / 180)}% ${50 - 50 * Math.cos((startAngle) * Math.PI / 180)}%, ${50 + 50 * Math.sin((startAngle + segmentAngle) * Math.PI / 180)}% ${50 - 50 * Math.cos((startAngle + segmentAngle) * Math.PI / 180)}%)`,
-                  background: p.color,
-                }}>
-                  <div style={{
-                    position:"absolute",
-                    top:"50%",left:"50%",
-                    transform:`translate(-50%, -50%) rotate(${startAngle + segmentAngle/2}deg) translateY(-90px)`,
-                    fontSize:11,fontWeight:900,color:"#0a0a0a",
-                    whiteSpace:"nowrap",
-                    textShadow:"0 1px 2px rgba(255,255,255,0.5)",
-                  }}>{p.label}</div>
-                </div>
+                <g key={p.id}>
+                  <path d={pathD} fill={p.color} stroke="#0f172a" strokeWidth="2"/>
+                  <text
+                    x={tx} y={ty}
+                    fill="#0a0a0a"
+                    fontSize="11"
+                    fontWeight="900"
+                    textAnchor="middle"
+                    dominantBaseline="middle"
+                    transform={`rotate(${textRot} ${tx} ${ty})`}
+                    style={{textShadow:"0 1px 2px rgba(255,255,255,0.5)"}}
+                  >{p.label}</text>
+                </g>
               );
             })}
-            {/* Center cap */}
-            <div style={{
-              position:"absolute",top:"50%",left:"50%",
-              transform:"translate(-50%, -50%)",
-              width:50,height:50,borderRadius:"50%",
-              background:"linear-gradient(135deg,#fbbf24,#d97706)",
-              border:"3px solid #1e293b",
-              display:"flex",alignItems:"center",justifyContent:"center",
-              fontSize:22,
-            }}>🎯</div>
-          </div>
+            {/* Outer ring */}
+            <circle cx="150" cy="150" r="148" fill="none" stroke="#fbbf24" strokeWidth="5"/>
+          </svg>
+          {/* Center cap — outside the rotating SVG so it stays still */}
+          <div style={{
+            position:"absolute",top:"50%",left:"50%",
+            transform:"translate(-50%, -50%)",
+            width:60,height:60,borderRadius:"50%",
+            background:"linear-gradient(135deg,#fbbf24,#d97706)",
+            border:"4px solid #1e293b",
+            display:"flex",alignItems:"center",justifyContent:"center",
+            fontSize:28,
+            boxShadow:"0 4px 12px rgba(0,0,0,0.5), inset 0 2px 8px rgba(255,255,255,0.3)",
+            zIndex:5,
+          }}>🎯</div>
         </div>
 
         {/* Spin button or result */}
