@@ -10,7 +10,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.16.3";
+const APP_VERSION = "3.17.2";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -4223,7 +4223,7 @@ function WorldLeaderboard({ userId, name, onClose }) {
 }
 
 // ─── SIDEBAR: hamburger menu drawer that slides in from one side ─────────────
-function Sidebar({ open, onClose, name, lang, setLang, onShowProfile, onShowRules, onShowBackup, onShowTutorial, onShowAchievements, onShowRoulette, onShowWrapped, onShowAdmin, onShowAdminGift, onShowGlobalAdmin, onShowLuckyWheel, wheelAvailable, onLogout, onReset, totalPoints, unlockedCount, coinBalance }) {
+function Sidebar({ open, onClose, name, lang, setLang, onShowProfile, onShowRules, onShowBackup, onShowTutorial, onShowAchievements, onShowRoulette, onShowWrapped, onShowAdmin, onShowAdminGift, onShowGlobalAdmin, onShowLuckyWheel, wheelAvailable, hlPlaysToday, onLogout, onReset, totalPoints, unlockedCount, coinBalance }) {
   const t = useT();
   const isRTL = lang === "he";
 
@@ -4309,8 +4309,8 @@ function Sidebar({ open, onClose, name, lang, setLang, onShowProfile, onShowRule
             onClick={()=>{onClose();onShowRoulette();}}
           />
           <SidebarItem
-            icon="🃏"
-            label={`כרטיס גירוד${wheelAvailable ? " · 🟢 זמין!" : ""}`}
+            icon="🎴"
+            label={`גבוה או נמוך${wheelAvailable ? ` · ${Math.max(0, 5 - hlPlaysToday)} חינם` : ""}`}
             onClick={()=>{onClose();onShowLuckyWheel();}}
           />
           <SidebarItem icon="🎓" label={t("sidebar.tutorial")} onClick={()=>{onClose();onShowTutorial();}}/>
@@ -6013,114 +6013,156 @@ function pickWheelPrize() {
   return WHEEL_PRIZES[0];
 }
 
-function LuckyWheelModal({ onClose, onPrizeWon, isAvailable, extraSpins, coinBalance, onBuyTicket }) {
-  const [prize, setPrize] = useState(null);
-  const [scratched, setScratched] = useState(0); // 0-100% scratched
-  const [revealed, setRevealed] = useState(false);
-  const [awarded, setAwarded] = useState(false); // has the prize been awarded yet?
-  const canvasRef = useRef(null);
-  const isDrawing = useRef(false);
-  const prizeRef = useRef(null); // hold prize in ref to avoid stale closures
+// ─── 🎴 HIGHER / LOWER — guess if next card has higher or lower rating ─────────
+function LuckyWheelModal({ onClose, onWin, freePlaysLeft, coinBalance, onUseFree, onPayPlay }) {
+  // Game states: "idle" (not playing), "playing", "lost", "won"
+  const [gameState, setGameState] = useState("idle");
+  const [currentCard, setCurrentCard] = useState(null);
+  const [nextCard, setNextCard] = useState(null);
+  const [streak, setStreak] = useState(0);
+  const [timeLeft, setTimeLeft] = useState(10);
+  const [revealing, setRevealing] = useState(false);
+  const [lastChoice, setLastChoice] = useState(null); // "higher" | "lower"
+  const [lastResult, setLastResult] = useState(null); // "correct" | "wrong"
+  const timerRef = useRef(null);
 
-  // Pick prize on first interaction (so user doesn't see it instantly)
-  const ensurePrize = () => {
-    if (!prizeRef.current) {
-      const p = pickWheelPrize();
-      prizeRef.current = p;
-      setPrize(p);
-      return p;
-    }
-    return prizeRef.current;
+  // Pick a card from the "regular" mundial pool only (no friends/legends/Israelis)
+  const pickRandomCard = () => {
+    return CARDS[Math.floor(Math.random() * CARDS.length)];
   };
 
-  // Initialize the scratch surface
+  const startGame = (isFree) => {
+    if (!isFree) {
+      if (coinBalance < 100) return;
+      onPayPlay();
+    } else {
+      onUseFree();
+    }
+    const first = pickRandomCard();
+    setCurrentCard(first);
+    setNextCard(null);
+    setStreak(0);
+    setRevealing(false);
+    setLastChoice(null);
+    setLastResult(null);
+    setGameState("playing");
+    setTimeLeft(10);
+  };
+
+  // Timer tick
   useEffect(() => {
-    if (!isAvailable || revealed) return;
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    const w = canvas.width;
-    const h = canvas.height;
-    // Paint the scratch layer
-    const grad = ctx.createLinearGradient(0, 0, w, h);
-    grad.addColorStop(0, "#d97706");
-    grad.addColorStop(0.5, "#fbbf24");
-    grad.addColorStop(1, "#92400e");
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, w, h);
-    // Add some texture
-    ctx.fillStyle = "rgba(0,0,0,0.15)";
-    for (let i = 0; i < 300; i++) {
-      ctx.fillRect(Math.random() * w, Math.random() * h, 2, 2);
+    if (gameState !== "playing" || revealing) return;
+    if (timeLeft <= 0) {
+      // Time's up — count as wrong
+      handleChoice(null);
+      return;
     }
-    // Title text
-    ctx.fillStyle = "#1e2940";
-    ctx.font = "bold 28px sans-serif";
-    ctx.textAlign = "center";
-    ctx.fillText("🪙 גרד כאן 🪙", w/2, h/2 - 12);
-    ctx.font = "bold 14px sans-serif";
-    ctx.fillText("גלה את הפרס שלך!", w/2, h/2 + 22);
-  }, [isAvailable, revealed]);
+    timerRef.current = setTimeout(() => setTimeLeft(t => t - 1), 1000);
+    return () => clearTimeout(timerRef.current);
+  }, [timeLeft, gameState, revealing]);
 
-  // Scratching logic
-  const scratch = (clientX, clientY) => {
-    ensurePrize();
-    const canvas = canvasRef.current;
-    if (!canvas || revealed) return;
-    const rect = canvas.getBoundingClientRect();
-    const x = (clientX - rect.left) * (canvas.width / rect.width);
-    const y = (clientY - rect.top) * (canvas.height / rect.height);
-    const ctx = canvas.getContext("2d");
-    ctx.globalCompositeOperation = "destination-out";
-    ctx.beginPath();
-    ctx.arc(x, y, 22, 0, Math.PI * 2);
-    ctx.fill();
-    // Count how much is scratched (occasionally)
-    if (Math.random() < 0.15) {
-      const img = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      let cleared = 0;
-      const sample = 4 * 100; // sample every 100 pixels
-      let total = 0;
-      for (let i = 3; i < img.data.length; i += sample) {
-        total++;
-        if (img.data[i] < 30) cleared++;
+  const handleChoice = (choice) => {
+    if (revealing || gameState !== "playing") return;
+    clearTimeout(timerRef.current);
+    setLastChoice(choice);
+    setRevealing(true);
+    // Pick the next card
+    const next = pickRandomCard();
+    setNextCard(next);
+    // Determine result
+    const curRating = getPlayerRating(currentCard);
+    const nextRating = getPlayerRating(next);
+    let correct = false;
+    if (choice === "higher" && nextRating > curRating) correct = true;
+    if (choice === "lower"  && nextRating < curRating) correct = true;
+    // Tie or no choice = wrong
+    setLastResult(correct ? "correct" : "wrong");
+    try { navigator.vibrate?.(correct ? 30 : [40, 50, 80]); } catch {}
+    setTimeout(() => {
+      if (correct) {
+        const newStreak = streak + 1;
+        setStreak(newStreak);
+        setCurrentCard(next);
+        setNextCard(null);
+        setRevealing(false);
+        setLastChoice(null);
+        setLastResult(null);
+        setTimeLeft(10);
+      } else {
+        setGameState("lost");
       }
-      const pct = (cleared / total) * 100;
-      setScratched(pct);
-      // Higher threshold (70%) — user has to actually work for it
-      if (pct > 70 && !revealed) {
-        setRevealed(true);
-        try { navigator.vibrate?.([40, 80, 40]); } catch {}
-      }
-    }
+    }, 1800);
   };
 
-  // Award the prize when user closes (after they had a moment to see it)
-  const handleClose = () => {
-    if (revealed && !awarded && prizeRef.current) {
-      setAwarded(true);
-      onPrizeWon(prizeRef.current);
+  const cashOut = () => {
+    const prize = prizeForStreak(streak);
+    if (prize > 0) {
+      onWin(prize);
     }
-    onClose();
+    setGameState("won");
   };
 
-  const handlePointerDown = (e) => {
-    isDrawing.current = true;
-    const t = e.touches ? e.touches[0] : e;
-    scratch(t.clientX, t.clientY);
+  function prizeForStreak(s) {
+    if (s >= 30) return 10000;
+    if (s >= 25) return 5000;
+    if (s >= 20) return 3000;
+    if (s >= 15) return 2000;
+    if (s >= 12) return 1000;
+    if (s >= 10) return 600;
+    if (s >= 8)  return 300;
+    if (s >= 5)  return 100;
+    if (s >= 3)  return 50;
+    return 0;
+  }
+
+  const renderMiniCard = (card) => {
+    if (!card) return null;
+    return (
+      <div style={{
+        position:"relative",
+        width:"45%",
+        maxWidth:170,
+        aspectRatio:"3 / 4",
+        borderRadius:14,
+        overflow:"hidden",
+        background: RARITY_CONFIG[card.rarity]?.bgGrad || "#1e293b",
+        boxShadow:`0 8px 24px rgba(0,0,0,0.5), 0 0 16px ${RARITY_CONFIG[card.rarity]?.glow || "rgba(0,0,0,0.3)"}`,
+        border:`3px solid ${RARITY_CONFIG[card.rarity]?.color || "#fbbf24"}`,
+        display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",
+        padding:"14px 8px",
+        color:"#fff",
+      }}>
+        <div style={{fontSize:36,marginBottom:6}}>{card.flag}</div>
+        <div style={{fontSize:11,fontWeight:900,textAlign:"center",marginBottom:6,letterSpacing:0.5}}>
+          {card.name}
+        </div>
+        <div style={{fontSize:9,opacity:0.7,marginBottom:8}}>{card.team}</div>
+        <div style={{
+          fontSize:38,fontWeight:900,
+          color: RARITY_CONFIG[card.rarity]?.color || "#fbbf24",
+          textShadow:`0 0 12px ${RARITY_CONFIG[card.rarity]?.glow}`,
+        }}>{getPlayerRating(card)}</div>
+      </div>
+    );
   };
-  const handlePointerMove = (e) => {
-    if (!isDrawing.current) return;
-    e.preventDefault?.();
-    const t = e.touches ? e.touches[0] : e;
-    scratch(t.clientX, t.clientY);
-  };
-  const handlePointerUp = () => {
-    isDrawing.current = false;
-  };
+
+  const renderQuestionCard = () => (
+    <div style={{
+      position:"relative",
+      width:"45%",
+      maxWidth:170,
+      aspectRatio:"3 / 4",
+      borderRadius:14,
+      background:"linear-gradient(135deg,#1e293b,#0f172a)",
+      boxShadow:"0 8px 24px rgba(0,0,0,0.5)",
+      border:"3px dashed #fbbf24",
+      display:"flex",alignItems:"center",justifyContent:"center",
+      fontSize:64,
+    }}>❓</div>
+  );
 
   return (
-    <div onClick={handleClose} style={{
+    <div onClick={onClose} style={{
       position:"fixed",inset:0,background:"rgba(7,13,30,0.96)",
       zIndex:9999,display:"flex",flexDirection:"column",
       alignItems:"center",justifyContent:"center",padding:"20px 14px",
@@ -6134,167 +6176,222 @@ function LuckyWheelModal({ onClose, onPrizeWon, isAvailable, extraSpins, coinBal
         textAlign:"center",
       }}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
-          <div style={{fontSize:18,fontWeight:900,color:"#fbbf24"}}>🃏 כרטיס גירוד</div>
-          <button onClick={handleClose} style={{background:"transparent",border:"none",color:"#cbd5e1",fontSize:24,cursor:"pointer"}}>✕</button>
+          <div style={{fontSize:18,fontWeight:900,color:"#fbbf24"}}>🎴 גבוה או נמוך?</div>
+          <button onClick={onClose} style={{background:"transparent",border:"none",color:"#cbd5e1",fontSize:24,cursor:"pointer"}}>✕</button>
         </div>
 
-        {!isAvailable ? (
-          // Not available — offer to buy
-          <div style={{padding:"30px 20px"}}>
-            <div style={{fontSize:60,marginBottom:14,opacity:0.6}}>⏰</div>
-            <div style={{fontSize:14,color:"#cbd5e1",lineHeight:1.5,marginBottom:20}}>
-              הכרטיס היומי החינמי נוצל.<br/>
-              חזור מחר או קנה כרטיס נוסף!
-            </div>
-            <button
-              onClick={onBuyTicket}
-              disabled={(coinBalance || 0) < COINS.SCRATCH_PRICE}
-              style={{
-                width:"100%",padding:"14px",borderRadius:12,
-                background: (coinBalance || 0) >= COINS.SCRATCH_PRICE
-                  ? "linear-gradient(135deg,#fbbf24,#f59e0b)"
-                  : "rgba(71,85,105,0.4)",
-                color: (coinBalance || 0) >= COINS.SCRATCH_PRICE ? "#1e2940" : "#64748b",
-                border:"none",fontSize:15,fontWeight:900,
-                cursor: (coinBalance || 0) >= COINS.SCRATCH_PRICE ? "pointer" : "not-allowed",
-                fontFamily:"inherit",letterSpacing:1,
-                boxShadow: (coinBalance || 0) >= COINS.SCRATCH_PRICE ? "0 8px 24px rgba(251,191,36,0.4)" : "none",
-              }}>
-              {(coinBalance || 0) >= COINS.SCRATCH_PRICE
-                ? `🃏 קנה כרטיס · 🪙 ${COINS.SCRATCH_PRICE}`
-                : `🪙 חסר ${COINS.SCRATCH_PRICE - (coinBalance || 0)} מטבעות`}
-            </button>
-            <div style={{marginTop:8,fontSize:10,color:"#64748b"}}>
-              יתרה: 🪙 {coinBalance || 0}
-            </div>
-          </div>
-        ) : (
-          <>
-            {/* The scratch card — bigger */}
-            <div style={{
-              position:"relative",
-              width:"100%",
-              maxWidth:400,
-              aspectRatio:"5 / 4",
-              margin:"10px auto",
-              borderRadius:16,
-              overflow:"hidden",
-              boxShadow:"0 8px 24px rgba(0,0,0,0.5), 0 0 30px rgba(251,191,36,0.3)",
-              border:"4px solid #fbbf24",
-            }}>
-              {/* Prize layer (underneath) */}
-              <div style={{
-                position:"absolute",inset:0,
-                background: prize ? `linear-gradient(135deg, ${prize.color}44, ${prize.color}88, ${prize.color}44)` : "linear-gradient(135deg,#1e293b,#334155)",
-                display:"flex",alignItems:"center",justifyContent:"center",
-                flexDirection:"column",
-                padding:18,
-              }}>
-                <div style={{fontSize:64,marginBottom:14}}>
-                  {prize?.type === "card" ? "🎴" : "🪙"}
-                </div>
-                <div style={{
-                  fontSize:32,fontWeight:900,
-                  color: prize?.color === "#cbd5e1" || prize?.color === "#94a3b8" ? "#1e2940" : "#fff",
-                  textShadow: prize ? `0 0 20px ${prize.color}, 0 2px 6px rgba(0,0,0,0.6)` : "none",
-                  textAlign:"center",
-                  letterSpacing:1,
-                }}>
-                  {prize?.label || "???"}
-                </div>
-              </div>
-              {/* Scratch surface (canvas) — kept mounted even after reveal, just hidden */}
-              <canvas
-                ref={canvasRef}
-                width={400}
-                height={320}
-                onMouseDown={handlePointerDown}
-                onMouseMove={handlePointerMove}
-                onMouseUp={handlePointerUp}
-                onMouseLeave={handlePointerUp}
-                onTouchStart={handlePointerDown}
-                onTouchMove={handlePointerMove}
-                onTouchEnd={handlePointerUp}
-                style={{
-                  position:"absolute",inset:0,
-                  width:"100%",height:"100%",
-                  touchAction:"none",
-                  cursor:"crosshair",
-                  opacity: revealed ? 0 : 1,
-                  pointerEvents: revealed ? "none" : "auto",
-                  transition:"opacity 0.5s ease",
-                }}
-              />
+        {gameState === "idle" && (
+          <div style={{padding:"20px 10px"}}>
+            <div style={{fontSize:48,marginBottom:14}}>🎴⚡🎴</div>
+            <div style={{fontSize:13,color:"#cbd5e1",lineHeight:1.6,marginBottom:18,padding:"0 8px"}}>
+              נחש אם הקלף הבא יקבל ציון <b style={{color:"#22c55e"}}>גבוה יותר</b> או <b style={{color:"#ef4444"}}>נמוך יותר</b><br/>
+              <span style={{fontSize:11,color:"#94a3b8"}}>
+                ⏱️ 10 שניות להחליט · 🟰 תיקו = הפסד
+              </span>
             </div>
 
-            {revealed ? (
-              <div style={{marginTop:18,position:"relative"}}>
-                {/* 🪙 Coin rain — only for coin prizes, count scales with amount */}
-                {prize?.type === "coins" && (() => {
-                  const coinCount = Math.min(60, Math.max(10, Math.round(prize.amount / 50)));
-                  return (
-                    <>
-                      <style>{`
-                        @keyframes coinRain {
-                          0%   { transform: translate(var(--rx), -120vh) rotate(0deg); opacity: 0; }
-                          10%  { opacity: 1; }
-                          100% { transform: translate(var(--rx), 0) rotate(720deg); opacity: 0.8; }
-                        }
-                      `}</style>
-                      {Array.from({length: coinCount}).map((_, i) => {
-                        const left = `${(i * 7.3) % 100}%`;
-                        const delay = `${(i * 0.05) % 1.5}s`;
-                        const duration = 1.4 + (i % 5) * 0.2;
-                        const drift = (i % 2 === 0 ? 1 : -1) * (10 + (i % 30));
-                        return (
-                          <div key={i} style={{
-                            position:"fixed",top:0,left,
-                            fontSize: 18 + (i % 3) * 6,
-                            zIndex:10500,
-                            pointerEvents:"none",
-                            "--rx": `${drift}px`,
-                            animation: `coinRain ${duration}s cubic-bezier(0.4,0,0.2,1) ${delay} forwards`,
-                          }}>🪙</div>
-                        );
-                      })}
-                    </>
-                  );
-                })()}
+            {/* Prize ladder */}
+            <div style={{
+              background:"rgba(15,23,42,0.6)",borderRadius:10,padding:"10px 12px",
+              marginBottom:18,fontSize:11,color:"#cbd5e1",
+            }}>
+              <div style={{fontSize:10,color:"#fbbf24",letterSpacing:2,marginBottom:6,fontWeight:800}}>פרסי רצף</div>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:4,textAlign:"right"}}>
+                <div>3 ברצף → <b style={{color:"#22c55e"}}>50</b></div>
+                <div>5 ברצף → <b style={{color:"#22c55e"}}>100</b></div>
+                <div>8 ברצף → <b style={{color:"#22c55e"}}>300</b></div>
+                <div>10 ברצף → <b style={{color:"#fbbf24"}}>600</b></div>
+                <div>12 ברצף → <b style={{color:"#fbbf24"}}>1,000</b></div>
+                <div>15 ברצף → <b style={{color:"#fbbf24"}}>2,000</b></div>
+                <div>20 ברצף → <b style={{color:"#a855f7"}}>3,000</b></div>
+                <div>25 ברצף → <b style={{color:"#a855f7"}}>5,000</b></div>
+                <div>30 ברצף → <b style={{color:"#ef4444"}}>10,000!</b></div>
+              </div>
+            </div>
+
+            {freePlaysLeft > 0 ? (
+              <button onClick={() => startGame(true)} style={{
+                width:"100%",padding:"14px",borderRadius:12,
+                background:"linear-gradient(135deg,#22c55e,#16a34a)",
+                color:"#fff",border:"none",
+                fontSize:15,fontWeight:900,cursor:"pointer",fontFamily:"inherit",
+                boxShadow:"0 8px 24px rgba(34,197,94,0.4)",
+              }}>🆓 שחק חינם · נשארו {freePlaysLeft} ביום</button>
+            ) : (
+              <button
+                onClick={() => startGame(false)}
+                disabled={coinBalance < 100}
+                style={{
+                  width:"100%",padding:"14px",borderRadius:12,
+                  background: coinBalance >= 100 ? "linear-gradient(135deg,#fbbf24,#f59e0b)" : "rgba(71,85,105,0.4)",
+                  color: coinBalance >= 100 ? "#1e2940" : "#64748b",
+                  border:"none",fontSize:15,fontWeight:900,
+                  cursor: coinBalance >= 100 ? "pointer" : "not-allowed",
+                  fontFamily:"inherit",
+                  boxShadow: coinBalance >= 100 ? "0 8px 24px rgba(251,191,36,0.4)" : "none",
+                }}>
+                {coinBalance >= 100 ? "💰 שחק · 🪙 100" : "🪙 חסר 100 מטבעות"}
+              </button>
+            )}
+            <div style={{marginTop:8,fontSize:10,color:"#64748b"}}>
+              יתרה: 🪙 {coinBalance}
+            </div>
+          </div>
+        )}
+
+        {gameState === "playing" && (
+          <div>
+            {/* Streak + timer */}
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10,padding:"0 4px"}}>
+              <div style={{fontSize:13,fontWeight:900,color:"#fbbf24"}}>🔥 רצף: {streak}</div>
+              <div style={{
+                fontSize:14,fontWeight:900,
+                color: timeLeft <= 3 ? "#ef4444" : "#22c55e",
+                fontVariantNumeric:"tabular-nums",
+              }}>⏱️ {timeLeft}s</div>
+            </div>
+
+            {/* Current prize + next milestone */}
+            {(() => {
+              const currentPrize = prizeForStreak(streak);
+              const milestones = [3, 5, 8, 10, 12, 15, 20, 25, 30];
+              const nextMilestone = milestones.find(m => m > streak);
+              const nextPrize = nextMilestone ? prizeForStreak(nextMilestone) : null;
+              return (
                 <div style={{
-                  fontSize:18,fontWeight:900,color:"#22c55e",marginBottom:14,
-                  animation:"fadeIn 0.5s ease",
-                }}>🎉 זכית!</div>
-                <button onClick={handleClose} style={{
-                  padding:"14px 40px",borderRadius:12,
-                  background:"linear-gradient(135deg,#22c55e,#16a34a)",
-                  color:"#fff",border:"none",
-                  fontSize:15,fontWeight:900,cursor:"pointer",fontFamily:"inherit",
-                  boxShadow:"0 8px 20px rgba(34,197,94,0.4)",
-                }}>קח את הפרס! 🎁</button>
+                  display:"flex",justifyContent:"space-between",alignItems:"center",
+                  marginBottom:14,padding:"8px 12px",
+                  background:"rgba(15,23,42,0.7)",
+                  borderRadius:10,
+                  border:"1px solid rgba(251,191,36,0.2)",
+                }}>
+                  <div style={{textAlign:"center",flex:1}}>
+                    <div style={{fontSize:9,color:"#94a3b8",fontWeight:700,letterSpacing:1}}>בכיס</div>
+                    <div style={{fontSize:16,fontWeight:900,color: currentPrize > 0 ? "#22c55e" : "#64748b"}}>
+                      {currentPrize > 0 ? `${currentPrize} 🪙` : "—"}
+                    </div>
+                  </div>
+                  {nextPrize && (
+                    <>
+                      <div style={{fontSize:16,color:"#fbbf24"}}>→</div>
+                      <div style={{textAlign:"center",flex:1}}>
+                        <div style={{fontSize:9,color:"#94a3b8",fontWeight:700,letterSpacing:1}}>ב-{nextMilestone}</div>
+                        <div style={{fontSize:16,fontWeight:900,color:"#fbbf24"}}>{nextPrize} 🪙</div>
+                      </div>
+                    </>
+                  )}
+                </div>
+              );
+            })()}
+
+            {/* Two cards */}
+            <div style={{display:"flex",justifyContent:"space-around",alignItems:"center",gap:8,marginBottom:18}}>
+              {renderMiniCard(currentCard)}
+              <div style={{fontSize:24,color:"#fbbf24"}}>VS</div>
+              {revealing && nextCard ? renderMiniCard(nextCard) : renderQuestionCard()}
+            </div>
+
+            {revealing ? (
+              <div style={{
+                fontSize:20,fontWeight:900,
+                color: lastResult === "correct" ? "#22c55e" : "#ef4444",
+                animation:"fadeIn 0.4s ease",
+              }}>
+                {lastResult === "correct" ? "✅ צדקת!" : "❌ טעות"}
               </div>
             ) : (
-              <div style={{
-                marginTop:14,fontSize:12,color:"#94a3b8",lineHeight:1.5,
-              }}>
-                👆 גרר את האצבע על הכרטיס לחשוף את הפרס<br/>
-                {scratched > 5 && (
-                  <div style={{marginTop:6,height:5,background:"rgba(71,85,105,0.3)",borderRadius:3,overflow:"hidden",maxWidth:200,margin:"6px auto 0"}}>
-                    <div style={{
-                      width:`${Math.min(100, (scratched / 70) * 100)}%`,
-                      height:"100%",
-                      background:"linear-gradient(90deg,#fbbf24,#fde047)",
-                      transition:"width 0.3s ease",
-                    }}/>
-                  </div>
+              <>
+                <div style={{display:"flex",gap:10}}>
+                  <button onClick={() => handleChoice("higher")} style={{
+                    flex:1,padding:"16px",borderRadius:12,
+                    background:"linear-gradient(135deg,#22c55e,#16a34a)",
+                    color:"#fff",border:"none",
+                    fontSize:15,fontWeight:900,cursor:"pointer",fontFamily:"inherit",
+                    boxShadow:"0 6px 18px rgba(34,197,94,0.4)",
+                  }}>⬆️ גבוה יותר</button>
+                  <button onClick={() => handleChoice("lower")} style={{
+                    flex:1,padding:"16px",borderRadius:12,
+                    background:"linear-gradient(135deg,#ef4444,#dc2626)",
+                    color:"#fff",border:"none",
+                    fontSize:15,fontWeight:900,cursor:"pointer",fontFamily:"inherit",
+                    boxShadow:"0 6px 18px rgba(239,68,68,0.4)",
+                  }}>⬇️ נמוך יותר</button>
+                </div>
+                {streak >= 3 && (
+                  <button onClick={cashOut} style={{
+                    width:"100%",marginTop:10,padding:"10px",borderRadius:10,
+                    background:"rgba(251,191,36,0.15)",
+                    color:"#fbbf24",
+                    border:"1px solid rgba(251,191,36,0.4)",
+                    fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit",
+                  }}>💰 אסוף עכשיו ({prizeForStreak(streak)} 🪙)</button>
                 )}
-              </div>
+              </>
             )}
-            {extraSpins > 0 && (
-              <div style={{marginTop:10,fontSize:11,color:"#22c55e",fontWeight:700}}>
-                🎁 יש לך עוד {extraSpins} כרטיסים מתנה
-              </div>
-            )}
-          </>
+          </div>
+        )}
+
+        {gameState === "lost" && (
+          <div style={{padding:"20px 10px"}}>
+            <div style={{fontSize:60,marginBottom:14}}>💔</div>
+            <div style={{fontSize:18,fontWeight:900,color:"#ef4444",marginBottom:8}}>הפסדת</div>
+            <div style={{fontSize:13,color:"#cbd5e1",marginBottom:18}}>
+              עצרת ברצף של {streak}.<br/>
+              נצרך להגיע ל-3 לפחות לפרס.
+            </div>
+            <button onClick={onClose} style={{
+              padding:"12px 30px",borderRadius:10,
+              background:"linear-gradient(135deg,#64748b,#475569)",
+              color:"#fff",border:"none",
+              fontSize:14,fontWeight:900,cursor:"pointer",fontFamily:"inherit",
+            }}>סגור</button>
+          </div>
+        )}
+
+        {gameState === "won" && (
+          <div style={{padding:"20px 10px",position:"relative"}}>
+            {/* 🪙 Coin rain */}
+            {(() => {
+              const prize = prizeForStreak(streak);
+              const coinCount = Math.min(60, Math.max(10, Math.round(prize / 50)));
+              return (
+                <>
+                  <style>{`
+                    @keyframes coinRainHL {
+                      0%   { transform: translateY(0) rotate(0deg); opacity: 0; }
+                      10%  { opacity: 1; }
+                      100% { transform: translateY(120vh) rotate(720deg); opacity: 0.8; }
+                    }
+                  `}</style>
+                  {Array.from({length: coinCount}).map((_, i) => {
+                    const left = `${(i * 7.3) % 100}%`;
+                    const delay = `${(i * 0.05) % 1.5}s`;
+                    const duration = 1.8 + (i % 5) * 0.3;
+                    return (
+                      <div key={i} style={{
+                        position:"fixed",top:-40,left,
+                        fontSize: 18 + (i % 3) * 6,
+                        zIndex:10500,
+                        pointerEvents:"none",
+                        animation: `coinRainHL ${duration}s cubic-bezier(0.4,0,0.2,1) ${delay} forwards`,
+                      }}>🪙</div>
+                    );
+                  })}
+                </>
+              );
+            })()}
+            <div style={{fontSize:60,marginBottom:14}}>🎉</div>
+            <div style={{fontSize:18,fontWeight:900,color:"#22c55e",marginBottom:8}}>ניצחת!</div>
+            <div style={{fontSize:24,fontWeight:900,color:"#fbbf24",marginBottom:18}}>
+              +{prizeForStreak(streak)} 🪙
+            </div>
+            <button onClick={onClose} style={{
+              padding:"12px 30px",borderRadius:10,
+              background:"linear-gradient(135deg,#22c55e,#16a34a)",
+              color:"#fff",border:"none",
+              fontSize:14,fontWeight:900,cursor:"pointer",fontFamily:"inherit",
+            }}>איזה כיף!</button>
+          </div>
         )}
       </div>
     </div>
@@ -12069,22 +12166,21 @@ export default function App() {
   }, [name, wrappedStats.totalPicks]);
   // 🎰 Roulette UI state
   const [showRoulette, setShowRoulette] = useState(false);  // is the roulette screen open?
-  // 🎡 Daily Lucky Wheel
+  // 🎴 Higher/Lower game — 5 free plays per day, then 100 coins per play
   const [showLuckyWheel, setShowLuckyWheel] = useState(false);
-  const [luckyWheelLastSpin, setLuckyWheelLastSpin] = useState(() => {
-    try { return parseInt(localStorage.getItem("wc2026_wheel_last_v1") || "0", 10) || 0; }
-    catch { return 0; }
+  const [hlPlaysToday, setHlPlaysToday] = useState(() => {
+    try {
+      const data = JSON.parse(localStorage.getItem("wc2026_hl_plays_v1") || "{}");
+      const today = new Date().toISOString().slice(0, 10);
+      return data.date === today ? (data.plays || 0) : 0;
+    } catch { return 0; }
   });
   const [luckyWheelExtraSpins, setLuckyWheelExtraSpins] = useState(() => {
     try { return parseInt(localStorage.getItem("wc2026_wheel_extra_v1") || "0", 10) || 0; }
     catch { return 0; }
   });
-  // Compute if wheel is available (24h passed OR has extra spins)
-  const wheelAvailable = useMemo(() => {
-    if (luckyWheelExtraSpins > 0) return true;
-    const HOURS_24 = 24 * 60 * 60 * 1000;
-    return (Date.now() - luckyWheelLastSpin) >= HOURS_24;
-  }, [luckyWheelLastSpin, luckyWheelExtraSpins]);
+  // Wheel available means user has free plays left today
+  const wheelAvailable = useMemo(() => hlPlaysToday < 5, [hlPlaysToday]);
   const [spinResult, setSpinResult] = useState(null);       // the card just won
   const [isSpinning, setIsSpinning] = useState(false);      // animation playing
   const [pendingCard, setPendingCard] = useState(null);     // card chosen upfront; reels stop on it
@@ -12156,57 +12252,6 @@ export default function App() {
         else navigator.vibrate?.(20);
       } catch {}
     }, 8000);
-  };
-
-  // 🃏 Buy a scratch ticket with coins (when daily free is used)
-  const handleBuyTicket = () => {
-    if ((coins?.balance || 0) < COINS.SCRATCH_PRICE) return;
-    setCoins(prev => {
-      const updated = { ...prev, balance: (prev?.balance || 0) - COINS.SCRATCH_PRICE };
-      try { localStorage.setItem("wc2026_coins_v7", JSON.stringify(updated)); } catch {}
-      return updated;
-    });
-    // Grant an extra ticket
-    setLuckyWheelExtraSpins(prev => {
-      const n = (prev || 0) + 1;
-      try { localStorage.setItem("wc2026_wheel_extra_v1", String(n)); } catch {}
-      return n;
-    });
-  };
-
-  // 🎡 Lucky Wheel — award the prize, consume a spin
-  const handleWheelPrize = (prize) => {
-    // Consume spin: either extra spin or set last spin time
-    if (luckyWheelExtraSpins > 0) {
-      const newExtra = luckyWheelExtraSpins - 1;
-      setLuckyWheelExtraSpins(newExtra);
-      try { localStorage.setItem("wc2026_wheel_extra_v1", String(newExtra)); } catch {}
-    } else {
-      const now = Date.now();
-      setLuckyWheelLastSpin(now);
-      try { localStorage.setItem("wc2026_wheel_last_v1", String(now)); } catch {}
-    }
-    if (prize.type === "coins") {
-      // Award coins
-      setCoins(prev => {
-        const updated = { ...prev, balance: (prev?.balance || 0) + prize.amount };
-        try { localStorage.setItem("wc2026_coins_v7", JSON.stringify(updated)); } catch {}
-        return updated;
-      });
-    } else if (prize.type === "card") {
-      // Award a random card of the chosen rarity
-      const pool = CARDS_BY_RARITY[prize.rarity] || [];
-      if (pool.length > 0) {
-        const card = pool[Math.floor(Math.random() * pool.length)];
-        const newCollection = { ...cardCollection, [card.id]: (cardCollection[card.id] || 0) + 1 };
-        setCardCollection(newCollection);
-        try { localStorage.setItem("wc2026_cards_v2", JSON.stringify(newCollection)); } catch {}
-        // Show reveal modal after wheel closes
-        setTimeout(() => {
-          setSpinResult({ card, isDuplicate: (cardCollection[card.id] || 0) > 0, refund: 0 });
-        }, 600);
-      }
-    }
   };
 
   // 🟢 Legends Spin — FREE spin, only Legend cards. Available every 5 regular spins.
@@ -13556,6 +13601,7 @@ export default function App() {
         onShowGlobalAdmin={()=>setShowGlobalAdmin(true)}
         onShowLuckyWheel={()=>setShowLuckyWheel(true)}
         wheelAvailable={wheelAvailable}
+        hlPlaysToday={hlPlaysToday}
         onLogout={handleLogout}
         onReset={handleReset}
       />
@@ -13583,15 +13629,35 @@ export default function App() {
         <GlobalAdminModal onClose={()=>setShowGlobalAdmin(false)} />
       )}
 
-      {/* 🎡 Lucky Wheel */}
+      {/* 🎴 Higher/Lower Game */}
       {showLuckyWheel && (
         <LuckyWheelModal
           onClose={()=>setShowLuckyWheel(false)}
-          onPrizeWon={handleWheelPrize}
-          isAvailable={wheelAvailable}
-          extraSpins={luckyWheelExtraSpins}
+          onWin={(amount) => {
+            setCoins(prev => {
+              const updated = { ...prev, balance: (prev?.balance || 0) + amount };
+              try { localStorage.setItem("wc2026_coins_v7", JSON.stringify(updated)); } catch {}
+              return updated;
+            });
+          }}
+          freePlaysLeft={luckyWheelExtraSpins > 0 ? 5 : Math.max(0, 5 - hlPlaysToday)}
           coinBalance={coins?.balance || 0}
-          onBuyTicket={handleBuyTicket}
+          onUseFree={() => {
+            // Increment plays today
+            const today = new Date().toISOString().slice(0, 10);
+            const newPlays = hlPlaysToday + 1;
+            setHlPlaysToday(newPlays);
+            try {
+              localStorage.setItem("wc2026_hl_plays_v1", JSON.stringify({ date: today, plays: newPlays }));
+            } catch {}
+          }}
+          onPayPlay={() => {
+            setCoins(prev => {
+              const updated = { ...prev, balance: (prev?.balance || 0) - 100 };
+              try { localStorage.setItem("wc2026_coins_v7", JSON.stringify(updated)); } catch {}
+              return updated;
+            });
+          }}
         />
       )}
 
@@ -13620,12 +13686,12 @@ export default function App() {
             textAlign:"center",
             animation:"wheelBounce 0.7s cubic-bezier(0.2,0.7,0.3,1)",
           }}>
-            <div style={{fontSize:64,marginBottom:14}}>🃏</div>
+            <div style={{fontSize:64,marginBottom:14}}>🎴</div>
             <div style={{fontSize:20,fontWeight:900,color:"#fbbf24",marginBottom:8,letterSpacing:1}}>
-              כרטיס גירוד זמין!
+              גבוה או נמוך זמין!
             </div>
             <div style={{fontSize:13,color:"#cbd5e1",marginBottom:20,lineHeight:1.5}}>
-              🎁 גרד את הכרטיס וגלה את הפרס!
+              🎁 יש לך {Math.max(0, 5 - hlPlaysToday)} משחקים חינם היום!
             </div>
             <button onClick={() => {
               setWheelPopupShown(false);
@@ -13638,7 +13704,7 @@ export default function App() {
               fontFamily:"inherit",letterSpacing:1,
               boxShadow:"0 8px 24px rgba(251,191,36,0.4)",
               marginBottom:10,
-            }}>🃏 גרד עכשיו!</button>
+            }}>🎴 שחק עכשיו!</button>
             <button onClick={() => setWheelPopupShown(false)} style={{
               padding:"10px",
               background:"transparent",color:"#94a3b8",border:"none",
