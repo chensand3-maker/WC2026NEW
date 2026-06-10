@@ -10,7 +10,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.15.1";
+const APP_VERSION = "3.16.0";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -4308,8 +4308,8 @@ function Sidebar({ open, onClose, name, lang, setLang, onShowProfile, onShowRule
             onClick={()=>{onClose();onShowRoulette();}}
           />
           <SidebarItem
-            icon="🎡"
-            label={`גלגל המזל${wheelAvailable ? " · 🟢 זמין!" : ""}`}
+            icon="🃏"
+            label={`כרטיס גירוד${wheelAvailable ? " · 🟢 זמין!" : ""}`}
             onClick={()=>{onClose();onShowLuckyWheel();}}
           />
           <SidebarItem icon="🎓" label={t("sidebar.tutorial")} onClick={()=>{onClose();onShowTutorial();}}/>
@@ -5979,30 +5979,97 @@ function pickWheelPrize() {
 }
 
 function LuckyWheelModal({ onClose, onPrizeWon, isAvailable, extraSpins }) {
-  const [spinning, setSpinning] = useState(false);
-  const [rotation, setRotation] = useState(0);
-  const [result, setResult] = useState(null);
+  const [prize, setPrize] = useState(null);
+  const [scratched, setScratched] = useState(0); // 0-100% scratched
+  const [revealed, setRevealed] = useState(false);
+  const canvasRef = useRef(null);
+  const isDrawing = useRef(false);
 
-  const segmentAngle = 360 / WHEEL_PRIZES.length;
+  // Pick prize on first interaction (so user doesn't see it instantly)
+  const ensurePrize = () => {
+    if (!prize) {
+      const p = pickWheelPrize();
+      setPrize(p);
+      return p;
+    }
+    return prize;
+  };
 
-  const handleSpin = () => {
-    if (!isAvailable || spinning) return;
-    setSpinning(true);
-    setResult(null);
-    const prize = pickWheelPrize();
-    const prizeIdx = WHEEL_PRIZES.findIndex(p => p.id === prize.id);
-    // SVG segments start at top (12 o'clock = -90°). To land arrow on prizeIdx:
-    // We need the center of that segment to end up at top.
-    // Rotation amount: -(prizeIdx * segmentAngle + segmentAngle/2), plus 6 full spins.
-    const targetOffset = -(prizeIdx * segmentAngle + segmentAngle / 2);
-    const finalRotation = 360 * 6 + targetOffset;
-    setRotation(finalRotation);
-    setTimeout(() => {
-      setResult(prize);
-      setSpinning(false);
-      onPrizeWon(prize);
-      try { navigator.vibrate?.([40, 60, 100]); } catch {}
-    }, 4500);
+  // Initialize the scratch surface
+  useEffect(() => {
+    if (!isAvailable || revealed) return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    const w = canvas.width;
+    const h = canvas.height;
+    // Paint the scratch layer
+    const grad = ctx.createLinearGradient(0, 0, w, h);
+    grad.addColorStop(0, "#d97706");
+    grad.addColorStop(0.5, "#fbbf24");
+    grad.addColorStop(1, "#92400e");
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, w, h);
+    // Add some texture
+    ctx.fillStyle = "rgba(0,0,0,0.15)";
+    for (let i = 0; i < 200; i++) {
+      ctx.fillRect(Math.random() * w, Math.random() * h, 2, 2);
+    }
+    // Title text
+    ctx.fillStyle = "#1e2940";
+    ctx.font = "bold 20px sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText("🪙 גרד כאן 🪙", w/2, h/2 - 8);
+    ctx.font = "bold 12px sans-serif";
+    ctx.fillText("גלה את הפרס שלך!", w/2, h/2 + 18);
+  }, [isAvailable, revealed]);
+
+  // Scratching logic
+  const scratch = (clientX, clientY) => {
+    ensurePrize();
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    const x = (clientX - rect.left) * (canvas.width / rect.width);
+    const y = (clientY - rect.top) * (canvas.height / rect.height);
+    const ctx = canvas.getContext("2d");
+    ctx.globalCompositeOperation = "destination-out";
+    ctx.beginPath();
+    ctx.arc(x, y, 28, 0, Math.PI * 2);
+    ctx.fill();
+    // Count how much is scratched (sample)
+    if (Math.random() < 0.2) {
+      const img = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      let cleared = 0;
+      for (let i = 3; i < img.data.length; i += 4 * 50) {
+        if (img.data[i] < 30) cleared++;
+      }
+      const pct = (cleared / (img.data.length / (4 * 50))) * 100;
+      setScratched(pct);
+      if (pct > 45 && !revealed) {
+        setRevealed(true);
+        try { navigator.vibrate?.([40, 80, 40]); } catch {}
+        // Award after a moment
+        setTimeout(() => {
+          if (prize) onPrizeWon(prize);
+        }, 400);
+      }
+    }
+  };
+
+  const handlePointerDown = (e) => {
+    isDrawing.current = true;
+    const t = e.touches ? e.touches[0] : e;
+    scratch(t.clientX, t.clientY);
+  };
+  const handlePointerMove = (e) => {
+    if (!isDrawing.current) return;
+    e.preventDefault?.();
+    const t = e.touches ? e.touches[0] : e;
+    scratch(t.clientX, t.clientY);
+  };
+  const handlePointerUp = () => {
+    isDrawing.current = false;
   };
 
   return (
@@ -6012,136 +6079,109 @@ function LuckyWheelModal({ onClose, onPrizeWon, isAvailable, extraSpins }) {
       alignItems:"center",justifyContent:"center",padding:"20px 16px",
     }}>
       <div onClick={e=>e.stopPropagation()} style={{
-        maxWidth:420,width:"100%",
+        maxWidth:380,width:"100%",
         background:"linear-gradient(160deg,#1e293b,#0f172a)",
-        borderRadius:18,padding:"24px 18px",
+        borderRadius:20,padding:"24px 18px",
         border:"2px solid rgba(251,191,36,0.4)",
         boxShadow:"0 20px 60px rgba(0,0,0,0.6)",
         textAlign:"center",
       }}>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
-          <div style={{fontSize:18,fontWeight:900,color:"#fbbf24"}}>🎡 גלגל המזל</div>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:18}}>
+          <div style={{fontSize:18,fontWeight:900,color:"#fbbf24"}}>🃏 כרטיס גירוד</div>
           <button onClick={onClose} style={{background:"transparent",border:"none",color:"#cbd5e1",fontSize:24,cursor:"pointer"}}>✕</button>
         </div>
 
-        {/* The wheel itself */}
-        <div style={{position:"relative",width:300,height:300,margin:"24px auto"}}>
-          {/* Outer glow ring */}
-          <div style={{
-            position:"absolute",inset:-8,borderRadius:"50%",
-            background:"radial-gradient(circle, rgba(251,191,36,0.3), transparent 70%)",
-            filter:"blur(8px)",
-          }}/>
-          {/* Arrow indicator (pointing down to wheel) */}
-          <div style={{
-            position:"absolute",top:-12,left:"50%",
-            transform:"translateX(-50%)",
-            width:0,height:0,
-            borderLeft:"16px solid transparent",
-            borderRight:"16px solid transparent",
-            borderTop:"28px solid #fbbf24",
-            zIndex:10,
-            filter:"drop-shadow(0 3px 8px rgba(0,0,0,0.7))",
-          }}/>
-          {/* The wheel — SVG for clean segments */}
-          <svg width="300" height="300" viewBox="0 0 300 300" style={{
-            display:"block",
-            transform:`rotate(${rotation}deg)`,
-            transition: spinning ? "transform 4.5s cubic-bezier(0.17, 0.67, 0.16, 1.01)" : "none",
-            filter:"drop-shadow(0 0 20px rgba(251,191,36,0.5))",
-          }}>
-            <defs>
-              <filter id="wheelShadow">
-                <feDropShadow dx="0" dy="2" stdDeviation="3" floodOpacity="0.4"/>
-              </filter>
-            </defs>
-            {WHEEL_PRIZES.map((p, i) => {
-              const startAngle = (i * segmentAngle) - 90; // -90 to start at top
-              const endAngle = startAngle + segmentAngle;
-              const startRad = startAngle * Math.PI / 180;
-              const endRad = endAngle * Math.PI / 180;
-              const r = 145;
-              const cx = 150, cy = 150;
-              const x1 = cx + r * Math.cos(startRad);
-              const y1 = cy + r * Math.sin(startRad);
-              const x2 = cx + r * Math.cos(endRad);
-              const y2 = cy + r * Math.sin(endRad);
-              const largeArc = segmentAngle > 180 ? 1 : 0;
-              const pathD = `M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 ${largeArc} 1 ${x2} ${y2} Z`;
-              // Text positioning — angle bisector, radius
-              const midAngle = startAngle + segmentAngle / 2;
-              const midRad = midAngle * Math.PI / 180;
-              const textR = 95;
-              const tx = cx + textR * Math.cos(midRad);
-              const ty = cy + textR * Math.sin(midRad);
-              const textRot = midAngle + 90; // perpendicular to radius
-              return (
-                <g key={p.id}>
-                  <path d={pathD} fill={p.color} stroke="#0f172a" strokeWidth="2"/>
-                  <text
-                    x={tx} y={ty}
-                    fill="#0a0a0a"
-                    fontSize="11"
-                    fontWeight="900"
-                    textAnchor="middle"
-                    dominantBaseline="middle"
-                    transform={`rotate(${textRot} ${tx} ${ty})`}
-                    style={{textShadow:"0 1px 2px rgba(255,255,255,0.5)"}}
-                  >{p.label}</text>
-                </g>
-              );
-            })}
-            {/* Outer ring */}
-            <circle cx="150" cy="150" r="148" fill="none" stroke="#fbbf24" strokeWidth="5"/>
-          </svg>
-          {/* Center cap — outside the rotating SVG so it stays still */}
-          <div style={{
-            position:"absolute",top:"50%",left:"50%",
-            transform:"translate(-50%, -50%)",
-            width:60,height:60,borderRadius:"50%",
-            background:"linear-gradient(135deg,#fbbf24,#d97706)",
-            border:"4px solid #1e293b",
-            display:"flex",alignItems:"center",justifyContent:"center",
-            fontSize:28,
-            boxShadow:"0 4px 12px rgba(0,0,0,0.5), inset 0 2px 8px rgba(255,255,255,0.3)",
-            zIndex:5,
-          }}>🎯</div>
-        </div>
-
-        {/* Spin button or result */}
-        {result ? (
-          <div>
-            <div style={{
-              fontSize:16,fontWeight:900,color:"#22c55e",marginBottom:6,
-            }}>🎉 זכית!</div>
-            <div style={{
-              fontSize:24,fontWeight:900,color:result.color,marginBottom:14,
-            }}>{result.label}</div>
-            <button onClick={onClose} style={{
-              padding:"10px 30px",borderRadius:10,
-              background:"linear-gradient(135deg,#22c55e,#16a34a)",
-              color:"#fff",border:"none",
-              fontSize:14,fontWeight:900,cursor:"pointer",fontFamily:"inherit",
-            }}>סגור</button>
+        {!isAvailable ? (
+          // Not available
+          <div style={{padding:"40px 20px"}}>
+            <div style={{fontSize:64,marginBottom:14,opacity:0.5}}>⏰</div>
+            <div style={{fontSize:14,color:"#cbd5e1",lineHeight:1.5}}>
+              חזור מחר לכרטיס חדש!
+            </div>
           </div>
         ) : (
           <>
-            <button onClick={handleSpin} disabled={!isAvailable || spinning} style={{
-              width:"100%",padding:"14px",borderRadius:12,
-              background: isAvailable && !spinning
-                ? "linear-gradient(135deg,#fbbf24,#f59e0b)"
-                : "rgba(71,85,105,0.4)",
-              color: isAvailable && !spinning ? "#1e2940" : "#64748b",
-              border:"none",fontSize:16,fontWeight:900,
-              cursor: isAvailable && !spinning ? "pointer" : "not-allowed",
-              fontFamily:"inherit",letterSpacing:1,
-              boxShadow: isAvailable && !spinning ? "0 8px 24px rgba(251,191,36,0.4)" : "none",
+            {/* The scratch card */}
+            <div style={{
+              position:"relative",
+              width:"100%",
+              maxWidth:320,
+              aspectRatio:"3 / 2",
+              margin:"10px auto",
+              borderRadius:14,
+              overflow:"hidden",
+              boxShadow:"0 8px 24px rgba(0,0,0,0.4), 0 0 30px rgba(251,191,36,0.3)",
+              border:"3px solid #fbbf24",
             }}>
-              {spinning ? "🎡 מסתובב..." : isAvailable ? "🎡 סובב את הגלגל!" : "⏰ זמין שוב מחר"}
-            </button>
+              {/* Prize layer (underneath) */}
+              <div style={{
+                position:"absolute",inset:0,
+                background: prize ? `linear-gradient(135deg, ${prize.color}33, ${prize.color}66, ${prize.color}33)` : "linear-gradient(135deg,#1e293b,#334155)",
+                display:"flex",alignItems:"center",justifyContent:"center",
+                flexDirection:"column",
+                padding:14,
+              }}>
+                <div style={{fontSize:48,marginBottom:10}}>
+                  {prize?.type === "card" ? "🎴" : "🪙"}
+                </div>
+                <div style={{
+                  fontSize:24,fontWeight:900,
+                  color: prize?.color || "#fff",
+                  textShadow:`0 0 20px ${prize?.color || "#fff"}, 0 2px 4px rgba(0,0,0,0.5)`,
+                  textAlign:"center",
+                  letterSpacing:1,
+                }}>
+                  {prize?.label || "???"}
+                </div>
+              </div>
+              {/* Scratch surface (canvas) */}
+              {!revealed && (
+                <canvas
+                  ref={canvasRef}
+                  width={320}
+                  height={213}
+                  onMouseDown={handlePointerDown}
+                  onMouseMove={handlePointerMove}
+                  onMouseUp={handlePointerUp}
+                  onMouseLeave={handlePointerUp}
+                  onTouchStart={handlePointerDown}
+                  onTouchMove={handlePointerMove}
+                  onTouchEnd={handlePointerUp}
+                  style={{
+                    position:"absolute",inset:0,
+                    width:"100%",height:"100%",
+                    touchAction:"none",
+                    cursor:"crosshair",
+                  }}
+                />
+              )}
+            </div>
+
+            {revealed ? (
+              <>
+                <div style={{
+                  fontSize:14,fontWeight:900,color:"#22c55e",
+                  marginTop:16,marginBottom:14,
+                  animation:"fadeIn 0.5s ease",
+                }}>🎉 זכית!</div>
+                <button onClick={onClose} style={{
+                  padding:"12px 30px",borderRadius:10,
+                  background:"linear-gradient(135deg,#22c55e,#16a34a)",
+                  color:"#fff",border:"none",
+                  fontSize:14,fontWeight:900,cursor:"pointer",fontFamily:"inherit",
+                }}>איזה כיף!</button>
+              </>
+            ) : (
+              <div style={{
+                marginTop:16,fontSize:12,color:"#94a3b8",lineHeight:1.5,
+              }}>
+                👆 גרר את האצבע על הכרטיס לחשוף את הפרס<br/>
+                {scratched > 5 && `(${Math.round(scratched)}% נחשף)`}
+              </div>
+            )}
             {extraSpins > 0 && (
-              <div style={{marginTop:8,fontSize:11,color:"#22c55e",fontWeight:700}}>
-                🎁 יש לך עוד {extraSpins} ספינים מתנה
+              <div style={{marginTop:10,fontSize:11,color:"#22c55e",fontWeight:700}}>
+                🎁 יש לך עוד {extraSpins} כרטיסים מתנה
               </div>
             )}
           </>
@@ -13428,12 +13468,12 @@ export default function App() {
             textAlign:"center",
             animation:"wheelBounce 0.7s cubic-bezier(0.2,0.7,0.3,1)",
           }}>
-            <div style={{fontSize:64,marginBottom:14}}>🎡</div>
+            <div style={{fontSize:64,marginBottom:14}}>🃏</div>
             <div style={{fontSize:20,fontWeight:900,color:"#fbbf24",marginBottom:8,letterSpacing:1}}>
-              גלגל המזל זמין!
+              כרטיס גירוד זמין!
             </div>
             <div style={{fontSize:13,color:"#cbd5e1",marginBottom:20,lineHeight:1.5}}>
-              🎁 סובב את הגלגל וקבל מטבעות או קלף נדיר!
+              🎁 גרד את הכרטיס וגלה את הפרס!
             </div>
             <button onClick={() => {
               setWheelPopupShown(false);
@@ -13446,7 +13486,7 @@ export default function App() {
               fontFamily:"inherit",letterSpacing:1,
               boxShadow:"0 8px 24px rgba(251,191,36,0.4)",
               marginBottom:10,
-            }}>🎡 סובב עכשיו!</button>
+            }}>🃏 גרד עכשיו!</button>
             <button onClick={() => setWheelPopupShown(false)} style={{
               padding:"10px",
               background:"transparent",color:"#94a3b8",border:"none",
