@@ -9,7 +9,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.9.1";
+const APP_VERSION = "3.9.2";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -4935,6 +4935,7 @@ function getPlayerStats(card) {
 
 function PlayerCard({ card, size = "L", animated = false, flippable = false }) {
   const cfg = RARITY_CONFIG[card.rarity];
+  const isLegend = card.rarity === "G";
   const isLegendary = card.rarity === "L";
   const rating = getPlayerRating(card);
   const isPerfect = rating === 99;
@@ -5161,6 +5162,32 @@ function PlayerCard({ card, size = "L", animated = false, flippable = false }) {
           <div style={{position:"absolute",top:18,right:60,fontSize:14,animation:"sparkle 1.5s ease-in-out infinite",zIndex:4}}>✨</div>
           <div style={{position:"absolute",bottom:60,left:18,fontSize:14,animation:"sparkle 1.5s ease-in-out infinite 1s",zIndex:4}}>✨</div>
           <div style={{position:"absolute",bottom:60,right:18,fontSize:14,animation:"sparkle 1.5s ease-in-out infinite 0.7s",zIndex:4}}>✨</div>
+        </>
+      )}
+
+      {/* 🟢 Legend sparkles + glowing orbs */}
+      {isLegend && animated && (
+        <>
+          <div style={{position:"absolute",top:18,right:60,fontSize:16,animation:"sparkle 1.4s ease-in-out infinite",zIndex:4,filter:"drop-shadow(0 0 6px #22c55e)"}}>🟢</div>
+          <div style={{position:"absolute",top:18,left:60,fontSize:14,animation:"sparkle 1.4s ease-in-out infinite 0.5s",zIndex:4,filter:"drop-shadow(0 0 6px #86efac)"}}>✨</div>
+          <div style={{position:"absolute",bottom:60,left:18,fontSize:14,animation:"sparkle 1.4s ease-in-out infinite 0.9s",zIndex:4,filter:"drop-shadow(0 0 6px #22c55e)"}}>✨</div>
+          <div style={{position:"absolute",bottom:60,right:18,fontSize:14,animation:"sparkle 1.4s ease-in-out infinite 0.3s",zIndex:4,filter:"drop-shadow(0 0 6px #bbf7d0)"}}>✨</div>
+          <div style={{position:"absolute",top:"45%",left:8,fontSize:12,animation:"sparkle 1.6s ease-in-out infinite 1.2s",zIndex:4,filter:"drop-shadow(0 0 5px #86efac)"}}>⭐</div>
+          <div style={{position:"absolute",top:"45%",right:8,fontSize:12,animation:"sparkle 1.6s ease-in-out infinite 0.7s",zIndex:4,filter:"drop-shadow(0 0 5px #86efac)"}}>⭐</div>
+          {/* Moving light sweep across the card */}
+          <div style={{
+            position:"absolute",inset:0,
+            background:"linear-gradient(110deg, transparent 30%, rgba(255,255,255,0.4) 50%, transparent 70%)",
+            animation:"legendSweep 3s ease-in-out infinite",
+            pointerEvents:"none",zIndex:5,
+            mixBlendMode:"overlay",
+          }}/>
+          <style>{`
+            @keyframes legendSweep {
+              0% { transform: translateX(-100%); }
+              60%, 100% { transform: translateX(100%); }
+            }
+          `}</style>
         </>
       )}
 
@@ -5826,6 +5853,7 @@ function CardRevealModal({ result, onClose, freshSpin = false }) {
   const t = useT();
   const { card, isDuplicate, refund } = result;
   const cfg = RARITY_CONFIG[card.rarity];
+  const isLegend = card.rarity === "G";       // 🟢 Hall of Fame
   const isLegendary = card.rarity === "L";
   const isEpic = card.rarity === "E";
   const isRare = card.rarity === "R";
@@ -5835,18 +5863,20 @@ function CardRevealModal({ result, onClose, freshSpin = false }) {
   useEffect(() => {
     playWinSound(card.rarity);
     try {
-      if (card.rarity === "L") navigator.vibrate?.([30, 50, 30, 50, 80, 50, 120]);
+      if (card.rarity === "G") navigator.vibrate?.([40, 60, 40, 60, 100, 60, 150, 60, 200]); // Legend — strongest pattern
+      else if (card.rarity === "L") navigator.vibrate?.([30, 50, 30, 50, 80, 50, 120]);
       else if (card.rarity === "E") navigator.vibrate?.([20, 40, 50]);
       else navigator.vibrate?.(20);
     } catch {}
   }, [card.rarity]);
 
   // Vignette color matches the rarity
-  const vignetteBg = isLegendary ? "radial-gradient(circle at center, rgba(120,53,15,0.4) 0%, rgba(0,0,0,0.92) 70%)"
-                  : isEpic       ? "radial-gradient(circle at center, rgba(88,28,135,0.5) 0%, rgba(0,0,0,0.92) 70%)"
-                  : isRare       ? "radial-gradient(circle at center, rgba(127,29,29,0.5) 0%, rgba(0,0,0,0.92) 70%)"
-                  : isUncommon   ? "radial-gradient(circle at center, rgba(30,58,138,0.4) 0%, rgba(0,0,0,0.9) 70%)"
-                                 : "rgba(0,0,0,0.7)";
+  const vignetteBg = isLegend     ? "radial-gradient(circle at center, rgba(20,83,45,0.55) 0%, rgba(0,0,0,0.95) 70%)"
+                  : isLegendary   ? "radial-gradient(circle at center, rgba(120,53,15,0.4) 0%, rgba(0,0,0,0.92) 70%)"
+                  : isEpic        ? "radial-gradient(circle at center, rgba(88,28,135,0.5) 0%, rgba(0,0,0,0.92) 70%)"
+                  : isRare        ? "radial-gradient(circle at center, rgba(127,29,29,0.5) 0%, rgba(0,0,0,0.92) 70%)"
+                  : isUncommon    ? "radial-gradient(circle at center, rgba(30,58,138,0.4) 0%, rgba(0,0,0,0.9) 70%)"
+                                  : "rgba(0,0,0,0.7)";
 
   return (
     <div onClick={onClose} style={{
@@ -5928,6 +5958,83 @@ function CardRevealModal({ result, onClose, freshSpin = false }) {
           100% { transform: translateY(0) scale(1); opacity: 1; }
         }
       `}</style>
+
+      {/* ═════════ 🟢 LEGEND EFFECTS (Hall of Fame) ═════════ */}
+
+      {isLegend && (
+        <>
+          {/* Green shockwave — bigger than legendary */}
+          <div style={{
+            position:"fixed",top:"50%",left:"50%",
+            width:100,height:100,borderRadius:"50%",
+            border:`7px solid ${cfg.color}`,
+            animation:"shockwave 1.8s ease-out",
+            pointerEvents:"none",zIndex:9501,
+          }}/>
+          <div style={{
+            position:"fixed",top:"50%",left:"50%",
+            width:60,height:60,borderRadius:"50%",
+            border:`4px solid #bbf7d0`,
+            animation:"shockwave 1.4s ease-out 0.3s",
+            pointerEvents:"none",zIndex:9501,
+          }}/>
+          {/* Rotating green light rays — 8 rays */}
+          <div style={{
+            position:"fixed",top:"50%",left:"50%",
+            width:"200vw",height:"200vh",
+            animation:"rayRotate 7s linear infinite",
+            pointerEvents:"none",zIndex:9501,
+            transform:"translate(-50%, -50%)",
+          }}>
+            {[...Array(8)].map((_, i) => (
+              <div key={`legendray-${i}`} style={{
+                position:"absolute",
+                top:"50%",left:"50%",
+                width:9,height:"100vh",
+                background:`linear-gradient(180deg, transparent, ${cfg.color}dd, transparent)`,
+                transformOrigin:"top center",
+                transform:`translate(-50%, 0) rotate(${i * 45}deg)`,
+                opacity:0.75,
+              }}/>
+            ))}
+          </div>
+          {/* Green falling confetti — 35 pieces */}
+          {[...Array(35)].map((_, i) => {
+            const size = [6, 10, 14][i % 3];
+            const color = ["#22c55e", "#86efac", "#bbf7d0", "#fbbf24"][i % 4];
+            const left = `${(i * 2.9) % 100}%`;
+            const delay = `${(i * 0.08) % 2}s`;
+            const duration = 2.5 + ((i % 7) * 0.2);
+            return (
+              <div key={`legendconfetti-${i}`} style={{
+                position:"fixed",top:-20,left,
+                width:size,height:size,
+                background:color,
+                borderRadius: i % 2 === 0 ? "50%" : "2px",
+                animation:`fallParticle ${duration}s linear ${delay} infinite`,
+                opacity:0.85,
+                pointerEvents:"none",zIndex:9502,
+                boxShadow: `0 0 8px ${color}`,
+              }}/>
+            );
+          })}
+          {/* Pulsing green center glow */}
+          <div style={{
+            position:"fixed",top:"50%",left:"50%",
+            width:300,height:300,borderRadius:"50%",
+            background:`radial-gradient(circle, ${cfg.color}66 0%, transparent 70%)`,
+            transform:"translate(-50%, -50%)",
+            animation:"legendPulse 2s ease-in-out infinite",
+            pointerEvents:"none",zIndex:9499,
+          }}/>
+          <style>{`
+            @keyframes legendPulse {
+              0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.6; }
+              50% { transform: translate(-50%, -50%) scale(1.3); opacity: 1; }
+            }
+          `}</style>
+        </>
+      )}
 
       {/* ═════════ 🏆 LEGENDARY EFFECTS ═════════ */}
 
@@ -6154,19 +6261,19 @@ function CardRevealModal({ result, onClose, freshSpin = false }) {
       )}
 
       {/* ═════════ Universal: confetti burst on entry ═════════ */}
-      {(isLegendary || isEpic) && (
-        <ConfettiBurst count={isLegendary ? 20 : 14} />
+      {(isLegend || isLegendary || isEpic) && (
+        <ConfettiBurst count={isLegend ? 28 : isLegendary ? 20 : 14} />
       )}
 
       {/* ═════════ Tier announcement ═════════ */}
       {(
         <div style={{
-          fontSize: isLegendary ? 36 : isEpic ? 26 : 22,
+          fontSize: isLegend ? 38 : isLegendary ? 36 : isEpic ? 26 : 22,
           fontWeight:900,
           color: cfg.color,
           textShadow:`0 0 30px ${cfg.glow}, 0 0 60px ${cfg.glow}`,
           marginBottom:24,
-          letterSpacing:isLegendary ? 8 : isEpic ? 5 : 3,
+          letterSpacing:isLegend ? 9 : isLegendary ? 8 : isEpic ? 5 : 3,
           zIndex:9510,
           position:"relative",
           textAlign:"center",
@@ -6174,7 +6281,7 @@ function CardRevealModal({ result, onClose, freshSpin = false }) {
           opacity: 1,
           direction:"ltr",
         }}>
-          {isLegendary ? "🏆 LEGENDARY 🏆" : `${cfg.emoji} ${cfg.label}!`}
+          {isLegend ? "🟢 LEGEND 🟢" : isLegendary ? "🏆 LEGENDARY 🏆" : `${cfg.emoji} ${cfg.label}!`}
         </div>
       )}
 
