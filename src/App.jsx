@@ -10,7 +10,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.16.1";
+const APP_VERSION = "3.16.2";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -6016,17 +6016,20 @@ function LuckyWheelModal({ onClose, onPrizeWon, isAvailable, extraSpins }) {
   const [prize, setPrize] = useState(null);
   const [scratched, setScratched] = useState(0); // 0-100% scratched
   const [revealed, setRevealed] = useState(false);
+  const [awarded, setAwarded] = useState(false); // has the prize been awarded yet?
   const canvasRef = useRef(null);
   const isDrawing = useRef(false);
+  const prizeRef = useRef(null); // hold prize in ref to avoid stale closures
 
   // Pick prize on first interaction (so user doesn't see it instantly)
   const ensurePrize = () => {
-    if (!prize) {
+    if (!prizeRef.current) {
       const p = pickWheelPrize();
+      prizeRef.current = p;
       setPrize(p);
       return p;
     }
-    return prize;
+    return prizeRef.current;
   };
 
   // Initialize the scratch surface
@@ -6046,49 +6049,58 @@ function LuckyWheelModal({ onClose, onPrizeWon, isAvailable, extraSpins }) {
     ctx.fillRect(0, 0, w, h);
     // Add some texture
     ctx.fillStyle = "rgba(0,0,0,0.15)";
-    for (let i = 0; i < 200; i++) {
+    for (let i = 0; i < 300; i++) {
       ctx.fillRect(Math.random() * w, Math.random() * h, 2, 2);
     }
     // Title text
     ctx.fillStyle = "#1e2940";
-    ctx.font = "bold 20px sans-serif";
+    ctx.font = "bold 28px sans-serif";
     ctx.textAlign = "center";
-    ctx.fillText("🪙 גרד כאן 🪙", w/2, h/2 - 8);
-    ctx.font = "bold 12px sans-serif";
-    ctx.fillText("גלה את הפרס שלך!", w/2, h/2 + 18);
+    ctx.fillText("🪙 גרד כאן 🪙", w/2, h/2 - 12);
+    ctx.font = "bold 14px sans-serif";
+    ctx.fillText("גלה את הפרס שלך!", w/2, h/2 + 22);
   }, [isAvailable, revealed]);
 
   // Scratching logic
   const scratch = (clientX, clientY) => {
     ensurePrize();
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    if (!canvas || revealed) return;
     const rect = canvas.getBoundingClientRect();
     const x = (clientX - rect.left) * (canvas.width / rect.width);
     const y = (clientY - rect.top) * (canvas.height / rect.height);
     const ctx = canvas.getContext("2d");
     ctx.globalCompositeOperation = "destination-out";
     ctx.beginPath();
-    ctx.arc(x, y, 28, 0, Math.PI * 2);
+    ctx.arc(x, y, 35, 0, Math.PI * 2);
     ctx.fill();
-    // Count how much is scratched (sample)
-    if (Math.random() < 0.2) {
+    // Count how much is scratched (occasionally)
+    if (Math.random() < 0.15) {
       const img = ctx.getImageData(0, 0, canvas.width, canvas.height);
       let cleared = 0;
-      for (let i = 3; i < img.data.length; i += 4 * 50) {
+      const sample = 4 * 100; // sample every 100 pixels
+      let total = 0;
+      for (let i = 3; i < img.data.length; i += sample) {
+        total++;
         if (img.data[i] < 30) cleared++;
       }
-      const pct = (cleared / (img.data.length / (4 * 50))) * 100;
+      const pct = (cleared / total) * 100;
       setScratched(pct);
-      if (pct > 45 && !revealed) {
+      // Higher threshold (70%) — user has to actually work for it
+      if (pct > 70 && !revealed) {
         setRevealed(true);
         try { navigator.vibrate?.([40, 80, 40]); } catch {}
-        // Award after a moment
-        setTimeout(() => {
-          if (prize) onPrizeWon(prize);
-        }, 400);
       }
     }
+  };
+
+  // Award the prize when user closes (after they had a moment to see it)
+  const handleClose = () => {
+    if (revealed && !awarded && prizeRef.current) {
+      setAwarded(true);
+      onPrizeWon(prizeRef.current);
+    }
+    onClose();
   };
 
   const handlePointerDown = (e) => {
@@ -6107,22 +6119,22 @@ function LuckyWheelModal({ onClose, onPrizeWon, isAvailable, extraSpins }) {
   };
 
   return (
-    <div onClick={onClose} style={{
-      position:"fixed",inset:0,background:"rgba(7,13,30,0.95)",
+    <div onClick={handleClose} style={{
+      position:"fixed",inset:0,background:"rgba(7,13,30,0.96)",
       zIndex:9999,display:"flex",flexDirection:"column",
-      alignItems:"center",justifyContent:"center",padding:"20px 16px",
+      alignItems:"center",justifyContent:"center",padding:"20px 14px",
     }}>
       <div onClick={e=>e.stopPropagation()} style={{
-        maxWidth:380,width:"100%",
+        maxWidth:440,width:"100%",
         background:"linear-gradient(160deg,#1e293b,#0f172a)",
-        borderRadius:20,padding:"24px 18px",
+        borderRadius:20,padding:"22px 16px",
         border:"2px solid rgba(251,191,36,0.4)",
         boxShadow:"0 20px 60px rgba(0,0,0,0.6)",
         textAlign:"center",
       }}>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:18}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
           <div style={{fontSize:18,fontWeight:900,color:"#fbbf24"}}>🃏 כרטיס גירוד</div>
-          <button onClick={onClose} style={{background:"transparent",border:"none",color:"#cbd5e1",fontSize:24,cursor:"pointer"}}>✕</button>
+          <button onClick={handleClose} style={{background:"transparent",border:"none",color:"#cbd5e1",fontSize:24,cursor:"pointer"}}>✕</button>
         </div>
 
         {!isAvailable ? (
@@ -6135,82 +6147,92 @@ function LuckyWheelModal({ onClose, onPrizeWon, isAvailable, extraSpins }) {
           </div>
         ) : (
           <>
-            {/* The scratch card */}
+            {/* The scratch card — bigger */}
             <div style={{
               position:"relative",
               width:"100%",
-              maxWidth:320,
-              aspectRatio:"3 / 2",
+              maxWidth:400,
+              aspectRatio:"5 / 4",
               margin:"10px auto",
-              borderRadius:14,
+              borderRadius:16,
               overflow:"hidden",
-              boxShadow:"0 8px 24px rgba(0,0,0,0.4), 0 0 30px rgba(251,191,36,0.3)",
-              border:"3px solid #fbbf24",
+              boxShadow:"0 8px 24px rgba(0,0,0,0.5), 0 0 30px rgba(251,191,36,0.3)",
+              border:"4px solid #fbbf24",
             }}>
               {/* Prize layer (underneath) */}
               <div style={{
                 position:"absolute",inset:0,
-                background: prize ? `linear-gradient(135deg, ${prize.color}33, ${prize.color}66, ${prize.color}33)` : "linear-gradient(135deg,#1e293b,#334155)",
+                background: prize ? `linear-gradient(135deg, ${prize.color}44, ${prize.color}88, ${prize.color}44)` : "linear-gradient(135deg,#1e293b,#334155)",
                 display:"flex",alignItems:"center",justifyContent:"center",
                 flexDirection:"column",
-                padding:14,
+                padding:18,
               }}>
-                <div style={{fontSize:48,marginBottom:10}}>
+                <div style={{fontSize:64,marginBottom:14}}>
                   {prize?.type === "card" ? "🎴" : "🪙"}
                 </div>
                 <div style={{
-                  fontSize:24,fontWeight:900,
-                  color: prize?.color || "#fff",
-                  textShadow:`0 0 20px ${prize?.color || "#fff"}, 0 2px 4px rgba(0,0,0,0.5)`,
+                  fontSize:32,fontWeight:900,
+                  color: prize?.color === "#cbd5e1" || prize?.color === "#94a3b8" ? "#1e2940" : "#fff",
+                  textShadow: prize ? `0 0 20px ${prize.color}, 0 2px 6px rgba(0,0,0,0.6)` : "none",
                   textAlign:"center",
                   letterSpacing:1,
                 }}>
                   {prize?.label || "???"}
                 </div>
               </div>
-              {/* Scratch surface (canvas) */}
-              {!revealed && (
-                <canvas
-                  ref={canvasRef}
-                  width={320}
-                  height={213}
-                  onMouseDown={handlePointerDown}
-                  onMouseMove={handlePointerMove}
-                  onMouseUp={handlePointerUp}
-                  onMouseLeave={handlePointerUp}
-                  onTouchStart={handlePointerDown}
-                  onTouchMove={handlePointerMove}
-                  onTouchEnd={handlePointerUp}
-                  style={{
-                    position:"absolute",inset:0,
-                    width:"100%",height:"100%",
-                    touchAction:"none",
-                    cursor:"crosshair",
-                  }}
-                />
-              )}
+              {/* Scratch surface (canvas) — kept mounted even after reveal, just hidden */}
+              <canvas
+                ref={canvasRef}
+                width={400}
+                height={320}
+                onMouseDown={handlePointerDown}
+                onMouseMove={handlePointerMove}
+                onMouseUp={handlePointerUp}
+                onMouseLeave={handlePointerUp}
+                onTouchStart={handlePointerDown}
+                onTouchMove={handlePointerMove}
+                onTouchEnd={handlePointerUp}
+                style={{
+                  position:"absolute",inset:0,
+                  width:"100%",height:"100%",
+                  touchAction:"none",
+                  cursor:"crosshair",
+                  opacity: revealed ? 0 : 1,
+                  pointerEvents: revealed ? "none" : "auto",
+                  transition:"opacity 0.5s ease",
+                }}
+              />
             </div>
 
             {revealed ? (
-              <>
+              <div style={{marginTop:18}}>
                 <div style={{
-                  fontSize:14,fontWeight:900,color:"#22c55e",
-                  marginTop:16,marginBottom:14,
+                  fontSize:18,fontWeight:900,color:"#22c55e",marginBottom:14,
                   animation:"fadeIn 0.5s ease",
                 }}>🎉 זכית!</div>
-                <button onClick={onClose} style={{
-                  padding:"12px 30px",borderRadius:10,
+                <button onClick={handleClose} style={{
+                  padding:"14px 40px",borderRadius:12,
                   background:"linear-gradient(135deg,#22c55e,#16a34a)",
                   color:"#fff",border:"none",
-                  fontSize:14,fontWeight:900,cursor:"pointer",fontFamily:"inherit",
-                }}>איזה כיף!</button>
-              </>
+                  fontSize:15,fontWeight:900,cursor:"pointer",fontFamily:"inherit",
+                  boxShadow:"0 8px 20px rgba(34,197,94,0.4)",
+                }}>קח את הפרס! 🎁</button>
+              </div>
             ) : (
               <div style={{
-                marginTop:16,fontSize:12,color:"#94a3b8",lineHeight:1.5,
+                marginTop:14,fontSize:12,color:"#94a3b8",lineHeight:1.5,
               }}>
                 👆 גרר את האצבע על הכרטיס לחשוף את הפרס<br/>
-                {scratched > 5 && `(${Math.round(scratched)}% נחשף)`}
+                {scratched > 5 && (
+                  <div style={{marginTop:6,height:5,background:"rgba(71,85,105,0.3)",borderRadius:3,overflow:"hidden",maxWidth:200,margin:"6px auto 0"}}>
+                    <div style={{
+                      width:`${Math.min(100, (scratched / 70) * 100)}%`,
+                      height:"100%",
+                      background:"linear-gradient(90deg,#fbbf24,#fde047)",
+                      transition:"width 0.3s ease",
+                    }}/>
+                  </div>
+                )}
               </div>
             )}
             {extraSpins > 0 && (
