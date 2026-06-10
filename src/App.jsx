@@ -9,7 +9,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.10.3";
+const APP_VERSION = "3.11.1";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -1331,7 +1331,7 @@ const COINS = {
   DUP_RARE: 200,
   DUP_EPIC: 600,
   DUP_LEGENDARY: 2000,
-  DUP_LEGEND: 1500,    // 🟢 Hall of Fame legends — same tier as Legendary, slight bonus
+  DUP_LEGEND: 500,     // 🟢 Hall of Fame legends — modest refund (free spin already!)
   DUP_TRASH: 50,       // 🗑️ Israeli "legends" — small refund (it's a joke tier)
 };
 
@@ -2490,10 +2490,25 @@ const LEGEND_CARDS_RAW = [
   ["Zlatan Ibrahimović", "Sweden", "F"],
   // 🇨🇮 Ivory Coast
   ["Didier Drogba", "Ivory Coast", "F"],
+  ["Yaya Touré", "Ivory Coast", "M"],
   // 🇩🇰 Denmark
   ["Peter Schmeichel", "Denmark", "GK"],
   // 🇭🇺 Hungary
   ["Ferenc Puskás", "Hungary", "F"],
+  // 🇺🇾 Uruguay
+  ["Diego Forlán", "Uruguay", "F"],
+  // 🇨🇲 Cameroon
+  ["Samuel Eto'o", "Cameroon", "F"],
+  // 🇫🇷 France (additional)
+  ["Franck Ribéry", "France", "F"],
+  // 🇪🇸 Spain (additional)
+  ["Xabi Alonso", "Spain", "M"],
+  // 🏴 England (additional)
+  ["Frank Lampard", "England", "M"],
+  ["Steven Gerrard", "England", "M"],
+  ["John Terry", "England", "D"],
+  // 🇮🇹 Italy (additional)
+  ["Gianluca Zambrotta", "Italy", "D"],
 ];
 
 // Flag lookup for legend nations (some didn't qualify for WC 2026)
@@ -2501,7 +2516,7 @@ const LEGEND_FLAGS = {
   "Brazil": "🇧🇷", "Argentina": "🇦🇷", "Germany": "🇩🇪", "France": "🇫🇷",
   "Netherlands": "🇳🇱", "Italy": "🇮🇹", "Spain": "🇪🇸", "England": "🏴󠁧󠁢󠁥󠁮󠁧󠁿",
   "Portugal": "🇵🇹", "Sweden": "🇸🇪", "Ivory Coast": "🇨🇮", "Denmark": "🇩🇰",
-  "Hungary": "🇭🇺",
+  "Hungary": "🇭🇺", "Uruguay": "🇺🇾", "Cameroon": "🇨🇲",
 };
 
 // Build LEGEND_CARDS with stable IDs (legend-0, legend-1, ...)
@@ -2574,24 +2589,24 @@ const CARD_DATA = [
   ["Rafael Leão", "Portugal", "E", "F"],
   ["Florian Wirtz", "Germany", "E", "M"],
   ["Jamal Musiala", "Germany", "E", "M"],
-  ["Kai Havertz", "Germany", "E", "F"],
+  ["Kai Havertz", "Germany", "R", "F"],
   ["Federico Valverde", "Uruguay", "E", "M"],
-  ["Darwin Núñez", "Uruguay", "E", "F"],
+  ["Darwin Núñez", "Uruguay", "R", "F"],
   ["Frenkie de Jong", "Netherlands", "E", "M"],
-  ["Memphis Depay", "Netherlands", "E", "F"],
+  ["Memphis Depay", "Netherlands", "R", "F"],
   ["Kevin De Bruyne", "Belgium", "E", "M"],
-  ["Romelu Lukaku", "Belgium", "E", "F"],
+  ["Romelu Lukaku", "Belgium", "R", "F"],
   ["Luis Díaz", "Colombia", "E", "F"],
   ["James Rodríguez", "Colombia", "E", "M"],
   ["Sadio Mané", "Senegal", "E", "F"],
   ["Édouard Mendy", "Senegal", "E", "GK"],
   ["Hirving Lozano", "Mexico", "E", "F"],
-  ["Christian Pulisic", "USA", "E", "F"],
+  ["Christian Pulisic", "USA", "R", "F"],
   ["Takumi Minamino", "Japan", "E", "F"],
   ["Hakan Çalhanoğlu", "Türkiye", "E", "M"],
   ["Brahim Díaz", "Morocco", "E", "M"],
   ["Hakim Ziyech", "Morocco", "E", "M"],
-  ["Yassine Bounou", "Morocco", "E", "GK"],
+  ["Yassine Bounou", "Morocco", "R", "GK"],
   ["Alphonso Davies", "Canada", "E", "D"],
   ["Jonathan David", "Canada", "E", "F"],
   ["Riyad Mahrez", "Algeria", "E", "F"],
@@ -2599,40 +2614,40 @@ const CARD_DATA = [
 
   // ─── RARE (60) — national-team starters ─────────────────────────
   ["Ángel Di María", "Argentina", "R", "F"],
-  ["Cristian Romero", "Argentina", "R", "D"],
-  ["Rodrigo De Paul", "Argentina", "R", "M"],
-  ["Theo Hernández", "France", "R", "D"],
-  ["William Saliba", "France", "R", "D"],
-  ["Mike Maignan", "France", "R", "GK"],
-  ["Eduardo Camavinga", "France", "R", "M"],
-  ["Marcus Rashford", "England", "R", "F"],
+  ["Cristian Romero", "Argentina", "E", "D"],
+  ["Rodrigo De Paul", "Argentina", "E", "M"],
+  ["Theo Hernández", "France", "E", "D"],
+  ["William Saliba", "France", "E", "D"],
+  ["Mike Maignan", "France", "E", "GK"],
+  ["Eduardo Camavinga", "France", "E", "M"],
+  ["Marcus Rashford", "England", "E", "F"],
   ["Harry Maguire", "England", "R", "D"],
-  ["John Stones", "England", "R", "D"],
-  ["Jordan Pickford", "England", "R", "GK"],
-  ["Marquinhos", "Brazil", "R", "D"],
-  ["Éder Militão", "Brazil", "R", "D"],
-  ["Bruno Guimarães", "Brazil", "R", "M"],
+  ["John Stones", "England", "E", "D"],
+  ["Jordan Pickford", "England", "E", "GK"],
+  ["Marquinhos", "Brazil", "E", "D"],
+  ["Éder Militão", "Brazil", "E", "D"],
+  ["Bruno Guimarães", "Brazil", "E", "M"],
   ["Vitinha", "Portugal", "R", "M"],
-  ["João Cancelo", "Portugal", "R", "D"],
-  ["Diogo Costa", "Portugal", "R", "GK"],
-  ["Rúben Dias", "Portugal", "R", "D"],
-  ["Joshua Kimmich", "Germany", "R", "M"],
+  ["João Cancelo", "Portugal", "E", "D"],
+  ["Diogo Costa", "Portugal", "E", "GK"],
+  ["Rúben Dias", "Portugal", "E", "D"],
+  ["Joshua Kimmich", "Germany", "E", "M"],
   ["Antonio Rüdiger", "Germany", "R", "D"],
-  ["Manuel Neuer", "Germany", "R", "GK"],
+  ["Manuel Neuer", "Germany", "E", "GK"],
   ["İlkay Gündoğan", "Germany", "R", "M"],
-  ["Cody Gakpo", "Netherlands", "R", "F"],
+  ["Cody Gakpo", "Netherlands", "E", "F"],
   ["Denzel Dumfries", "Netherlands", "R", "D"],
   ["Nathan Aké", "Netherlands", "R", "D"],
-  ["Xavi Simons", "Netherlands", "R", "M"],
-  ["Thibaut Courtois", "Belgium", "R", "GK"],
+  ["Xavi Simons", "Netherlands", "E", "M"],
+  ["Thibaut Courtois", "Belgium", "E", "GK"],
   ["Youri Tielemans", "Belgium", "R", "M"],
   ["Jérémy Doku", "Belgium", "R", "F"],
   ["Mateo Kovačić", "Croatia", "R", "M"],
   ["Marcelo Brozović", "Croatia", "R", "M"],
-  ["Joško Gvardiol", "Croatia", "R", "D"],
+  ["Joško Gvardiol", "Croatia", "E", "D"],
   ["Álvaro Morata", "Spain", "R", "F"],
-  ["Nico Williams", "Spain", "R", "F"],
-  ["Dani Olmo", "Spain", "R", "M"],
+  ["Nico Williams", "Spain", "E", "F"],
+  ["Dani Olmo", "Spain", "E", "M"],
   ["Unai Simón", "Spain", "R", "GK"],
   ["Daichi Kamada", "Japan", "R", "M"],
   ["Wataru Endo", "Japan", "R", "M"],
@@ -2661,20 +2676,20 @@ const CARD_DATA = [
   ["Enner Valencia", "Ecuador", "R", "F"],
 
   // ─── UNCOMMON (85) — solid squad members ─────────────────────────
-  ["Enzo Fernández", "Argentina", "U", "M"],
-  ["Nicolás Otamendi", "Argentina", "U", "D"],
-  ["Nahuel Molina", "Argentina", "U", "D"],
-  ["Alexis Mac Allister", "Argentina", "U", "M"],
+  ["Enzo Fernández", "Argentina", "E", "M"],
+  ["Nicolás Otamendi", "Argentina", "R", "D"],
+  ["Nahuel Molina", "Argentina", "R", "D"],
+  ["Alexis Mac Allister", "Argentina", "E", "M"],
   ["Nicolás Tagliafico", "Argentina", "U", "D"],
-  ["Adrien Rabiot", "France", "U", "M"],
-  ["Jules Koundé", "France", "U", "D"],
+  ["Adrien Rabiot", "France", "R", "M"],
+  ["Jules Koundé", "France", "E", "D"],
   ["Ibrahima Konaté", "France", "U", "D"],
   ["Dayot Upamecano", "France", "U", "D"],
   ["Kingsley Coman", "France", "U", "F"],
   ["Olivier Giroud", "France", "U", "F"],
   ["Kieran Trippier", "England", "U", "D"],
   ["Luke Shaw", "England", "U", "D"],
-  ["Kyle Walker", "England", "U", "D"],
+  ["Kyle Walker", "England", "R", "D"],
   ["Conor Gallagher", "England", "U", "M"],
   ["Eberechi Eze", "England", "U", "M"],
   ["Jarrod Bowen", "England", "U", "F"],
@@ -2685,15 +2700,15 @@ const CARD_DATA = [
   ["Gabriel Martinelli", "Brazil", "U", "F"],
   ["Richarlison", "Brazil", "U", "F"],
   ["Danilo", "Brazil", "U", "D"],
-  ["Ederson", "Brazil", "U", "GK"],
+  ["Ederson", "Brazil", "E", "GK"],
   ["Pepe", "Portugal", "U", "D"],
-  ["João Félix", "Portugal", "U", "F"],
+  ["João Félix", "Portugal", "R", "F"],
   ["Diogo Jota", "Portugal", "U", "F"],
   ["Gonçalo Ramos", "Portugal", "U", "F"],
-  ["Nuno Mendes", "Portugal", "U", "D"],
-  ["Leroy Sané", "Germany", "U", "F"],
+  ["Nuno Mendes", "Portugal", "E", "D"],
+  ["Leroy Sané", "Germany", "E", "F"],
   ["Serge Gnabry", "Germany", "U", "F"],
-  ["Niclas Füllkrug", "Germany", "U", "F"],
+  ["Niclas Füllkrug", "Germany", "R", "F"],
   ["Robin Gosens", "Germany", "U", "D"],
   ["Leon Goretzka", "Germany", "U", "M"],
   ["Daley Blind", "Netherlands", "U", "D"],
@@ -2705,19 +2720,19 @@ const CARD_DATA = [
   ["Amadou Onana", "Belgium", "U", "M"],
   ["Ferran Torres", "Spain", "U", "F"],
   ["Marco Asensio", "Spain", "U", "F"],
-  ["Mikel Merino", "Spain", "U", "M"],
+  ["Mikel Merino", "Spain", "R", "M"],
   ["Ivan Perišić", "Croatia", "U", "F"],
   ["Andrej Kramarić", "Croatia", "U", "F"],
   ["Dominik Livaković", "Croatia", "U", "GK"],
-  ["Sofyan Amrabat", "Morocco", "U", "M"],
-  ["Youssef En-Nesyri", "Morocco", "U", "F"],
+  ["Sofyan Amrabat", "Morocco", "R", "M"],
+  ["Youssef En-Nesyri", "Morocco", "R", "F"],
   ["Romain Saïss", "Morocco", "U", "D"],
   ["Noussair Mazraoui", "Morocco", "U", "D"],
   ["Rafael Borré", "Colombia", "U", "F"],
   ["Davinson Sánchez", "Colombia", "U", "D"],
   ["Mateus Uribe", "Colombia", "U", "M"],
   ["Jhon Arias", "Colombia", "U", "F"],
-  ["Ronald Araújo", "Uruguay", "U", "D"],
+  ["Ronald Araújo", "Uruguay", "E", "D"],
   ["José María Giménez", "Uruguay", "U", "D"],
   ["Sergio Rochet", "Uruguay", "U", "GK"],
   ["Manuel Ugarte", "Uruguay", "U", "M"],
@@ -2753,7 +2768,7 @@ const CARD_DATA = [
   ["Marcos Acuña", "Argentina", "C", "D"],
   ["Germán Pezzella", "Argentina", "C", "D"],
   ["Lisandro Martínez", "Argentina", "C", "D"],
-  ["Leandro Paredes", "Argentina", "C", "M"],
+  ["Leandro Paredes", "Argentina", "R", "M"],
   ["Steve Mandanda", "France", "C", "GK"],
   ["Alphonse Areola", "France", "C", "GK"],
   ["Benjamin Pavard", "France", "C", "D"],
@@ -2765,7 +2780,7 @@ const CARD_DATA = [
   ["Aaron Ramsdale", "England", "C", "GK"],
   ["Marc Guéhi", "England", "C", "D"],
   ["Lewis Dunk", "England", "C", "D"],
-  ["Trent Alexander-Arnold", "England", "C", "D"],
+  ["Trent Alexander-Arnold", "England", "E", "D"],
   ["Jordan Henderson", "England", "C", "M"],
   ["Kalvin Phillips", "England", "C", "M"],
   ["Mason Mount", "England", "C", "M"],
@@ -2800,7 +2815,7 @@ const CARD_DATA = [
   ["Johan Bakayoko", "Belgium", "C", "F"],
   ["David Raya", "Spain", "C", "GK"],
   ["Robin Le Normand", "Spain", "C", "D"],
-  ["Aymeric Laporte", "Spain", "C", "D"],
+  ["Aymeric Laporte", "Spain", "E", "D"],
   ["Dani Carvajal", "Spain", "C", "D"],
   ["Mikel Oyarzabal", "Spain", "C", "F"],
   ["Joselu", "Spain", "C", "F"],
@@ -2949,7 +2964,7 @@ const RARITY_ODDS = { L: 2, E: 5, R: 15, U: 28, C: 50 };
 
 // Visual config per rarity tier — used by the card UI later
 const RARITY_CONFIG = {
-  G: { label: "LEGEND",    color: "#22c55e", bgGrad: "linear-gradient(135deg,#14532d,#16a34a,#bbf7d0,#16a34a,#14532d)", glow: "rgba(34,197,94,0.7)", emoji: "🟢", coins: 1500 },
+  G: { label: "LEGEND",    color: "#22c55e", bgGrad: "linear-gradient(135deg,#14532d,#16a34a,#bbf7d0,#16a34a,#14532d)", glow: "rgba(34,197,94,0.7)", emoji: "🟢", coins: 500 },
   T: { label: "ISRAEL",    color: "#a16207", bgGrad: "linear-gradient(135deg,#3f3f46,#78716c,#a8a29e,#78716c,#3f3f46)", glow: "rgba(120,113,108,0.5)", emoji: "🗑️", coins: 50 },
   L: { label: "LEGENDARY", color: "#fbbf24", bgGrad: "linear-gradient(135deg,#78350f,#fbbf24,#fde68a,#fbbf24,#78350f)", glow: "rgba(251,191,36,0.8)", emoji: "🏆", coins: 1000 },
   E: { label: "EPIC",      color: "#a855f7", bgGrad: "linear-gradient(135deg,#581c87,#9333ea,#581c87)", glow: "rgba(168,85,247,0.5)", emoji: "💎", coins: 300 },
@@ -3038,6 +3053,16 @@ const MANUAL_RATINGS = {
   "David Beckham": 92,
   "Miroslav Klose": 91,
   "Javier Zanetti": 91,
+  // New legends (modern retired)
+  "Diego Forlán": 92,
+  "Samuel Eto'o": 94,
+  "Frank Lampard": 95,
+  "Steven Gerrard": 95,
+  "Yaya Touré": 92,
+  "Franck Ribéry": 93,
+  "Xabi Alonso": 93,
+  "John Terry": 91,
+  "Gianluca Zambrotta": 90,
   // 🗑️ Israeli "legends" — low ratings for comedy
   "Eyal Berkovic": 38,
   "Eran Zahavi": 40,        // top of the trash — actually decent
@@ -3078,6 +3103,91 @@ const MANUAL_RATINGS = {
   "Phil Foden": 89,
   "Declan Rice": 88,
   "Raphinha": 88,
+  // Portugal stars
+  "Bernardo Silva": 89,
+  "Bruno Fernandes": 89,
+  "Rafael Leão": 87,
+  "Nuno Mendes": 88,
+  "Diogo Costa": 85,
+  "João Cancelo": 87,
+  "Rúben Dias": 89,
+  "João Félix": 84,
+  // Brazil
+  "Neymar": 90,
+  "Rodrygo": 88,
+  "Casemiro": 85,
+  "Marquinhos": 87,
+  "Éder Militão": 85,
+  "Alisson": 88,
+  "Ederson": 87,
+  "Bruno Guimarães": 85,
+  // Spain
+  "Aymeric Laporte": 85,
+  "Dani Olmo": 86,
+  "Fabián Ruiz": 84,
+  "Nico Williams": 87,
+  "Mikel Merino": 84,
+  "Unai Simón": 84,
+  "Marc Cucurella": 84,
+  // France
+  "Adrien Rabiot": 84,
+  "Eduardo Camavinga": 85,
+  "Theo Hernández": 85,
+  "Jules Koundé": 86,
+  "William Saliba": 87,
+  "Mike Maignan": 87,
+  "N'Golo Kanté": 85,
+  // England
+  "Harry Maguire": 82,
+  "John Stones": 85,
+  "Cole Palmer": 87,
+  "Marcus Rashford": 85,
+  "Jordan Pickford": 86,
+  "Kyle Walker": 84,
+  "Trent Alexander-Arnold": 87,
+  // Germany
+  "Joshua Kimmich": 88,
+  "Florian Wirtz": 88,
+  "Kai Havertz": 84,
+  "Leroy Sané": 85,
+  "Jamal Musiala": 88,
+  "İlkay Gündoğan": 84,
+  "Manuel Neuer": 85,
+  "Niclas Füllkrug": 81,
+  // Argentina
+  "Rodrigo De Paul": 85,
+  "Ángel Di María": 84,
+  "Cristian Romero": 87,
+  "Nicolás Otamendi": 83,
+  "Enzo Fernández": 86,
+  "Alexis Mac Allister": 86,
+  "Nahuel Molina": 82,
+  "Leandro Paredes": 81,
+  // Netherlands
+  "Frenkie de Jong": 86,
+  "Memphis Depay": 84,
+  "Cody Gakpo": 85,
+  "Xavi Simons": 85,
+  "Denzel Dumfries": 84,
+  // Italy stars (if any in)
+  "Lautaro Martínez": 89,
+  // Croatia
+  "Joško Gvardiol": 87,
+  "Mateo Kovačić": 84,
+  // Belgium
+  "Kevin De Bruyne": 88,
+  "Romelu Lukaku": 84,
+  // Morocco
+  "Youssef En-Nesyri": 84,
+  "Sofyan Amrabat": 82,
+  "Yassine Bounou": 84,
+  // Other internationals
+  "Khvicha Kvaratskhelia": 86,
+  "Federico Valverde": 88,
+  "Darwin Núñez": 84,
+  "Ronald Araújo": 85,
+  "Christian Pulisic": 84,
+  "Weston McKennie": 80,
 };
 
 // Hash a string into a deterministic integer
@@ -11245,6 +11355,16 @@ export default function App() {
     try { return localStorage.getItem("wc2026_legends_spin_v1") === "1"; }
     catch { return false; }
   });
+  // 🛡️ Belt-and-suspenders: write to localStorage on every change, so reload always picks it up
+  useEffect(() => {
+    try { localStorage.setItem("wc2026_spin_count_v1", String(spinCount)); } catch {}
+  }, [spinCount]);
+  useEffect(() => {
+    try {
+      if (legendsSpinAvailable) localStorage.setItem("wc2026_legends_spin_v1", "1");
+      else localStorage.removeItem("wc2026_legends_spin_v1");
+    } catch {}
+  }, [legendsSpinAvailable]);
   const [showCollection, setShowCollection] = useState(false); // collection viewer
 
   // Spend coins, roll a card, save to collection
