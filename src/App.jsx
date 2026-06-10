@@ -10,7 +10,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.18.0";
+const APP_VERSION = "3.19.0";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -6129,8 +6129,7 @@ function LuckyWheelModal({ onClose, onWin, freePlaysLeft, coinBalance, onUseFree
     return (
       <div style={{
         position:"relative",
-        width:"45%",
-        maxWidth:170,
+        width:"100%",
         aspectRatio:"3 / 4",
         borderRadius:14,
         overflow:"hidden",
@@ -6158,8 +6157,7 @@ function LuckyWheelModal({ onClose, onWin, freePlaysLeft, coinBalance, onUseFree
   const renderQuestionCard = () => (
     <div style={{
       position:"relative",
-      width:"45%",
-      maxWidth:170,
+      width:"100%",
       aspectRatio:"3 / 4",
       borderRadius:14,
       background:"linear-gradient(135deg,#1e293b,#0f172a)",
@@ -6172,7 +6170,17 @@ function LuckyWheelModal({ onClose, onWin, freePlaysLeft, coinBalance, onUseFree
 
   return (
     <div onClick={onClose} style={{
-      position:"fixed",inset:0,background:"rgba(7,13,30,0.96)",
+      position:"fixed",inset:0,
+      background: gameState === "playing"
+        ? (timeLeft <= 3
+          ? "radial-gradient(circle at center, rgba(239,68,68,0.4), rgba(7,13,30,0.98))"
+          : streak >= 15
+          ? "radial-gradient(circle at center, rgba(249,115,22,0.3), rgba(7,13,30,0.98))"
+          : streak >= 10
+          ? "radial-gradient(circle at center, rgba(251,191,36,0.2), rgba(7,13,30,0.98))"
+          : "rgba(7,13,30,0.96)")
+        : "rgba(7,13,30,0.96)",
+      transition: "background 0.5s ease",
       zIndex:9999,display:"flex",flexDirection:"column",
       alignItems:"center",justifyContent:"center",padding:"20px 14px",
     }}>
@@ -6365,12 +6373,16 @@ function LuckyWheelModal({ onClose, onWin, freePlaysLeft, coinBalance, onUseFree
               }
             `}</style>
 
-            {/* Two cards */}
-            <div style={{display:"flex",justifyContent:"space-around",alignItems:"center",gap:8,marginBottom:18}}>
-              {renderMiniCard(currentCard)}
-              <div style={{fontSize:24,color:"#fbbf24"}}>VS</div>
+            {/* Two cards — equal size grid */}
+            <div style={{
+              display:"grid",
+              gridTemplateColumns:"1fr auto 1fr",
+              alignItems:"center",
+              gap:10,marginBottom:18,
+            }}>
+              <div>{renderMiniCard(currentCard)}</div>
+              <div style={{fontSize:24,color:"#fbbf24",fontWeight:900}}>VS</div>
               <div style={{
-                width:"45%",maxWidth:170,
                 animation: revealing && nextCard
                   ? `cardFlip 0.6s ease-out, ${lastResult === "correct" ? "correctGlow 0.8s ease-out" : "wrongShake 0.5s ease-in-out"}`
                   : !revealing ? "questionShake 0.6s ease-in-out infinite" : "none",
@@ -6428,11 +6440,24 @@ function LuckyWheelModal({ onClose, onWin, freePlaysLeft, coinBalance, onUseFree
               עצרת ברצף של {streak}.<br/>
               נצרך להגיע ל-3 לפחות לפרס.
             </div>
+            {(freePlaysLeft > 0 || coinBalance >= 100) && (
+              <button onClick={() => startGame(freePlaysLeft > 0)} style={{
+                padding:"14px 30px",borderRadius:12,marginBottom:10,marginRight:8,
+                background: freePlaysLeft > 0
+                  ? "linear-gradient(135deg,#22c55e,#16a34a)"
+                  : "linear-gradient(135deg,#fbbf24,#f59e0b)",
+                color: freePlaysLeft > 0 ? "#fff" : "#1e2940",
+                border:"none",fontSize:14,fontWeight:900,cursor:"pointer",fontFamily:"inherit",
+                boxShadow:"0 6px 18px rgba(0,0,0,0.4)",
+              }}>
+                {freePlaysLeft > 0 ? `🔄 שחק שוב · ${freePlaysLeft} חינם` : `🔄 שחק שוב · 🪙 100`}
+              </button>
+            )}
             <button onClick={onClose} style={{
-              padding:"12px 30px",borderRadius:10,
-              background:"linear-gradient(135deg,#64748b,#475569)",
-              color:"#fff",border:"none",
-              fontSize:14,fontWeight:900,cursor:"pointer",fontFamily:"inherit",
+              padding:"12px 24px",borderRadius:10,
+              background:"transparent",
+              color:"#94a3b8",border:"1px solid #475569",
+              fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"inherit",
             }}>סגור</button>
           </div>
         )}
@@ -6474,12 +6499,25 @@ function LuckyWheelModal({ onClose, onWin, freePlaysLeft, coinBalance, onUseFree
             <div style={{fontSize:24,fontWeight:900,color:"#fbbf24",marginBottom:18}}>
               +{prizeForStreak(streak)} 🪙
             </div>
+            {(freePlaysLeft > 0 || (coinBalance + prizeForStreak(streak)) >= 100) && (
+              <button onClick={() => startGame(freePlaysLeft > 0)} style={{
+                padding:"14px 30px",borderRadius:12,marginBottom:10,marginRight:8,
+                background: freePlaysLeft > 0
+                  ? "linear-gradient(135deg,#22c55e,#16a34a)"
+                  : "linear-gradient(135deg,#fbbf24,#f59e0b)",
+                color: freePlaysLeft > 0 ? "#fff" : "#1e2940",
+                border:"none",fontSize:14,fontWeight:900,cursor:"pointer",fontFamily:"inherit",
+                boxShadow:"0 6px 18px rgba(0,0,0,0.4)",
+              }}>
+                {freePlaysLeft > 0 ? `🔄 עוד אחד · ${freePlaysLeft} חינם` : `🔄 עוד אחד · 🪙 100`}
+              </button>
+            )}
             <button onClick={onClose} style={{
-              padding:"12px 30px",borderRadius:10,
-              background:"linear-gradient(135deg,#22c55e,#16a34a)",
-              color:"#fff",border:"none",
-              fontSize:14,fontWeight:900,cursor:"pointer",fontFamily:"inherit",
-            }}>איזה כיף!</button>
+              padding:"12px 24px",borderRadius:10,
+              background:"transparent",
+              color:"#94a3b8",border:"1px solid #475569",
+              fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"inherit",
+            }}>סגור</button>
           </div>
         )}
       </div>
@@ -12644,15 +12682,17 @@ export default function App() {
     } catch {}
   }, [leagueData?.gifts, userId]);
 
-  // 🎡 Show wheel popup once per session when wheel is available
+  // 🎴 Show wheel popup ONCE per app load (not every time popup is dismissed)
+  const wheelPopupOncePerSessionRef = useRef(false);
   useEffect(() => {
-    if (!name || !wheelAvailable || wheelPopupShown || showLuckyWheel) return;
-    // Wait a bit after login to avoid flashing right at startup
+    if (!name || !wheelAvailable || showLuckyWheel) return;
+    if (wheelPopupOncePerSessionRef.current) return; // already shown this session
     const timer = setTimeout(() => {
+      wheelPopupOncePerSessionRef.current = true;
       setWheelPopupShown(true);
     }, 3000);
     return () => clearTimeout(timer);
-  }, [name, wheelAvailable, wheelPopupShown, showLuckyWheel]);
+  }, [name, wheelAvailable, showLuckyWheel]);
 
   // 🎁 DAILY BONUS — give 500 coins once per calendar day (Israel time)
   // Uses ISO date string "YYYY-MM-DD" so it resets at midnight local time.
