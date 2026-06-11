@@ -10,7 +10,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.19.3";
+const APP_VERSION = "3.19.5";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -6027,11 +6027,11 @@ function LuckyWheelModal({ onClose, onWin, freePlaysLeft, coinBalance, onUseFree
   const timerRef = useRef(null);
 
   // Pick a card from the "regular" mundial pool only (no friends/legends/Israelis)
-  // Only cards with rating 60-99 (so guesses are actually challenging)
+  // Only cards with rating 70-99 (tighter range = more challenging guesses)
   const pickRandomCard = () => {
     const pool = CARDS.filter(c => {
       const r = getPlayerRating(c);
-      return r >= 60 && r <= 99;
+      return r >= 70 && r <= 99;
     });
     return pool[Math.floor(Math.random() * pool.length)];
   };
@@ -6075,16 +6075,20 @@ function LuckyWheelModal({ onClose, onWin, freePlaysLeft, coinBalance, onUseFree
     clearTimeout(timerRef.current);
     setLastChoice(choice);
     setRevealing(true);
-    // Pick the next card
-    const next = pickRandomCard();
-    setNextCard(next);
-    // Determine result
+    // Pick the next card — re-roll if it's exactly the same rating (tie = redo)
     const curRating = getPlayerRating(currentCard);
+    let next = pickRandomCard();
+    let tries = 0;
+    while (getPlayerRating(next) === curRating && tries < 20) {
+      next = pickRandomCard();
+      tries++;
+    }
+    setNextCard(next);
     const nextRating = getPlayerRating(next);
     let correct = false;
     if (choice === "higher" && nextRating > curRating) correct = true;
     if (choice === "lower"  && nextRating < curRating) correct = true;
-    // Tie or no choice = wrong
+    // No choice (timeout) = wrong
     setLastResult(correct ? "correct" : "wrong");
     try { navigator.vibrate?.(correct ? 30 : [40, 50, 80]); } catch {}
     setTimeout(() => {
@@ -6204,7 +6208,7 @@ function LuckyWheelModal({ onClose, onWin, freePlaysLeft, coinBalance, onUseFree
             <div style={{fontSize:13,color:"#cbd5e1",lineHeight:1.6,marginBottom:18,padding:"0 8px"}}>
               נחש אם הקלף הבא יקבל ציון <b style={{color:"#22c55e"}}>גבוה יותר</b> או <b style={{color:"#ef4444"}}>נמוך יותר</b><br/>
               <span style={{fontSize:11,color:"#94a3b8"}}>
-                ⏱️ 10 שניות להחליט · 🟰 תיקו = הפסד
+                ⏱️ 10 שניות להחליט · 🔄 תיקו = הגרלה חוזרת
               </span>
             </div>
 
@@ -12697,14 +12701,24 @@ export default function App() {
     } catch {}
   }, [leagueData?.gifts, userId]);
 
-  // 🎴 Show wheel popup ONCE per app load (not every time popup is dismissed)
+  // 🎴 Show wheel popup ONCE per day (stored in localStorage)
   const wheelPopupOncePerSessionRef = useRef(false);
   useEffect(() => {
     if (!name || !wheelAvailable || showLuckyWheel) return;
     if (wheelPopupOncePerSessionRef.current) return; // already shown this session
+    // Check if already shown today
+    const today = new Date().toISOString().slice(0, 10);
+    try {
+      const lastShown = localStorage.getItem("wc2026_hl_popup_last_v1");
+      if (lastShown === today) {
+        wheelPopupOncePerSessionRef.current = true; // mark as shown this session too
+        return;
+      }
+    } catch {}
     const timer = setTimeout(() => {
       wheelPopupOncePerSessionRef.current = true;
       setWheelPopupShown(true);
+      try { localStorage.setItem("wc2026_hl_popup_last_v1", today); } catch {}
     }, 3000);
     return () => clearTimeout(timer);
   }, [name, wheelAvailable, showLuckyWheel]);
