@@ -10,7 +10,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.27.0";
+const APP_VERSION = "3.26.1";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -5892,25 +5892,6 @@ function LeagueAdminModal({ leagueData, leagueCode, onClose }) {
     setSendingTicketUid(null);
   };
 
-  const [sendingCoinWheelUid, setSendingCoinWheelUid] = useState(null);
-  const handleSendCoinWheel = async (member) => {
-    setSendingCoinWheelUid(member.uid);
-    try {
-      await sendGiftToLeague(leagueCode, {
-        id: `cw_${Date.now()}_${Math.random().toString(36).slice(2,8)}`,
-        kind: "coinwheel",
-        amount: 1,
-        targetUid: member.uid,
-        reason: "🪙 גלגל הגורל ממך!",
-        sentAt: Date.now(),
-      });
-      alert(`✅ נשלח גלגל הגורל ל-${member.name}`);
-    } catch (err) {
-      alert("שגיאה: " + (err.message || "נסה שוב"));
-    }
-    setSendingCoinWheelUid(null);
-  };
-
   return (
     <div onClick={onClose} style={{
       position:"fixed",inset:0,zIndex:9200,
@@ -6012,21 +5993,6 @@ function LeagueAdminModal({ leagueData, leagueCode, onClose }) {
                     opacity: sendingTicketUid === m.uid ? 0.5 : 1,
                   }}>
                   {sendingTicketUid === m.uid ? "..." : "🎴 גבוה או נמוך"}
-                </button>
-                <button
-                  onClick={() => handleSendCoinWheel(m)}
-                  disabled={sendingCoinWheelUid === m.uid}
-                  style={{
-                    flex:1,minWidth:"45%",padding:"7px 10px",
-                    background:"linear-gradient(180deg,rgba(236,72,153,0.2),rgba(236,72,153,0.1))",
-                    border:"1px solid rgba(236,72,153,0.4)",
-                    borderRadius:8,
-                    color:"#ec4899",fontSize:11,fontWeight:700,
-                    cursor: sendingCoinWheelUid === m.uid ? "wait" : "pointer",
-                    fontFamily:"inherit",
-                    opacity: sendingCoinWheelUid === m.uid ? 0.5 : 1,
-                  }}>
-                  {sendingCoinWheelUid === m.uid ? "..." : "🪙 גלגל הגורל"}
                 </button>
                 <button
                   onClick={() => handleRemove(m)}
@@ -6326,6 +6292,12 @@ function CountdownTimer({ targetTs }) {
 }
 
 function CoinFlipWheelModal({ onClose, isAvailable, coinBalance, cardCollection, onApplyPrize, onConsumeSpin, nextAvailableTs, playsLeft }) {
+  // 🔐 Beta gate — only admins know the code
+  const COIN_WHEEL_CODE = "Chen-Test-2026";
+  const [unlocked, setUnlocked] = useState(false);
+  const [codeInput, setCodeInput] = useState("");
+  const [codeError, setCodeError] = useState("");
+
   // 📊 History tracking
   const [history, setHistory] = useState(() => {
     try {
@@ -6340,7 +6312,29 @@ function CoinFlipWheelModal({ onClose, isAvailable, coinBalance, cardCollection,
     });
   };
 
-  // 🧪 Beta testing removed in v3.27.0 — feature is now live for everyone
+  // 🧪 Beta testing: track plays in localStorage, limit to 5
+  // (Reset to 0 in v3.25.0 so admin can retest with new sounds/odds)
+  const [testPlays, setTestPlays] = useState(() => {
+    try {
+      const lastReset = localStorage.getItem("wc2026_coinwheel_test_reset_v1");
+      if (lastReset !== "v3.26.0") {
+        localStorage.setItem("wc2026_coinwheel_test_plays_v1", "0");
+        localStorage.setItem("wc2026_coinwheel_test_reset_v1", "v3.26.0");
+        return 0;
+      }
+      return parseInt(localStorage.getItem("wc2026_coinwheel_test_plays_v1") || "0", 10) || 0;
+    } catch { return 0; }
+  });
+  const testPlaysLeft = Math.max(0, 5 - testPlays);
+
+  const tryUnlock = () => {
+    if (codeInput.trim() === COIN_WHEEL_CODE) {
+      setUnlocked(true);
+      setCodeError("");
+    } else {
+      setCodeError("קוד שגוי");
+    }
+  };
 
   // Stages: "idle" → "flipping" → "wheelSpinning" → "result"
   const [stage, setStage] = useState("idle");
@@ -6354,8 +6348,15 @@ function CoinFlipWheelModal({ onClose, isAvailable, coinBalance, cardCollection,
   const segmentAngle = 360 / currentWheelPrizes.length;
 
   const flipCoin = () => {
-    if (!isAvailable) return;
-    onConsumeSpin(); // mark used (extra spin or daily play)
+    if (testPlaysLeft <= 0 && !isAvailable) return;
+    // Consume a test play (don't trigger hourly cooldown for testing)
+    if (testPlaysLeft > 0) {
+      const newCount = testPlays + 1;
+      setTestPlays(newCount);
+      try { localStorage.setItem("wc2026_coinwheel_test_plays_v1", String(newCount)); } catch {}
+    } else {
+      onConsumeSpin(); // mark used
+    }
     setStage("flipping");
     setPrize(null);
     setResultMessage("");
@@ -6464,7 +6465,44 @@ function CoinFlipWheelModal({ onClose, isAvailable, coinBalance, cardCollection,
           <button onClick={close} style={{background:"transparent",border:"none",color:"#cbd5e1",fontSize:24,cursor:"pointer"}}>✕</button>
         </div>
 
-        {!isAvailable && stage === "idle" ? (
+        {!unlocked ? (
+          // 🔐 Code entry — beta gate
+          <div style={{padding:"20px 10px",textAlign:"center"}}>
+            <div style={{fontSize:48,marginBottom:14}}>🔐</div>
+            <div style={{fontSize:14,color:"#cbd5e1",lineHeight:1.5,marginBottom:18}}>
+              <b style={{color:"#fbbf24"}}>פיצ'ר בבדיקה</b><br/>
+              <span style={{fontSize:12,color:"#94a3b8"}}>
+                בקרוב יהיה זמין לכולם!<br/>
+                הקלד קוד גישה אם יש לך
+              </span>
+            </div>
+            <input
+              type="password"
+              value={codeInput}
+              onChange={e => { setCodeInput(e.target.value); setCodeError(""); }}
+              onKeyDown={e => { if (e.key === "Enter") tryUnlock(); }}
+              placeholder="קוד גישה"
+              style={{
+                width:"100%",padding:"12px",borderRadius:10,
+                background:"rgba(36,49,80,0.5)",
+                border:`1px solid ${codeError ? "#ef4444" : "rgba(251,191,36,0.3)"}`,
+                color:"#fff",fontSize:14,fontFamily:"inherit",
+                textAlign:"center",letterSpacing:2,
+                boxSizing:"border-box",marginBottom:14,
+              }}
+            />
+            {codeError && (
+              <div style={{color:"#fca5a5",fontSize:12,marginBottom:14}}>⚠️ {codeError}</div>
+            )}
+            <button onClick={tryUnlock} style={{
+              width:"100%",padding:"12px",borderRadius:10,
+              background:"linear-gradient(135deg,#fbbf24,#f59e0b)",
+              color:"#1e2940",border:"none",
+              fontSize:14,fontWeight:900,
+              cursor:"pointer",fontFamily:"inherit",
+            }}>🔓 פתח</button>
+          </div>
+        ) : !isAvailable && testPlaysLeft <= 0 && stage === "idle" ? (
           <CountdownTimer targetTs={nextAvailableTs} />
         ) : stage === "idle" ? (
           <>
@@ -6476,14 +6514,25 @@ function CoinFlipWheelModal({ onClose, isAvailable, coinBalance, cardCollection,
                 💀 הזהר — בגלגל הרע יש עונשים!
               </span>
             </div>
-            <div style={{
-              background:"rgba(251,191,36,0.1)",
-              border:"1px solid rgba(251,191,36,0.4)",
-              borderRadius:8,padding:"6px 10px",marginBottom:14,
-              fontSize:11,color:"#fbbf24",
-            }}>
-              🎯 נותרו {playsLeft} זריקות היום
-            </div>
+            {testPlaysLeft > 0 ? (
+              <div style={{
+                background:"rgba(34,197,94,0.1)",
+                border:"1px solid rgba(34,197,94,0.4)",
+                borderRadius:8,padding:"6px 10px",marginBottom:14,
+                fontSize:11,color:"#86efac",
+              }}>
+                🧪 מצב בדיקה — נשארו {testPlaysLeft} ניסיונות
+              </div>
+            ) : (
+              <div style={{
+                background:"rgba(251,191,36,0.1)",
+                border:"1px solid rgba(251,191,36,0.4)",
+                borderRadius:8,padding:"6px 10px",marginBottom:14,
+                fontSize:11,color:"#fbbf24",
+              }}>
+                🎯 נותרו {playsLeft} זריקות היום
+              </div>
+            )}
 
             {/* 📊 Personal history */}
             {(history.totalPlays || 0) > 0 && (
@@ -13024,7 +13073,7 @@ export default function App() {
   }, [name, wrappedStats.totalPicks]);
   // 🎰 Roulette UI state
   const [showRoulette, setShowRoulette] = useState(false);  // is the roulette screen open?
-  // 🪙 Coin Flip + Wheel — 5 plays per day + admin-granted extras
+  // 🪙 Coin Flip + Wheel — twice per day
   const [showCoinWheel, setShowCoinWheel] = useState(false);
   const [coinWheelPlaysToday, setCoinWheelPlaysToday] = useState(() => {
     try {
@@ -13033,13 +13082,7 @@ export default function App() {
       return data.date === today ? (data.plays || 0) : 0;
     } catch { return 0; }
   });
-  const [coinWheelExtraSpins, setCoinWheelExtraSpins] = useState(() => {
-    try { return parseInt(localStorage.getItem("wc2026_coinwheel_extra_v1") || "0", 10) || 0; }
-    catch { return 0; }
-  });
-  const coinWheelAvailable = useMemo(() =>
-    coinWheelPlaysToday < 5 || coinWheelExtraSpins > 0,
-    [coinWheelPlaysToday, coinWheelExtraSpins]);
+  const coinWheelAvailable = useMemo(() => coinWheelPlaysToday < 2, [coinWheelPlaysToday]);
   // Compute when the next play is available (midnight tonight if used both)
   const coinWheelNextAvailable = useMemo(() => {
     if (coinWheelAvailable) return null;
@@ -13404,18 +13447,12 @@ export default function App() {
     let totalAdded = 0;
     let lastReason = "";
     let ticketsAdded = 0;
-    let coinWheelsAdded = 0;
     for (const g of newGifts) {
       if (g.kind === "scratch") {
-        // 🎴 Higher/Lower extra play
+        // 🃏 Scratch ticket — bump extra spins
         const n = Math.max(1, Math.floor(g.amount || 1));
         ticketsAdded += n;
         lastReason = g.reason || "משחק נוסף!";
-      } else if (g.kind === "coinwheel") {
-        // 🪙 Coin wheel extra spin
-        const n = Math.max(1, Math.floor(g.amount || 1));
-        coinWheelsAdded += n;
-        lastReason = g.reason || "גלגל הגורל!";
       } else {
         const amount = Math.max(0, Math.floor(g.amount || 0));
         if (amount > 0) {
@@ -13443,16 +13480,6 @@ export default function App() {
         return n;
       });
       setGiftToast({ amount: ticketsAdded, reason: `🎴 ${ticketsAdded} משחקי גבוה או נמוך מתנה!` });
-      setTimeout(() => setGiftToast(null), 5000);
-    }
-
-    if (coinWheelsAdded > 0) {
-      setCoinWheelExtraSpins(prev => {
-        const n = (prev || 0) + coinWheelsAdded;
-        try { localStorage.setItem("wc2026_coinwheel_extra_v1", String(n)); } catch {}
-        return n;
-      });
-      setGiftToast({ amount: coinWheelsAdded, reason: `🪙 ${coinWheelsAdded} גלגלי הגורל מתנה!` });
       setTimeout(() => setGiftToast(null), 5000);
     }
 
@@ -14558,22 +14585,15 @@ export default function App() {
           coinBalance={coins?.balance || 0}
           cardCollection={cardCollection}
           onConsumeSpin={() => {
-            // Consume extra spin first if any, else daily count
-            if (coinWheelExtraSpins > 0) {
-              const newExtra = coinWheelExtraSpins - 1;
-              setCoinWheelExtraSpins(newExtra);
-              try { localStorage.setItem("wc2026_coinwheel_extra_v1", String(newExtra)); } catch {}
-            } else {
-              const today = new Date().toISOString().slice(0, 10);
-              const newPlays = coinWheelPlaysToday + 1;
-              setCoinWheelPlaysToday(newPlays);
-              try {
-                localStorage.setItem("wc2026_coinwheel_plays_v1", JSON.stringify({ date: today, plays: newPlays }));
-              } catch {}
-            }
+            const today = new Date().toISOString().slice(0, 10);
+            const newPlays = coinWheelPlaysToday + 1;
+            setCoinWheelPlaysToday(newPlays);
+            try {
+              localStorage.setItem("wc2026_coinwheel_plays_v1", JSON.stringify({ date: today, plays: newPlays }));
+            } catch {}
           }}
           nextAvailableTs={coinWheelNextAvailable}
-          playsLeft={Math.max(0, 5 - coinWheelPlaysToday) + coinWheelExtraSpins}
+          playsLeft={Math.max(0, 2 - coinWheelPlaysToday)}
           onApplyPrize={(prize) => {
             // Returns a Hebrew message describing what happened
             if (prize.type === "coins") {
@@ -14591,18 +14611,9 @@ export default function App() {
                 const newCollection = { ...cardCollection, [card.id]: (cardCollection[card.id] || 0) + 1 };
                 setCardCollection(newCollection);
                 try { localStorage.setItem("wc2026_cards_v2", JSON.stringify(newCollection)); } catch {}
-                // 🎰 Auto-trigger roulette with the won card (dramatic reveal)
                 setTimeout(() => {
-                  setShowCoinWheel(false);
-                  setShowRoulette(true);
-                  setPendingCard(card);
-                  setIsSpinning(true);
-                  setTimeout(() => {
-                    setIsSpinning(false);
-                    setPendingCard(null);
-                    setSpinResult({ card, isDuplicate: (cardCollection[card.id] || 0) > 0, refund: 0 });
-                  }, 4200);
-                }, 1200);
+                  setSpinResult({ card, isDuplicate: (cardCollection[card.id] || 0) > 0, refund: 0 });
+                }, 800);
                 return `🎴 קלף ${prize.label}`;
               }
               return "🎴 קלף";
@@ -14627,18 +14638,9 @@ export default function App() {
                 const newCollection = { ...cardCollection, [card.id]: (cardCollection[card.id] || 0) + 1 };
                 setCardCollection(newCollection);
                 try { localStorage.setItem("wc2026_cards_v2", JSON.stringify(newCollection)); } catch {}
-                // 🎰 Auto-trigger roulette with the trash card
                 setTimeout(() => {
-                  setShowCoinWheel(false);
-                  setShowRoulette(true);
-                  setPendingCard(card);
-                  setIsSpinning(true);
-                  setTimeout(() => {
-                    setIsSpinning(false);
-                    setPendingCard(null);
-                    setSpinResult({ card, isDuplicate: (cardCollection[card.id] || 0) > 0, refund: 0 });
-                  }, 4200);
-                }, 1200);
+                  setSpinResult({ card, isDuplicate: (cardCollection[card.id] || 0) > 0, refund: 0 });
+                }, 800);
                 return `🗑️ קיבלת את ${card.name}`;
               }
               return "🗑️ ישראלי";
