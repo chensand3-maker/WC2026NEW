@@ -13856,7 +13856,7 @@ export default function App() {
           }}
           onPayPlay={() => {
             setCoins(prev => {
-              const updated = { ...prev, balance: (prev?.balance || 0) - 50 };
+              const updated = { ...prev, balance: (prev?.balance || 0) - 100 };
               try { localStorage.setItem("wc2026_coins_v7", JSON.stringify(updated)); } catch {}
               return updated;
             });
