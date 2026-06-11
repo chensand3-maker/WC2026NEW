@@ -10,7 +10,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.25.0";
+const APP_VERSION = "3.25.1";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -6302,9 +6302,9 @@ function CoinFlipWheelModal({ onClose, isAvailable, coinBalance, cardCollection,
   const [testPlays, setTestPlays] = useState(() => {
     try {
       const lastReset = localStorage.getItem("wc2026_coinwheel_test_reset_v1");
-      if (lastReset !== "v3.25.0") {
+      if (lastReset !== "v3.25.1") {
         localStorage.setItem("wc2026_coinwheel_test_plays_v1", "0");
-        localStorage.setItem("wc2026_coinwheel_test_reset_v1", "v3.25.0");
+        localStorage.setItem("wc2026_coinwheel_test_reset_v1", "v3.25.1");
         return 0;
       }
       return parseInt(localStorage.getItem("wc2026_coinwheel_test_plays_v1") || "0", 10) || 0;
@@ -6349,10 +6349,6 @@ function CoinFlipWheelModal({ onClose, isAvailable, coinBalance, cardCollection,
     const isGood = Math.random() < 0.60;
     const newSide = isGood ? "good" : "bad";
     setCoinSide(newSide);
-    // Play click sounds during spin
-    for (let i = 0; i < 12; i++) {
-      setTimeout(() => playCoinClick(), i * 200);
-    }
     // Spin coin 8 full rotations + land on side
     const finalRot = 360 * 8 + (newSide === "good" ? 0 : 180);
     setCoinRotation(finalRot);
@@ -6373,22 +6369,8 @@ function CoinFlipWheelModal({ onClose, isAvailable, coinBalance, cardCollection,
     const prizeIdx = prizes.findIndex(p => p.id === selectedPrize.id);
     const targetOffset = -(prizeIdx * segmentAngle + segmentAngle / 2);
     setWheelRotation(360 * 6 + targetOffset);
-    // Wheel ticking sounds — faster at start, slower at end
-    const tickDelays = [];
-    for (let i = 0; i < 25; i++) {
-      const t = i / 24; // 0 to 1
-      const ease = 1 - Math.pow(1 - t, 3); // ease-out cubic
-      tickDelays.push(ease * 4400);
-    }
-    tickDelays.forEach(d => setTimeout(() => playCoinClick(), d));
     setTimeout(() => {
       setPrize(selectedPrize);
-      // Play ding for good, boom for bad
-      if (side === "good" && selectedPrize.type !== "again") {
-        setTimeout(() => playDing(), 100);
-      } else if (side === "bad" && selectedPrize.type !== "nothing" && selectedPrize.type !== "again") {
-        setTimeout(() => playBoom(), 100);
-      }
       // If it's "again" — reset and let user trigger again
       if (selectedPrize.type === "again") {
         setTimeout(() => {
@@ -6401,9 +6383,6 @@ function CoinFlipWheelModal({ onClose, isAvailable, coinBalance, cardCollection,
           setCoinSide(newSide);
           const finalRot = 360 * 8 + (newSide === "good" ? 0 : 180);
           setCoinRotation(finalRot);
-          for (let i = 0; i < 12; i++) {
-            setTimeout(() => playCoinClick(), i * 200);
-          }
           setTimeout(() => setStage("coinLanded"), 2500);
         }, 1500);
         return;
