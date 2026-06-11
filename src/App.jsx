@@ -10,7 +10,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.28.7";
+const APP_VERSION = "3.28.8";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -11319,7 +11319,10 @@ function LeagueHub({
         updatedAt: m.updatedAt,
         cardCollection: m.cardCollection || {},
       };
-    }).sort((a,b) => b.totalPoints - a.totalPoints);
+    }).sort((a,b) => {
+      if (b.totalPoints !== a.totalPoints) return b.totalPoints - a.totalPoints;
+      return (a.uid || "").localeCompare(b.uid || "");
+    });
 
     // Drill into one member
     if (viewing) {
@@ -12446,7 +12449,10 @@ function LeagueView({ name, picks, koWinners, friends, setFriends, leagueName, s
       buildEntry(name, picks, koWinners, true),
       ...friends.map(f => buildEntry(f.name, f.picks, f.koWinners, false)),
     ];
-    list.sort((a,b) => b.totalPoints - a.totalPoints);
+    list.sort((a,b) => {
+      if (b.totalPoints !== a.totalPoints) return b.totalPoints - a.totalPoints;
+      return (a.name || "").localeCompare(b.name || "", "he");
+    });
     return list;
   }, [name, picks, koWinners, friends, actuals, actualKnockout, hasActuals]);
 
