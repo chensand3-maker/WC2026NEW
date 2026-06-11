@@ -10,7 +10,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.28.4";
+const APP_VERSION = "3.28.5";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -10052,12 +10052,23 @@ function TodayScreen({ picks, actuals, onPick, onBack, onGoToBracket, leagueMemb
           <button onClick={() => {
             try {
               const dbg = JSON.parse(localStorage.getItem("wc2026_api_debug_v1") || "null");
-              if (!dbg) {
+              const dbg2 = JSON.parse(localStorage.getItem("wc2026_api_debug2_v1") || "null");
+              if (!dbg && !dbg2) {
                 alert("עוד לא נקראו נתונים מה-API");
                 return;
               }
-              const age = Math.floor((Date.now() - dbg.ts) / 1000);
-              alert(`📡 דיבוג API\n\nרענון אחרון: לפני ${age} שניות\n\n✅ group data: ${dbg.rawHasGroup ? "כן" : "לא"}\n✅ knockout data: ${dbg.rawHasKnockout ? "כן" : "לא"}\n\n📊 משחקים שהוחזרו מה-API: ${dbg.rawGroupCount}\n🗺️ הצליחו למפות לפיקסטשרים שלנו: ${dbg.mappedCount}\n\n🔍 דוגמה:\n${JSON.stringify(dbg.sample, null, 2).slice(0, 400)}`);
+              const age = dbg2 ? Math.floor((Date.now() - dbg2.ts) / 1000) : "?";
+              let msg = `📡 דיבוג API\n\nרענון אחרון: לפני ${age} שניות\n\n`;
+              if (dbg2) {
+                msg += `📊 סה"כ משחקים מה-API: ${dbg2.totalReturned}\n`;
+                msg += `🔢 ב-API.results: ${dbg2.results}\n\n`;
+                if (dbg2.errors && Object.keys(dbg2.errors).length > 0) {
+                  msg += `⚠️ שגיאות API:\n${JSON.stringify(dbg2.errors, null, 2)}\n\n`;
+                }
+                msg += `📋 סטטוסים:\n${JSON.stringify(dbg2.statusCounts, null, 2)}\n\n`;
+                msg += `🔍 דוגמאות:\n${JSON.stringify(dbg2.sample, null, 2).slice(0, 600)}`;
+              }
+              alert(msg);
             } catch (e) {
               alert("שגיאה: " + e.message);
             }

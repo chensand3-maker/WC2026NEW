@@ -106,6 +106,33 @@ export async function fetchLiveResults() {
   const json = await res.json();
   if (!json.response) throw new Error("Unexpected API response");
 
+  // 🐛 Debug: track all statuses returned by the API
+  const statusCounts = {};
+  const teamPairsRaw = [];
+  for (const fx of json.response) {
+    const s = fx.fixture?.status?.short || "UNKNOWN";
+    statusCounts[s] = (statusCounts[s] || 0) + 1;
+    if (teamPairsRaw.length < 5) {
+      teamPairsRaw.push({
+        home: fx.teams?.home?.name,
+        away: fx.teams?.away?.name,
+        status: s,
+        score: `${fx.goals?.home ?? "?"}-${fx.goals?.away ?? "?"}`,
+        round: fx.league?.round,
+      });
+    }
+  }
+  try {
+    localStorage.setItem("wc2026_api_debug2_v1", JSON.stringify({
+      ts: Date.now(),
+      totalReturned: json.response.length,
+      statusCounts,
+      sample: teamPairsRaw,
+      errors: json.errors,
+      results: json.results,
+    }));
+  } catch {}
+
   const byTeamPair = {};
   const knockout = {};
 
