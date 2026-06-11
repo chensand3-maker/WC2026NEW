@@ -10,7 +10,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.28.1";
+const APP_VERSION = "3.28.3";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -9326,6 +9326,37 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
           </div>
         </div>
       </div>
+      {/* 📡 Waiting for API result when match started but no actual yet */}
+      {(() => {
+        const matchStarted = Date.now() >= new Date(fixture.kickoff).getTime();
+        const minSinceKickoff = (Date.now() - new Date(fixture.kickoff).getTime()) / (60 * 1000);
+        const hasActual = actual && actual.h !== undefined && actual.h !== "";
+        if (!matchStarted || hasActual || minSinceKickoff > 240) return null;
+        return (
+          <div style={{
+            marginTop:8,paddingTop:8,
+            borderTop:"1px solid rgba(71,85,105,0.3)",
+          }}>
+            <div style={{
+              display:"flex",alignItems:"center",justifyContent:"center",gap:6,
+              padding:"6px 10px",
+              background:"rgba(239,68,68,0.08)",
+              border:"1px solid rgba(239,68,68,0.3)",
+              borderRadius:8,
+              fontSize:11,color:"#fca5a5",fontWeight:700,
+            }}>
+              <span style={{
+                width:6,height:6,borderRadius:"50%",
+                background:"#ef4444",
+                boxShadow:"0 0 8px #ef4444",
+                animation:"livePulse 1.2s ease-in-out infinite",
+                display:"inline-block",
+              }}/>
+              🔴 משחק חי — לחץ "🔄 רענן" לקבלת תוצאה
+            </div>
+          </div>
+        );
+      })()}
       {actual && actual.h !== undefined && actual.h !== "" && (() => {
         const matchStarted = Date.now() >= new Date(fixture.kickoff).getTime();
         const minSinceKickoff = (Date.now() - new Date(fixture.kickoff).getTime()) / (60 * 1000);
@@ -9504,17 +9535,19 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
                 if (!p || p.h === undefined || p.h === "" || p.a === undefined || p.a === "") continue;
                 const ph = parseInt(p.h), pa = parseInt(p.a);
                 if (isNaN(ph) || isNaN(pa)) continue;
-                rows.push({ name: m.name, h: ph, a: pa });
+                rows.push({ name: m.name, uid: m.uid, h: ph, a: pa });
               }
+              // 🔒 Sort alphabetically for stable order across re-renders
+              rows.sort((a, b) => (a.name || "").localeCompare(b.name || "", "he"));
               if (rows.length === 0) {
                 return <div style={{fontSize:12,color:"#94a3b8",textAlign:"center",padding:20}}>אף אחד עוד לא ניחש</div>;
               }
               return (
                 <div style={{display:"flex",flexDirection:"column",gap:6}}>
-                  {rows.map((r, i) => {
+                  {rows.map((r) => {
                     const result = r.h > r.a ? "home" : r.h < r.a ? "away" : "draw";
                     return (
-                      <div key={i} style={{
+                      <div key={r.uid || r.name} style={{
                         display:"flex",alignItems:"center",justifyContent:"space-between",
                         background:"rgba(36,49,80,0.5)",
                         padding:"8px 12px",borderRadius:8,
@@ -10731,7 +10764,11 @@ function Leaderboard({ name, picks, koWinners, friends, actuals, actualKo, hasAc
   ];
   
   everyone.forEach(p => { p.totalPoints = p.matchScore.total + p.koScore.total; });
-  everyone.sort((a,b) => b.totalPoints - a.totalPoints);
+  // 🔒 Stable sort — break ties by name to prevent positions from jumping around
+  everyone.sort((a,b) => {
+    if (b.totalPoints !== a.totalPoints) return b.totalPoints - a.totalPoints;
+    return (a.name || "").localeCompare(b.name || "", "he");
+  });
 
   if (!hasActuals) {
     return (
@@ -10996,7 +11033,10 @@ function LeagueHub({
             total += (actualTopScorer.goals || 0) * POINTS.TOP_SCORER_GOAL;
           }
           return { uid: m.uid, name: m.name, total };
-        }).sort((a, b) => b.total - a.total);
+        }).sort((a, b) => {
+          if (b.total !== a.total) return b.total - a.total;
+          return (a.uid || "").localeCompare(b.uid || "");
+        });
         const myEntry = ranked.find(r => r.uid === userId);
         const myRank = myEntry ? ranked.indexOf(myEntry) + 1 : null;
         return {
@@ -13974,8 +14014,11 @@ export default function App() {
         if (actualTopScorer && m.topScorerPick && actualTopScorer.name === m.topScorerPick.name) {
           total += (actualTopScorer.goals || 0) * POINTS.TOP_SCORER_GOAL;
         }
-        return { uid: m.uid, total };
-      }).sort((a, b) => b.total - a.total);
+        return { uid: m.uid, name: m.name, total };
+      }).sort((a, b) => {
+        if (b.total !== a.total) return b.total - a.total;
+        return (a.uid || "").localeCompare(b.uid || "");
+      });
       leagueSize = ranked.length;
       const idx = ranked.findIndex(r => r.uid === userId);
       if (idx >= 0) myRank = idx + 1;
