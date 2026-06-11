@@ -10,7 +10,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.24.0";
+const APP_VERSION = "3.24.1";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -6051,10 +6051,12 @@ function pickWheelPrize() {
 function WheelSpinner({ targetRotation, prizes, segmentAngle, coinSide }) {
   const [currentRot, setCurrentRot] = useState(0);
   useEffect(() => {
-    const timer = requestAnimationFrame(() => {
+    setCurrentRot(0);
+    // Use double rAF + small delay to ensure browser has painted at 0 before transition starts
+    const timer = setTimeout(() => {
       setCurrentRot(targetRotation);
-    });
-    return () => cancelAnimationFrame(timer);
+    }, 50);
+    return () => clearTimeout(timer);
   }, [targetRotation]);
 
   return (
@@ -6110,11 +6112,11 @@ function WheelSpinner({ targetRotation, prizes, segmentAngle, coinSide }) {
 function CoinSpinner({ targetRotation }) {
   const [currentRot, setCurrentRot] = useState(0);
   useEffect(() => {
-    // Trigger animation by setting target on next frame
-    const timer = requestAnimationFrame(() => {
+    setCurrentRot(0);
+    const timer = setTimeout(() => {
       setCurrentRot(targetRotation);
-    });
-    return () => cancelAnimationFrame(timer);
+    }, 50);
+    return () => clearTimeout(timer);
   }, [targetRotation]);
 
   return (
@@ -6433,27 +6435,61 @@ function CoinFlipWheelModal({ onClose, isAvailable, coinBalance, cardCollection,
             </div>
 
             {stage === "result" && prize && (
-              <div>
-                <div style={{
-                  fontSize:14,fontWeight:900,
-                  color: coinSide === "good" ? "#22c55e" : "#ef4444",
-                  marginBottom:8,
-                }}>
-                  {coinSide === "good" ? "🎉 זכית!" : "💔 הפסדת!"}
-                </div>
-                <div style={{
-                  fontSize:18,fontWeight:900,
-                  color: prize.color,
-                  marginBottom:14,
-                }}>{resultMessage || prize.label}</div>
-                <button onClick={close} style={{
-                  padding:"12px 30px",borderRadius:10,
+              <div style={{
+                position:"fixed",inset:0,
+                background:"rgba(0,0,0,0.85)",
+                zIndex:10100,
+                display:"flex",alignItems:"center",justifyContent:"center",
+                padding:20,
+                animation:"fadeIn 0.4s ease-out",
+              }}>
+                <style>{`
+                  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+                  @keyframes prizePopIn {
+                    0% { transform: scale(0.3) rotate(-180deg); opacity: 0; }
+                    60% { transform: scale(1.1) rotate(10deg); }
+                    100% { transform: scale(1) rotate(0deg); opacity: 1; }
+                  }
+                `}</style>
+                <div onClick={e=>e.stopPropagation()} style={{
+                  maxWidth:340,width:"100%",
                   background: coinSide === "good"
-                    ? "linear-gradient(135deg,#22c55e,#16a34a)"
-                    : "linear-gradient(135deg,#64748b,#475569)",
-                  color:"#fff",border:"none",
-                  fontSize:14,fontWeight:900,cursor:"pointer",fontFamily:"inherit",
-                }}>סגור</button>
+                    ? "linear-gradient(160deg,#14532d,#0f172a)"
+                    : "linear-gradient(160deg,#7f1d1d,#0f172a)",
+                  borderRadius:20,
+                  padding:"30px 24px",
+                  border: `3px solid ${coinSide === "good" ? "#22c55e" : "#ef4444"}`,
+                  boxShadow: `0 20px 60px rgba(0,0,0,0.7), 0 0 40px ${coinSide === "good" ? "rgba(34,197,94,0.5)" : "rgba(239,68,68,0.5)"}`,
+                  textAlign:"center",
+                  animation:"prizePopIn 0.6s cubic-bezier(0.2,0.7,0.3,1)",
+                }}>
+                  <div style={{fontSize:72,marginBottom:14}}>
+                    {coinSide === "good" ? "🎉" : "💔"}
+                  </div>
+                  <div style={{
+                    fontSize:22,fontWeight:900,
+                    color: coinSide === "good" ? "#22c55e" : "#ef4444",
+                    marginBottom:14,letterSpacing:1,
+                  }}>
+                    {coinSide === "good" ? "🎉 זכית!" : "💔 הפסדת!"}
+                  </div>
+                  <div style={{
+                    fontSize:28,fontWeight:900,
+                    color: prize.color,
+                    marginBottom:24,
+                    textShadow:`0 0 20px ${prize.color}`,
+                    letterSpacing:1,
+                  }}>{resultMessage || prize.label}</div>
+                  <button onClick={close} style={{
+                    padding:"14px 40px",borderRadius:12,
+                    background: coinSide === "good"
+                      ? "linear-gradient(135deg,#22c55e,#16a34a)"
+                      : "linear-gradient(135deg,#64748b,#475569)",
+                    color:"#fff",border:"none",
+                    fontSize:15,fontWeight:900,cursor:"pointer",fontFamily:"inherit",
+                    boxShadow:"0 8px 20px rgba(0,0,0,0.4)",
+                  }}>סגור</button>
+                </div>
               </div>
             )}
           </>
