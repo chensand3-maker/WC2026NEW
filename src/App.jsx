@@ -10,7 +10,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.27.3";
+const APP_VERSION = "3.27.5";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -7448,10 +7448,20 @@ function GlobalAdminModal({ onClose }) {
                 try {
                   const t = u.updatedAt?.toMillis ? u.updatedAt.toMillis() : u.updatedAt;
                   if (t) {
-                    const days = Math.floor((Date.now() - t) / (1000 * 60 * 60 * 24));
-                    if (days === 0) lastSeen = "היום";
+                    const diff = Date.now() - t;
+                    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                    const hours = Math.floor(diff / (1000 * 60 * 60));
+                    const minutes = Math.floor(diff / (1000 * 60));
+                    if (minutes < 1) lastSeen = "ממש עכשיו";
+                    else if (minutes < 60) lastSeen = `לפני ${minutes} דק'`;
+                    else if (hours < 24) lastSeen = `לפני ${hours} שעות`;
                     else if (days === 1) lastSeen = "אתמול";
                     else lastSeen = `לפני ${days} ימים`;
+                    // Also show exact time
+                    const d = new Date(t);
+                    const pad = (n) => String(n).padStart(2, "0");
+                    const exact = `${pad(d.getDate())}/${pad(d.getMonth()+1)} · ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+                    lastSeen = `${lastSeen} (${exact})`;
                   }
                 } catch {}
                 return (
@@ -8110,9 +8120,9 @@ function CollectionModal({ collection, onClose }) {
   const [previewCard, setPreviewCard] = useState(null);
 
   const filteredCards = useMemo(() => {
-    const rarityOrder = { G: 0, L: 1, E: 2, R: 3, U: 4, C: 5 };
+    const rarityOrder = { F: 0, G: 1, L: 2, E: 3, R: 4, U: 5, C: 6, T: 7 };
     const sorter = (a, b) => {
-      const r = rarityOrder[a.rarity] - rarityOrder[b.rarity];
+      const r = (rarityOrder[a.rarity] ?? 99) - (rarityOrder[b.rarity] ?? 99);
       if (r !== 0) return r;
       return a.name.localeCompare(b.name);
     };
@@ -8261,7 +8271,7 @@ function CollectionModal({ collection, onClose }) {
                 <>
                   {friends.length > 0 && (
                     <>
-                      <div style={{fontSize:10,color:"#f8fafc",letterSpacing:2,fontWeight:800,marginBottom:8,marginTop:4}}>
+                      <div style={{fontSize:10,color:"#ec4899",letterSpacing:2,fontWeight:800,marginBottom:8,marginTop:4}}>
                         🎴 חברי הליגה ({friends.length})
                       </div>
                       <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill, minmax(95px, 1fr))",gap:8,marginBottom:16}}>
@@ -11678,7 +11688,7 @@ function LeagueHub({
                           )}
                           {ownedFriends.length > 0 && (
                             <>
-                              <div style={{fontSize:10,color:"#f8fafc",letterSpacing:2,fontWeight:800,marginBottom:8,marginTop:4}}>
+                              <div style={{fontSize:10,color:"#ec4899",letterSpacing:2,fontWeight:800,marginBottom:8,marginTop:4}}>
                                 🎴 חברי הליגה ({ownedFriends.length})
                               </div>
                               <div style={{
