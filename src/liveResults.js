@@ -1,11 +1,9 @@
 // src/liveResults.js
 // ─── Live results fetcher — calls API-Football and maps to our match IDs ──────
 
-// 🔧 PASTE YOUR API-FOOTBALL KEY HERE (see SETUP.md step 3)
 const API_FOOTBALL_KEY = "50b86c6e4ce49b2c24362c4947a7e3d5";
 const API_URL = "https://v3.football.api-sports.io";
 
-// Team name normalization: API-Football names → our internal names
 const TEAM_NAME_MAP = {
   "USA": "USA",
   "United States": "USA",
@@ -70,9 +68,8 @@ function normalizeTeam(name) {
   return TEAM_NAME_MAP[name] || name;
 }
 
-// In-memory cache to avoid hammering the API (free tier: 100 req/day)
-const CACHE_KEY = "wc2026_live_cache_v3";
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+const CACHE_KEY = "wc2026_live_cache_v4";
+const CACHE_TTL = 2 * 60 * 1000;
 
 function getCache() {
   try {
@@ -90,12 +87,16 @@ function setCache(data) {
   } catch {}
 }
 
+// 🔴 Include both LIVE in-progress AND finished matches
+const ACTIVE_STATUSES = ["FT", "AET", "PEN", "1H", "HT", "2H", "ET", "BT", "P", "LIVE"];
+const FINISHED_STATUSES = ["FT", "AET", "PEN"];
+
 export async function fetchLiveResults() {
   const cached = getCache();
   if (cached) return cached.data;
 
   if (!API_FOOTBALL_KEY || API_FOOTBALL_KEY === "PASTE_HERE") {
-    throw new Error("API-Football key not set. See SETUP.md step 3.");
+    throw new Error("API-Football key not set");
   }
 
   const res = await fetch(`${API_URL}/fixtures?league=1&season=2026`, {
@@ -113,7 +114,7 @@ export async function fetchLiveResults() {
   for (const fixture of json.response) {
     const status = fixture.fixture?.status?.short;
     const fixtureId = fixture.fixture?.id;
-    if (!["FT", "AET", "PEN"].includes(status)) continue;
+    if (!ACTIVE_STATUSES.includes(status)) continue;
 
     const home = normalizeTeam(fixture.teams?.home?.name);
     const away = normalizeTeam(fixture.teams?.away?.name);
@@ -123,6 +124,8 @@ export async function fetchLiveResults() {
 
     const round = fixture.league?.round || "";
     const isKnockout = KO_KEYWORDS.some(k => round.includes(k));
+    const isFinished = FINISHED_STATUSES.includes(status);
+    const isLive = !isFinished;
 
     if (isKnockout) {
       const homeWon = fixture.teams?.home?.winner === true;
@@ -130,13 +133,18 @@ export async function fetchLiveResults() {
       const winnerName = homeWon ? home : awayWon ? away : null;
       knockout[`${home}|${away}`] = {
         h: hGoals, a: aGoals, status, round, winnerName, originalHome: home, fixtureId,
+        isLive, isFinished,
       };
     } else {
-      byTeamPair[`${home}|${away}`] = { h: hGoals, a: aGoals, status, originalHome: home, fixtureId };
+      byTeamPair[`${home}|${away}`] = {
+        h: hGoals, a: aGoals, status, originalHome: home, fixtureId,
+        isLive, isFinished,
+      };
     }
   }
 
-  const data = { byTeamPair, knockout, fetchedAt: Date.now() };
+  // Also expose 'group' alias for debug screens that check it
+  const data = { byTeamPair, knockout, group: byTeamPair, fetchedAt: Date.now() };
   setCache(data);
   return data;
 }
@@ -150,18 +158,14 @@ export function mapResultsToFixtures(liveData, FIXTURES) {
     const reverse = liveData.byTeamPair[`${f.away}|${f.home}`];
 
     if (direct) {
-      out[f.id] = { h: direct.h, a: direct.a };
+      out[f.id] = { h: direct.h, a: direct.a, isLive: direct.isLive, isFinished: direct.isFinished, status: direct.status };
     } else if (reverse) {
-      out[f.id] = { h: reverse.a, a: reverse.h };
+      out[f.id] = { h: reverse.a, a: reverse.h, isLive: reverse.isLive, isFinished: reverse.isFinished, status: reverse.status };
     }
   }
   return out;
 }
 
-/**
- * Look up the API fixture ID for our internal fixture (by team names).
- * Returns null if not found.
- */
 export function getApiFixtureId(liveData, fixture) {
   if (!liveData?.byTeamPair) return null;
   const direct = liveData.byTeamPair[`${fixture.home}|${fixture.away}`];
@@ -216,10 +220,6 @@ export async function fetchKnockoutResults() {
   return {};
 }
 
-// ─── MATCH DETAILS (events + statistics) ────────────────────────────────────
-// Fetched on-demand when user taps a finished match. Cached forever in localStorage
-// — finished match stats never change, so we save the API quota.
-
 const MATCH_DETAILS_KEY = "wc2026_match_details_v1";
 
 function getMatchDetailsCache() {
@@ -235,22 +235,9 @@ function saveMatchDetailsCache(cache) {
   } catch {}
 }
 
-/**
- * Fetch detailed events + statistics for a single match.
- *   apiFixtureId: ID from API-Football (use getApiFixtureId to find it)
- * Returns:
- *   {
- *     events: [{ minute, extra, type, detail, playerName, assistName, teamName }],
- *     homeTeam, awayTeam,
- *     homeStats: { "Ball Possession": "58%", "Shots on Goal": 8, ... },
- *     awayStats: { ... },
- *     fetchedAt
- *   }
- */
 export async function fetchMatchDetails(apiFixtureId) {
   if (!apiFixtureId) return null;
 
-  // Check cache (cached forever for finished matches)
   const cache = getMatchDetailsCache();
   if (cache[apiFixtureId]) return cache[apiFixtureId];
 
@@ -258,7 +245,6 @@ export async function fetchMatchDetails(apiFixtureId) {
     throw new Error("API-Football key not set");
   }
 
-  // Fetch only events (goals, cards, subs) — NOT statistics, to save quota
   const eventsRes = await fetch(`${API_URL}/fixtures/events?fixture=${apiFixtureId}`, {
     headers: { "x-apisports-key": API_FOOTBALL_KEY },
   });
@@ -269,7 +255,6 @@ export async function fetchMatchDetails(apiFixtureId) {
 
   const eventsJson = await eventsRes.json();
 
-  // Parse events
   const events = [];
   for (const e of (eventsJson.response || [])) {
     const minute = e.time?.elapsed;
@@ -283,8 +268,6 @@ export async function fetchMatchDetails(apiFixtureId) {
     events.push({ minute, extra, type, detail, playerName, assistName, teamName });
   }
 
-  // Determine which team in API is "home" — first goal-scoring team helps
-  // (we infer from events; saves a stats API call)
   let homeTeam = "";
   let awayTeam = "";
   for (const e of events) {
@@ -300,14 +283,12 @@ export async function fetchMatchDetails(apiFixtureId) {
     fetchedAt: Date.now(),
   };
 
-  // Cache forever (finished match goals never change)
   cache[apiFixtureId] = result;
   saveMatchDetailsCache(cache);
 
   return result;
 }
 
-// ─── TOP SCORERS ────────────────────────────────────────────────────────────
 const TOP_SCORERS_CACHE_KEY = "wc2026_topscorers_v1";
 const TOP_SCORERS_TTL_MS = 5 * 60 * 1000;
 
@@ -327,16 +308,12 @@ function setTopScorersCache(data) {
 
 export async function fetchTopScorers() {
   const cached = getTopScorersCache();
-  if (cached) {
-    console.log("[topScorers] using cached data");
-    return cached.data;
-  }
+  if (cached) return cached.data;
 
   if (!API_FOOTBALL_KEY || API_FOOTBALL_KEY === "PASTE_HERE") {
     throw new Error("API-Football key not set");
   }
 
-  console.log("[topScorers] fetching from API...");
   const res = await fetch(`${API_URL}/players/topscorers?league=1&season=2026`, {
     headers: { "x-apisports-key": API_FOOTBALL_KEY },
   });
@@ -369,7 +346,6 @@ export async function fetchTopScorers() {
     out[i].rank = prevRank;
   }
 
-  console.log(`[topScorers] got ${out.length} scorers`);
   setTopScorersCache(out);
   return out;
 }
