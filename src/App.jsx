@@ -10,7 +10,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.19.0";
+const APP_VERSION = "3.19.1";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -6376,12 +6376,19 @@ function LuckyWheelModal({ onClose, onWin, freePlaysLeft, coinBalance, onUseFree
             {/* Two cards — equal size grid */}
             <div style={{
               display:"grid",
-              gridTemplateColumns:"1fr auto 1fr",
+              gridTemplateColumns:"1fr 50px 1fr",
               alignItems:"center",
-              gap:10,marginBottom:18,
+              gap:6,marginBottom:18,
             }}>
               <div>{renderMiniCard(currentCard)}</div>
-              <div style={{fontSize:24,color:"#fbbf24",fontWeight:900}}>VS</div>
+              <div style={{
+                fontSize:22,
+                color:"#fbbf24",
+                fontWeight:900,
+                textAlign:"center",
+                textShadow:"0 0 16px rgba(251,191,36,0.8)",
+                letterSpacing:1,
+              }}>VS</div>
               <div style={{
                 animation: revealing && nextCard
                   ? `cardFlip 0.6s ease-out, ${lastResult === "correct" ? "correctGlow 0.8s ease-out" : "wrongShake 0.5s ease-in-out"}`
