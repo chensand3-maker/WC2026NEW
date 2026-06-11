@@ -10,7 +10,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.29.0";
+const APP_VERSION = "3.29.1";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -9965,8 +9965,9 @@ function TodayScreen({ picks, actuals, onPick, onBack, onGoToBracket, leagueMemb
     const hasFinalScore = hasScore && (isApiFinished || (!isApiLive && !actual.hasOwnProperty("isLive") && minSinceKickoff > 95));
     // 🔴 LIVE: started but not yet finished
     const isLive = k <= now && (isApiLive || (hasScore && !isApiFinished && minSinceKickoff <= 120) || (!hasScore && minSinceKickoff <= 120));
-    // 🏁 Just finished: has a FINAL score (not live), and ended within the last 3 hours
-    const isJustFinished = hasFinalScore && minSinceKickoff < 180;
+    // 🏁 Just finished: has a FINAL score, AND less than 30 min since match ended
+    // Match ends ~95 min after kickoff (90 + ~5 stoppage). Show window: 95→125 min after kickoff.
+    const isJustFinished = hasFinalScore && minSinceKickoff < 125;
     if (isLive) {
       liveOrJustEndedMatches.push(m);
       continue;
