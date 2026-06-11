@@ -10,7 +10,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.20.1";
+const APP_VERSION = "3.20.2";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -6132,46 +6132,20 @@ function LuckyWheelModal({ onClose, onWin, onUpdateBestStreak, personalBest, lea
 
   const renderMiniCard = (card) => {
     if (!card) return null;
-    return (
-      <div style={{
-        position:"relative",
-        width:"100%",
-        aspectRatio:"4 / 5",
-        borderRadius:14,
-        overflow:"hidden",
-        background: RARITY_CONFIG[card.rarity]?.bgGrad || "#1e293b",
-        boxShadow:`0 8px 24px rgba(0,0,0,0.5), 0 0 16px ${RARITY_CONFIG[card.rarity]?.glow || "rgba(0,0,0,0.3)"}`,
-        border:`3px solid ${RARITY_CONFIG[card.rarity]?.color || "#fbbf24"}`,
-        display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",
-        padding:"10px 6px",
-        color:"#fff",
-      }}>
-        <div style={{fontSize:30,marginBottom:4}}>{card.flag}</div>
-        <div style={{fontSize:10,fontWeight:900,textAlign:"center",marginBottom:3,letterSpacing:0.3,lineHeight:1.1}}>
-          {card.name}
-        </div>
-        <div style={{fontSize:8,opacity:0.7,marginBottom:5}}>{card.team}</div>
-        <div style={{
-          fontSize:32,fontWeight:900,
-          color: RARITY_CONFIG[card.rarity]?.color || "#fbbf24",
-          textShadow:`0 0 12px ${RARITY_CONFIG[card.rarity]?.glow}`,
-          lineHeight:1,
-        }}>{getPlayerRating(card)}</div>
-      </div>
-    );
+    return <PlayerCard card={card} size="M" animated={false} />;
   };
 
   const renderQuestionCard = () => (
     <div style={{
       position:"relative",
-      width:"100%",
-      aspectRatio:"4 / 5",
+      width:140,
+      height:210,
       borderRadius:14,
       background:"linear-gradient(135deg,#1e293b,#0f172a)",
       boxShadow:"0 8px 24px rgba(0,0,0,0.5)",
       border:"3px dashed #fbbf24",
       display:"flex",alignItems:"center",justifyContent:"center",
-      fontSize:56,
+      fontSize:64,
     }}>❓</div>
   );
 
@@ -6406,16 +6380,16 @@ function LuckyWheelModal({ onClose, onWin, onUpdateBestStreak, personalBest, lea
               }
             `}</style>
 
-            {/* Two cards — equal size grid */}
+            {/* Two cards — centered with VS in middle */}
             <div style={{
-              display:"grid",
-              gridTemplateColumns:"1fr 38px 1fr",
+              display:"flex",
+              justifyContent:"center",
               alignItems:"center",
               gap:8,marginBottom:18,
             }}>
-              <div>{renderMiniCard(currentCard)}</div>
+              <div style={{flexShrink:0}}>{renderMiniCard(currentCard)}</div>
               <div style={{
-                width:38,height:38,
+                width:38,height:38,flexShrink:0,
                 display:"flex",alignItems:"center",justifyContent:"center",
                 background:"#0f172a",
                 border:"2px solid #fbbf24",
@@ -6427,9 +6401,9 @@ function LuckyWheelModal({ onClose, onWin, onUpdateBestStreak, personalBest, lea
                 letterSpacing:0.5,
                 zIndex:5,
                 boxShadow:"0 0 16px rgba(251,191,36,0.5)",
-                margin:"0 auto",
               }}>VS</div>
               <div style={{
+                flexShrink:0,
                 animation: revealing && nextCard
                   ? `cardFlip 0.6s ease-out, ${lastResult === "correct" ? "correctGlow 0.8s ease-out" : "wrongShake 0.5s ease-in-out"}`
                   : !revealing ? "questionShake 0.6s ease-in-out infinite" : "none",
