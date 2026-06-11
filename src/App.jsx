@@ -10,7 +10,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.28.0";
+const APP_VERSION = "3.28.1";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -9326,7 +9326,11 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
           </div>
         </div>
       </div>
-      {actual && actual.h !== undefined && actual.h !== "" && (
+      {actual && actual.h !== undefined && actual.h !== "" && (() => {
+        const matchStarted = Date.now() >= new Date(fixture.kickoff).getTime();
+        const minSinceKickoff = (Date.now() - new Date(fixture.kickoff).getTime()) / (60 * 1000);
+        const isLive = matchStarted && minSinceKickoff <= 120;
+        return (
         <div style={{
           marginTop:8,paddingTop:8,
           borderTop:"1px solid rgba(71,85,105,0.3)",
@@ -9338,12 +9342,23 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
             borderRadius:8,
             border: `1px solid ${sc?.border || "rgba(71,85,105,0.4)"}`,
           }}>
-            <div style={{textAlign:"right",fontSize:10,color:"#94a3b8",letterSpacing:1,fontWeight:700}}>FINAL SCORE</div>
+            <div style={{textAlign:"right",fontSize:10,color: isLive ? "#ef4444" : "#94a3b8",letterSpacing:1,fontWeight:700,display:"flex",alignItems:"center",gap:4,justifyContent:"flex-end"}}>
+              {isLive && (
+                <span style={{
+                  width:6,height:6,borderRadius:"50%",
+                  background:"#ef4444",
+                  boxShadow:"0 0 8px #ef4444",
+                  animation:"livePulse 1.2s ease-in-out infinite",
+                  display:"inline-block",
+                }}/>
+              )}
+              {isLive ? "LIVE" : "FINAL SCORE"}
+            </div>
             <div style={{
               display:"flex",alignItems:"center",gap:4,
-              background:"#1e2940",border:`1px solid ${sc?.border || "#22c55e"}`,
+              background:"#1e2940",border:`1px solid ${sc?.border || (isLive ? "#ef4444" : "#22c55e")}`,
               borderRadius:6,padding:"3px 10px",justifyContent:"center",
-              color: sc?.text || "#22c55e",fontWeight:900,fontSize:16,
+              color: sc?.text || (isLive ? "#ef4444" : "#22c55e"),fontWeight:900,fontSize:16,
             }}>
               {actual.h} – {actual.a}
             </div>
@@ -9368,7 +9383,8 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
             </div>
           )}
         </div>
-      )}
+        );
+      })()}
       {fixture.venue && (
         <div style={{marginTop:5,fontSize:9,color:"#475569",textAlign:"center",letterSpacing:1}}>
           📍 {fixture.venue}
