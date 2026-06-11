@@ -10,7 +10,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.19.5";
+const APP_VERSION = "3.20.0";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -5847,10 +5847,10 @@ function LeagueAdminModal({ leagueData, leagueCode, onClose }) {
         kind: "scratch",
         amount: 1,
         targetUid: member.uid,
-        reason: "🃏 כרטיס גירוד ממך!",
+        reason: "🎴 משחק גבוה או נמוך ממך!",
         sentAt: Date.now(),
       });
-      alert(`✅ נשלח כרטיס גירוד ל-${member.name}`);
+      alert(`✅ נשלח משחק גבוה או נמוך ל-${member.name}`);
     } catch (err) {
       alert("שגיאה: " + (err.message || "נסה שוב"));
     }
@@ -5957,7 +5957,7 @@ function LeagueAdminModal({ leagueData, leagueCode, onClose }) {
                     fontFamily:"inherit",
                     opacity: sendingTicketUid === m.uid ? 0.5 : 1,
                   }}>
-                  {sendingTicketUid === m.uid ? "..." : "🃏 כרטיס גירוד"}
+                  {sendingTicketUid === m.uid ? "..." : "🎴 גבוה או נמוך"}
                 </button>
                 <button
                   onClick={() => handleRemove(m)}
@@ -6014,7 +6014,7 @@ function pickWheelPrize() {
 }
 
 // ─── 🎴 HIGHER / LOWER — guess if next card has higher or lower rating ─────────
-function LuckyWheelModal({ onClose, onWin, freePlaysLeft, coinBalance, onUseFree, onPayPlay }) {
+function LuckyWheelModal({ onClose, onWin, onUpdateBestStreak, personalBest, leagueRecord, freePlaysLeft, coinBalance, onUseFree, onPayPlay }) {
   // Game states: "idle" (not playing), "playing", "lost", "won"
   const [gameState, setGameState] = useState("idle");
   const [currentCard, setCurrentCard] = useState(null);
@@ -6095,6 +6095,8 @@ function LuckyWheelModal({ onClose, onWin, freePlaysLeft, coinBalance, onUseFree
       if (correct) {
         const newStreak = streak + 1;
         setStreak(newStreak);
+        // Update personal best in real time
+        if (onUpdateBestStreak) onUpdateBestStreak(newStreak);
         setCurrentCard(next);
         setNextCard(null);
         setRevealing(false);
@@ -6205,11 +6207,37 @@ function LuckyWheelModal({ onClose, onWin, freePlaysLeft, coinBalance, onUseFree
         {gameState === "idle" && (
           <div style={{padding:"20px 10px"}}>
             <div style={{fontSize:48,marginBottom:14}}>🎴⚡🎴</div>
-            <div style={{fontSize:13,color:"#cbd5e1",lineHeight:1.6,marginBottom:18,padding:"0 8px"}}>
+            <div style={{fontSize:13,color:"#cbd5e1",lineHeight:1.6,marginBottom:14,padding:"0 8px"}}>
               נחש אם הקלף הבא יקבל ציון <b style={{color:"#22c55e"}}>גבוה יותר</b> או <b style={{color:"#ef4444"}}>נמוך יותר</b><br/>
               <span style={{fontSize:11,color:"#94a3b8"}}>
                 ⏱️ 10 שניות להחליט · 🔄 תיקו = הגרלה חוזרת
               </span>
+            </div>
+
+            {/* 🏆 Records */}
+            <div style={{
+              display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,
+              marginBottom:14,
+            }}>
+              <div style={{
+                background:"linear-gradient(135deg,rgba(251,191,36,0.15),rgba(15,23,42,0.7))",
+                border:"1px solid rgba(251,191,36,0.3)",
+                borderRadius:10,padding:"10px 8px",textAlign:"center",
+              }}>
+                <div style={{fontSize:9,color:"#fbbf24",fontWeight:800,letterSpacing:1,marginBottom:2}}>🏆 השיא שלך</div>
+                <div style={{fontSize:22,fontWeight:900,color:"#fbbf24"}}>{personalBest || 0}</div>
+              </div>
+              <div style={{
+                background:"linear-gradient(135deg,rgba(168,85,247,0.15),rgba(15,23,42,0.7))",
+                border:"1px solid rgba(168,85,247,0.3)",
+                borderRadius:10,padding:"10px 8px",textAlign:"center",
+              }}>
+                <div style={{fontSize:9,color:"#c4b5fd",fontWeight:800,letterSpacing:1,marginBottom:2}}>👑 שיא הליגה</div>
+                <div style={{fontSize:22,fontWeight:900,color:"#c4b5fd"}}>{leagueRecord?.streak || 0}</div>
+                {leagueRecord?.streak > 0 && (
+                  <div style={{fontSize:9,color:"#a78bfa",marginTop:2}}>{leagueRecord.name}</div>
+                )}
+              </div>
             </div>
 
             {/* Prize ladder */}
@@ -6515,9 +6543,18 @@ function LuckyWheelModal({ onClose, onWin, freePlaysLeft, coinBalance, onUseFree
             })()}
             <div style={{fontSize:60,marginBottom:14}}>🎉</div>
             <div style={{fontSize:18,fontWeight:900,color:"#22c55e",marginBottom:8}}>ניצחת!</div>
-            <div style={{fontSize:24,fontWeight:900,color:"#fbbf24",marginBottom:18}}>
+            <div style={{fontSize:24,fontWeight:900,color:"#fbbf24",marginBottom:8}}>
               +{prizeForStreak(streak)} 🪙
             </div>
+            {streak >= (personalBest || 0) && streak > 0 && (
+              <div style={{
+                fontSize:12,fontWeight:900,color:"#fbbf24",
+                marginBottom:14,padding:"6px 12px",
+                background:"rgba(251,191,36,0.15)",
+                borderRadius:8,display:"inline-block",
+                border:"1px solid rgba(251,191,36,0.4)",
+              }}>🏆 שיא אישי חדש!</div>
+            )}
             {(freePlaysLeft > 0 || (coinBalance + prizeForStreak(streak)) >= 100) && (
               <button onClick={() => startGame(freePlaysLeft > 0)} style={{
                 padding:"14px 30px",borderRadius:12,marginBottom:10,marginRight:8,
@@ -12314,6 +12351,10 @@ export default function App() {
   const [showRoulette, setShowRoulette] = useState(false);  // is the roulette screen open?
   // 🎴 Higher/Lower game — 5 free plays per day, then 100 coins per play
   const [showLuckyWheel, setShowLuckyWheel] = useState(false);
+  const [hlBestStreak, setHlBestStreak] = useState(() => {
+    try { return parseInt(localStorage.getItem("wc2026_hl_best_v1") || "0", 10) || 0; }
+    catch { return 0; }
+  });
   const [hlPlaysToday, setHlPlaysToday] = useState(() => {
     try {
       const data = JSON.parse(localStorage.getItem("wc2026_hl_plays_v1") || "{}");
@@ -12325,8 +12366,8 @@ export default function App() {
     try { return parseInt(localStorage.getItem("wc2026_wheel_extra_v1") || "0", 10) || 0; }
     catch { return 0; }
   });
-  // Wheel available means user has free plays left today
-  const wheelAvailable = useMemo(() => hlPlaysToday < 5, [hlPlaysToday]);
+  // Wheel available means user has free plays left today OR extra tickets from admin
+  const wheelAvailable = useMemo(() => hlPlaysToday < 5 || luckyWheelExtraSpins > 0, [hlPlaysToday, luckyWheelExtraSpins]);
   const [spinResult, setSpinResult] = useState(null);       // the card just won
   const [isSpinning, setIsSpinning] = useState(false);      // animation playing
   const [pendingCard, setPendingCard] = useState(null);     // card chosen upfront; reels stop on it
@@ -12665,7 +12706,7 @@ export default function App() {
         // 🃏 Scratch ticket — bump extra spins
         const n = Math.max(1, Math.floor(g.amount || 1));
         ticketsAdded += n;
-        lastReason = g.reason || "כרטיס גירוד!";
+        lastReason = g.reason || "משחק נוסף!";
       } else {
         const amount = Math.max(0, Math.floor(g.amount || 0));
         if (amount > 0) {
@@ -12692,7 +12733,7 @@ export default function App() {
         try { localStorage.setItem("wc2026_wheel_extra_v1", String(n)); } catch {}
         return n;
       });
-      setGiftToast({ amount: ticketsAdded, reason: `🃏 ${ticketsAdded} כרטיסי גירוד מתנה!` });
+      setGiftToast({ amount: ticketsAdded, reason: `🎴 ${ticketsAdded} משחקי גבוה או נמוך מתנה!` });
       setTimeout(() => setGiftToast(null), 5000);
     }
 
@@ -12922,11 +12963,11 @@ export default function App() {
         total += (actualTopScorer.goals || 0) * POINTS.TOP_SCORER_GOAL;
       }
       updateMyGlobalProfile(userId, name, picks, koWinners, {
-        winnerPick, topScorerPick, koPicks, totalPoints: total, cardCollection,
+        winnerPick, topScorerPick, koPicks, totalPoints: total, cardCollection, hlBestStreak,
       }).catch(err => console.error("Failed to push global profile:", err));
     }, 1200);
     return () => clearTimeout(handle);
-  }, [userId, name, picks, koWinners, koPicks, winnerPick, topScorerPick, actuals, actualKoScores, actualWinner, actualTopScorer, cardCollection]);
+  }, [userId, name, picks, koWinners, koPicks, winnerPick, topScorerPick, actuals, actualKoScores, actualWinner, actualTopScorer, cardCollection, hlBestStreak]);
 
   // ─── LIVE RESULTS AUTO-FETCH ───────────────────────────────────────────────
   // Poll API-Football every 5 min for new match results
@@ -13788,7 +13829,16 @@ export default function App() {
       )}
 
       {/* 🎴 Higher/Lower Game */}
-      {showLuckyWheel && (
+      {showLuckyWheel && (() => {
+        // Compute league top score
+        const members = leagueData?.members ? Object.values(leagueData.members) : [];
+        let leagueRecord = { name: "—", streak: 0 };
+        for (const m of members) {
+          if ((m.hlBestStreak || 0) > leagueRecord.streak) {
+            leagueRecord = { name: m.name || "—", streak: m.hlBestStreak };
+          }
+        }
+        return (
         <LuckyWheelModal
           onClose={()=>setShowLuckyWheel(false)}
           onWin={(amount) => {
@@ -13798,16 +13848,30 @@ export default function App() {
               return updated;
             });
           }}
-          freePlaysLeft={luckyWheelExtraSpins > 0 ? 5 : Math.max(0, 5 - hlPlaysToday)}
+          onUpdateBestStreak={(streak) => {
+            if (streak > hlBestStreak) {
+              setHlBestStreak(streak);
+              try { localStorage.setItem("wc2026_hl_best_v1", String(streak)); } catch {}
+            }
+          }}
+          personalBest={hlBestStreak}
+          leagueRecord={leagueRecord}
+          freePlaysLeft={Math.max(0, 5 - hlPlaysToday) + luckyWheelExtraSpins}
           coinBalance={coins?.balance || 0}
           onUseFree={() => {
-            // Increment plays today
-            const today = new Date().toISOString().slice(0, 10);
-            const newPlays = hlPlaysToday + 1;
-            setHlPlaysToday(newPlays);
-            try {
-              localStorage.setItem("wc2026_hl_plays_v1", JSON.stringify({ date: today, plays: newPlays }));
-            } catch {}
+            // Consume extra ticket first if available, otherwise daily play
+            if (luckyWheelExtraSpins > 0) {
+              const newExtra = luckyWheelExtraSpins - 1;
+              setLuckyWheelExtraSpins(newExtra);
+              try { localStorage.setItem("wc2026_wheel_extra_v1", String(newExtra)); } catch {}
+            } else {
+              const today = new Date().toISOString().slice(0, 10);
+              const newPlays = hlPlaysToday + 1;
+              setHlPlaysToday(newPlays);
+              try {
+                localStorage.setItem("wc2026_hl_plays_v1", JSON.stringify({ date: today, plays: newPlays }));
+              } catch {}
+            }
           }}
           onPayPlay={() => {
             setCoins(prev => {
@@ -13817,7 +13881,8 @@ export default function App() {
             });
           }}
         />
-      )}
+        );
+      })()}
 
       {/* 🎡 Wheel available popup — shows once per session */}
       {wheelPopupShown && wheelAvailable && !showLuckyWheel && (
