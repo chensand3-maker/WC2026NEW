@@ -10,7 +10,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.28.3";
+const APP_VERSION = "3.28.4";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -10048,19 +10048,41 @@ function TodayScreen({ picks, actuals, onPick, onBack, onGoToBracket, leagueMemb
     <div style={{padding:"16px 14px 60px",maxWidth:560,margin:"0 auto"}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14,gap:8}}>
         <button onClick={onBack} style={{...ghostBtn,padding:"7px 14px",width:"auto"}}>{t("welcome.back")}</button>
-        {onRefresh && (
-          <button onClick={onRefresh} style={{
-            padding:"7px 12px",
-            background:"rgba(34,197,94,0.15)",
-            border:"1px solid rgba(34,197,94,0.4)",
+        <div style={{display:"flex",gap:6}}>
+          <button onClick={() => {
+            try {
+              const dbg = JSON.parse(localStorage.getItem("wc2026_api_debug_v1") || "null");
+              if (!dbg) {
+                alert("עוד לא נקראו נתונים מה-API");
+                return;
+              }
+              const age = Math.floor((Date.now() - dbg.ts) / 1000);
+              alert(`📡 דיבוג API\n\nרענון אחרון: לפני ${age} שניות\n\n✅ group data: ${dbg.rawHasGroup ? "כן" : "לא"}\n✅ knockout data: ${dbg.rawHasKnockout ? "כן" : "לא"}\n\n📊 משחקים שהוחזרו מה-API: ${dbg.rawGroupCount}\n🗺️ הצליחו למפות לפיקסטשרים שלנו: ${dbg.mappedCount}\n\n🔍 דוגמה:\n${JSON.stringify(dbg.sample, null, 2).slice(0, 400)}`);
+            } catch (e) {
+              alert("שגיאה: " + e.message);
+            }
+          }} style={{
+            padding:"7px 10px",
+            background:"rgba(168,85,247,0.15)",
+            border:"1px solid rgba(168,85,247,0.4)",
             borderRadius:10,
-            color:"#22c55e",fontSize:13,fontWeight:700,
+            color:"#a855f7",fontSize:11,fontWeight:700,
             cursor:"pointer",fontFamily:"inherit",
-            display:"flex",alignItems:"center",gap:5,
-          }}>
-            🔄 {t("today.refresh")}
-          </button>
-        )}
+          }}>🐛 API</button>
+          {onRefresh && (
+            <button onClick={onRefresh} style={{
+              padding:"7px 12px",
+              background:"rgba(34,197,94,0.15)",
+              border:"1px solid rgba(34,197,94,0.4)",
+              borderRadius:10,
+              color:"#22c55e",fontSize:13,fontWeight:700,
+              cursor:"pointer",fontFamily:"inherit",
+              display:"flex",alignItems:"center",gap:5,
+            }}>
+              🔄 {t("today.refresh")}
+            </button>
+          )}
+        </div>
       </div>
 
       <div style={{textAlign:"center",marginBottom:18}}>
@@ -13856,10 +13878,32 @@ export default function App() {
   const fetchAndApplyLive = async () => {
     try {
       const data = await fetchLiveResults();
+      console.log("[API] Raw response:", data);
       setLiveData(data);
       const mapped = mapResultsToFixtures(data, FIXTURES);
+      console.log("[API] Mapped to fixtures:", mapped);
+      // Save debug info
+      try {
+        localStorage.setItem("wc2026_api_debug_v1", JSON.stringify({
+          ts: Date.now(),
+          rawHasGroup: !!data?.group,
+          rawHasKnockout: !!data?.knockout,
+          rawGroupCount: data?.group ? Object.keys(data.group).length : 0,
+          mappedCount: Object.keys(mapped).length,
+          sample: data?.group ? Object.values(data.group).slice(0, 3) : [],
+        }));
+      } catch {}
+      // Only let manually-entered actuals override API mapped data
+      // (skip empty actuals so they don't blank out API results)
+      const meaningfulActuals = {};
+      for (const k of Object.keys(actuals || {})) {
+        const a = actuals[k];
+        if (a && a.h !== "" && a.h !== undefined && a.a !== "" && a.a !== undefined) {
+          meaningfulActuals[k] = a;
+        }
+      }
       const newActuals = Object.keys(mapped).length > 0
-        ? { ...mapped, ...actuals } // existing actuals (manual entries) win over auto
+        ? { ...mapped, ...meaningfulActuals } // manual entries win over auto
         : actuals;
 
       if (Object.keys(mapped).length > 0) {
