@@ -10,7 +10,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.22.0";
+const APP_VERSION = "3.23.2";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -4253,7 +4253,7 @@ function WorldLeaderboard({ userId, name, onClose }) {
 }
 
 // ─── SIDEBAR: hamburger menu drawer that slides in from one side ─────────────
-function Sidebar({ open, onClose, name, lang, setLang, onShowProfile, onShowRules, onShowBackup, onShowTutorial, onShowAchievements, onShowRoulette, onShowWrapped, onShowAdmin, onShowAdminGift, onShowGlobalAdmin, onShowLuckyWheel, wheelAvailable, hlPlaysToday, onLogout, onReset, totalPoints, unlockedCount, coinBalance }) {
+function Sidebar({ open, onClose, name, lang, setLang, onShowProfile, onShowRules, onShowBackup, onShowTutorial, onShowAchievements, onShowRoulette, onShowWrapped, onShowAdmin, onShowAdminGift, onShowGlobalAdmin, onShowLuckyWheel, onShowCoinWheel, coinWheelAvailable, wheelAvailable, hlPlaysToday, onLogout, onReset, totalPoints, unlockedCount, coinBalance }) {
   const t = useT();
   const isRTL = lang === "he";
 
@@ -4342,6 +4342,11 @@ function Sidebar({ open, onClose, name, lang, setLang, onShowProfile, onShowRule
             icon="🎴"
             label={`גבוה או נמוך${wheelAvailable ? ` · ${Math.max(0, 5 - hlPlaysToday)} חינם` : ""}`}
             onClick={()=>{onClose();onShowLuckyWheel();}}
+          />
+          <SidebarItem
+            icon="🪙"
+            label={`גלגל הגורל${coinWheelAvailable ? " · 🟢 זמין!" : ""}`}
+            onClick={()=>{onClose();onShowCoinWheel();}}
           />
           <SidebarItem icon="🎓" label={t("sidebar.tutorial")} onClick={()=>{onClose();onShowTutorial();}}/>
           <SidebarItem icon="ⓘ" label={t("sidebar.scoringRules")} onClick={()=>{onClose();onShowRules();}}/>
@@ -6041,6 +6046,384 @@ function pickWheelPrize() {
     if (roll <= 0) return p;
   }
   return WHEEL_PRIZES[0];
+}
+
+// ─── 🪙 COIN FLIP + WHEEL — once per hour, 60% good wheel / 40% bad wheel ─────
+const GOOD_WHEEL_PRIZES = [
+  { id: "c100",   type: "coins",    amount: 100,  weight: 25, label: "100",    color: "#94a3b8", emoji: "🪙" },
+  { id: "c500",   type: "coins",    amount: 500,  weight: 20, label: "500",    color: "#60a5fa", emoji: "🪙" },
+  { id: "c1500",  type: "coins",    amount: 1500, weight: 12, label: "1500",   color: "#22c55e", emoji: "🪙" },
+  { id: "c5000",  type: "coins",    amount: 5000, weight: 4,  label: "5000",   color: "#a855f7", emoji: "🪙" },
+  { id: "rare",   type: "card",     rarity: "R",  weight: 12, label: "Rare",   color: "#ef4444", emoji: "🔥" },
+  { id: "epic",   type: "card",     rarity: "E",  weight: 8,  label: "Epic",   color: "#22c55e", emoji: "💎" },
+  { id: "legen",  type: "card",     rarity: "L",  weight: 3,  label: "LEGEND", color: "#fbbf24", emoji: "🏆" },
+  { id: "again",  type: "again",    weight: 16, label: "סובב שוב!", color: "#fbbf24", emoji: "🔄" },
+];
+
+const BAD_WHEEL_PRIZES = [
+  { id: "nothing", type: "nothing",    weight: 25, label: "כלום!",  color: "#475569", emoji: "😵" },
+  { id: "p100",    type: "penalty",    amount: 100,  weight: 18, label: "-100",   color: "#7f1d1d", emoji: "💸" },
+  { id: "p500",    type: "penalty",    amount: 500,  weight: 12, label: "-500",   color: "#dc2626", emoji: "💸" },
+  { id: "p1500",   type: "penalty",    amount: 1500, weight: 5,  label: "-1500",  color: "#7f1d1d", emoji: "💀" },
+  { id: "trash",   type: "trash",      weight: 14, label: "🇮🇱 ישראלי", color: "#a16207", emoji: "🗑️" },
+  { id: "stealE",  type: "steal",      tier: "E",  weight: 8,  label: "Epic נגנב", color: "#7c3aed", emoji: "💔" },
+  { id: "stealL",  type: "steal",      tier: "L",  weight: 2,  label: "LEGEND נגנב", color: "#92400e", emoji: "🏆💀" },
+  { id: "again",   type: "again",      weight: 16, label: "סובב שוב!", color: "#fbbf24", emoji: "🔄" },
+];
+
+function pickFromWheel(prizes) {
+  const total = prizes.reduce((s, p) => s + p.weight, 0);
+  let roll = Math.random() * total;
+  for (const p of prizes) {
+    roll -= p.weight;
+    if (roll <= 0) return p;
+  }
+  return prizes[0];
+}
+
+function CoinFlipWheelModal({ onClose, isAvailable, coinBalance, cardCollection, onApplyPrize, onConsumeSpin }) {
+  // 🔐 Beta gate — only admins know the code
+  const COIN_WHEEL_CODE = "Chen-Test-2026";
+  const [unlocked, setUnlocked] = useState(false);
+  const [codeInput, setCodeInput] = useState("");
+  const [codeError, setCodeError] = useState("");
+
+  // 🧪 Beta testing: track plays in localStorage, limit to 5
+  const [testPlays, setTestPlays] = useState(() => {
+    try { return parseInt(localStorage.getItem("wc2026_coinwheel_test_plays_v1") || "0", 10) || 0; }
+    catch { return 0; }
+  });
+  const testPlaysLeft = Math.max(0, 5 - testPlays);
+
+  const tryUnlock = () => {
+    if (codeInput.trim() === COIN_WHEEL_CODE) {
+      setUnlocked(true);
+      setCodeError("");
+    } else {
+      setCodeError("קוד שגוי");
+    }
+  };
+
+  // Stages: "idle" → "flipping" → "wheelSpinning" → "result"
+  const [stage, setStage] = useState("idle");
+  const [coinSide, setCoinSide] = useState(null); // "good" or "bad"
+  const [coinRotation, setCoinRotation] = useState(0);
+  const [wheelRotation, setWheelRotation] = useState(0);
+  const [prize, setPrize] = useState(null);
+  const [resultMessage, setResultMessage] = useState("");
+
+  const currentWheelPrizes = coinSide === "good" ? GOOD_WHEEL_PRIZES : BAD_WHEEL_PRIZES;
+  const segmentAngle = 360 / 8;
+
+  const flipCoin = () => {
+    if (testPlaysLeft <= 0 && !isAvailable) return;
+    // Consume a test play (don't trigger hourly cooldown for testing)
+    if (testPlaysLeft > 0) {
+      const newCount = testPlays + 1;
+      setTestPlays(newCount);
+      try { localStorage.setItem("wc2026_coinwheel_test_plays_v1", String(newCount)); } catch {}
+    } else {
+      onConsumeSpin(); // mark hourly as used
+    }
+    setStage("flipping");
+    setPrize(null);
+    setResultMessage("");
+    // 60% good, 40% bad
+    const isGood = Math.random() < 0.60;
+    const newSide = isGood ? "good" : "bad";
+    setCoinSide(newSide);
+    // Spin coin 8 full rotations + land on side
+    const finalRot = 360 * 8 + (newSide === "good" ? 0 : 180);
+    setCoinRotation(finalRot);
+    setTimeout(() => {
+      // Now spin the wheel
+      spinWheel(newSide);
+    }, 2500);
+  };
+
+  const spinWheel = (side) => {
+    setStage("wheelSpinning");
+    const prizes = side === "good" ? GOOD_WHEEL_PRIZES : BAD_WHEEL_PRIZES;
+    const selectedPrize = pickFromWheel(prizes);
+    const prizeIdx = prizes.findIndex(p => p.id === selectedPrize.id);
+    const targetOffset = -(prizeIdx * segmentAngle + segmentAngle / 2);
+    setWheelRotation(360 * 6 + targetOffset);
+    setTimeout(() => {
+      setPrize(selectedPrize);
+      // If it's "again" — reset and spin coin again
+      if (selectedPrize.type === "again") {
+        setTimeout(() => {
+          setStage("flipping");
+          setPrize(null);
+          setWheelRotation(0);
+          setCoinRotation(0);
+          const isGood = Math.random() < 0.60;
+          const newSide = isGood ? "good" : "bad";
+          setCoinSide(newSide);
+          const finalRot = 360 * 8 + (newSide === "good" ? 0 : 180);
+          setCoinRotation(finalRot);
+          setTimeout(() => spinWheel(newSide), 2500);
+        }, 1500);
+        return;
+      }
+      // Apply the prize
+      const msg = onApplyPrize(selectedPrize);
+      setResultMessage(msg);
+      setStage("result");
+      try { navigator.vibrate?.([40, 60, 100]); } catch {}
+    }, 4500);
+  };
+
+  const close = () => {
+    onClose();
+  };
+
+  return (
+    <div onClick={close} style={{
+      position:"fixed",inset:0,
+      background: coinSide === "bad"
+        ? "radial-gradient(circle at center, rgba(127,29,29,0.4), rgba(7,13,30,0.97))"
+        : coinSide === "good"
+        ? "radial-gradient(circle at center, rgba(34,197,94,0.2), rgba(7,13,30,0.97))"
+        : "rgba(7,13,30,0.96)",
+      transition:"background 0.6s ease",
+      zIndex:9999,display:"flex",flexDirection:"column",
+      alignItems:"center",justifyContent:"center",padding:"20px 14px",
+    }}>
+      <div onClick={e=>e.stopPropagation()} style={{
+        maxWidth:420,width:"100%",
+        background:"linear-gradient(160deg,#1e293b,#0f172a)",
+        borderRadius:20,padding:"22px 16px",
+        border:`2px solid ${coinSide === "bad" ? "rgba(239,68,68,0.5)" : "rgba(251,191,36,0.4)"}`,
+        boxShadow:"0 20px 60px rgba(0,0,0,0.6)",
+        textAlign:"center",
+      }}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+          <div style={{fontSize:18,fontWeight:900,color:"#fbbf24"}}>🪙 גלגל הגורל</div>
+          <button onClick={close} style={{background:"transparent",border:"none",color:"#cbd5e1",fontSize:24,cursor:"pointer"}}>✕</button>
+        </div>
+
+        {!unlocked ? (
+          // 🔐 Code entry — beta gate
+          <div style={{padding:"20px 10px",textAlign:"center"}}>
+            <div style={{fontSize:48,marginBottom:14}}>🔐</div>
+            <div style={{fontSize:14,color:"#cbd5e1",lineHeight:1.5,marginBottom:18}}>
+              <b style={{color:"#fbbf24"}}>פיצ'ר בבדיקה</b><br/>
+              <span style={{fontSize:12,color:"#94a3b8"}}>
+                בקרוב יהיה זמין לכולם!<br/>
+                הקלד קוד גישה אם יש לך
+              </span>
+            </div>
+            <input
+              type="password"
+              value={codeInput}
+              onChange={e => { setCodeInput(e.target.value); setCodeError(""); }}
+              onKeyDown={e => { if (e.key === "Enter") tryUnlock(); }}
+              placeholder="קוד גישה"
+              style={{
+                width:"100%",padding:"12px",borderRadius:10,
+                background:"rgba(36,49,80,0.5)",
+                border:`1px solid ${codeError ? "#ef4444" : "rgba(251,191,36,0.3)"}`,
+                color:"#fff",fontSize:14,fontFamily:"inherit",
+                textAlign:"center",letterSpacing:2,
+                boxSizing:"border-box",marginBottom:14,
+              }}
+            />
+            {codeError && (
+              <div style={{color:"#fca5a5",fontSize:12,marginBottom:14}}>⚠️ {codeError}</div>
+            )}
+            <button onClick={tryUnlock} style={{
+              width:"100%",padding:"12px",borderRadius:10,
+              background:"linear-gradient(135deg,#fbbf24,#f59e0b)",
+              color:"#1e2940",border:"none",
+              fontSize:14,fontWeight:900,
+              cursor:"pointer",fontFamily:"inherit",
+            }}>🔓 פתח</button>
+          </div>
+        ) : !isAvailable && testPlaysLeft <= 0 && stage === "idle" ? (
+          <div style={{padding:"40px 20px"}}>
+            <div style={{fontSize:60,marginBottom:14,opacity:0.5}}>⏰</div>
+            <div style={{fontSize:14,color:"#cbd5e1",lineHeight:1.5}}>
+              חזור בעוד שעה לזריקה נוספת!
+            </div>
+          </div>
+        ) : stage === "idle" ? (
+          <>
+            <div style={{fontSize:48,marginBottom:14}}>🪙</div>
+            <div style={{fontSize:13,color:"#cbd5e1",lineHeight:1.6,marginBottom:14,padding:"0 8px"}}>
+              <b>זריקת מטבע + גלגל</b><br/>
+              <span style={{fontSize:11,color:"#94a3b8"}}>
+                ⚪ 60% גלגל טוב · ⚫ 40% גלגל רע<br/>
+                💀 הזהר — בגלגל הרע יש עונשים!
+              </span>
+            </div>
+            {testPlaysLeft > 0 && (
+              <div style={{
+                background:"rgba(34,197,94,0.1)",
+                border:"1px solid rgba(34,197,94,0.4)",
+                borderRadius:8,padding:"6px 10px",marginBottom:14,
+                fontSize:11,color:"#86efac",
+              }}>
+                🧪 מצב בדיקה — נשארו {testPlaysLeft} ניסיונות
+              </div>
+            )}
+            <button onClick={flipCoin} style={{
+              width:"100%",padding:"14px",borderRadius:12,
+              background:"linear-gradient(135deg,#fbbf24,#f59e0b)",
+              color:"#1e2940",border:"none",
+              fontSize:15,fontWeight:900,cursor:"pointer",fontFamily:"inherit",
+              boxShadow:"0 8px 24px rgba(251,191,36,0.4)",
+            }}>🪙 זרוק את המטבע!</button>
+          </>
+        ) : stage === "flipping" ? (
+          <>
+            <style>{`
+              @keyframes coinFlipAnim3D {
+                from { transform: rotateY(0deg) scale(1); }
+                to { transform: rotateY(var(--final-rot)) scale(1); }
+              }
+            `}</style>
+            <div style={{margin:"30px auto",height:140,perspective:"800px",display:"flex",alignItems:"center",justifyContent:"center"}}>
+              <div style={{
+                width:120,height:120,
+                transformStyle:"preserve-3d",
+                transition:"transform 2.5s cubic-bezier(0.4,0,0.2,1)",
+                transform: `rotateY(${coinRotation}deg)`,
+              }}>
+                {/* Good side */}
+                <div style={{
+                  position:"absolute",inset:0,
+                  borderRadius:"50%",
+                  background:"linear-gradient(135deg,#fbbf24,#d97706)",
+                  display:"flex",alignItems:"center",justifyContent:"center",
+                  fontSize:60,
+                  boxShadow:"0 8px 24px rgba(251,191,36,0.5)",
+                  backfaceVisibility:"hidden",
+                }}>✨</div>
+                {/* Bad side */}
+                <div style={{
+                  position:"absolute",inset:0,
+                  borderRadius:"50%",
+                  background:"linear-gradient(135deg,#7f1d1d,#dc2626)",
+                  display:"flex",alignItems:"center",justifyContent:"center",
+                  fontSize:60,
+                  boxShadow:"0 8px 24px rgba(239,68,68,0.5)",
+                  backfaceVisibility:"hidden",
+                  transform:"rotateY(180deg)",
+                }}>💀</div>
+              </div>
+            </div>
+            <div style={{
+              fontSize:16,fontWeight:900,color:"#fbbf24",
+              animation:"streakPulse 1s ease-in-out infinite",
+            }}>זרוק... 🤞</div>
+          </>
+        ) : stage === "wheelSpinning" || (stage === "result" && prize) ? (
+          <>
+            <div style={{
+              fontSize:14,fontWeight:900,marginBottom:10,
+              color: coinSide === "good" ? "#22c55e" : "#ef4444",
+            }}>
+              {coinSide === "good" ? "✨ גלגל טוב!" : "💀 גלגל רע!"}
+            </div>
+            {/* Wheel */}
+            <div style={{position:"relative",width:280,height:280,margin:"10px auto 18px"}}>
+              <div style={{
+                position:"absolute",top:-10,left:"50%",
+                transform:"translateX(-50%)",
+                width:0,height:0,
+                borderLeft:"14px solid transparent",
+                borderRight:"14px solid transparent",
+                borderTop:"24px solid #fbbf24",
+                zIndex:10,
+                filter:"drop-shadow(0 3px 8px rgba(0,0,0,0.7))",
+              }}/>
+              <svg width="280" height="280" viewBox="0 0 280 280" style={{
+                display:"block",
+                transform:`rotate(${wheelRotation}deg)`,
+                transition: stage === "wheelSpinning" ? "transform 4.5s cubic-bezier(0.17, 0.67, 0.16, 1.01)" : "none",
+                filter: `drop-shadow(0 0 20px ${coinSide === "good" ? "rgba(251,191,36,0.5)" : "rgba(239,68,68,0.5)"})`,
+              }}>
+                {currentWheelPrizes.map((p, i) => {
+                  const startAngle = (i * segmentAngle) - 90;
+                  const endAngle = startAngle + segmentAngle;
+                  const startRad = startAngle * Math.PI / 180;
+                  const endRad = endAngle * Math.PI / 180;
+                  const r = 135, cx = 140, cy = 140;
+                  const x1 = cx + r * Math.cos(startRad);
+                  const y1 = cy + r * Math.sin(startRad);
+                  const x2 = cx + r * Math.cos(endRad);
+                  const y2 = cy + r * Math.sin(endRad);
+                  const pathD = `M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 0 1 ${x2} ${y2} Z`;
+                  const midAngle = startAngle + segmentAngle / 2;
+                  const midRad = midAngle * Math.PI / 180;
+                  const textR = 88;
+                  const tx = cx + textR * Math.cos(midRad);
+                  const ty = cy + textR * Math.sin(midRad);
+                  const emojiR = 60;
+                  const ex = cx + emojiR * Math.cos(midRad);
+                  const ey = cy + emojiR * Math.sin(midRad);
+                  const textRot = midAngle + 90;
+                  return (
+                    <g key={p.id}>
+                      <path d={pathD} fill={p.color} stroke="#0f172a" strokeWidth="2"/>
+                      <text x={ex} y={ey} fontSize="22" textAnchor="middle" dominantBaseline="middle">
+                        {p.emoji}
+                      </text>
+                      <text
+                        x={tx} y={ty}
+                        fill="#fff"
+                        fontSize="9"
+                        fontWeight="900"
+                        textAnchor="middle"
+                        dominantBaseline="middle"
+                        transform={`rotate(${textRot} ${tx} ${ty})`}
+                      >{p.label}</text>
+                    </g>
+                  );
+                })}
+                <circle cx="140" cy="140" r="138" fill="none" stroke={coinSide === "good" ? "#fbbf24" : "#ef4444"} strokeWidth="4"/>
+              </svg>
+              <div style={{
+                position:"absolute",top:"50%",left:"50%",
+                transform:"translate(-50%, -50%)",
+                width:50,height:50,borderRadius:"50%",
+                background:"linear-gradient(135deg,#fbbf24,#d97706)",
+                border:"3px solid #1e293b",
+                display:"flex",alignItems:"center",justifyContent:"center",
+                fontSize:22,
+              }}>{coinSide === "good" ? "✨" : "💀"}</div>
+            </div>
+
+            {stage === "result" && prize && (
+              <div>
+                <div style={{
+                  fontSize:14,fontWeight:900,
+                  color: coinSide === "good" ? "#22c55e" : "#ef4444",
+                  marginBottom:8,
+                }}>
+                  {coinSide === "good" ? "🎉 זכית!" : "💔 הפסדת!"}
+                </div>
+                <div style={{
+                  fontSize:18,fontWeight:900,
+                  color: prize.color,
+                  marginBottom:14,
+                }}>{resultMessage || prize.label}</div>
+                <button onClick={close} style={{
+                  padding:"12px 30px",borderRadius:10,
+                  background: coinSide === "good"
+                    ? "linear-gradient(135deg,#22c55e,#16a34a)"
+                    : "linear-gradient(135deg,#64748b,#475569)",
+                  color:"#fff",border:"none",
+                  fontSize:14,fontWeight:900,cursor:"pointer",fontFamily:"inherit",
+                }}>סגור</button>
+              </div>
+            )}
+          </>
+        ) : null}
+      </div>
+    </div>
+  );
 }
 
 // ─── 🎴 HIGHER / LOWER — guess if next card has higher or lower rating ─────────
@@ -12377,7 +12760,18 @@ export default function App() {
   }, [name, wrappedStats.totalPicks]);
   // 🎰 Roulette UI state
   const [showRoulette, setShowRoulette] = useState(false);  // is the roulette screen open?
-  // 🎴 Higher/Lower game — 5 free plays per day, then 100 coins per play
+  // 🪙 Coin Flip + Wheel — once per hour
+  const [showCoinWheel, setShowCoinWheel] = useState(false);
+  const [coinWheelLastSpin, setCoinWheelLastSpin] = useState(() => {
+    try { return parseInt(localStorage.getItem("wc2026_coinwheel_last_v1") || "0", 10) || 0; }
+    catch { return 0; }
+  });
+  const coinWheelAvailable = useMemo(() => {
+    const HOUR = 60 * 60 * 1000;
+    return (Date.now() - coinWheelLastSpin) >= HOUR;
+  }, [coinWheelLastSpin]);
+
+  // 🎴 Higher/Lower game — 5 free plays per day, then 50 coins per play
   const [showLuckyWheel, setShowLuckyWheel] = useState(false);
   const [hlBestStreak, setHlBestStreak] = useState(() => {
     try { return parseInt(localStorage.getItem("wc2026_hl_best_v1") || "0", 10) || 0; }
@@ -13828,6 +14222,8 @@ export default function App() {
         onShowAdminGift={leagueData?.createdBy === name && activeLeagueCode ? () => setShowAdminGift(true) : null}
         onShowGlobalAdmin={()=>setShowGlobalAdmin(true)}
         onShowLuckyWheel={()=>setShowLuckyWheel(true)}
+        onShowCoinWheel={()=>setShowCoinWheel(true)}
+        coinWheelAvailable={coinWheelAvailable}
         wheelAvailable={wheelAvailable}
         hlPlaysToday={hlPlaysToday}
         onLogout={handleLogout}
@@ -13855,6 +14251,107 @@ export default function App() {
       {/* 🌍 Global Admin (secret code) */}
       {showGlobalAdmin && (
         <GlobalAdminModal onClose={()=>setShowGlobalAdmin(false)} />
+      )}
+
+      {/* 🪙 Coin Flip + Wheel of Fortune */}
+      {showCoinWheel && (
+        <CoinFlipWheelModal
+          onClose={() => setShowCoinWheel(false)}
+          isAvailable={coinWheelAvailable}
+          coinBalance={coins?.balance || 0}
+          cardCollection={cardCollection}
+          onConsumeSpin={() => {
+            const now = Date.now();
+            setCoinWheelLastSpin(now);
+            try { localStorage.setItem("wc2026_coinwheel_last_v1", String(now)); } catch {}
+          }}
+          onApplyPrize={(prize) => {
+            // Returns a Hebrew message describing what happened
+            if (prize.type === "coins") {
+              setCoins(prev => {
+                const updated = { ...prev, balance: (prev?.balance || 0) + prize.amount };
+                try { localStorage.setItem("wc2026_coins_v7", JSON.stringify(updated)); } catch {}
+                return updated;
+              });
+              return `+${prize.amount} 🪙`;
+            }
+            if (prize.type === "card") {
+              const pool = CARDS_BY_RARITY[prize.rarity] || [];
+              if (pool.length > 0) {
+                const card = pool[Math.floor(Math.random() * pool.length)];
+                const newCollection = { ...cardCollection, [card.id]: (cardCollection[card.id] || 0) + 1 };
+                setCardCollection(newCollection);
+                try { localStorage.setItem("wc2026_cards_v2", JSON.stringify(newCollection)); } catch {}
+                setTimeout(() => {
+                  setSpinResult({ card, isDuplicate: (cardCollection[card.id] || 0) > 0, refund: 0 });
+                }, 800);
+                return `🎴 קלף ${prize.label}`;
+              }
+              return "🎴 קלף";
+            }
+            if (prize.type === "nothing") {
+              return "😵 כלום!";
+            }
+            if (prize.type === "penalty") {
+              const actualLoss = Math.min(prize.amount, coins?.balance || 0);
+              setCoins(prev => {
+                const updated = { ...prev, balance: (prev?.balance || 0) - actualLoss };
+                try { localStorage.setItem("wc2026_coins_v7", JSON.stringify(updated)); } catch {}
+                return updated;
+              });
+              return `-${actualLoss} 🪙`;
+            }
+            if (prize.type === "trash") {
+              // Give a random Israeli card
+              const pool = CARDS_BY_RARITY.T || [];
+              if (pool.length > 0) {
+                const card = pool[Math.floor(Math.random() * pool.length)];
+                const newCollection = { ...cardCollection, [card.id]: (cardCollection[card.id] || 0) + 1 };
+                setCardCollection(newCollection);
+                try { localStorage.setItem("wc2026_cards_v2", JSON.stringify(newCollection)); } catch {}
+                setTimeout(() => {
+                  setSpinResult({ card, isDuplicate: (cardCollection[card.id] || 0) > 0, refund: 0 });
+                }, 800);
+                return `🗑️ קיבלת את ${card.name}`;
+              }
+              return "🗑️ ישראלי";
+            }
+            if (prize.type === "steal") {
+              // Try to steal a card at the target tier, else step down
+              const tiers = ["L", "E", "R", "U", "C"];
+              const startIdx = tiers.indexOf(prize.tier);
+              for (let i = startIdx; i < tiers.length; i++) {
+                const tier = tiers[i];
+                const owned = Object.entries(cardCollection).filter(([id, count]) => {
+                  if (count <= 0) return false;
+                  const allCards = [...CARDS, ...LEGEND_CARDS];
+                  const card = allCards.find(c => c.id === id);
+                  return card && card.rarity === tier;
+                });
+                if (owned.length > 0) {
+                  const [stolenId] = owned[Math.floor(Math.random() * owned.length)];
+                  const allCards = [...CARDS, ...LEGEND_CARDS];
+                  const stolenCard = allCards.find(c => c.id === stolenId);
+                  const newCollection = { ...cardCollection };
+                  newCollection[stolenId] = (newCollection[stolenId] || 1) - 1;
+                  if (newCollection[stolenId] <= 0) delete newCollection[stolenId];
+                  setCardCollection(newCollection);
+                  try { localStorage.setItem("wc2026_cards_v2", JSON.stringify(newCollection)); } catch {}
+                  return `💔 ${stolenCard?.name || tier} נלקח!`;
+                }
+              }
+              // No cards to steal — fallback to coin penalty
+              const fallback = Math.min(200, coins?.balance || 0);
+              setCoins(prev => {
+                const updated = { ...prev, balance: (prev?.balance || 0) - fallback };
+                try { localStorage.setItem("wc2026_coins_v7", JSON.stringify(updated)); } catch {}
+                return updated;
+              });
+              return `💸 אין קלף — הפסדת ${fallback} 🪙`;
+            }
+            return prize.label;
+          }}
+        />
       )}
 
       {/* 🎴 Higher/Lower Game */}
