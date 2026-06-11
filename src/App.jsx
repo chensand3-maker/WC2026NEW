@@ -10,7 +10,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.20.2";
+const APP_VERSION = "3.21.0";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -6038,7 +6038,7 @@ function LuckyWheelModal({ onClose, onWin, onUpdateBestStreak, personalBest, lea
 
   const startGame = (isFree) => {
     if (!isFree) {
-      if (coinBalance < 100) return;
+      if (coinBalance < 50) return;
       onPayPlay();
     } else {
       onUseFree();
@@ -6104,6 +6104,11 @@ function LuckyWheelModal({ onClose, onWin, onUpdateBestStreak, personalBest, lea
         setLastResult(null);
         setTimeLeft(10);
       } else {
+        // 💰 Consolation prize — if streak >= 3, get half of what was in the pot
+        const consolation = Math.floor(prizeForStreak(streak) / 2);
+        if (consolation > 0) {
+          onWin(consolation);
+        }
         setGameState("lost");
       }
     }, 1800);
@@ -6244,17 +6249,17 @@ function LuckyWheelModal({ onClose, onWin, onUpdateBestStreak, personalBest, lea
             ) : (
               <button
                 onClick={() => startGame(false)}
-                disabled={coinBalance < 100}
+                disabled={coinBalance < 50}
                 style={{
                   width:"100%",padding:"14px",borderRadius:12,
-                  background: coinBalance >= 100 ? "linear-gradient(135deg,#fbbf24,#f59e0b)" : "rgba(71,85,105,0.4)",
-                  color: coinBalance >= 100 ? "#1e2940" : "#64748b",
+                  background: coinBalance >= 50 ? "linear-gradient(135deg,#fbbf24,#f59e0b)" : "rgba(71,85,105,0.4)",
+                  color: coinBalance >= 50 ? "#1e2940" : "#64748b",
                   border:"none",fontSize:15,fontWeight:900,
-                  cursor: coinBalance >= 100 ? "pointer" : "not-allowed",
+                  cursor: coinBalance >= 50 ? "pointer" : "not-allowed",
                   fontFamily:"inherit",
-                  boxShadow: coinBalance >= 100 ? "0 8px 24px rgba(251,191,36,0.4)" : "none",
+                  boxShadow: coinBalance >= 50 ? "0 8px 24px rgba(251,191,36,0.4)" : "none",
                 }}>
-                {coinBalance >= 100 ? "💰 שחק · 🪙 100" : "🪙 חסר 100 מטבעות"}
+                {coinBalance >= 50 ? "💰 שחק · 🪙 50" : "🪙 חסר 50 מטבעות"}
               </button>
             )}
             <div style={{marginTop:8,fontSize:10,color:"#64748b"}}>
@@ -6453,35 +6458,54 @@ function LuckyWheelModal({ onClose, onWin, onUpdateBestStreak, personalBest, lea
           </div>
         )}
 
-        {gameState === "lost" && (
+        {gameState === "lost" && (() => {
+          const consolation = Math.floor(prizeForStreak(streak) / 2);
+          return (
           <div style={{padding:"20px 10px"}}>
             <div style={{fontSize:60,marginBottom:14}}>💔</div>
             <div style={{fontSize:18,fontWeight:900,color:"#ef4444",marginBottom:8}}>הפסדת</div>
-            <div style={{fontSize:13,color:"#cbd5e1",marginBottom:18}}>
-              עצרת ברצף של {streak}.<br/>
-              נצרך להגיע ל-3 לפחות לפרס.
+            <div style={{fontSize:13,color:"#cbd5e1",marginBottom:14}}>
+              עצרת ברצף של {streak}.
             </div>
-            {(freePlaysLeft > 0 || coinBalance >= 100) && (
-              <button onClick={() => startGame(freePlaysLeft > 0)} style={{
-                padding:"14px 30px",borderRadius:12,marginBottom:10,marginRight:8,
-                background: freePlaysLeft > 0
-                  ? "linear-gradient(135deg,#22c55e,#16a34a)"
-                  : "linear-gradient(135deg,#fbbf24,#f59e0b)",
-                color: freePlaysLeft > 0 ? "#fff" : "#1e2940",
-                border:"none",fontSize:14,fontWeight:900,cursor:"pointer",fontFamily:"inherit",
-                boxShadow:"0 6px 18px rgba(0,0,0,0.4)",
+            {consolation > 0 ? (
+              <div style={{
+                marginBottom:18,padding:"10px 14px",
+                background:"rgba(251,191,36,0.15)",
+                border:"1px solid rgba(251,191,36,0.4)",
+                borderRadius:10,display:"inline-block",
               }}>
-                {freePlaysLeft > 0 ? `🔄 שחק שוב · ${freePlaysLeft} חינם` : `🔄 שחק שוב · 🪙 100`}
-              </button>
+                <div style={{fontSize:10,color:"#fbbf24",fontWeight:800,letterSpacing:1,marginBottom:2}}>💰 פיצוי (חצי מהסכום)</div>
+                <div style={{fontSize:20,fontWeight:900,color:"#fbbf24"}}>+{consolation} 🪙</div>
+              </div>
+            ) : (
+              <div style={{fontSize:11,color:"#94a3b8",marginBottom:18}}>
+                נצרך להגיע ל-3 לפחות לפיצוי.
+              </div>
             )}
-            <button onClick={onClose} style={{
-              padding:"12px 24px",borderRadius:10,
-              background:"transparent",
-              color:"#94a3b8",border:"1px solid #475569",
-              fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"inherit",
-            }}>סגור</button>
+            <div>
+              {(freePlaysLeft > 0 || coinBalance >= 50) && (
+                <button onClick={() => startGame(freePlaysLeft > 0)} style={{
+                  padding:"14px 30px",borderRadius:12,marginBottom:10,marginRight:8,
+                  background: freePlaysLeft > 0
+                    ? "linear-gradient(135deg,#22c55e,#16a34a)"
+                    : "linear-gradient(135deg,#fbbf24,#f59e0b)",
+                  color: freePlaysLeft > 0 ? "#fff" : "#1e2940",
+                  border:"none",fontSize:14,fontWeight:900,cursor:"pointer",fontFamily:"inherit",
+                  boxShadow:"0 6px 18px rgba(0,0,0,0.4)",
+                }}>
+                  {freePlaysLeft > 0 ? `🔄 שחק שוב · ${freePlaysLeft} חינם` : `🔄 שחק שוב · 🪙 50`}
+                </button>
+              )}
+              <button onClick={onClose} style={{
+                padding:"12px 24px",borderRadius:10,
+                background:"transparent",
+                color:"#94a3b8",border:"1px solid #475569",
+                fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"inherit",
+              }}>סגור</button>
+            </div>
           </div>
-        )}
+          );
+        })()}
 
         {gameState === "won" && (
           <div style={{padding:"20px 10px",position:"relative"}}>
@@ -6529,7 +6553,7 @@ function LuckyWheelModal({ onClose, onWin, onUpdateBestStreak, personalBest, lea
                 border:"1px solid rgba(251,191,36,0.4)",
               }}>🏆 שיא אישי חדש!</div>
             )}
-            {(freePlaysLeft > 0 || (coinBalance + prizeForStreak(streak)) >= 100) && (
+            {(freePlaysLeft > 0 || (coinBalance + prizeForStreak(streak)) >= 50) && (
               <button onClick={() => startGame(freePlaysLeft > 0)} style={{
                 padding:"14px 30px",borderRadius:12,marginBottom:10,marginRight:8,
                 background: freePlaysLeft > 0
@@ -6539,7 +6563,7 @@ function LuckyWheelModal({ onClose, onWin, onUpdateBestStreak, personalBest, lea
                 border:"none",fontSize:14,fontWeight:900,cursor:"pointer",fontFamily:"inherit",
                 boxShadow:"0 6px 18px rgba(0,0,0,0.4)",
               }}>
-                {freePlaysLeft > 0 ? `🔄 עוד אחד · ${freePlaysLeft} חינם` : `🔄 עוד אחד · 🪙 100`}
+                {freePlaysLeft > 0 ? `🔄 עוד אחד · ${freePlaysLeft} חינם` : `🔄 עוד אחד · 🪙 50`}
               </button>
             )}
             <button onClick={onClose} style={{
@@ -12420,14 +12444,14 @@ export default function App() {
     if (!legendsSpinAvailable || isSpinning) return;
     // 40% chance of Israeli "trash legend" instead of a real one (for laughs)
     // Roll the card pool:
-    //   5% Friend cards (🎴 white)
-    //   38% Israeli trash (🗑️) — was 40% before friends came in
-    //   57% Real legend (🟢)
+    //   15% Friend cards (🎴 white) — was 5%, bumped per user request
+    //   35% Israeli trash (🗑️)
+    //   50% Real legend (🟢)
     const roll = Math.random();
     let pool;
-    if (roll < 0.05) {
+    if (roll < 0.15) {
       pool = CARDS_BY_RARITY.F || [];
-    } else if (roll < 0.43) {
+    } else if (roll < 0.50) {
       pool = CARDS_BY_RARITY.T || [];
     } else {
       pool = CARDS_BY_RARITY.G || [];
@@ -13856,7 +13880,7 @@ export default function App() {
           }}
           onPayPlay={() => {
             setCoins(prev => {
-              const updated = { ...prev, balance: (prev?.balance || 0) - 100 };
+              const updated = { ...prev, balance: (prev?.balance || 0) - 50 };
               try { localStorage.setItem("wc2026_coins_v7", JSON.stringify(updated)); } catch {}
               return updated;
             });
