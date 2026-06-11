@@ -10,7 +10,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.29.1";
+const APP_VERSION = "3.29.3";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -9330,6 +9330,15 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
           </div>
         </div>
       </div>
+      {/* 💡 Editable hint — only when not locked + has pick */}
+      {!isLocked && hasResult && (
+        <div style={{
+          marginTop:6,fontSize:9,color:"#64748b",
+          textAlign:"center",letterSpacing:1,
+        }}>
+          ✏️ ניתן לערוך עד שעה לפני המשחק
+        </div>
+      )}
       {/* 📡 Waiting for API result when match started but no actual yet */}
       {(() => {
         const matchStarted = Date.now() >= new Date(fixture.kickoff).getTime();
@@ -10003,7 +10012,7 @@ function TodayScreen({ picks, actuals, onPick, onBack, onGoToBracket, leagueMemb
           fixture={f}
           pick={p}
           actual={a}
-          onPick={(field, val) => onPick(f.id, field, val)}
+          onPick={p => onPick(f.id, p)}
           showResults={hasResult}
           homeInputId={`today-h-${f.id}`}
           awayInputId={`today-a-${f.id}`}
@@ -14625,7 +14634,7 @@ export default function App() {
         <TodayScreen
           picks={picks}
           actuals={actuals}
-          onPick={(fid, field, val) => setPicks(p => ({ ...p, [fid]: { ...p[fid], [field]: val } }))}
+          onPick={(fid, pick) => setPicks(p => ({ ...p, [fid]: { ...p[fid], ...pick } }))}
           onBack={()=>setScreen("group")}
           onGoToBracket={()=>setScreen("bracket")}
           leagueMembers={leagueData ? Object.values(leagueData.members || {}) : null}
