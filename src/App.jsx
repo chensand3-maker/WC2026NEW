@@ -10,7 +10,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.28.5";
+const APP_VERSION = "3.28.6";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -1639,6 +1639,8 @@ function scoreMatch(predicted, actual) {
   if (!predicted || !actual) return { points: 0, type: "none" };
   if (predicted.h === "" || predicted.a === "" || predicted.h === undefined) return { points: 0, type: "none" };
   if (actual.h === "" || actual.a === "" || actual.h === undefined) return { points: 0, type: "none" };
+  // 🔴 Don't award points for live (in-progress) matches — only when finished
+  if (actual.isLive === true) return { points: 0, type: "none" };
   
   const ph = parseInt(predicted.h), pa = parseInt(predicted.a);
   const ah = parseInt(actual.h), aa = parseInt(actual.a);
@@ -1663,6 +1665,8 @@ function scoreKoMatch(predicted, actual) {
   if (!predicted || !actual) return { points: 0, type: "none" };
   if (predicted.h === "" || predicted.a === "" || predicted.h === undefined) return { points: 0, type: "none" };
   if (actual.h === "" || actual.a === "" || actual.h === undefined) return { points: 0, type: "none" };
+  // 🔴 Don't award points for live matches
+  if (actual.isLive === true) return { points: 0, type: "none" };
   const ph = parseInt(predicted.h), pa = parseInt(predicted.a);
   const ah = parseInt(actual.h), aa = parseInt(actual.a);
   if (isNaN(ph) || isNaN(pa) || isNaN(ah) || isNaN(aa)) return { points: 0, type: "none" };
@@ -9360,7 +9364,8 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
       {actual && actual.h !== undefined && actual.h !== "" && (() => {
         const matchStarted = Date.now() >= new Date(fixture.kickoff).getTime();
         const minSinceKickoff = (Date.now() - new Date(fixture.kickoff).getTime()) / (60 * 1000);
-        const isLive = matchStarted && minSinceKickoff <= 120;
+        // 🔴 Use the API's isLive flag if present, fallback to time-based
+        const isLive = actual.isLive === true || (matchStarted && minSinceKickoff <= 120 && actual.isFinished !== true);
         return (
         <div style={{
           marginTop:8,paddingTop:8,
@@ -9951,12 +9956,15 @@ function TodayScreen({ picks, actuals, onPick, onBack, onGoToBracket, leagueMemb
     const minSinceKickoff = (now - k) / (60 * 1000);
     // 📡 Has a result already been recorded for this match?
     const actual = m.type === "group" ? actuals[m.fixture?.id] : null;
-    const hasFinalScore = actual && actual.h !== "" && actual.h !== undefined && actual.a !== "" && actual.a !== undefined;
-    // 🔴 LIVE: started within the last 120 minutes (covers regular + injury time)
-    // AND not yet marked as a final result, OR within the first 95 mins (might still be live)
-    const isLive = k <= now && minSinceKickoff <= 120 && !(hasFinalScore && minSinceKickoff > 95);
-    // 🏁 Just finished: has a final score, and ended within the last 3 hours
-    const isJustFinished = hasFinalScore && minSinceKickoff > 95 && minSinceKickoff < 180;
+    const hasScore = actual && actual.h !== "" && actual.h !== undefined && actual.a !== "" && actual.a !== undefined;
+    // 🏁 Truly finished — either API marked it as finished, or manually entered + past 95 mins
+    const isApiFinished = actual && actual.isFinished === true;
+    const isApiLive = actual && actual.isLive === true;
+    const hasFinalScore = hasScore && (isApiFinished || (!isApiLive && !actual.hasOwnProperty("isLive") && minSinceKickoff > 95));
+    // 🔴 LIVE: started but not yet finished
+    const isLive = k <= now && (isApiLive || (hasScore && !isApiFinished && minSinceKickoff <= 120) || (!hasScore && minSinceKickoff <= 120));
+    // 🏁 Just finished: has a FINAL score (not live), and ended within the last 3 hours
+    const isJustFinished = hasFinalScore && minSinceKickoff < 180;
     if (isLive) {
       liveOrJustEndedMatches.push(m);
       continue;
