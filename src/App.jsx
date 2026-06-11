@@ -10,7 +10,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.23.3";
+const APP_VERSION = "3.24.0";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -6048,6 +6048,65 @@ function pickWheelPrize() {
   return WHEEL_PRIZES[0];
 }
 
+function WheelSpinner({ targetRotation, prizes, segmentAngle, coinSide }) {
+  const [currentRot, setCurrentRot] = useState(0);
+  useEffect(() => {
+    const timer = requestAnimationFrame(() => {
+      setCurrentRot(targetRotation);
+    });
+    return () => cancelAnimationFrame(timer);
+  }, [targetRotation]);
+
+  return (
+    <svg width="280" height="280" viewBox="0 0 280 280" style={{
+      display:"block",
+      transform:`rotate(${currentRot}deg)`,
+      transition: "transform 4.5s cubic-bezier(0.17, 0.67, 0.16, 1.01)",
+      filter: `drop-shadow(0 0 20px ${coinSide === "good" ? "rgba(251,191,36,0.5)" : "rgba(239,68,68,0.5)"})`,
+    }}>
+      {prizes.map((p, i) => {
+        const startAngle = (i * segmentAngle) - 90;
+        const endAngle = startAngle + segmentAngle;
+        const startRad = startAngle * Math.PI / 180;
+        const endRad = endAngle * Math.PI / 180;
+        const r = 135, cx = 140, cy = 140;
+        const x1 = cx + r * Math.cos(startRad);
+        const y1 = cy + r * Math.sin(startRad);
+        const x2 = cx + r * Math.cos(endRad);
+        const y2 = cy + r * Math.sin(endRad);
+        const pathD = `M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 0 1 ${x2} ${y2} Z`;
+        const midAngle = startAngle + segmentAngle / 2;
+        const midRad = midAngle * Math.PI / 180;
+        const textR = 88;
+        const tx = cx + textR * Math.cos(midRad);
+        const ty = cy + textR * Math.sin(midRad);
+        const emojiR = 60;
+        const ex = cx + emojiR * Math.cos(midRad);
+        const ey = cy + emojiR * Math.sin(midRad);
+        const textRot = midAngle + 90;
+        return (
+          <g key={p.id}>
+            <path d={pathD} fill={p.color} stroke="#0f172a" strokeWidth="2"/>
+            <text x={ex} y={ey} fontSize="22" textAnchor="middle" dominantBaseline="middle">
+              {p.emoji}
+            </text>
+            <text
+              x={tx} y={ty}
+              fill="#fff"
+              fontSize="9"
+              fontWeight="900"
+              textAnchor="middle"
+              dominantBaseline="middle"
+              transform={`rotate(${textRot} ${tx} ${ty})`}
+            >{p.label}</text>
+          </g>
+        );
+      })}
+      <circle cx="140" cy="140" r="138" fill="none" stroke={coinSide === "good" ? "#fbbf24" : "#ef4444"} strokeWidth="4"/>
+    </svg>
+  );
+}
+
 function CoinSpinner({ targetRotation }) {
   const [currentRot, setCurrentRot] = useState(0);
   useEffect(() => {
@@ -6356,52 +6415,12 @@ function CoinFlipWheelModal({ onClose, isAvailable, coinBalance, cardCollection,
                 zIndex:10,
                 filter:"drop-shadow(0 3px 8px rgba(0,0,0,0.7))",
               }}/>
-              <svg width="280" height="280" viewBox="0 0 280 280" style={{
-                display:"block",
-                transform:`rotate(${wheelRotation}deg)`,
-                transition: stage === "wheelSpinning" ? "transform 4.5s cubic-bezier(0.17, 0.67, 0.16, 1.01)" : "none",
-                filter: `drop-shadow(0 0 20px ${coinSide === "good" ? "rgba(251,191,36,0.5)" : "rgba(239,68,68,0.5)"})`,
-              }}>
-                {currentWheelPrizes.map((p, i) => {
-                  const startAngle = (i * segmentAngle) - 90;
-                  const endAngle = startAngle + segmentAngle;
-                  const startRad = startAngle * Math.PI / 180;
-                  const endRad = endAngle * Math.PI / 180;
-                  const r = 135, cx = 140, cy = 140;
-                  const x1 = cx + r * Math.cos(startRad);
-                  const y1 = cy + r * Math.sin(startRad);
-                  const x2 = cx + r * Math.cos(endRad);
-                  const y2 = cy + r * Math.sin(endRad);
-                  const pathD = `M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 0 1 ${x2} ${y2} Z`;
-                  const midAngle = startAngle + segmentAngle / 2;
-                  const midRad = midAngle * Math.PI / 180;
-                  const textR = 88;
-                  const tx = cx + textR * Math.cos(midRad);
-                  const ty = cy + textR * Math.sin(midRad);
-                  const emojiR = 60;
-                  const ex = cx + emojiR * Math.cos(midRad);
-                  const ey = cy + emojiR * Math.sin(midRad);
-                  const textRot = midAngle + 90;
-                  return (
-                    <g key={p.id}>
-                      <path d={pathD} fill={p.color} stroke="#0f172a" strokeWidth="2"/>
-                      <text x={ex} y={ey} fontSize="22" textAnchor="middle" dominantBaseline="middle">
-                        {p.emoji}
-                      </text>
-                      <text
-                        x={tx} y={ty}
-                        fill="#fff"
-                        fontSize="9"
-                        fontWeight="900"
-                        textAnchor="middle"
-                        dominantBaseline="middle"
-                        transform={`rotate(${textRot} ${tx} ${ty})`}
-                      >{p.label}</text>
-                    </g>
-                  );
-                })}
-                <circle cx="140" cy="140" r="138" fill="none" stroke={coinSide === "good" ? "#fbbf24" : "#ef4444"} strokeWidth="4"/>
-              </svg>
+              <WheelSpinner
+                targetRotation={wheelRotation}
+                prizes={currentWheelPrizes}
+                segmentAngle={segmentAngle}
+                coinSide={coinSide}
+              />
               <div style={{
                 position:"absolute",top:"50%",left:"50%",
                 transform:"translate(-50%, -50%)",
@@ -7391,7 +7410,7 @@ function AdminGiftModal({ leagueCode, userName, onClose }) {
 
 function CardRevealModal({ result, onClose, freshSpin = false }) {
   const t = useT();
-  const { card, isDuplicate, refund } = result;
+  const { card, isDuplicate, refund, stolen } = result;
   const cfg = RARITY_CONFIG[card.rarity];
   const isLegend = card.rarity === "G";       // 🟢 Hall of Fame
   const isFriend = card.rarity === "F";       // 🎴 League friends
@@ -7767,12 +7786,14 @@ function CardRevealModal({ result, onClose, freshSpin = false }) {
       {/* ═════════ Tier announcement ═════════ */}
       {(
         <div style={{
-          fontSize: isLegend ? 38 : isLegendary ? 36 : isEpic ? 26 : 22,
+          fontSize: stolen ? 32 : isLegend ? 38 : isLegendary ? 36 : isEpic ? 26 : 22,
           fontWeight:900,
-          color: cfg.color,
-          textShadow:`0 0 30px ${cfg.glow}, 0 0 60px ${cfg.glow}`,
+          color: stolen ? "#ef4444" : cfg.color,
+          textShadow: stolen
+            ? "0 0 30px rgba(239,68,68,0.9), 0 0 60px rgba(239,68,68,0.6)"
+            : `0 0 30px ${cfg.glow}, 0 0 60px ${cfg.glow}`,
           marginBottom:24,
-          letterSpacing:isLegend ? 9 : isLegendary ? 8 : isEpic ? 5 : 3,
+          letterSpacing: stolen ? 4 : isLegend ? 9 : isLegendary ? 8 : isEpic ? 5 : 3,
           zIndex:9510,
           position:"relative",
           textAlign:"center",
@@ -7780,7 +7801,7 @@ function CardRevealModal({ result, onClose, freshSpin = false }) {
           opacity: 1,
           direction:"ltr",
         }}>
-          {isLegend ? "🟢 LEGEND 🟢" : isFriend ? "🎴 FRIEND CARD 🎴" : isTrash ? "🗑️ 🇮🇱 🗑️" : isLegendary ? "🏆 LEGENDARY 🏆" : `${cfg.emoji} ${cfg.label}!`}
+          {stolen ? "💔 קלף נגנב! 💔" : isLegend ? "🟢 LEGEND 🟢" : isFriend ? "🎴 FRIEND CARD 🎴" : isTrash ? "🗑️ 🇮🇱 🗑️" : isLegendary ? "🏆 LEGENDARY 🏆" : `${cfg.emoji} ${cfg.label}!`}
         </div>
       )}
 
@@ -12938,6 +12959,10 @@ export default function App() {
   };
 
   const closeSpinResult = () => {
+    // If this was a stolen card, close the roulette too
+    if (spinResult?.stolen) {
+      setShowRoulette(false);
+    }
     setSpinResult(null);
   };
 
@@ -14349,13 +14374,25 @@ export default function App() {
                 if (owned.length > 0) {
                   const [stolenId] = owned[Math.floor(Math.random() * owned.length)];
                   const allCards = [...CARDS, ...LEGEND_CARDS];
-                  const stolenCard = allCards.find(c => c.id === stolenId);
+                  const stolenCardObj = allCards.find(c => c.id === stolenId);
                   const newCollection = { ...cardCollection };
                   newCollection[stolenId] = (newCollection[stolenId] || 1) - 1;
                   if (newCollection[stolenId] <= 0) delete newCollection[stolenId];
                   setCardCollection(newCollection);
                   try { localStorage.setItem("wc2026_cards_v2", JSON.stringify(newCollection)); } catch {}
-                  return `💔 ${stolenCard?.name || tier} נלקח!`;
+                  // 🎬 Auto-trigger roulette with the stolen card (dramatic reveal)
+                  setTimeout(() => {
+                    setShowCoinWheel(false); // close coin wheel
+                    setShowRoulette(true);   // open roulette
+                    setPendingCard(stolenCardObj);
+                    setIsSpinning(true);
+                    setTimeout(() => {
+                      setIsSpinning(false);
+                      setPendingCard(null);
+                      setSpinResult({ card: stolenCardObj, isDuplicate: false, refund: 0, stolen: true });
+                    }, 4200);
+                  }, 1200);
+                  return `💔 ${stolenCardObj?.name || tier} נלקח!`;
                 }
               }
               // No cards to steal — fallback to coin penalty
