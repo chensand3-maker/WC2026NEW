@@ -10,7 +10,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.27.5";
+const APP_VERSION = "3.28.0";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -9055,6 +9055,7 @@ function Welcome({ onStart, onImport }) {
 }
 
 function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, awayInputId, nextInputId, lockable = true, leagueMembers = null, onShowDetails = null }) {
+  const [showAllPicks, setShowAllPicks] = useState(false);
   const t = useT();
   const { lang } = useContext(LangContext);
   const isRTL = lang === "he";
@@ -9402,7 +9403,21 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
         }}>
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:6}}>
             <span style={{fontSize:9,color:"#a855f7",letterSpacing:2,fontWeight:700}}>🧠 {t("insights.yourLeague")}</span>
-            <span style={{fontSize:9,color:"#64748b"}}>{insights.total} {insights.total===1 ? t("insights.pick") : t("insights.picks")}</span>
+            <div style={{display:"flex",alignItems:"center",gap:8}}>
+              <span style={{fontSize:9,color:"#64748b"}}>{insights.total} {insights.total===1 ? t("insights.pick") : t("insights.picks")}</span>
+              <button
+                onClick={() => setShowAllPicks(true)}
+                style={{
+                  width:18,height:18,borderRadius:"50%",
+                  background:"linear-gradient(135deg,#a855f7,#7c3aed)",
+                  color:"#fff",border:"none",fontSize:11,fontWeight:900,
+                  cursor:"pointer",fontFamily:"inherit",
+                  display:"flex",alignItems:"center",justifyContent:"center",
+                  lineHeight:1,boxShadow:"0 2px 6px rgba(168,85,247,0.5)",
+                }}
+                title="כל הניחושים"
+              >!</button>
+            </div>
           </div>
           {/* Three-segment bar showing %s — order flipped in RTL so home aligns right */}
           <div style={{display:"flex",height:8,borderRadius:4,overflow:"hidden",background:"rgba(36,49,80,0.6)",marginBottom:5,flexDirection: isRTL ? "row-reverse" : "row"}}>
@@ -9441,6 +9456,68 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
               <span style={{color:"#3b82f6",fontWeight:700}}>{insights.away}%</span>
               <span style={{fontSize:11}}>{away?.f}</span>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* 🧠 All league picks modal */}
+      {showAllPicks && leagueMembers && (
+        <div onClick={() => setShowAllPicks(false)} style={{
+          position:"fixed",inset:0,
+          background:"rgba(7,13,30,0.95)",
+          zIndex:9999,display:"flex",
+          alignItems:"center",justifyContent:"center",padding:14,
+        }}>
+          <div onClick={e=>e.stopPropagation()} style={{
+            maxWidth:380,width:"100%",maxHeight:"85vh",overflowY:"auto",
+            background:"linear-gradient(160deg,#1e293b,#0f172a)",
+            borderRadius:16,padding:"18px 14px",
+            border:"1px solid rgba(168,85,247,0.4)",
+          }}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+              <div style={{fontSize:14,fontWeight:900,color:"#a855f7"}}>🧠 כל הניחושים</div>
+              <button onClick={() => setShowAllPicks(false)} style={{background:"transparent",border:"none",color:"#cbd5e1",fontSize:22,cursor:"pointer"}}>✕</button>
+            </div>
+            <div style={{fontSize:11,color:"#94a3b8",marginBottom:10,textAlign:"center"}}>
+              {home?.f} {home?.n} vs {away?.n} {away?.f}
+            </div>
+            {(() => {
+              const rows = [];
+              for (const m of leagueMembers) {
+                const p = m.picks?.[fixture.id];
+                if (!p || p.h === undefined || p.h === "" || p.a === undefined || p.a === "") continue;
+                const ph = parseInt(p.h), pa = parseInt(p.a);
+                if (isNaN(ph) || isNaN(pa)) continue;
+                rows.push({ name: m.name, h: ph, a: pa });
+              }
+              if (rows.length === 0) {
+                return <div style={{fontSize:12,color:"#94a3b8",textAlign:"center",padding:20}}>אף אחד עוד לא ניחש</div>;
+              }
+              return (
+                <div style={{display:"flex",flexDirection:"column",gap:6}}>
+                  {rows.map((r, i) => {
+                    const result = r.h > r.a ? "home" : r.h < r.a ? "away" : "draw";
+                    return (
+                      <div key={i} style={{
+                        display:"flex",alignItems:"center",justifyContent:"space-between",
+                        background:"rgba(36,49,80,0.5)",
+                        padding:"8px 12px",borderRadius:8,
+                        border:"1px solid rgba(71,85,105,0.3)",
+                      }}>
+                        <div style={{fontSize:13,fontWeight:700,color:"#f1f5f9"}}>{r.name}</div>
+                        <div style={{
+                          fontSize:14,fontWeight:900,
+                          color: result === "home" ? "#22c55e" : result === "away" ? "#3b82f6" : "#94a3b8",
+                          fontVariantNumeric:"tabular-nums",
+                          background:"rgba(15,23,42,0.6)",
+                          padding:"4px 10px",borderRadius:6,
+                        }}>{r.h} - {r.a}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
           </div>
         </div>
       )}
