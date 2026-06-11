@@ -10,7 +10,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.25.1";
+const APP_VERSION = "3.26.0";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -6156,14 +6156,15 @@ function CoinSpinner({ targetRotation }) {
 
 // ─── 🪙 COIN FLIP + WHEEL — twice per day, 60% good wheel / 40% bad wheel ─────
 const GOOD_WHEEL_PRIZES = [
-  { id: "c100",   type: "coins",    amount: 100,  weight: 18, label: "100",    color: "#94a3b8", emoji: "🪙" },
-  { id: "c500",   type: "coins",    amount: 500,  weight: 14, label: "500",    color: "#60a5fa", emoji: "🪙" },
-  { id: "c1500",  type: "coins",    amount: 1500, weight: 8,  label: "1500",   color: "#22c55e", emoji: "🪙" },
+  { id: "c100",   type: "coins",    amount: 100,  weight: 15, label: "100",    color: "#94a3b8", emoji: "🪙" },
+  { id: "c500",   type: "coins",    amount: 500,  weight: 13, label: "500",    color: "#60a5fa", emoji: "🪙" },
+  { id: "c1500",  type: "coins",    amount: 1500, weight: 7,  label: "1500",   color: "#22c55e", emoji: "🪙" },
   { id: "c5000",  type: "coins",    amount: 5000, weight: 3,  label: "5000",   color: "#a855f7", emoji: "🪙" },
-  { id: "rare",   type: "card",     rarity: "R",  weight: 20, label: "Rare",   color: "#ef4444", emoji: "🔥" },
-  { id: "epic",   type: "card",     rarity: "E",  weight: 15, label: "Epic",   color: "#22c55e", emoji: "💎" },
-  { id: "legen",  type: "card",     rarity: "L",  weight: 6,  label: "LEGEND", color: "#fbbf24", emoji: "🏆" },
-  { id: "again",  type: "again",    weight: 16, label: "סובב שוב!", color: "#fbbf24", emoji: "🔄" },
+  { id: "rare",   type: "card",     rarity: "R",  weight: 18, label: "Rare",   color: "#ef4444", emoji: "🔥" },
+  { id: "epic",   type: "card",     rarity: "E",  weight: 13, label: "Epic",   color: "#22c55e", emoji: "💎" },
+  { id: "legen",  type: "card",     rarity: "L",  weight: 5,  label: "LEGEND", color: "#fbbf24", emoji: "🏆" },
+  { id: "friend", type: "card",     rarity: "F",  weight: 5,  label: "FRIEND", color: "#f8fafc", emoji: "🎴" },
+  { id: "again",  type: "again",    weight: 21, label: "סובב שוב!", color: "#fbbf24", emoji: "🔄" },
 ];
 
 const BAD_WHEEL_PRIZES = [
@@ -6297,14 +6298,28 @@ function CoinFlipWheelModal({ onClose, isAvailable, coinBalance, cardCollection,
   const [codeInput, setCodeInput] = useState("");
   const [codeError, setCodeError] = useState("");
 
+  // 📊 History tracking
+  const [history, setHistory] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem("wc2026_coinwheel_history_v1") || "{}");
+    } catch { return {}; }
+  });
+  const recordHistory = (key, val = 1) => {
+    setHistory(prev => {
+      const updated = { ...prev, [key]: (prev[key] || 0) + val };
+      try { localStorage.setItem("wc2026_coinwheel_history_v1", JSON.stringify(updated)); } catch {}
+      return updated;
+    });
+  };
+
   // 🧪 Beta testing: track plays in localStorage, limit to 5
   // (Reset to 0 in v3.25.0 so admin can retest with new sounds/odds)
   const [testPlays, setTestPlays] = useState(() => {
     try {
       const lastReset = localStorage.getItem("wc2026_coinwheel_test_reset_v1");
-      if (lastReset !== "v3.25.1") {
+      if (lastReset !== "v3.26.0") {
         localStorage.setItem("wc2026_coinwheel_test_plays_v1", "0");
-        localStorage.setItem("wc2026_coinwheel_test_reset_v1", "v3.25.1");
+        localStorage.setItem("wc2026_coinwheel_test_reset_v1", "v3.26.0");
         return 0;
       }
       return parseInt(localStorage.getItem("wc2026_coinwheel_test_plays_v1") || "0", 10) || 0;
@@ -6330,7 +6345,7 @@ function CoinFlipWheelModal({ onClose, isAvailable, coinBalance, cardCollection,
   const [resultMessage, setResultMessage] = useState("");
 
   const currentWheelPrizes = coinSide === "good" ? GOOD_WHEEL_PRIZES : BAD_WHEEL_PRIZES;
-  const segmentAngle = 360 / 8;
+  const segmentAngle = 360 / currentWheelPrizes.length;
 
   const flipCoin = () => {
     if (testPlaysLeft <= 0 && !isAvailable) return;
@@ -6365,9 +6380,10 @@ function CoinFlipWheelModal({ onClose, isAvailable, coinBalance, cardCollection,
   const spinWheel = (side) => {
     setStage("wheelSpinning");
     const prizes = side === "good" ? GOOD_WHEEL_PRIZES : BAD_WHEEL_PRIZES;
+    const localSegAngle = 360 / prizes.length;
     const selectedPrize = pickFromWheel(prizes);
     const prizeIdx = prizes.findIndex(p => p.id === selectedPrize.id);
-    const targetOffset = -(prizeIdx * segmentAngle + segmentAngle / 2);
+    const targetOffset = -(prizeIdx * localSegAngle + localSegAngle / 2);
     setWheelRotation(360 * 6 + targetOffset);
     setTimeout(() => {
       setPrize(selectedPrize);
@@ -6391,6 +6407,21 @@ function CoinFlipWheelModal({ onClose, isAvailable, coinBalance, cardCollection,
       const msg = onApplyPrize(selectedPrize);
       setResultMessage(msg);
       setStage("result");
+      // Record history
+      recordHistory("totalPlays");
+      if (side === "good") recordHistory("goodWins");
+      else recordHistory("badLosses");
+      if (selectedPrize.type === "coins") {
+        recordHistory("coinsWon", selectedPrize.amount);
+        recordHistory("biggestWin", Math.max(history.biggestWin || 0, selectedPrize.amount));
+      } else if (selectedPrize.type === "penalty") {
+        recordHistory("coinsLost", selectedPrize.amount);
+      } else if (selectedPrize.type === "card") {
+        recordHistory("cardsWon");
+        if (selectedPrize.rarity === "L") recordHistory("legendariesWon");
+      } else if (selectedPrize.type === "steal") {
+        recordHistory("cardsStolen");
+      }
       try { navigator.vibrate?.([40, 60, 100]); } catch {}
     }, 4500);
   };
@@ -6492,6 +6523,26 @@ function CoinFlipWheelModal({ onClose, isAvailable, coinBalance, cardCollection,
                 🎯 נותרו {playsLeft} זריקות היום
               </div>
             )}
+
+            {/* 📊 Personal history */}
+            {(history.totalPlays || 0) > 0 && (
+              <div style={{
+                background:"rgba(15,23,42,0.7)",
+                border:"1px solid rgba(71,85,105,0.4)",
+                borderRadius:10,padding:"10px 12px",marginBottom:14,
+                fontSize:11,color:"#cbd5e1",
+              }}>
+                <div style={{fontSize:10,color:"#fbbf24",letterSpacing:2,marginBottom:6,fontWeight:800}}>📊 הסטטיסטיקה שלך</div>
+                <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:4,textAlign:"right"}}>
+                  <div>🎯 משחקים: <b>{history.totalPlays || 0}</b></div>
+                  <div>🎉 ניצחונות: <b style={{color:"#22c55e"}}>{history.goodWins || 0}</b></div>
+                  <div>💔 הפסדים: <b style={{color:"#ef4444"}}>{history.badLosses || 0}</b></div>
+                  <div>🎴 קלפים: <b style={{color:"#a855f7"}}>{history.cardsWon || 0}</b></div>
+                  <div>🏆 LEGEND: <b style={{color:"#fbbf24"}}>{history.legendariesWon || 0}</b></div>
+                  <div>🪙 שיא: <b style={{color:"#22c55e"}}>{history.biggestWin || 0}</b></div>
+                </div>
+              </div>
+            )}
             <button onClick={flipCoin} style={{
               width:"100%",padding:"14px",borderRadius:12,
               background:"linear-gradient(135deg,#fbbf24,#f59e0b)",
@@ -6507,8 +6558,30 @@ function CoinFlipWheelModal({ onClose, isAvailable, coinBalance, cardCollection,
                 0%, 100% { transform: scale(1); opacity: 1; }
                 50% { transform: scale(1.1); opacity: 0.8; }
               }
+              @keyframes screenShake {
+                0%, 100% { transform: translateX(0); }
+                20% { transform: translate(-2px, 1px); }
+                40% { transform: translate(2px, -1px); }
+                60% { transform: translate(-1px, 2px); }
+                80% { transform: translate(1px, -2px); }
+              }
+              @keyframes coinLandFlash {
+                0% { opacity: 0; }
+                30% { opacity: 1; }
+                100% { opacity: 0; }
+              }
+              @keyframes wheelSpinShake {
+                0%, 100% { transform: translateX(0); }
+                25% { transform: translate(-1px, 0.5px); }
+                50% { transform: translate(1px, -0.5px); }
+                75% { transform: translate(-0.5px, 1px); }
+              }
             `}</style>
-            <div style={{margin:"30px auto",height:140,perspective:"800px",display:"flex",alignItems:"center",justifyContent:"center"}}>
+            <div style={{
+              margin:"30px auto",height:140,perspective:"800px",
+              display:"flex",alignItems:"center",justifyContent:"center",
+              animation: stage === "flipping" ? "screenShake 0.15s ease-in-out infinite" : "none",
+            }}>
               <CoinSpinner targetRotation={coinRotation} />
             </div>
             {stage === "flipping" ? (
@@ -6518,10 +6591,21 @@ function CoinFlipWheelModal({ onClose, isAvailable, coinBalance, cardCollection,
               }}>זרוק... 🤞</div>
             ) : (
               <>
+                {/* 🎬 Dramatic flash overlay when coin lands */}
                 <div style={{
-                  fontSize:18,fontWeight:900,
+                  position:"absolute",inset:0,
+                  background: coinSide === "good"
+                    ? "radial-gradient(circle at center, rgba(34,197,94,0.4), transparent 70%)"
+                    : "radial-gradient(circle at center, rgba(239,68,68,0.4), transparent 70%)",
+                  animation:"coinLandFlash 1.2s ease-out",
+                  pointerEvents:"none",
+                  borderRadius:20,
+                }}/>
+                <div style={{
+                  fontSize:22,fontWeight:900,
                   color: coinSide === "good" ? "#22c55e" : "#ef4444",
                   marginBottom:14,
+                  textShadow:`0 0 20px ${coinSide === "good" ? "rgba(34,197,94,0.8)" : "rgba(239,68,68,0.8)"}`,
                   animation:"coinPulseText 1s ease-in-out infinite",
                 }}>
                   {coinSide === "good" ? "✨ נחת על הטוב!" : "💀 נחת על הרע!"}
@@ -6547,7 +6631,10 @@ function CoinFlipWheelModal({ onClose, isAvailable, coinBalance, cardCollection,
               {coinSide === "good" ? "✨ גלגל טוב!" : "💀 גלגל רע!"}
             </div>
             {/* Wheel */}
-            <div style={{position:"relative",width:280,height:280,margin:"10px auto 18px"}}>
+            <div style={{
+              position:"relative",width:280,height:280,margin:"10px auto 18px",
+              animation: stage === "wheelSpinning" ? "wheelSpinShake 0.1s ease-in-out infinite" : "none",
+            }}>
               <div style={{
                 position:"absolute",top:-10,left:"50%",
                 transform:"translateX(-50%)",
