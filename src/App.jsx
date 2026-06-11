@@ -10,7 +10,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.27.1";
+const APP_VERSION = "3.27.2";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -6344,6 +6344,7 @@ function CoinFlipWheelModal({ onClose, isAvailable, coinBalance, cardCollection,
 
   // Stages: "idle" → "flipping" → "wheelSpinning" → "result"
   const [stage, setStage] = useState("idle");
+  const [freeAgain, setFreeAgain] = useState(false); // skip play consume on the next flip
   const [coinSide, setCoinSide] = useState(null); // "good" or "bad"
   const [coinRotation, setCoinRotation] = useState(0);
   const [wheelRotation, setWheelRotation] = useState(0);
@@ -6354,8 +6355,12 @@ function CoinFlipWheelModal({ onClose, isAvailable, coinBalance, cardCollection,
   const segmentAngle = 360 / currentWheelPrizes.length;
 
   const flipCoin = () => {
-    if (!isAvailable) return;
-    onConsumeSpin(); // mark used (extra spin or daily play)
+    if (!isAvailable && !freeAgain) return;
+    if (freeAgain) {
+      setFreeAgain(false); // consume the freebie
+    } else {
+      onConsumeSpin(); // mark used (extra spin or daily play)
+    }
     setStage("flipping");
     setPrize(null);
     setResultMessage("");
@@ -6386,19 +6391,15 @@ function CoinFlipWheelModal({ onClose, isAvailable, coinBalance, cardCollection,
     setWheelRotation(360 * 6 + targetOffset);
     setTimeout(() => {
       setPrize(selectedPrize);
-      // If it's "again" — reset and let user trigger again
+      // If it's "again" — go back to idle stage with a free re-flip
       if (selectedPrize.type === "again") {
         setTimeout(() => {
-          setStage("flipping");
+          setStage("idle");
           setPrize(null);
+          setCoinSide(null);
           setWheelRotation(0);
           setCoinRotation(0);
-          const isGood = Math.random() < 0.60;
-          const newSide = isGood ? "good" : "bad";
-          setCoinSide(newSide);
-          const finalRot = 360 * 8 + (newSide === "good" ? 0 : 180);
-          setCoinRotation(finalRot);
-          setTimeout(() => setStage("coinLanded"), 2500);
+          setFreeAgain(true); // next flip won't consume a play
         }, 1500);
         return;
       }
@@ -6464,7 +6465,7 @@ function CoinFlipWheelModal({ onClose, isAvailable, coinBalance, cardCollection,
           <button onClick={close} style={{background:"transparent",border:"none",color:"#cbd5e1",fontSize:24,cursor:"pointer"}}>✕</button>
         </div>
 
-        {!isAvailable && stage === "idle" ? (
+        {!isAvailable && !freeAgain && stage === "idle" ? (
           <CountdownTimer targetTs={nextAvailableTs} />
         ) : stage === "idle" ? (
           <>
@@ -6482,7 +6483,7 @@ function CoinFlipWheelModal({ onClose, isAvailable, coinBalance, cardCollection,
               borderRadius:8,padding:"6px 10px",marginBottom:14,
               fontSize:11,color:"#fbbf24",
             }}>
-              🎯 נותרו {playsLeft} זריקות היום
+              {freeAgain ? "🔄 זריקה חינמית! (סובב שוב)" : `🎯 נותרו ${playsLeft} זריקות היום`}
             </div>
 
             {/* 📊 Personal history */}
