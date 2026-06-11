@@ -10,7 +10,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.26.0";
+const APP_VERSION = "3.26.1";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -6163,7 +6163,7 @@ const GOOD_WHEEL_PRIZES = [
   { id: "rare",   type: "card",     rarity: "R",  weight: 18, label: "Rare",   color: "#ef4444", emoji: "🔥" },
   { id: "epic",   type: "card",     rarity: "E",  weight: 13, label: "Epic",   color: "#22c55e", emoji: "💎" },
   { id: "legen",  type: "card",     rarity: "L",  weight: 5,  label: "LEGEND", color: "#fbbf24", emoji: "🏆" },
-  { id: "friend", type: "card",     rarity: "F",  weight: 5,  label: "FRIEND", color: "#f8fafc", emoji: "🎴" },
+  { id: "friend", type: "card",     rarity: "F",  weight: 5,  label: "FRIEND", color: "#ec4899", emoji: "🎴" },
   { id: "again",  type: "again",    weight: 21, label: "סובב שוב!", color: "#fbbf24", emoji: "🔄" },
 ];
 
@@ -6427,6 +6427,16 @@ function CoinFlipWheelModal({ onClose, isAvailable, coinBalance, cardCollection,
   };
 
   const close = () => {
+    // After a result, reset to idle so user sees the coin screen again
+    if (stage === "result") {
+      setStage("idle");
+      setPrize(null);
+      setCoinSide(null);
+      setCoinRotation(0);
+      setWheelRotation(0);
+      setResultMessage("");
+      return;
+    }
     onClose();
   };
 
