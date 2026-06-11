@@ -10,7 +10,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.20.0";
+const APP_VERSION = "3.20.1";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -12931,12 +12931,13 @@ export default function App() {
           coinBalance: coins?.balance || 0,
           unlockedAchievements: Array.from(unlockedAchievements || []),
           pickedAtHours: pickedAtHours || [],
+          hlBestStreak: hlBestStreak || 0, // 🎴 Higher/Lower record
         })
           .catch(err => console.error(`Failed to push picks to ${code}:`, err));
       });
     }, 800);
     return () => clearTimeout(handle);
-  }, [leagueCodes.join("|"), userId, name, picks, koWinners, winnerPick, topScorerPick, cardCollection, coins?.balance, unlockedAchievements, pickedAtHours]);
+  }, [leagueCodes.join("|"), userId, name, picks, koWinners, winnerPick, topScorerPick, cardCollection, coins?.balance, unlockedAchievements, pickedAtHours, hlBestStreak]);
 
   // ─── GLOBAL PROFILE: push to the worldwide leaderboard (every user) ──────
   // Independent of league membership — everyone is on the global board.
@@ -13830,13 +13831,19 @@ export default function App() {
 
       {/* 🎴 Higher/Lower Game */}
       {showLuckyWheel && (() => {
-        // Compute league top score
-        const members = leagueData?.members ? Object.values(leagueData.members) : [];
+        // Compute league top score (include self for instant updates)
+        const members = leagueData?.members ? Object.entries(leagueData.members) : [];
         let leagueRecord = { name: "—", streak: 0 };
-        for (const m of members) {
-          if ((m.hlBestStreak || 0) > leagueRecord.streak) {
-            leagueRecord = { name: m.name || "—", streak: m.hlBestStreak };
+        for (const [uid, m] of members) {
+          // Use local hlBestStreak for ourselves (instant), Firebase value for others
+          const memberStreak = uid === userId ? Math.max(hlBestStreak, m.hlBestStreak || 0) : (m.hlBestStreak || 0);
+          if (memberStreak > leagueRecord.streak) {
+            leagueRecord = { name: m.name || "—", streak: memberStreak };
           }
+        }
+        // Fallback if we're not in any league member entries yet
+        if (hlBestStreak > leagueRecord.streak) {
+          leagueRecord = { name: name || "אני", streak: hlBestStreak };
         }
         return (
         <LuckyWheelModal
