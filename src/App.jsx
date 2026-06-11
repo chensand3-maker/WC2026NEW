@@ -10,7 +10,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.27.2";
+const APP_VERSION = "3.27.3";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -6340,6 +6340,9 @@ function CoinFlipWheelModal({ onClose, isAvailable, coinBalance, cardCollection,
     });
   };
 
+  // Deferred action to run when user closes the prize popup
+  const deferredCloseAction = useRef(null);
+
   // 🧪 Beta testing removed in v3.27.0 — feature is now live for everyone
 
   // Stages: "idle" → "flipping" → "wheelSpinning" → "result"
@@ -6404,8 +6407,15 @@ function CoinFlipWheelModal({ onClose, isAvailable, coinBalance, cardCollection,
         return;
       }
       // Apply the prize
-      const msg = onApplyPrize(selectedPrize);
-      setResultMessage(msg);
+      const result = onApplyPrize(selectedPrize);
+      // Support both string and {message, deferred} returns
+      if (typeof result === "object" && result.deferred) {
+        setResultMessage(result.message);
+        deferredCloseAction.current = result.deferred;
+      } else {
+        setResultMessage(typeof result === "string" ? result : result?.message || "");
+        deferredCloseAction.current = null;
+      }
       setStage("result");
       // Record history
       recordHistory("totalPlays");
@@ -6429,6 +6439,14 @@ function CoinFlipWheelModal({ onClose, isAvailable, coinBalance, cardCollection,
   const close = () => {
     // After a result, reset to idle so user sees the coin screen again
     if (stage === "result") {
+      // Run any deferred action (like opening the roulette for a stolen/won card)
+      const deferred = deferredCloseAction.current;
+      deferredCloseAction.current = null;
+      if (deferred) {
+        // Don't reset to idle — the deferred action takes over
+        deferred();
+        return;
+      }
       setStage("idle");
       setPrize(null);
       setCoinSide(null);
@@ -14592,19 +14610,21 @@ export default function App() {
                 const newCollection = { ...cardCollection, [card.id]: (cardCollection[card.id] || 0) + 1 };
                 setCardCollection(newCollection);
                 try { localStorage.setItem("wc2026_cards_v2", JSON.stringify(newCollection)); } catch {}
-                // 🎰 Auto-trigger roulette with the won card (dramatic reveal)
-                setTimeout(() => {
-                  setShowCoinWheel(false);
-                  setShowRoulette(true);
-                  setPendingCard(card);
-                  setIsSpinning(true);
-                  setTimeout(() => {
-                    setIsSpinning(false);
-                    setPendingCard(null);
-                    setSpinResult({ card, isDuplicate: (cardCollection[card.id] || 0) > 0, refund: 0 });
-                  }, 4200);
-                }, 1200);
-                return `🎴 קלף ${prize.label}`;
+                // 🎰 Defer roulette trigger until popup closes
+                return {
+                  message: `🎴 קלף ${prize.label}`,
+                  deferred: () => {
+                    setShowCoinWheel(false);
+                    setShowRoulette(true);
+                    setPendingCard(card);
+                    setIsSpinning(true);
+                    setTimeout(() => {
+                      setIsSpinning(false);
+                      setPendingCard(null);
+                      setSpinResult({ card, isDuplicate: (cardCollection[card.id] || 0) > 0, refund: 0 });
+                    }, 4200);
+                  }
+                };
               }
               return "🎴 קלף";
             }
@@ -14621,27 +14641,26 @@ export default function App() {
               return `-${actualLoss} 🪙`;
             }
             if (prize.type === "trash") {
-              // Give a random Israeli card
               const pool = CARDS_BY_RARITY.T || [];
               if (pool.length > 0) {
                 const card = pool[Math.floor(Math.random() * pool.length)];
                 const newCollection = { ...cardCollection, [card.id]: (cardCollection[card.id] || 0) + 1 };
                 setCardCollection(newCollection);
                 try { localStorage.setItem("wc2026_cards_v2", JSON.stringify(newCollection)); } catch {}
-                // 🎰 Auto-trigger roulette with the trash card
-                setTimeout(() => {
-                  setShowCoinWheel(false);
-                  setShowRoulette(true);
-                  setPendingCard(card);
-                  setIsSpinning(true);
-                  setTimeout(() => {
-                    setIsSpinning(false);
-                    setPendingCard(null);
-                    setSpinResult({ card, isDuplicate: (cardCollection[card.id] || 0) > 0, refund: 0 });
-                  }, 4200);
-                }, 1200);
-                // 🚫 Hide name to avoid spoiler before roulette
-                return "🗑️ קלף ישראלי...";
+                return {
+                  message: "🗑️ קלף ישראלי...",
+                  deferred: () => {
+                    setShowCoinWheel(false);
+                    setShowRoulette(true);
+                    setPendingCard(card);
+                    setIsSpinning(true);
+                    setTimeout(() => {
+                      setIsSpinning(false);
+                      setPendingCard(null);
+                      setSpinResult({ card, isDuplicate: (cardCollection[card.id] || 0) > 0, refund: 0 });
+                    }, 4200);
+                  }
+                };
               }
               return "🗑️ ישראלי";
             }
@@ -14666,20 +14685,20 @@ export default function App() {
                   if (newCollection[stolenId] <= 0) delete newCollection[stolenId];
                   setCardCollection(newCollection);
                   try { localStorage.setItem("wc2026_cards_v2", JSON.stringify(newCollection)); } catch {}
-                  // 🎬 Auto-trigger roulette with the stolen card (dramatic reveal)
-                  setTimeout(() => {
-                    setShowCoinWheel(false); // close coin wheel
-                    setShowRoulette(true);   // open roulette
-                    setPendingCard(stolenCardObj);
-                    setIsSpinning(true);
-                    setTimeout(() => {
-                      setIsSpinning(false);
-                      setPendingCard(null);
-                      setSpinResult({ card: stolenCardObj, isDuplicate: false, refund: 0, stolen: true });
-                    }, 4200);
-                  }, 1200);
-                  // 🚫 Hide name to avoid spoiler before roulette
-                  return `💔 קלף ${tier === "L" ? "LEGENDARY" : tier === "E" ? "Epic" : tier === "R" ? "Rare" : tier === "U" ? "Uncommon" : "Common"} נגנב!`;
+                  return {
+                    message: `💔 קלף ${tier === "L" ? "LEGENDARY" : tier === "E" ? "Epic" : tier === "R" ? "Rare" : tier === "U" ? "Uncommon" : "Common"} נגנב!`,
+                    deferred: () => {
+                      setShowCoinWheel(false);
+                      setShowRoulette(true);
+                      setPendingCard(stolenCardObj);
+                      setIsSpinning(true);
+                      setTimeout(() => {
+                        setIsSpinning(false);
+                        setPendingCard(null);
+                        setSpinResult({ card: stolenCardObj, isDuplicate: false, refund: 0, stolen: true });
+                      }, 4200);
+                    }
+                  };
                 }
               }
               // No cards to steal — fallback to coin penalty
