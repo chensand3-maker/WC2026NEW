@@ -10,7 +10,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.28.6";
+const APP_VERSION = "3.28.7";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -9565,6 +9565,8 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
                           fontVariantNumeric:"tabular-nums",
                           background:"rgba(15,23,42,0.6)",
                           padding:"4px 10px",borderRadius:6,
+                          direction:"ltr",
+                          unicodeBidi:"isolate",
                         }}>{r.h} - {r.a}</div>
                       </div>
                     );
