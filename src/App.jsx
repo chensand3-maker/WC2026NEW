@@ -10,7 +10,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.21.0";
+const APP_VERSION = "3.22.0";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -2512,6 +2512,17 @@ const LEGEND_CARDS_RAW = [
   ["John Terry", "England", "D"],
   // 🇮🇹 Italy (additional)
   ["Gianluca Zambrotta", "Italy", "D"],
+  // 🇧🇷 Brazil (more)
+  ["Roberto Carlos", "Brazil", "D"],
+  ["Marcelo", "Brazil", "D"],
+  // 🇪🇸 Spain (more)
+  ["Sergio Ramos", "Spain", "D"],
+  ["David Villa", "Spain", "F"],
+  ["Fernando Torres", "Spain", "F"],
+  // 🇫🇷 France (more)
+  ["Thierry Henry", "France", "F"],
+  // 🇺🇦 Ukraine
+  ["Andriy Shevchenko", "Ukraine", "F"],
 ];
 
 // Flag lookup for legend nations (some didn't qualify for WC 2026)
@@ -2519,7 +2530,7 @@ const LEGEND_FLAGS = {
   "Brazil": "🇧🇷", "Argentina": "🇦🇷", "Germany": "🇩🇪", "France": "🇫🇷",
   "Netherlands": "🇳🇱", "Italy": "🇮🇹", "Spain": "🇪🇸", "England": "🏴󠁧󠁢󠁥󠁮󠁧󠁿",
   "Portugal": "🇵🇹", "Sweden": "🇸🇪", "Ivory Coast": "🇨🇮", "Denmark": "🇩🇰",
-  "Hungary": "🇭🇺", "Uruguay": "🇺🇾", "Cameroon": "🇨🇲",
+  "Hungary": "🇭🇺", "Uruguay": "🇺🇾", "Cameroon": "🇨🇲", "Ukraine": "🇺🇦",
 };
 
 // Build LEGEND_CARDS with stable IDs (legend-0, legend-1, ...)
@@ -2576,6 +2587,12 @@ const ISRAELI_LEGENDS_RAW = [
   ["Eli Ohana", "Israel", "F"],
   ["Yossi Benayoun", "Israel", "M"],
   ["Arik Benado", "Israel", "D"],
+  ["Uri Malmilian", "Israel", "F"],
+  ["Mordechai Spiegler", "Israel", "F"],
+  ["Moshe Sinai", "Israel", "M"],
+  ["Tal Banin", "Israel", "M"],
+  ["Bonny Ginzburg", "Israel", "GK"],
+  ["Barak Yitzhaki", "Israel", "F"],
 ];
 
 const ISRAELI_LEGENDS = ISRAELI_LEGENDS_RAW.map(([name, team, pos], i) => ({
@@ -3101,6 +3118,13 @@ const MANUAL_RATINGS = {
   "Xabi Alonso": 93,
   "John Terry": 91,
   "Gianluca Zambrotta": 90,
+  "Roberto Carlos": 96,
+  "Marcelo": 93,
+  "Sergio Ramos": 94,
+  "David Villa": 93,
+  "Fernando Torres": 92,
+  "Thierry Henry": 96,
+  "Andriy Shevchenko": 94,
   // 🗑️ Israeli "legends" — low ratings for comedy
   "Eyal Berkovic": 38,
   "Eran Zahavi": 40,        // top of the trash — actually decent
@@ -3113,6 +3137,12 @@ const MANUAL_RATINGS = {
   "Eli Ohana": 34,
   "Yossi Benayoun": 39,
   "Arik Benado": 22,
+  "Uri Malmilian": 37,
+  "Mordechai Spiegler": 36,
+  "Moshe Sinai": 30,
+  "Tal Banin": 33,
+  "Bonny Ginzburg": 28,
+  "Barak Yitzhaki": 31,
   // Legendary tier (95-99)
   "Kylian Mbappé": 99,
   "Erling Haaland": 99,
