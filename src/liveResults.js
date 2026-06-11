@@ -69,7 +69,7 @@ function normalizeTeam(name) {
 }
 
 const CACHE_KEY = "wc2026_live_cache_v4";
-const CACHE_TTL = 2 * 60 * 1000;
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes — balance freshness with API quota (100/day free)
 
 function getCache() {
   try {
@@ -98,6 +98,19 @@ export async function fetchLiveResults() {
   if (!API_FOOTBALL_KEY || API_FOOTBALL_KEY === "PASTE_HERE") {
     throw new Error("API-Football key not set");
   }
+
+  // 📊 Track total API calls today
+  try {
+    const today = new Date().toISOString().slice(0, 10);
+    const stats = JSON.parse(localStorage.getItem("wc2026_api_stats_v1") || "{}");
+    if (stats.date !== today) {
+      stats.date = today;
+      stats.calls = 0;
+    }
+    stats.calls = (stats.calls || 0) + 1;
+    stats.lastCall = Date.now();
+    localStorage.setItem("wc2026_api_stats_v1", JSON.stringify(stats));
+  } catch {}
 
   const res = await fetch(`${API_URL}/fixtures?league=1&season=2026`, {
     headers: { "x-apisports-key": API_FOOTBALL_KEY },
@@ -340,6 +353,19 @@ export async function fetchTopScorers() {
   if (!API_FOOTBALL_KEY || API_FOOTBALL_KEY === "PASTE_HERE") {
     throw new Error("API-Football key not set");
   }
+
+  // 📊 Track API calls
+  try {
+    const today = new Date().toISOString().slice(0, 10);
+    const stats = JSON.parse(localStorage.getItem("wc2026_api_stats_v1") || "{}");
+    if (stats.date !== today) {
+      stats.date = today;
+      stats.calls = 0;
+    }
+    stats.calls = (stats.calls || 0) + 1;
+    stats.lastCall = Date.now();
+    localStorage.setItem("wc2026_api_stats_v1", JSON.stringify(stats));
+  } catch {}
 
   const res = await fetch(`${API_URL}/players/topscorers?league=1&season=2026`, {
     headers: { "x-apisports-key": API_FOOTBALL_KEY },

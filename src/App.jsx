@@ -10,7 +10,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.28.8";
+const APP_VERSION = "3.29.0";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -10063,12 +10063,17 @@ function TodayScreen({ picks, actuals, onPick, onBack, onGoToBracket, leagueMemb
             try {
               const dbg = JSON.parse(localStorage.getItem("wc2026_api_debug_v1") || "null");
               const dbg2 = JSON.parse(localStorage.getItem("wc2026_api_debug2_v1") || "null");
-              if (!dbg && !dbg2) {
+              const stats = JSON.parse(localStorage.getItem("wc2026_api_stats_v1") || "null");
+              if (!dbg && !dbg2 && !stats) {
                 alert("עוד לא נקראו נתונים מה-API");
                 return;
               }
               const age = dbg2 ? Math.floor((Date.now() - dbg2.ts) / 1000) : "?";
-              let msg = `📡 דיבוג API\n\nרענון אחרון: לפני ${age} שניות\n\n`;
+              let msg = `📡 דיבוג API\n\n`;
+              if (stats) {
+                msg += `📊 קריאות היום (${stats.date}): ${stats.calls || 0} / 100\n\n`;
+              }
+              msg += `רענון אחרון: לפני ${age} שניות\n\n`;
               if (dbg2) {
                 msg += `📊 סה"כ משחקים מה-API: ${dbg2.totalReturned}\n`;
                 msg += `🔢 ב-API.results: ${dbg2.results}\n\n`;
@@ -10076,7 +10081,7 @@ function TodayScreen({ picks, actuals, onPick, onBack, onGoToBracket, leagueMemb
                   msg += `⚠️ שגיאות API:\n${JSON.stringify(dbg2.errors, null, 2)}\n\n`;
                 }
                 msg += `📋 סטטוסים:\n${JSON.stringify(dbg2.statusCounts, null, 2)}\n\n`;
-                msg += `🔍 דוגמאות:\n${JSON.stringify(dbg2.sample, null, 2).slice(0, 600)}`;
+                msg += `🔍 דוגמאות:\n${JSON.stringify(dbg2.sample, null, 2).slice(0, 500)}`;
               }
               alert(msg);
             } catch (e) {
@@ -13902,7 +13907,29 @@ export default function App() {
 
   // ─── LIVE RESULTS AUTO-FETCH ───────────────────────────────────────────────
   // Poll API-Football every 5 min for new match results
-  const fetchAndApplyLive = async () => {
+  // 🎯 Helper: check if there's any match worth fetching live data for
+  // (currently in progress OR finished in the last 2 hours)
+  const shouldFetchLive = () => {
+    const now = Date.now();
+    const WINDOW_BEFORE = 5 * 60 * 1000;      // 5 min before kickoff
+    const WINDOW_AFTER  = 3 * 60 * 60 * 1000; // 3 hours after kickoff
+    for (const f of FIXTURES) {
+      const k = new Date(f.kickoff || 0).getTime();
+      if (!k) continue;
+      // Is this match currently active or just ended?
+      if (now >= k - WINDOW_BEFORE && now <= k + WINDOW_AFTER) {
+        return true;
+      }
+    }
+    return false;
+  };
+
+  const fetchAndApplyLive = async (force = false) => {
+    // 🛡️ Skip API call when no match is active (saves quota)
+    if (!force && !shouldFetchLive()) {
+      console.log("[API] Skipped — no active matches");
+      return;
+    }
     try {
       const data = await fetchLiveResults();
       console.log("[API] Raw response:", data);
@@ -14001,7 +14028,11 @@ export default function App() {
   };
 
   // Fetch top scorers (separate API call, same 5-min cache)
-  const fetchAndApplyTopScorers = async () => {
+  const fetchAndApplyTopScorers = async (force = false) => {
+    if (!force && !shouldFetchLive()) {
+      console.log("[API] Skipped top scorers — no active matches");
+      return;
+    }
     try {
       const scorers = await fetchTopScorers();
       setTopScorers(scorers);
@@ -14026,15 +14057,18 @@ export default function App() {
     }
   };
 
+  const didInitialFetch = useRef(false);
   useEffect(() => {
     if (!name) return;
+    if (didInitialFetch.current) return; // 🛡️ Only ONCE per session
+    didInitialFetch.current = true;
     // 📡 ONE-TIME fetch shortly after load.
     // No auto-polling — saves the free API quota.
     // Users can press the 🔄 refresh button anytime to get fresh data.
     const initial = setTimeout(() => { fetchAndApplyLive(); fetchAndApplyTopScorers(); }, 3000);
     return () => clearTimeout(initial);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [name, leagueCode]);
+  }, [name]);
 
   const standings = useMemo(() => allStandings(picks), [picks]);
   const bestThirds = useMemo(() => getBestThirds(standings), [standings]);
@@ -14594,7 +14628,7 @@ export default function App() {
           onBack={()=>setScreen("group")}
           onGoToBracket={()=>setScreen("bracket")}
           leagueMembers={leagueData ? Object.values(leagueData.members || {}) : null}
-          onRefresh={() => { showToast(t("toast.refreshing"), "info"); fetchAndApplyLive(); fetchAndApplyTopScorers(); }}
+          onRefresh={() => { showToast(t("toast.refreshing"), "info"); fetchAndApplyLive(true); fetchAndApplyTopScorers(true); }}
           onShowDetails={(fix) => setMatchDetailsFor(fix)}
         />
       )}
