@@ -10,7 +10,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.23.2";
+const APP_VERSION = "3.23.3";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -6048,6 +6048,51 @@ function pickWheelPrize() {
   return WHEEL_PRIZES[0];
 }
 
+function CoinSpinner({ targetRotation }) {
+  const [currentRot, setCurrentRot] = useState(0);
+  useEffect(() => {
+    // Trigger animation by setting target on next frame
+    const timer = requestAnimationFrame(() => {
+      setCurrentRot(targetRotation);
+    });
+    return () => cancelAnimationFrame(timer);
+  }, [targetRotation]);
+
+  return (
+    <div style={{
+      width:120,height:120,
+      transformStyle:"preserve-3d",
+      transition:"transform 2.4s cubic-bezier(0.4,0,0.2,1)",
+      transform: `rotateY(${currentRot}deg)`,
+      position:"relative",
+    }}>
+      {/* Good side */}
+      <div style={{
+        position:"absolute",inset:0,
+        borderRadius:"50%",
+        background:"linear-gradient(135deg,#fbbf24,#d97706)",
+        display:"flex",alignItems:"center",justifyContent:"center",
+        fontSize:60,
+        boxShadow:"0 8px 24px rgba(251,191,36,0.6), inset 0 -4px 12px rgba(0,0,0,0.2)",
+        backfaceVisibility:"hidden",
+        border:"3px solid #fde047",
+      }}>✨</div>
+      {/* Bad side */}
+      <div style={{
+        position:"absolute",inset:0,
+        borderRadius:"50%",
+        background:"linear-gradient(135deg,#7f1d1d,#dc2626)",
+        display:"flex",alignItems:"center",justifyContent:"center",
+        fontSize:60,
+        boxShadow:"0 8px 24px rgba(239,68,68,0.6), inset 0 -4px 12px rgba(0,0,0,0.2)",
+        backfaceVisibility:"hidden",
+        transform:"rotateY(180deg)",
+        border:"3px solid #fca5a5",
+      }}>💀</div>
+    </div>
+  );
+}
+
 // ─── 🪙 COIN FLIP + WHEEL — once per hour, 60% good wheel / 40% bad wheel ─────
 const GOOD_WHEEL_PRIZES = [
   { id: "c100",   type: "coins",    amount: 100,  weight: 25, label: "100",    color: "#94a3b8", emoji: "🪙" },
@@ -6278,44 +6323,17 @@ function CoinFlipWheelModal({ onClose, isAvailable, coinBalance, cardCollection,
         ) : stage === "flipping" ? (
           <>
             <style>{`
-              @keyframes coinFlipAnim3D {
-                from { transform: rotateY(0deg) scale(1); }
-                to { transform: rotateY(var(--final-rot)) scale(1); }
+              @keyframes coinPulseText {
+                0%, 100% { transform: scale(1); opacity: 1; }
+                50% { transform: scale(1.1); opacity: 0.8; }
               }
             `}</style>
             <div style={{margin:"30px auto",height:140,perspective:"800px",display:"flex",alignItems:"center",justifyContent:"center"}}>
-              <div style={{
-                width:120,height:120,
-                transformStyle:"preserve-3d",
-                transition:"transform 2.5s cubic-bezier(0.4,0,0.2,1)",
-                transform: `rotateY(${coinRotation}deg)`,
-              }}>
-                {/* Good side */}
-                <div style={{
-                  position:"absolute",inset:0,
-                  borderRadius:"50%",
-                  background:"linear-gradient(135deg,#fbbf24,#d97706)",
-                  display:"flex",alignItems:"center",justifyContent:"center",
-                  fontSize:60,
-                  boxShadow:"0 8px 24px rgba(251,191,36,0.5)",
-                  backfaceVisibility:"hidden",
-                }}>✨</div>
-                {/* Bad side */}
-                <div style={{
-                  position:"absolute",inset:0,
-                  borderRadius:"50%",
-                  background:"linear-gradient(135deg,#7f1d1d,#dc2626)",
-                  display:"flex",alignItems:"center",justifyContent:"center",
-                  fontSize:60,
-                  boxShadow:"0 8px 24px rgba(239,68,68,0.5)",
-                  backfaceVisibility:"hidden",
-                  transform:"rotateY(180deg)",
-                }}>💀</div>
-              </div>
+              <CoinSpinner targetRotation={coinRotation} />
             </div>
             <div style={{
-              fontSize:16,fontWeight:900,color:"#fbbf24",
-              animation:"streakPulse 1s ease-in-out infinite",
+              fontSize:18,fontWeight:900,color:"#fbbf24",
+              animation:"coinPulseText 0.6s ease-in-out infinite",
             }}>זרוק... 🤞</div>
           </>
         ) : stage === "wheelSpinning" || (stage === "result" && prize) ? (
