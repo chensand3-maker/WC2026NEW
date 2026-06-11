@@ -10,7 +10,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.19.1";
+const APP_VERSION = "3.19.3";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -6130,25 +6130,26 @@ function LuckyWheelModal({ onClose, onWin, freePlaysLeft, coinBalance, onUseFree
       <div style={{
         position:"relative",
         width:"100%",
-        aspectRatio:"3 / 4",
+        aspectRatio:"4 / 5",
         borderRadius:14,
         overflow:"hidden",
         background: RARITY_CONFIG[card.rarity]?.bgGrad || "#1e293b",
         boxShadow:`0 8px 24px rgba(0,0,0,0.5), 0 0 16px ${RARITY_CONFIG[card.rarity]?.glow || "rgba(0,0,0,0.3)"}`,
         border:`3px solid ${RARITY_CONFIG[card.rarity]?.color || "#fbbf24"}`,
         display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",
-        padding:"14px 8px",
+        padding:"10px 6px",
         color:"#fff",
       }}>
-        <div style={{fontSize:36,marginBottom:6}}>{card.flag}</div>
-        <div style={{fontSize:11,fontWeight:900,textAlign:"center",marginBottom:6,letterSpacing:0.5}}>
+        <div style={{fontSize:30,marginBottom:4}}>{card.flag}</div>
+        <div style={{fontSize:10,fontWeight:900,textAlign:"center",marginBottom:3,letterSpacing:0.3,lineHeight:1.1}}>
           {card.name}
         </div>
-        <div style={{fontSize:9,opacity:0.7,marginBottom:8}}>{card.team}</div>
+        <div style={{fontSize:8,opacity:0.7,marginBottom:5}}>{card.team}</div>
         <div style={{
-          fontSize:38,fontWeight:900,
+          fontSize:32,fontWeight:900,
           color: RARITY_CONFIG[card.rarity]?.color || "#fbbf24",
           textShadow:`0 0 12px ${RARITY_CONFIG[card.rarity]?.glow}`,
+          lineHeight:1,
         }}>{getPlayerRating(card)}</div>
       </div>
     );
@@ -6158,13 +6159,13 @@ function LuckyWheelModal({ onClose, onWin, freePlaysLeft, coinBalance, onUseFree
     <div style={{
       position:"relative",
       width:"100%",
-      aspectRatio:"3 / 4",
+      aspectRatio:"4 / 5",
       borderRadius:14,
       background:"linear-gradient(135deg,#1e293b,#0f172a)",
       boxShadow:"0 8px 24px rgba(0,0,0,0.5)",
       border:"3px dashed #fbbf24",
       display:"flex",alignItems:"center",justifyContent:"center",
-      fontSize:64,
+      fontSize:56,
     }}>❓</div>
   );
 
@@ -6376,18 +6377,25 @@ function LuckyWheelModal({ onClose, onWin, freePlaysLeft, coinBalance, onUseFree
             {/* Two cards — equal size grid */}
             <div style={{
               display:"grid",
-              gridTemplateColumns:"1fr 50px 1fr",
+              gridTemplateColumns:"1fr 38px 1fr",
               alignItems:"center",
-              gap:6,marginBottom:18,
+              gap:8,marginBottom:18,
             }}>
               <div>{renderMiniCard(currentCard)}</div>
               <div style={{
-                fontSize:22,
+                width:38,height:38,
+                display:"flex",alignItems:"center",justifyContent:"center",
+                background:"#0f172a",
+                border:"2px solid #fbbf24",
+                borderRadius:"50%",
+                fontSize:13,
                 color:"#fbbf24",
                 fontWeight:900,
-                textAlign:"center",
-                textShadow:"0 0 16px rgba(251,191,36,0.8)",
-                letterSpacing:1,
+                textShadow:"0 0 12px rgba(251,191,36,0.8)",
+                letterSpacing:0.5,
+                zIndex:5,
+                boxShadow:"0 0 16px rgba(251,191,36,0.5)",
+                margin:"0 auto",
               }}>VS</div>
               <div style={{
                 animation: revealing && nextCard
