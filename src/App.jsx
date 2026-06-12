@@ -10,7 +10,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.32.4";
+const APP_VERSION = "3.32.5";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -4798,12 +4798,17 @@ function RouletteModal({ coins, isSpinning, pendingCard, onSpin, onLegendsSpin, 
       `}</style>
       <div onClick={e => e.stopPropagation()} style={{
         maxWidth:420,width:"100%",
-        background:"linear-gradient(180deg, #334155, #1e293b)",
-        border:"2px solid #fbbf24",
+        background: galaxySpinning
+          ? "linear-gradient(180deg, #4c1d95, #1e1b4b)"
+          : "linear-gradient(180deg, #334155, #1e293b)",
+        border: galaxySpinning ? "2px solid #c084fc" : "2px solid #fbbf24",
         borderRadius:24,padding:"24px 20px",
-        boxShadow:"0 20px 80px rgba(251,191,36,0.2)",
+        boxShadow: galaxySpinning
+          ? "0 20px 80px rgba(192,132,252,0.4)"
+          : "0 20px 80px rgba(251,191,36,0.2)",
         animation:"rouletteSpinIn 0.5s ease-out",
         position:"relative",
+        transition:"background 0.4s ease, border 0.4s ease, box-shadow 0.4s ease",
       }}>
         {/* Close + Mute */}
         {!isSpinning && (
