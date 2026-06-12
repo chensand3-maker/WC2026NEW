@@ -10,7 +10,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.32.8";
+const APP_VERSION = "3.32.9";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -8462,7 +8462,7 @@ function CollectionModal({ collection, onClose }) {
       return a.name.localeCompare(b.name);
     };
     // Pool is determined by section
-    const pool = section === "legends" ? [...LEGEND_CARDS, ...ISRAELI_LEGENDS, ...FRIEND_CARDS] : CARDS;
+    const pool = section === "legends" ? [...LEGEND_CARDS, ...ISRAELI_LEGENDS, ...FRIEND_CARDS] : [...GALAXY_CARDS, ...CARDS];
     let cards;
     if (filter === "all") cards = pool;
     else if (filter === "owned") cards = pool.filter(c => (collection[c.id] || 0) > 0);
@@ -8472,7 +8472,7 @@ function CollectionModal({ collection, onClose }) {
   }, [section, filter, collection]);
 
   // Stats — per section
-  const sectionPool = section === "legends" ? [...LEGEND_CARDS, ...ISRAELI_LEGENDS, ...FRIEND_CARDS] : CARDS;
+  const sectionPool = section === "legends" ? [...LEGEND_CARDS, ...ISRAELI_LEGENDS, ...FRIEND_CARDS] : [...GALAXY_CARDS, ...CARDS];
   const ownedCount = sectionPool.filter(c => (collection[c.id] || 0) > 0).length;
   const totalCount = sectionPool.length;
   const pct = Math.round((ownedCount / totalCount) * 100);
@@ -8551,6 +8551,7 @@ function CollectionModal({ collection, onClose }) {
             { id: "all", label: t("collection.all") },
             { id: "owned", label: `✓ ${t("collection.owned")}` },
             { id: "missing", label: `🔒 ${t("collection.missing")}` },
+            { id: "X", label: RARITY_CONFIG.X.label, color: RARITY_CONFIG.X.color },
             { id: "L", label: RARITY_CONFIG.L.label, color: RARITY_CONFIG.L.color },
             { id: "E", label: RARITY_CONFIG.E.label, color: RARITY_CONFIG.E.color },
             { id: "R", label: RARITY_CONFIG.R.label, color: RARITY_CONFIG.R.color },
