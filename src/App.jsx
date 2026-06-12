@@ -10,7 +10,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.30.1";
+const APP_VERSION = "3.30.2";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -9474,9 +9474,12 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
       {!collapsed && actual && actual.h !== undefined && actual.h !== "" && actual.isLive !== true && (
         <button
           onClick={() => {
-            // Search within FIFA's official YouTube channel
-            const query = encodeURIComponent(`${home.n} ${away.n} highlights`);
-            window.open(`https://www.youtube.com/@FIFA/search?query=${query}`, "_blank");
+            // 🎬 Best results: include date for accuracy + "extended highlights" to filter out shorts
+            const date = fixture.kickoff ? new Date(fixture.kickoff) : null;
+            const dateStr = date ? `${date.getDate()} ${date.toLocaleString('en', { month: 'short' })}` : '';
+            const query = encodeURIComponent(`${home.n} vs ${away.n} extended highlights world cup ${dateStr}`);
+            // sp=EgIYAg = filter to videos > 4 minutes (avoids shorts)
+            window.open(`https://www.youtube.com/results?search_query=${query}&sp=EgIYAg%253D%253D`, "_blank");
           }}
           style={{
             marginTop:8,width:"100%",
@@ -9488,7 +9491,7 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
             cursor:"pointer",fontFamily:"inherit",
             display:"flex",alignItems:"center",justifyContent:"center",gap:6,
           }}>
-          📺 תקציר בערוץ FIFA הרשמי
+          📺 תקציר מלא ב-YouTube
         </button>
       )}
 
@@ -10354,6 +10357,11 @@ function GroupView({ group, picks, actuals, standings, bestThirds, liveStandings
           {fixtures.filter(f => f.matchday === md).map(f => {
             const idx = orderedIds.indexOf(f.id);
             const nextId = idx >= 0 && idx < orderedIds.length - 1 ? orderedIds[idx + 1] : null;
+            // 🗜️ Auto-collapse finished matches (90+ min past kickoff with score)
+            const actual = actuals[f.id];
+            const hasFinalScore = actual && actual.h !== undefined && actual.h !== "" && actual.isLive !== true;
+            const minSince = f.kickoff ? (Date.now() - new Date(f.kickoff).getTime()) / 60000 : 0;
+            const shouldCollapse = hasFinalScore && minSince > 95;
             return (
               <MatchCard
                 key={f.id} fixture={f} pick={picks[f.id]} actual={actuals[f.id]}
@@ -10364,6 +10372,7 @@ function GroupView({ group, picks, actuals, standings, bestThirds, liveStandings
                 lockable={scope === "p"}
                 leagueMembers={scope === "p" ? leagueMembers : null}
                 onShowDetails={onShowDetails}
+                defaultCollapsed={shouldCollapse}
               />
             );
           })}
