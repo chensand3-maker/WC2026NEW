@@ -10,7 +10,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.30.6";
+const APP_VERSION = "3.30.8";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -9300,7 +9300,9 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
         <div
           onClick={() => setCollapsed(false)}
           style={{
-            display:"flex",alignItems:"center",justifyContent:"center",
+            display:"grid",
+            gridTemplateColumns:"1fr auto 1fr",
+            alignItems:"center",
             gap:8,padding:"10px 8px",
             direction:"ltr",cursor:"pointer",
             background: sc?.bg || "rgba(36,49,80,0.3)",
@@ -9308,22 +9310,20 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
             border:`1px solid ${sc?.border || "rgba(71,85,105,0.4)"}`,
           }}
         >
-          <span style={{fontSize:13,fontWeight:700,color:"#f1f5f9"}}>{home.f} {home.n}</span>
+          <span style={{fontSize:13,fontWeight:700,color:"#f1f5f9",textAlign:"right"}}>
+            {home.f} {home.n}
+          </span>
           <span style={{
             fontSize:15,fontWeight:900,
             color: sc?.text || "#22c55e",
             padding:"3px 10px",
             background:"#1e2940",borderRadius:6,
             unicodeBidi:"isolate",
+            whiteSpace:"nowrap",
           }}>{actual.h} - {actual.a}</span>
-          <span style={{fontSize:13,fontWeight:700,color:"#f1f5f9"}}>{away.n} {away.f}</span>
-          {score?.points > 0 && (
-            <span style={{
-              fontSize:11,fontWeight:800,
-              color: sc?.text || "#22c55e",
-              marginInlineStart:6,
-            }}>+{score.points}</span>
-          )}
+          <span style={{fontSize:13,fontWeight:700,color:"#f1f5f9",textAlign:"left"}}>
+            {away.n} {away.f}
+          </span>
         </div>
       ) : (
       <div style={{display:"grid",gridTemplateColumns:"1fr auto 1fr",alignItems:"center",gap:8,direction:"ltr"}}>
