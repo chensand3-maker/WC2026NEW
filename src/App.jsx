@@ -10,7 +10,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.33.0";
+const APP_VERSION = "3.33.2";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -3062,7 +3062,7 @@ const RARITY_ODDS = { L: 2, E: 5, R: 15, U: 28, C: 50 };
 const RARITY_CONFIG = {
   G: { label: "LEGEND",    color: "#22c55e", bgGrad: "linear-gradient(135deg,#14532d,#16a34a,#bbf7d0,#16a34a,#14532d)", glow: "rgba(34,197,94,0.7)", emoji: "🟢", coins: 500 },
   F: { label: "FRIEND",    color: "#ffffff", bgGrad: "linear-gradient(135deg,#f8fafc,#ffffff,#e2e8f0,#ffffff,#f8fafc)", glow: "rgba(255,255,255,0.7)", emoji: "⭐", coins: 800 },
-  X: { label: "GALAXY",    color: "#c084fc", bgGrad: "conic-gradient(from 0deg,#1e1b4b,#4c1d95,#be185d,#9333ea,#1e3a8a,#0e7490,#1e1b4b)", glow: "rgba(192,132,252,0.9)", emoji: "🌌", coins: 3000 },
+  X: { label: "GALAXY",    color: "#c084fc", bgGrad: "linear-gradient(135deg,#1e1b4b 0%,#4c1d95 25%,#9333ea 50%,#be185d 75%,#1e3a8a 100%)", glow: "rgba(192,132,252,0.9)", emoji: "🌌", coins: 3000 },
   T: { label: "ISRAEL",    color: "#a16207", bgGrad: "linear-gradient(135deg,#3f3f46,#78716c,#a8a29e,#78716c,#3f3f46)", glow: "rgba(120,113,108,0.5)", emoji: "🗑️", coins: 50 },
   L: { label: "LEGENDARY", color: "#fbbf24", bgGrad: "linear-gradient(135deg,#78350f,#fbbf24,#fde68a,#fbbf24,#78350f)", glow: "rgba(251,191,36,0.8)", emoji: "🏆", coins: 1000 },
   E: { label: "EPIC",      color: "#a855f7", bgGrad: "linear-gradient(135deg,#581c87,#9333ea,#581c87)", glow: "rgba(168,85,247,0.5)", emoji: "💎", coins: 300 },
@@ -5472,26 +5472,43 @@ function PlayerCard({ card, size = "L", animated = false, flippable = false }) {
     }}>
       {isGalaxy && (
         <style>{`
-          @keyframes galaxyRotate {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-          }
           @keyframes galaxyTwinkle {
             0%, 100% { opacity: 0.4; }
             50% { opacity: 1; }
           }
+          @keyframes galaxySheen {
+            0% { transform: translateX(-150%) skewX(-20deg); }
+            100% { transform: translateX(250%) skewX(-20deg); }
+          }
+          @keyframes galaxyAurora {
+            0%, 100% { transform: translate3d(-8%, -6%, 0) scale(1.15); opacity: 0.55; }
+            50% { transform: translate3d(8%, 6%, 0) scale(1.25); opacity: 0.8; }
+          }
         `}</style>
       )}
-      {/* 🌌 Slowly rotating conic gradient layer (no flicker) */}
+      {/* 🌌 Aurora layer — soft drifting glow (transform-only, GPU smooth) */}
       {isGalaxy && (
         <div style={{
           position:"absolute",
-          inset: "-30%",
-          background: cfg.bgGrad,
-          animation: "galaxyRotate 20s linear infinite",
+          inset:"-20%",
+          background:"radial-gradient(ellipse at 30% 30%, rgba(236,72,153,0.45) 0%, transparent 50%), radial-gradient(ellipse at 70% 70%, rgba(34,211,238,0.35) 0%, transparent 50%)",
+          animation:"galaxyAurora 7s ease-in-out infinite",
           pointerEvents:"none",
-          zIndex: 0,
-          willChange: "transform",
+          zIndex: 1,
+          willChange:"transform, opacity",
+        }}/>
+      )}
+      {/* 🌌 Moving light sheen — diagonal sweep (transform-only) */}
+      {isGalaxy && (
+        <div style={{
+          position:"absolute",
+          top:0,bottom:0,
+          width:"40%",
+          background:"linear-gradient(90deg, transparent, rgba(255,255,255,0.18), transparent)",
+          animation:"galaxySheen 4s ease-in-out infinite",
+          pointerEvents:"none",
+          zIndex: 2,
+          willChange:"transform",
         }}/>
       )}
       {/* 🌌 Galaxy particles — opacity only, no scale (less GPU work) */}
@@ -5717,8 +5734,7 @@ function PlayerCard({ card, size = "L", animated = false, flippable = false }) {
         <div style={{
           margin: size === "L" ? "0 14px 6px" : "0 10px 4px",
           padding: size === "L" ? "8px 10px" : "5px 7px",
-          background: "rgba(0,0,0,0.55)",
-          backdropFilter: "blur(8px)",
+          background: "rgba(10,5,30,0.75)",
           borderRadius: 8,
           border: "1px solid rgba(255,255,255,0.15)",
           display: "grid",
