@@ -10,7 +10,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.32.3";
+const APP_VERSION = "3.32.4";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -13907,7 +13907,17 @@ export default function App() {
     setPendingCard(card);
     setIsSpinning(true);
     setSpinResult(null);
-    setGalaxySpinning(true); // 🌌 trigger dramatic galaxy screen
+    setGalaxySpinning(true); // 🌌 trigger purple galaxy background
+    // 🟢 Count toward LEGENDS SPIN — galaxy spin counts as a regular spin
+    setSpinCount(prev => {
+      const next = prev + 1;
+      try { localStorage.setItem("wc2026_spin_count_v1", String(next)); } catch {}
+      if (next >= 5) {
+        setLegendsSpinAvailable(true);
+        try { localStorage.setItem("wc2026_legends_spin_v1", "1"); } catch {}
+      }
+      return next;
+    });
     setTimeout(() => {
       const isDuplicate = (cardCollection[card.id] || 0) > 0;
       const newCollection = { ...cardCollection, [card.id]: (cardCollection[card.id] || 0) + 1 };
