@@ -10,7 +10,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.31.0";
+const APP_VERSION = "3.30.8";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -2578,43 +2578,6 @@ const FRIEND_CARDS = FRIEND_CARDS_RAW.map(([name, pos, rating, subtitle, variant
   manualRating: rating,
 }));
 
-// ─── 🌌 GALAXY CARDS: Top players of the 25/26 season ─────────────────────────
-const GALAXY_CARDS_RAW = [
-  // [name, team, pos, rating]
-  ["Ousmane Dembélé",  "France",    "F",  96],
-  ["Lamine Yamal",     "Spain",     "F",  97],
-  ["Michael Olise",    "France",    "F",  92],
-  ["Harry Kane",       "England",   "F",  96],
-  ["Pedri",            "Spain",     "M",  96],
-  ["Bruno Fernandes",  "Portugal",  "M",  93],
-  ["Bukayo Saka",      "England",   "F",  94],
-  ["Erling Haaland",   "Norway",    "F",  97],
-  ["Kylian Mbappé",    "France",    "F",  98],
-  ["Vinícius Júnior",  "Brazil",    "F",  97],
-  ["Vitinha",          "Portugal",  "M",  94],
-  ["Thibaut Courtois", "Belgium",   "GK", 94],
-  ["Julián Álvarez",   "Argentina", "F",  94],
-  ["Nuno Mendes",      "Portugal",  "D",  92],
-];
-
-const GALAXY_FLAGS = {
-  "France": "🇫🇷", "Spain": "🇪🇸", "England": "🏴󠁧󠁢󠁥󠁮󠁧󠁿",
-  "Portugal": "🇵🇹", "Norway": "🇳🇴", "Brazil": "🇧🇷",
-  "Belgium": "🇧🇪", "Argentina": "🇦🇷",
-};
-
-const GALAXY_CARDS = GALAXY_CARDS_RAW.map(([name, team, pos, rating], i) => ({
-  id: `galaxy-${i}`,
-  name,
-  team,
-  pos,
-  rarity: "X", // X = galaXy
-  flag: GALAXY_FLAGS[team] || "🌌",
-  isLegend: false,
-  isGalaxy: true,
-  manualRating: rating,
-}));
-
 // 🗑️ ISRAELI TRASH LEGENDS — local heroes with low ratings, for fun.
 const ISRAELI_LEGENDS_RAW = [
   ["Eyal Berkovic", "Israel", "M"],
@@ -3044,7 +3007,6 @@ function migrateCardCollection(coll) {
 const CARDS_BY_RARITY = {
   G: LEGEND_CARDS,    // 🟢 Legends — historical hall of fame
   F: FRIEND_CARDS,    // 🎴 Friends — league members (white card)
-  X: GALAXY_CARDS,    // 🌌 Galaxy — top players of 25/26
   T: ISRAELI_LEGENDS, // 🗑️ Trash — Israeli "heroes"
   L: CARDS.filter(c => c.rarity === "L"),
   E: CARDS.filter(c => c.rarity === "E"),
@@ -3061,7 +3023,6 @@ const RARITY_ODDS = { L: 2, E: 5, R: 15, U: 28, C: 50 };
 const RARITY_CONFIG = {
   G: { label: "LEGEND",    color: "#22c55e", bgGrad: "linear-gradient(135deg,#14532d,#16a34a,#bbf7d0,#16a34a,#14532d)", glow: "rgba(34,197,94,0.7)", emoji: "🟢", coins: 500 },
   F: { label: "FRIEND",    color: "#ffffff", bgGrad: "linear-gradient(135deg,#f8fafc,#ffffff,#e2e8f0,#ffffff,#f8fafc)", glow: "rgba(255,255,255,0.7)", emoji: "⭐", coins: 800 },
-  X: { label: "GALAXY",    color: "#c084fc", bgGrad: "conic-gradient(from 0deg,#1e1b4b,#4c1d95,#be185d,#9333ea,#1e3a8a,#0e7490,#1e1b4b)", glow: "rgba(192,132,252,0.9)", emoji: "🌌", coins: 3000 },
   T: { label: "ISRAEL",    color: "#a16207", bgGrad: "linear-gradient(135deg,#3f3f46,#78716c,#a8a29e,#78716c,#3f3f46)", glow: "rgba(120,113,108,0.5)", emoji: "🗑️", coins: 50 },
   L: { label: "LEGENDARY", color: "#fbbf24", bgGrad: "linear-gradient(135deg,#78350f,#fbbf24,#fde68a,#fbbf24,#78350f)", glow: "rgba(251,191,36,0.8)", emoji: "🏆", coins: 1000 },
   E: { label: "EPIC",      color: "#a855f7", bgGrad: "linear-gradient(135deg,#581c87,#9333ea,#581c87)", glow: "rgba(168,85,247,0.5)", emoji: "💎", coins: 300 },
@@ -3072,13 +3033,6 @@ const RARITY_CONFIG = {
 
 // Pull one card at random based on rarity odds
 function rollOneCard() {
-  // 🌌 1% chance for GALAXY (top 25/26 players)
-  if (Math.random() < 0.01) {
-    const galaxy = CARDS_BY_RARITY.X || [];
-    if (galaxy.length > 0) {
-      return galaxy[Math.floor(Math.random() * galaxy.length)];
-    }
-  }
   const roll = Math.random() * 100;
   let cumulative = 0;
   let rarity = "C";
@@ -3099,7 +3053,6 @@ function rollOneCard() {
 const RATING_RANGES = {
   G: { min: 90, max: 99 },  // Legend — hall of fame, spans wider range
   F: { min: 95, max: 99 },  // 🎴 Friends — all 99 by default (overridden by manualRating)
-  X: { min: 92, max: 99 },  // 🌌 Galaxy — top of the top
   T: { min: 10, max: 40 },  // 🗑️ Trash — Israeli "legends" with low ratings
   L: { min: 95, max: 99 },  // Legendary
   E: { min: 85, max: 94 },  // Epic
@@ -5276,7 +5229,6 @@ function PlayerCard({ card, size = "L", animated = false, flippable = false }) {
     // default also stays white from RARITY_CONFIG.F
   }
   const isLegend = card.rarity === "G";
-  const isGalaxy = card.rarity === "X";
   const isLegendary = card.rarity === "L";
   const rating = getPlayerRating(card);
   const isPerfect = rating === 99;
@@ -5419,10 +5371,8 @@ function PlayerCard({ card, size = "L", animated = false, flippable = false }) {
   const renderFront = () => (
     <div style={{
       width: dims.w, height: dims.h,
-      background: isGalaxy
-        ? cfg.bgGrad
-        : `radial-gradient(ellipse at center top, ${cfg.color}33 0%, transparent 60%), ${cfg.bgGrad}`,
-      backgroundSize: isGalaxy ? "200% 200%" : "150% 150%, 150% 150%",
+      background: `radial-gradient(ellipse at center top, ${cfg.color}33 0%, transparent 60%), ${cfg.bgGrad}`,
+      backgroundSize: "150% 150%, 150% 150%",
       backgroundPosition: "center",
       border: `3px solid ${cfg.color}`,
       borderRadius: 14,
@@ -5434,80 +5384,8 @@ function PlayerCard({ card, size = "L", animated = false, flippable = false }) {
       position: "relative",
       overflow: "hidden",
       backfaceVisibility: "hidden",
-      animation: isGalaxy ? "galaxyShift 8s ease infinite" : "none",
     }}>
-      {isGalaxy && (
-        <style>{`
-          @keyframes galaxyShift {
-            0%, 100% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-          }
-          @keyframes galaxyTwinkle {
-            0%, 100% { opacity: 0.3; transform: scale(0.8); }
-            50% { opacity: 1; transform: scale(1.2); }
-          }
-          @keyframes galaxyShimmer {
-            0% { transform: translateX(-100%); }
-            100% { transform: translateX(100%); }
-          }
-        `}</style>
-      )}
-      {/* 🌌 Galaxy particles */}
-      {isGalaxy && (
-        <>
-          {[
-            {t:"10%",l:"15%",d:"0s"},
-            {t:"25%",r:"8%",d:"0.4s"},
-            {t:"60%",l:"8%",d:"0.8s"},
-            {b:"18%",r:"18%",d:"1.2s"},
-            {t:"70%",r:"10%",d:"1.6s"},
-            {b:"30%",l:"22%",d:"0.2s"},
-            {t:"40%",r:"25%",d:"1.0s"},
-          ].map((p, i) => (
-            <div key={i} style={{
-              position:"absolute",
-              top: p.t, left: p.l, right: p.r, bottom: p.b,
-              width: size === "L" ? 5 : 3, height: size === "L" ? 5 : 3,
-              background:"#fff",
-              borderRadius:"50%",
-              boxShadow:"0 0 8px #fff, 0 0 16px rgba(236,72,153,0.8)",
-              animation: `galaxyTwinkle 2s ease-in-out infinite`,
-              animationDelay: p.d,
-              zIndex: 4,
-              pointerEvents:"none",
-            }}/>
-          ))}
-          {/* Shimmer overlay */}
-          <div style={{
-            position:"absolute",inset:0,
-            background:"linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.3) 50%, transparent 70%)",
-            animation: "galaxyShimmer 3s linear infinite",
-            pointerEvents:"none",
-            zIndex: 2,
-          }}/>
-          {/* Corner brackets */}
-          {[
-            {p:"tl",t:8,l:8,br:"none",bb:"none",br_radius:"8px 0 0 0"},
-            {p:"tr",t:8,r:8,bl:"none",bb:"none",br_radius:"0 8px 0 0"},
-            {p:"bl",b:8,l:8,br:"none",bt:"none",br_radius:"0 0 0 8px"},
-            {p:"br",b:8,r:8,bl:"none",bt:"none",br_radius:"0 0 8px 0"},
-          ].map((c, i) => (
-            <div key={`c-${i}`} style={{
-              position:"absolute",
-              top: c.t, left: c.l, right: c.r, bottom: c.b,
-              width: size === "L" ? 30 : 20, height: size === "L" ? 30 : 20,
-              border: "2px solid rgba(255,255,255,0.6)",
-              borderRight: c.br,
-              borderBottom: c.bb,
-              borderLeft: c.bl,
-              borderTop: c.bt,
-              borderRadius: c.br_radius,
-              zIndex: 3,
-              pointerEvents:"none",
-            }}/>
-          ))}
-        </>
-      )}      {/* 🏟️ Soccer pitch lines pattern (subtle) */}
+      {/* 🏟️ Soccer pitch lines pattern (subtle) */}
       <div style={{
         position:"absolute",inset:0,
         background:`
@@ -5700,23 +5578,6 @@ function PlayerCard({ card, size = "L", animated = false, flippable = false }) {
         }}>
           {card.team}
         </div>
-        {isGalaxy && (
-          <div style={{
-            fontSize: size === "L" ? 8 : 6,
-            color: "#fff",
-            fontWeight: 900,
-            letterSpacing: 2,
-            marginTop: 3,
-            padding: size === "L" ? "2px 8px" : "1px 4px",
-            background: "linear-gradient(90deg,#f0abfc,#c084fc,#818cf8)",
-            color: "#1e1b4b",
-            borderRadius: 10,
-            display: "inline-block",
-            boxShadow: "0 2px 8px rgba(192,132,252,0.5)",
-          }}>
-            🌌 TOP 25/26
-          </div>
-        )}
       </div>
 
       {/* FOOTER: Position */}
@@ -7426,7 +7287,6 @@ function GlobalAdminModal({ onClose }) {
   const [error, setError] = useState("");
   const [removingUid, setRemovingUid] = useState(null);
   const [search, setSearch] = useState("");
-  const [adminTab, setAdminTab] = useState("users"); // "users" | "galaxy"
 
   // 🔐 Secret code — only Chen knows it
   const ADMIN_CODE = "Chen-Boss-2026";
@@ -7543,64 +7403,6 @@ function GlobalAdminModal({ onClose }) {
         ) : (
           // 🔓 Admin panel
           <>
-            {/* 📑 Tabs */}
-            <div style={{display:"flex",gap:6,marginBottom:14}}>
-              <button
-                onClick={() => setAdminTab("users")}
-                style={{
-                  flex:1,padding:"10px 8px",
-                  background: adminTab === "users" ? "rgba(34,197,94,0.2)" : "rgba(36,49,80,0.4)",
-                  border: `1px solid ${adminTab === "users" ? "rgba(34,197,94,0.6)" : "rgba(71,85,105,0.4)"}`,
-                  borderRadius:10,
-                  color: adminTab === "users" ? "#86efac" : "#94a3b8",
-                  fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"inherit",
-                }}>
-                👥 משתמשים
-              </button>
-              <button
-                onClick={() => setAdminTab("galaxy")}
-                style={{
-                  flex:1,padding:"10px 8px",
-                  background: adminTab === "galaxy" ? "rgba(192,132,252,0.2)" : "rgba(36,49,80,0.4)",
-                  border: `1px solid ${adminTab === "galaxy" ? "rgba(192,132,252,0.6)" : "rgba(71,85,105,0.4)"}`,
-                  borderRadius:10,
-                  color: adminTab === "galaxy" ? "#e9d5ff" : "#94a3b8",
-                  fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"inherit",
-                }}>
-                🌌 קלפי GALAXY
-              </button>
-            </div>
-
-            {adminTab === "galaxy" ? (
-              // 🌌 GALAXY CARDS GALLERY
-              <div>
-                <div style={{
-                  background:"linear-gradient(135deg,rgba(192,132,252,0.15),rgba(168,85,247,0.08))",
-                  border:"1px solid rgba(192,132,252,0.4)",
-                  borderRadius:10,padding:"10px 12px",marginBottom:14,
-                  fontSize:12,color:"#e9d5ff",textAlign:"center",
-                }}>
-                  🌌 {GALAXY_CARDS.length} קלפי GALAXY · מצטייני 25/26
-                </div>
-                <div style={{
-                  display:"grid",
-                  gridTemplateColumns:"repeat(2, 1fr)",
-                  gap:14,
-                  justifyItems:"center",
-                  paddingBottom:30,
-                }}>
-                  {GALAXY_CARDS.map(c => (
-                    <div key={c.id} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:6}}>
-                      <PlayerCard card={c} size="M" animated={true} />
-                      <div style={{fontSize:10,color:"#94a3b8",textAlign:"center"}}>
-                        {c.name}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ) : (
-            <>
             <div style={{
               background:"rgba(34,197,94,0.1)",
               border:"1px solid rgba(34,197,94,0.4)",
@@ -7718,8 +7520,6 @@ function GlobalAdminModal({ onClose }) {
                 </div>
               )}
             </div>
-            </>
-            )}
           </>
         )}
       </div>
@@ -8324,7 +8124,7 @@ function CollectionModal({ collection, onClose }) {
   const [previewCard, setPreviewCard] = useState(null);
 
   const filteredCards = useMemo(() => {
-    const rarityOrder = { F: 0, X: 1, G: 2, L: 3, E: 4, R: 5, U: 6, C: 7, T: 8 };
+    const rarityOrder = { F: 0, G: 1, L: 2, E: 3, R: 4, U: 5, C: 6, T: 7 };
     const sorter = (a, b) => {
       const r = (rarityOrder[a.rarity] ?? 99) - (rarityOrder[b.rarity] ?? 99);
       if (r !== 0) return r;
@@ -12039,7 +11839,7 @@ function LeagueHub({
             const fullPool = [...CARDS, ...LEGEND_CARDS, ...ISRAELI_LEGENDS];
             const ownedCards = fullPool.filter(c => (theirCollection[c.id] || 0) > 0);
             // Sort owned by rarity (legends first, then best to common, then trash)
-            const rarityOrder = { X: 0, G: 1, L: 2, E: 3, R: 4, U: 5, C: 6, T: 7 };
+            const rarityOrder = { G: 0, L: 1, E: 2, R: 3, U: 4, C: 5, T: 6 };
             ownedCards.sort((a, b) => {
               const r = rarityOrder[a.rarity] - rarityOrder[b.rarity];
               if (r !== 0) return r;
