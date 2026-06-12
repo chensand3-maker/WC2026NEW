@@ -10,7 +10,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.30.8";
+const APP_VERSION = "3.32.0";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -2578,6 +2578,44 @@ const FRIEND_CARDS = FRIEND_CARDS_RAW.map(([name, pos, rating, subtitle, variant
   manualRating: rating,
 }));
 
+// ─── 🌌 GALAXY CARDS: Top players of the 25/26 season ─────────────────────────
+const GALAXY_CARDS_RAW = [
+  // [name, team, pos, rating, {PAC, SHO, PAS, DRI, DEF, PHY}]
+  ["Ousmane Dembélé",  "France",    "F",  96, { PAC:94, SHO:86, PAS:82, DRI:92, DEF:38, PHY:72 }],
+  ["Lamine Yamal",     "Spain",     "F",  97, { PAC:92, SHO:90, PAS:85, DRI:97, DEF:30, PHY:70 }],
+  ["Michael Olise",    "France",    "F",  92, { PAC:88, SHO:84, PAS:86, DRI:92, DEF:38, PHY:70 }],
+  ["Harry Kane",       "England",   "F",  96, { PAC:70, SHO:96, PAS:88, DRI:84, DEF:38, PHY:86 }],
+  ["Pedri",            "Spain",     "M",  96, { PAC:78, SHO:78, PAS:90, DRI:91, DEF:65, PHY:70 }],
+  ["Bruno Fernandes",  "Portugal",  "M",  93, { PAC:75, SHO:88, PAS:92, DRI:87, DEF:70, PHY:75 }],
+  ["Bukayo Saka",      "England",   "F",  94, { PAC:90, SHO:86, PAS:84, DRI:90, DEF:45, PHY:72 }],
+  ["Erling Haaland",   "Norway",    "F",  97, { PAC:89, SHO:96, PAS:73, DRI:87, DEF:47, PHY:88 }],
+  ["Kylian Mbappé",    "France",    "F",  98, { PAC:97, SHO:92, PAS:80, DRI:95, DEF:36, PHY:78 }],
+  ["Vinícius Júnior",  "Brazil",    "F",  97, { PAC:95, SHO:88, PAS:80, DRI:96, DEF:30, PHY:74 }],
+  ["Vitinha",          "Portugal",  "M",  94, { PAC:78, SHO:80, PAS:91, DRI:89, DEF:78, PHY:72 }],
+  ["Thibaut Courtois", "Belgium",   "GK", 94, { PAC:50, SHO:25, PAS:65, DRI:56, DEF:92, PHY:88 }],
+  ["Julián Álvarez",   "Argentina", "F",  94, { PAC:87, SHO:90, PAS:82, DRI:89, DEF:50, PHY:78 }],
+  ["Nuno Mendes",      "Portugal",  "D",  92, { PAC:92, SHO:65, PAS:78, DRI:85, DEF:86, PHY:80 }],
+];
+
+const GALAXY_FLAGS = {
+  "France": "🇫🇷", "Spain": "🇪🇸", "England": "🏴󠁧󠁢󠁥󠁮󠁧󠁿",
+  "Portugal": "🇵🇹", "Norway": "🇳🇴", "Brazil": "🇧🇷",
+  "Belgium": "🇧🇪", "Argentina": "🇦🇷",
+};
+
+const GALAXY_CARDS = GALAXY_CARDS_RAW.map(([name, team, pos, rating, stats], i) => ({
+  id: `galaxy-${i}`,
+  name,
+  team,
+  pos,
+  rarity: "X",
+  flag: GALAXY_FLAGS[team] || "🌌",
+  isLegend: false,
+  isGalaxy: true,
+  manualRating: rating,
+  galaxyStats: stats,
+}));
+
 // 🗑️ ISRAELI TRASH LEGENDS — local heroes with low ratings, for fun.
 const ISRAELI_LEGENDS_RAW = [
   ["Eyal Berkovic", "Israel", "M"],
@@ -3007,6 +3045,7 @@ function migrateCardCollection(coll) {
 const CARDS_BY_RARITY = {
   G: LEGEND_CARDS,    // 🟢 Legends — historical hall of fame
   F: FRIEND_CARDS,    // 🎴 Friends — league members (white card)
+  X: GALAXY_CARDS,    // 🌌 Galaxy — top players of 25/26
   T: ISRAELI_LEGENDS, // 🗑️ Trash — Israeli "heroes"
   L: CARDS.filter(c => c.rarity === "L"),
   E: CARDS.filter(c => c.rarity === "E"),
@@ -3023,6 +3062,7 @@ const RARITY_ODDS = { L: 2, E: 5, R: 15, U: 28, C: 50 };
 const RARITY_CONFIG = {
   G: { label: "LEGEND",    color: "#22c55e", bgGrad: "linear-gradient(135deg,#14532d,#16a34a,#bbf7d0,#16a34a,#14532d)", glow: "rgba(34,197,94,0.7)", emoji: "🟢", coins: 500 },
   F: { label: "FRIEND",    color: "#ffffff", bgGrad: "linear-gradient(135deg,#f8fafc,#ffffff,#e2e8f0,#ffffff,#f8fafc)", glow: "rgba(255,255,255,0.7)", emoji: "⭐", coins: 800 },
+  X: { label: "GALAXY",    color: "#c084fc", bgGrad: "conic-gradient(from 0deg,#1e1b4b,#4c1d95,#be185d,#9333ea,#1e3a8a,#0e7490,#1e1b4b)", glow: "rgba(192,132,252,0.9)", emoji: "🌌", coins: 3000 },
   T: { label: "ISRAEL",    color: "#a16207", bgGrad: "linear-gradient(135deg,#3f3f46,#78716c,#a8a29e,#78716c,#3f3f46)", glow: "rgba(120,113,108,0.5)", emoji: "🗑️", coins: 50 },
   L: { label: "LEGENDARY", color: "#fbbf24", bgGrad: "linear-gradient(135deg,#78350f,#fbbf24,#fde68a,#fbbf24,#78350f)", glow: "rgba(251,191,36,0.8)", emoji: "🏆", coins: 1000 },
   E: { label: "EPIC",      color: "#a855f7", bgGrad: "linear-gradient(135deg,#581c87,#9333ea,#581c87)", glow: "rgba(168,85,247,0.5)", emoji: "💎", coins: 300 },
@@ -3033,6 +3073,13 @@ const RARITY_CONFIG = {
 
 // Pull one card at random based on rarity odds
 function rollOneCard() {
+  // 🌌 1% chance for GALAXY (top 25/26 players)
+  if (Math.random() < 0.01) {
+    const galaxy = CARDS_BY_RARITY.X || [];
+    if (galaxy.length > 0) {
+      return galaxy[Math.floor(Math.random() * galaxy.length)];
+    }
+  }
   const roll = Math.random() * 100;
   let cumulative = 0;
   let rarity = "C";
@@ -3053,6 +3100,7 @@ function rollOneCard() {
 const RATING_RANGES = {
   G: { min: 90, max: 99 },  // Legend — hall of fame, spans wider range
   F: { min: 95, max: 99 },  // 🎴 Friends — all 99 by default (overridden by manualRating)
+  X: { min: 92, max: 99 },  // 🌌 Galaxy — top of the top
   T: { min: 10, max: 40 },  // 🗑️ Trash — Israeli "legends" with low ratings
   L: { min: 95, max: 99 },  // Legendary
   E: { min: 85, max: 94 },  // Epic
@@ -4692,7 +4740,7 @@ function playWinSound(rarity) {
 
 // 🎁 DAILY BONUS MODAL — shows the 7-day reward grid + claim button
 
-function RouletteModal({ coins, isSpinning, pendingCard, onSpin, onLegendsSpin, legendsSpinAvailable, spinCount, onClose, onShowCollection }) {
+function RouletteModal({ coins, isSpinning, pendingCard, onSpin, onLegendsSpin, legendsSpinAvailable, onGalaxySpin, galaxyTestMode, spinCount, onClose, onShowCollection }) {
   const t = useT();
   const canSpin = coins.balance >= COINS.SPIN && !isSpinning;
   const [leverPulled, setLeverPulled] = useState(false);
@@ -5002,6 +5050,32 @@ function RouletteModal({ coins, isSpinning, pendingCard, onSpin, onLegendsSpin, 
         )}
         <style>{`@keyframes legendShimmer { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }`}</style>
 
+        {/* 🌌 GALAXY SPIN — 1000 coins · 5% chance for top 25/26 player */}
+        {(coins.balance >= 1000 || galaxyTestMode) && (
+          <button
+            onClick={() => !isSpinning && onGalaxySpin?.()}
+            disabled={isSpinning}
+            style={{
+              width:"100%",marginTop:10,padding:"14px",borderRadius:12,
+              background:"conic-gradient(from 0deg,#1e1b4b,#4c1d95,#be185d,#9333ea,#1e3a8a,#0e7490,#1e1b4b)",
+              backgroundSize:"200% 200%",
+              color:"#fff",
+              border:"2px solid #c084fc",
+              fontSize:15,fontWeight:900,
+              fontFamily:"inherit",cursor: isSpinning ? "not-allowed" : "pointer",
+              boxShadow:"0 8px 24px rgba(192,132,252,0.6), 0 0 30px rgba(192,132,252,0.4)",
+              letterSpacing:1,
+              animation: isSpinning ? "none" : "galaxyShimmer 5s linear infinite",
+              position:"relative",
+            }}>
+            🌌 GALAXY SPIN
+            <div style={{fontSize:10,marginTop:3,opacity:0.95,letterSpacing:0.5,fontWeight:700}}>
+              {galaxyTestMode ? "🧪 מצב בדיקה — חינם" : "🪙 1000 · 5% למצטייני 25/26"}
+            </div>
+          </button>
+        )}
+        <style>{`@keyframes galaxyShimmer { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }`}</style>
+
         <button onClick={onShowCollection} style={{
           width:"100%",marginTop:8,padding:"10px",borderRadius:10,
           background:"rgba(30,41,59,0.5)",
@@ -5229,6 +5303,7 @@ function PlayerCard({ card, size = "L", animated = false, flippable = false }) {
     // default also stays white from RARITY_CONFIG.F
   }
   const isLegend = card.rarity === "G";
+  const isGalaxy = card.rarity === "X";
   const isLegendary = card.rarity === "L";
   const rating = getPlayerRating(card);
   const isPerfect = rating === 99;
@@ -5371,8 +5446,10 @@ function PlayerCard({ card, size = "L", animated = false, flippable = false }) {
   const renderFront = () => (
     <div style={{
       width: dims.w, height: dims.h,
-      background: `radial-gradient(ellipse at center top, ${cfg.color}33 0%, transparent 60%), ${cfg.bgGrad}`,
-      backgroundSize: "150% 150%, 150% 150%",
+      background: isGalaxy
+        ? cfg.bgGrad
+        : `radial-gradient(ellipse at center top, ${cfg.color}33 0%, transparent 60%), ${cfg.bgGrad}`,
+      backgroundSize: "150% 150%",
       backgroundPosition: "center",
       border: `3px solid ${cfg.color}`,
       borderRadius: 14,
@@ -5385,7 +5462,78 @@ function PlayerCard({ card, size = "L", animated = false, flippable = false }) {
       overflow: "hidden",
       backfaceVisibility: "hidden",
     }}>
-      {/* 🏟️ Soccer pitch lines pattern (subtle) */}
+      {isGalaxy && (
+        <style>{`
+          @keyframes galaxyRotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+          }
+          @keyframes galaxyTwinkle {
+            0%, 100% { opacity: 0.4; }
+            50% { opacity: 1; }
+          }
+        `}</style>
+      )}
+      {/* 🌌 Slowly rotating conic gradient layer (no flicker) */}
+      {isGalaxy && (
+        <div style={{
+          position:"absolute",
+          inset: "-30%",
+          background: cfg.bgGrad,
+          animation: "galaxyRotate 20s linear infinite",
+          pointerEvents:"none",
+          zIndex: 0,
+          willChange: "transform",
+        }}/>
+      )}
+      {/* 🌌 Galaxy particles — opacity only, no scale (less GPU work) */}
+      {isGalaxy && (
+        <>
+          {[
+            {t:"10%",l:"15%",d:"0s"},
+            {t:"25%",r:"8%",d:"0.4s"},
+            {t:"60%",l:"8%",d:"0.8s"},
+            {b:"18%",r:"18%",d:"1.2s"},
+            {t:"70%",r:"10%",d:"1.6s"},
+            {b:"30%",l:"22%",d:"0.2s"},
+          ].map((p, i) => (
+            <div key={i} style={{
+              position:"absolute",
+              top: p.t, left: p.l, right: p.r, bottom: p.b,
+              width: size === "L" ? 4 : 3, height: size === "L" ? 4 : 3,
+              background:"#fff",
+              borderRadius:"50%",
+              boxShadow:"0 0 6px #fff",
+              animation: `galaxyTwinkle 2.5s ease-in-out infinite`,
+              animationDelay: p.d,
+              zIndex: 4,
+              pointerEvents:"none",
+              willChange: "opacity",
+            }}/>
+          ))}
+          {/* Corner brackets — static, no animation */}
+          {[
+            {p:"tl",t:8,l:8,br:"none",bb:"none",br_radius:"8px 0 0 0"},
+            {p:"tr",t:8,r:8,bl:"none",bb:"none",br_radius:"0 8px 0 0"},
+            {p:"bl",b:8,l:8,br:"none",bt:"none",br_radius:"0 0 0 8px"},
+            {p:"br",b:8,r:8,bl:"none",bt:"none",br_radius:"0 0 8px 0"},
+          ].map((c, i) => (
+            <div key={`c-${i}`} style={{
+              position:"absolute",
+              top: c.t, left: c.l, right: c.r, bottom: c.b,
+              width: size === "L" ? 30 : 20, height: size === "L" ? 30 : 20,
+              border: "2px solid rgba(255,255,255,0.6)",
+              borderRight: c.br,
+              borderBottom: c.bb,
+              borderLeft: c.bl,
+              borderTop: c.bt,
+              borderRadius: c.br_radius,
+              zIndex: 3,
+              pointerEvents:"none",
+            }}/>
+          ))}
+        </>
+      )}      {/* 🏟️ Soccer pitch lines pattern (subtle) */}
       <div style={{
         position:"absolute",inset:0,
         background:`
@@ -5556,6 +5704,41 @@ function PlayerCard({ card, size = "L", animated = false, flippable = false }) {
         </div>
       </div>
 
+      {/* 📊 GALAXY stats panel (PAC/SHO/PAS/DRI/DEF/PHY) */}
+      {isGalaxy && card.galaxyStats && size !== "S" && (
+        <div style={{
+          margin: size === "L" ? "0 14px 6px" : "0 10px 4px",
+          padding: size === "L" ? "8px 10px" : "5px 7px",
+          background: "rgba(0,0,0,0.55)",
+          backdropFilter: "blur(8px)",
+          borderRadius: 8,
+          border: "1px solid rgba(255,255,255,0.15)",
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr",
+          columnGap: size === "L" ? 14 : 8,
+          rowGap: size === "L" ? 3 : 1,
+          position: "relative",
+          zIndex: 3,
+        }}>
+          {[
+            { k: "PAC", v: card.galaxyStats.PAC },
+            { k: "DRI", v: card.galaxyStats.DRI },
+            { k: "SHO", v: card.galaxyStats.SHO },
+            { k: "DEF", v: card.galaxyStats.DEF },
+            { k: "PAS", v: card.galaxyStats.PAS },
+            { k: "PHY", v: card.galaxyStats.PHY },
+          ].map(s => (
+            <div key={s.k} style={{
+              display:"flex",justifyContent:"space-between",alignItems:"center",
+              fontSize: size === "L" ? 11 : 8,
+            }}>
+              <span style={{color:"rgba(255,255,255,0.7)",fontWeight:600,letterSpacing:1}}>{s.k}</span>
+              <span style={{color:"#fff",fontWeight:900,fontSize:size === "L" ? 13 : 9}}>{s.v}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* PLAYER NAME + TEAM */}
       <div style={{
         padding: size === "L" ? "0 14px 6px" : size === "M" ? "0 10px 4px" : "0 6px 3px",
@@ -5578,6 +5761,23 @@ function PlayerCard({ card, size = "L", animated = false, flippable = false }) {
         }}>
           {card.team}
         </div>
+        {isGalaxy && (
+          <div style={{
+            fontSize: size === "L" ? 8 : 6,
+            color: "#fff",
+            fontWeight: 900,
+            letterSpacing: 2,
+            marginTop: 3,
+            padding: size === "L" ? "2px 8px" : "1px 4px",
+            background: "linear-gradient(90deg,#f0abfc,#c084fc,#818cf8)",
+            color: "#1e1b4b",
+            borderRadius: 10,
+            display: "inline-block",
+            boxShadow: "0 2px 8px rgba(192,132,252,0.5)",
+          }}>
+            🌌 TOP 25/26
+          </div>
+        )}
       </div>
 
       {/* FOOTER: Position */}
@@ -7278,7 +7478,7 @@ function LuckyWheelModal({ onClose, onWin, onUpdateBestStreak, personalBest, lea
 }
 
 // ─── 🌍 GLOBAL ADMIN MODAL — manage all users in Firebase (requires secret code) ─
-function GlobalAdminModal({ onClose }) {
+function GlobalAdminModal({ onClose, galaxyTestMode, setGalaxyTestMode, onGiveCoins }) {
   const [unlocked, setUnlocked] = useState(false);
   const [codeInput, setCodeInput] = useState("");
   const [codeError, setCodeError] = useState("");
@@ -7287,6 +7487,7 @@ function GlobalAdminModal({ onClose }) {
   const [error, setError] = useState("");
   const [removingUid, setRemovingUid] = useState(null);
   const [search, setSearch] = useState("");
+  const [adminTab, setAdminTab] = useState("users"); // "users" | "galaxy"
 
   // 🔐 Secret code — only Chen knows it
   const ADMIN_CODE = "Chen-Boss-2026";
@@ -7403,6 +7604,126 @@ function GlobalAdminModal({ onClose }) {
         ) : (
           // 🔓 Admin panel
           <>
+            {/* 📑 Tabs */}
+            <div style={{display:"flex",gap:6,marginBottom:14}}>
+              <button
+                onClick={() => setAdminTab("users")}
+                style={{
+                  flex:1,padding:"10px 8px",
+                  background: adminTab === "users" ? "rgba(34,197,94,0.2)" : "rgba(36,49,80,0.4)",
+                  border: `1px solid ${adminTab === "users" ? "rgba(34,197,94,0.6)" : "rgba(71,85,105,0.4)"}`,
+                  borderRadius:10,
+                  color: adminTab === "users" ? "#86efac" : "#94a3b8",
+                  fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"inherit",
+                }}>
+                👥 משתמשים
+              </button>
+              <button
+                onClick={() => setAdminTab("galaxy")}
+                style={{
+                  flex:1,padding:"10px 8px",
+                  background: adminTab === "galaxy" ? "rgba(192,132,252,0.2)" : "rgba(36,49,80,0.4)",
+                  border: `1px solid ${adminTab === "galaxy" ? "rgba(192,132,252,0.6)" : "rgba(71,85,105,0.4)"}`,
+                  borderRadius:10,
+                  color: adminTab === "galaxy" ? "#e9d5ff" : "#94a3b8",
+                  fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"inherit",
+                }}>
+                🌌 קלפי GALAXY
+              </button>
+            </div>
+
+            {adminTab === "galaxy" ? (
+              // 🌌 GALAXY CARDS GALLERY
+              <div>
+                <div style={{
+                  background:"linear-gradient(135deg,rgba(192,132,252,0.15),rgba(168,85,247,0.08))",
+                  border:"1px solid rgba(192,132,252,0.4)",
+                  borderRadius:10,padding:"10px 12px",marginBottom:14,
+                  fontSize:12,color:"#e9d5ff",textAlign:"center",
+                }}>
+                  🌌 {GALAXY_CARDS.length} קלפי GALAXY · מצטייני 25/26
+                </div>
+
+                {/* 🧪 TEST PANEL */}
+                <div style={{
+                  background:"rgba(15,23,42,0.7)",
+                  border:`1px solid ${galaxyTestMode ? "rgba(34,197,94,0.5)" : "rgba(71,85,105,0.4)"}`,
+                  borderRadius:12,padding:"12px",marginBottom:14,
+                }}>
+                  <div style={{fontSize:11,color:"#fbbf24",letterSpacing:2,fontWeight:800,marginBottom:10}}>🧪 פאנל בדיקה</div>
+
+                  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
+                    <div style={{fontSize:12,color:"#cbd5e1"}}>
+                      מצב בדיקה (GALAXY SPIN חינם)
+                    </div>
+                    <button
+                      onClick={() => setGalaxyTestMode?.(!galaxyTestMode)}
+                      style={{
+                        padding:"6px 14px",
+                        background: galaxyTestMode ? "rgba(34,197,94,0.25)" : "rgba(71,85,105,0.4)",
+                        border:`1px solid ${galaxyTestMode ? "rgba(34,197,94,0.7)" : "rgba(71,85,105,0.6)"}`,
+                        borderRadius:8,
+                        color: galaxyTestMode ? "#86efac" : "#cbd5e1",
+                        fontSize:11,fontWeight:800,cursor:"pointer",fontFamily:"inherit",
+                      }}>
+                      {galaxyTestMode ? "✅ מופעל" : "כבוי"}
+                    </button>
+                  </div>
+
+                  <div style={{display:"flex",gap:6}}>
+                    <button
+                      onClick={() => { onGiveCoins?.(1000); alert("✅ הוספו 1000 מטבעות"); }}
+                      style={{
+                        flex:1,padding:"8px",
+                        background:"rgba(251,191,36,0.15)",
+                        border:"1px solid rgba(251,191,36,0.4)",
+                        borderRadius:8,color:"#fbbf24",
+                        fontSize:11,fontWeight:800,cursor:"pointer",fontFamily:"inherit",
+                      }}>
+                      💰 +1000 🪙
+                    </button>
+                    <button
+                      onClick={() => { onGiveCoins?.(10000); alert("✅ הוספו 10,000 מטבעות"); }}
+                      style={{
+                        flex:1,padding:"8px",
+                        background:"rgba(251,191,36,0.15)",
+                        border:"1px solid rgba(251,191,36,0.4)",
+                        borderRadius:8,color:"#fbbf24",
+                        fontSize:11,fontWeight:800,cursor:"pointer",fontFamily:"inherit",
+                      }}>
+                      💰 +10K 🪙
+                    </button>
+                  </div>
+
+                  <div style={{
+                    marginTop:10,padding:"8px",
+                    background:"rgba(192,132,252,0.08)",
+                    borderRadius:8,
+                    fontSize:10,color:"#c4b5fd",lineHeight:1.5,
+                  }}>
+                    💡 כאשר מצב הבדיקה פעיל, כפתור "GALAXY SPIN" ברולטה יהיה <strong>חינם</strong> כדי שתוכל לבדוק את האנימציה והקלפים. כשמכבים — חוזר ל-1000 🪙.
+                  </div>
+                </div>
+
+                <div style={{
+                  display:"grid",
+                  gridTemplateColumns:"repeat(2, 1fr)",
+                  gap:14,
+                  justifyItems:"center",
+                  paddingBottom:30,
+                }}>
+                  {GALAXY_CARDS.map(c => (
+                    <div key={c.id} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:6}}>
+                      <PlayerCard card={c} size="M" animated={true} />
+                      <div style={{fontSize:10,color:"#94a3b8",textAlign:"center"}}>
+                        {c.name}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+            <>
             <div style={{
               background:"rgba(34,197,94,0.1)",
               border:"1px solid rgba(34,197,94,0.4)",
@@ -7520,6 +7841,8 @@ function GlobalAdminModal({ onClose }) {
                 </div>
               )}
             </div>
+            </>
+            )}
           </>
         )}
       </div>
@@ -8124,7 +8447,7 @@ function CollectionModal({ collection, onClose }) {
   const [previewCard, setPreviewCard] = useState(null);
 
   const filteredCards = useMemo(() => {
-    const rarityOrder = { F: 0, G: 1, L: 2, E: 3, R: 4, U: 5, C: 6, T: 7 };
+    const rarityOrder = { F: 0, X: 1, G: 2, L: 3, E: 4, R: 5, U: 6, C: 7, T: 8 };
     const sorter = (a, b) => {
       const r = (rarityOrder[a.rarity] ?? 99) - (rarityOrder[b.rarity] ?? 99);
       if (r !== 0) return r;
@@ -11839,7 +12162,7 @@ function LeagueHub({
             const fullPool = [...CARDS, ...LEGEND_CARDS, ...ISRAELI_LEGENDS];
             const ownedCards = fullPool.filter(c => (theirCollection[c.id] || 0) > 0);
             // Sort owned by rarity (legends first, then best to common, then trash)
-            const rarityOrder = { G: 0, L: 1, E: 2, R: 3, U: 4, C: 5, T: 6 };
+            const rarityOrder = { X: 0, G: 1, L: 2, E: 3, R: 4, U: 5, C: 6, T: 7 };
             ownedCards.sort((a, b) => {
               const r = rarityOrder[a.rarity] - rarityOrder[b.rarity];
               if (r !== 0) return r;
@@ -13427,6 +13750,17 @@ export default function App() {
     } catch {}
   }, [legendsSpinAvailable]);
   const [showCollection, setShowCollection] = useState(false); // collection viewer
+  // 🌌 GALAXY TEST MODE — admin-only, persists for the session
+  const [galaxyTestMode, setGalaxyTestMode] = useState(() => {
+    try { return localStorage.getItem("wc2026_galaxy_test_v1") === "1"; }
+    catch { return false; }
+  });
+  useEffect(() => {
+    try {
+      if (galaxyTestMode) localStorage.setItem("wc2026_galaxy_test_v1", "1");
+      else localStorage.removeItem("wc2026_galaxy_test_v1");
+    } catch {}
+  }, [galaxyTestMode]);
 
   // Spend coins, roll a card, save to collection
   const handleSpin = () => {
@@ -13529,6 +13863,66 @@ export default function App() {
       try {
         if (card.rarity === "T") navigator.vibrate?.(80);
         else navigator.vibrate?.([40, 60, 40, 60, 100, 60, 150]);
+      } catch {}
+    }, 8000);
+  };
+
+  const handleGalaxySpin = () => {
+    if (isSpinning) return;
+    const isTest = galaxyTestMode;
+    const cost = 1000;
+    if (!isTest && (coins?.balance || 0) < cost) return;
+
+    // 🎲 Galaxy Spin odds:
+    // 5% GALAXY (top 25/26)
+    // 15% LEGENDARY  | 30% EPIC  | 30% RARE  | 20% UNCOMMON
+    const roll = Math.random() * 100;
+    let pool;
+    if (roll < 5) {
+      pool = CARDS_BY_RARITY.X || [];
+    } else if (roll < 20) {
+      pool = CARDS_BY_RARITY.L || [];
+    } else if (roll < 50) {
+      pool = CARDS_BY_RARITY.E || [];
+    } else if (roll < 80) {
+      pool = CARDS_BY_RARITY.R || [];
+    } else {
+      pool = CARDS_BY_RARITY.U || [];
+    }
+    if (!pool || pool.length === 0) pool = CARDS;
+    const card = pool[Math.floor(Math.random() * pool.length)];
+
+    // Deduct cost (skip in test mode)
+    if (!isTest) {
+      const newBalance = (coins?.balance || 0) - cost;
+      const next = { ...coins, balance: newBalance };
+      setCoins(next);
+      try { localStorage.setItem("wc2026_coins_v7", JSON.stringify(next)); } catch {}
+    }
+
+    setPendingCard(card);
+    setIsSpinning(true);
+    setSpinResult(null);
+    setTimeout(() => {
+      const isDuplicate = (cardCollection[card.id] || 0) > 0;
+      const newCollection = { ...cardCollection, [card.id]: (cardCollection[card.id] || 0) + 1 };
+      setCardCollection(newCollection);
+      try { localStorage.setItem("wc2026_cards_v2", JSON.stringify(newCollection)); } catch {}
+      let refund = 0;
+      if (isDuplicate) {
+        refund = card.rarity === "X" ? RARITY_CONFIG.X.coins
+               : RARITY_CONFIG[card.rarity]?.coins || 50;
+        const refundedBalance = (coins?.balance || 0) - (isTest ? 0 : cost) + refund;
+        const withRefund = { ...coins, balance: refundedBalance };
+        setCoins(withRefund);
+        try { localStorage.setItem("wc2026_coins_v7", JSON.stringify(withRefund)); } catch {}
+      }
+      setSpinResult({ card, isDuplicate, refund });
+      setIsSpinning(false);
+      setPendingCard(null);
+      try {
+        if (card.rarity === "X") navigator.vibrate?.([50, 60, 50, 60, 80, 80, 150, 100, 200]);
+        else navigator.vibrate?.([30, 60, 90]);
       } catch {}
     }, 8000);
   };
@@ -14946,7 +15340,17 @@ export default function App() {
 
       {/* 🌍 Global Admin (secret code) */}
       {showGlobalAdmin && (
-        <GlobalAdminModal onClose={()=>setShowGlobalAdmin(false)} />
+        <GlobalAdminModal
+          onClose={()=>setShowGlobalAdmin(false)}
+          galaxyTestMode={galaxyTestMode}
+          setGalaxyTestMode={setGalaxyTestMode}
+          onGiveCoins={(amount) => {
+            const newBal = (coins?.balance || 0) + amount;
+            const next = { ...coins, balance: newBal };
+            setCoins(next);
+            try { localStorage.setItem("wc2026_coins_v7", JSON.stringify(next)); } catch {}
+          }}
+        />
       )}
 
       {/* 🪙 Coin Flip + Wheel of Fortune */}
@@ -15275,6 +15679,8 @@ export default function App() {
           onSpin={handleSpin}
           onLegendsSpin={handleLegendsSpin}
           legendsSpinAvailable={legendsSpinAvailable}
+          onGalaxySpin={handleGalaxySpin}
+          galaxyTestMode={galaxyTestMode}
           spinCount={spinCount}
           onClose={()=>setShowRoulette(false)}
           onShowCollection={()=>setShowCollection(true)}
