@@ -10,7 +10,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.32.5";
+const APP_VERSION = "3.32.7";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -2581,20 +2581,20 @@ const FRIEND_CARDS = FRIEND_CARDS_RAW.map(([name, pos, rating, subtitle, variant
 // ─── 🌌 GALAXY CARDS: Top players of the 25/26 season ─────────────────────────
 const GALAXY_CARDS_RAW = [
   // [name, team, pos, rating, {PAC, SHO, PAS, DRI, DEF, PHY}]
-  ["Ousmane Dembélé",  "France",    "F",  96, { PAC:94, SHO:86, PAS:82, DRI:92, DEF:38, PHY:72 }],
-  ["Lamine Yamal",     "Spain",     "F",  97, { PAC:92, SHO:90, PAS:85, DRI:97, DEF:30, PHY:70 }],
-  ["Michael Olise",    "France",    "F",  92, { PAC:88, SHO:84, PAS:86, DRI:92, DEF:38, PHY:70 }],
-  ["Harry Kane",       "England",   "F",  96, { PAC:70, SHO:96, PAS:88, DRI:84, DEF:38, PHY:86 }],
-  ["Pedri",            "Spain",     "M",  96, { PAC:78, SHO:78, PAS:90, DRI:91, DEF:65, PHY:70 }],
-  ["Bruno Fernandes",  "Portugal",  "M",  93, { PAC:75, SHO:88, PAS:92, DRI:87, DEF:70, PHY:75 }],
-  ["Bukayo Saka",      "England",   "F",  94, { PAC:90, SHO:86, PAS:84, DRI:90, DEF:45, PHY:72 }],
-  ["Erling Haaland",   "Norway",    "F",  97, { PAC:89, SHO:96, PAS:73, DRI:87, DEF:47, PHY:88 }],
-  ["Kylian Mbappé",    "France",    "F",  98, { PAC:97, SHO:92, PAS:80, DRI:95, DEF:36, PHY:78 }],
-  ["Vinícius Júnior",  "Brazil",    "F",  97, { PAC:95, SHO:88, PAS:80, DRI:96, DEF:30, PHY:74 }],
-  ["Vitinha",          "Portugal",  "M",  94, { PAC:78, SHO:80, PAS:91, DRI:89, DEF:78, PHY:72 }],
-  ["Thibaut Courtois", "Belgium",   "GK", 94, { PAC:50, SHO:25, PAS:65, DRI:56, DEF:92, PHY:88 }],
-  ["Julián Álvarez",   "Argentina", "F",  94, { PAC:87, SHO:90, PAS:82, DRI:89, DEF:50, PHY:78 }],
-  ["Nuno Mendes",      "Portugal",  "D",  92, { PAC:92, SHO:65, PAS:78, DRI:85, DEF:86, PHY:80 }],
+  ["Ousmane Dembélé",  "France",    "F",  97, { PAC:94, SHO:86, PAS:82, DRI:92, DEF:38, PHY:72 }],
+  ["Lamine Yamal",     "Spain",     "F",  98, { PAC:92, SHO:90, PAS:85, DRI:97, DEF:30, PHY:70 }],
+  ["Michael Olise",    "France",    "F",  95, { PAC:88, SHO:84, PAS:86, DRI:92, DEF:38, PHY:70 }],
+  ["Harry Kane",       "England",   "F",  97, { PAC:70, SHO:96, PAS:88, DRI:84, DEF:38, PHY:86 }],
+  ["Pedri",            "Spain",     "M",  97, { PAC:78, SHO:78, PAS:90, DRI:91, DEF:65, PHY:70 }],
+  ["Bruno Fernandes",  "Portugal",  "M",  96, { PAC:75, SHO:88, PAS:92, DRI:87, DEF:70, PHY:75 }],
+  ["Bukayo Saka",      "England",   "F",  96, { PAC:90, SHO:86, PAS:84, DRI:90, DEF:45, PHY:72 }],
+  ["Erling Haaland",   "Norway",    "F",  98, { PAC:89, SHO:96, PAS:73, DRI:87, DEF:47, PHY:88 }],
+  ["Kylian Mbappé",    "France",    "F",  99, { PAC:97, SHO:92, PAS:80, DRI:95, DEF:36, PHY:78 }],
+  ["Vinícius Júnior",  "Brazil",    "F",  98, { PAC:95, SHO:88, PAS:80, DRI:96, DEF:30, PHY:74 }],
+  ["Vitinha",          "Portugal",  "M",  96, { PAC:78, SHO:80, PAS:91, DRI:89, DEF:78, PHY:72 }],
+  ["Thibaut Courtois", "Belgium",   "GK", 96, { PAC:50, SHO:25, PAS:65, DRI:56, DEF:92, PHY:88 }],
+  ["Julián Álvarez",   "Argentina", "F",  96, { PAC:87, SHO:90, PAS:82, DRI:89, DEF:50, PHY:78 }],
+  ["Nuno Mendes",      "Portugal",  "D",  95, { PAC:92, SHO:65, PAS:78, DRI:85, DEF:86, PHY:80 }],
 ];
 
 const GALAXY_FLAGS = {
@@ -13886,20 +13886,36 @@ export default function App() {
     // 5% GALAXY (top 25/26)
     // 15% LEGENDARY  | 30% EPIC  | 30% RARE  | 20% UNCOMMON
     const roll = Math.random() * 100;
-    let pool;
-    if (roll < 5) {
-      pool = CARDS_BY_RARITY.X || [];
-    } else if (roll < 20) {
-      pool = CARDS_BY_RARITY.L || [];
-    } else if (roll < 50) {
-      pool = CARDS_BY_RARITY.E || [];
-    } else if (roll < 80) {
-      pool = CARDS_BY_RARITY.R || [];
-    } else {
-      pool = CARDS_BY_RARITY.U || [];
+    let initialRarity;
+    if (roll < 5) initialRarity = "X";
+    else if (roll < 20) initialRarity = "L";
+    else if (roll < 50) initialRarity = "E";
+    else if (roll < 80) initialRarity = "R";
+    else initialRarity = "U";
+
+    // 🛡️ Premium tiers (X, L, E) — exclude duplicates
+    // Fallback: if all cards in that tier owned, drop to next tier
+    const tierFallback = ["X", "L", "E", "R", "U", "C"];
+    const startIdx = tierFallback.indexOf(initialRarity);
+    let card = null;
+    for (let i = startIdx; i < tierFallback.length; i++) {
+      const rarity = tierFallback[i];
+      const pool = CARDS_BY_RARITY[rarity] || [];
+      const isPremium = rarity === "X" || rarity === "L" || rarity === "E";
+      // For premium tiers — filter out cards already owned
+      const filtered = isPremium
+        ? pool.filter(c => !(cardCollection[c.id] > 0))
+        : pool;
+      if (filtered.length > 0) {
+        card = filtered[Math.floor(Math.random() * filtered.length)];
+        break;
+      }
     }
-    if (!pool || pool.length === 0) pool = CARDS;
-    const card = pool[Math.floor(Math.random() * pool.length)];
+    // 🚨 Safety: if absolutely nothing, fall back to any card
+    if (!card) {
+      const all = CARDS_BY_RARITY.C || CARDS;
+      card = all[Math.floor(Math.random() * all.length)];
+    }
 
     // Deduct cost (skip in test mode)
     if (!isTest) {
