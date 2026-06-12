@@ -10,7 +10,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.32.7";
+const APP_VERSION = "3.32.8";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -5681,13 +5681,13 @@ function PlayerCard({ card, size = "L", animated = false, flippable = false }) {
 
       {/* FLAG in glowing circle */}
       <div style={{
-        flex:1,
+        flex: isGalaxy ? 0.6 : 1,
         display:"flex",alignItems:"center",justifyContent:"center",
         position:"relative",zIndex:3,
       }}>
         <div style={{
-          width: dims.flag + (size === "L" ? 32 : size === "M" ? 18 : 10),
-          height: dims.flag + (size === "L" ? 32 : size === "M" ? 18 : 10),
+          width: (isGalaxy ? dims.flag * 0.7 : dims.flag) + (size === "L" ? 32 : size === "M" ? 18 : 10),
+          height: (isGalaxy ? dims.flag * 0.7 : dims.flag) + (size === "L" ? 32 : size === "M" ? 18 : 10),
           borderRadius:"50%",
           background:`radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%)`,
           border:`2px solid ${cfg.color}66`,
@@ -5697,7 +5697,7 @@ function PlayerCard({ card, size = "L", animated = false, flippable = false }) {
             : `inset 0 0 12px rgba(0,0,0,0.3)`,
         }}>
           <div style={{
-            fontSize: dims.flag,
+            fontSize: isGalaxy ? dims.flag * 0.7 : dims.flag,
             filter:"drop-shadow(0 4px 8px rgba(0,0,0,0.5))",
           }}>{
             isFriend
@@ -5715,8 +5715,8 @@ function PlayerCard({ card, size = "L", animated = false, flippable = false }) {
       {/* 📊 GALAXY stats panel (PAC/SHO/PAS/DRI/DEF/PHY) */}
       {isGalaxy && card.galaxyStats && size !== "S" && (
         <div style={{
-          margin: size === "L" ? "0 14px 6px" : "0 10px 4px",
-          padding: size === "L" ? "8px 10px" : "5px 7px",
+          margin: size === "L" ? "0 14px 4px" : "0 10px 3px",
+          padding: size === "L" ? "5px 10px" : "4px 7px",
           background: "rgba(0,0,0,0.55)",
           backdropFilter: "blur(8px)",
           borderRadius: 8,
@@ -5724,7 +5724,7 @@ function PlayerCard({ card, size = "L", animated = false, flippable = false }) {
           display: "grid",
           gridTemplateColumns: "1fr 1fr",
           columnGap: size === "L" ? 14 : 8,
-          rowGap: size === "L" ? 3 : 1,
+          rowGap: 0,
           position: "relative",
           zIndex: 3,
         }}>
@@ -5738,10 +5738,10 @@ function PlayerCard({ card, size = "L", animated = false, flippable = false }) {
           ].map(s => (
             <div key={s.k} style={{
               display:"flex",justifyContent:"space-between",alignItems:"center",
-              fontSize: size === "L" ? 11 : 8,
+              fontSize: size === "L" ? 10 : 7,
             }}>
               <span style={{color:"rgba(255,255,255,0.7)",fontWeight:600,letterSpacing:1}}>{s.k}</span>
-              <span style={{color:"#fff",fontWeight:900,fontSize:size === "L" ? 13 : 9}}>{s.v}</span>
+              <span style={{color:"#fff",fontWeight:900,fontSize:size === "L" ? 11 : 8}}>{s.v}</span>
             </div>
           ))}
         </div>
@@ -5771,17 +5771,17 @@ function PlayerCard({ card, size = "L", animated = false, flippable = false }) {
         </div>
         {isGalaxy && (
           <div style={{
-            fontSize: size === "L" ? 8 : 6,
+            fontSize: size === "L" ? 7 : 5,
             color: "#fff",
             fontWeight: 900,
             letterSpacing: 2,
-            marginTop: 3,
-            padding: size === "L" ? "2px 8px" : "1px 4px",
+            marginTop: 2,
+            padding: size === "L" ? "1px 6px" : "1px 3px",
             background: "linear-gradient(90deg,#f0abfc,#c084fc,#818cf8)",
             color: "#1e1b4b",
-            borderRadius: 10,
+            borderRadius: 8,
             display: "inline-block",
-            boxShadow: "0 2px 8px rgba(192,132,252,0.5)",
+            boxShadow: "0 1px 4px rgba(192,132,252,0.5)",
           }}>
             🌌 TOP 25/26
           </div>
