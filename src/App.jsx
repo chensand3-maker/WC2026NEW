@@ -10,7 +10,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.30.5";
+const APP_VERSION = "3.30.6";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -9502,14 +9502,12 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
         </button>
       )}
 
-      {/* 📺 FIFA shorts button — only for finished matches */}
+      {/* 📺 FIFA highlights button — only for finished matches */}
       {!collapsed && actual && actual.h !== undefined && actual.h !== "" && actual.isLive !== true && (
         <button
           onClick={() => {
-            // 🎬 Search Shorts only on YouTube with FIFA + team names
-            // sp=EgQQAUAB filters to Shorts (videos < 60 sec, vertical)
-            const query = encodeURIComponent(`${home.n} vs ${away.n} FIFA`);
-            window.open(`https://www.youtube.com/results?search_query=${query}&sp=EgQQAUAB`, "_blank");
+            const query = encodeURIComponent(`${home.n} vs ${away.n} FIFA highlights`);
+            window.open(`https://www.youtube.com/results?search_query=${query}`, "_blank");
           }}
           style={{
             marginTop:8,width:"100%",
@@ -9521,7 +9519,7 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
             cursor:"pointer",fontFamily:"inherit",
             display:"flex",alignItems:"center",justifyContent:"center",gap:6,
           }}>
-          📱 שורט FIFA של המשחק
+          📺 חפש את המשחק ב-YouTube
         </button>
       )}
 
