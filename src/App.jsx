@@ -10,7 +10,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.33.2";
+const APP_VERSION = "3.33.3";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -5469,6 +5469,9 @@ function PlayerCard({ card, size = "L", animated = false, flippable = false }) {
       position: "relative",
       overflow: "hidden",
       backfaceVisibility: "hidden",
+      // 🛡️ Android flicker fix: force own GPU layer (border-radius + overflow:hidden + animated children)
+      transform: isGalaxy ? "translateZ(0)" : undefined,
+      isolation: isGalaxy ? "isolate" : undefined,
     }}>
       {isGalaxy && (
         <style>{`
@@ -5477,38 +5480,23 @@ function PlayerCard({ card, size = "L", animated = false, flippable = false }) {
             50% { opacity: 1; }
           }
           @keyframes galaxySheen {
-            0% { transform: translateX(-150%) skewX(-20deg); }
-            100% { transform: translateX(250%) skewX(-20deg); }
-          }
-          @keyframes galaxyAurora {
-            0%, 100% { transform: translate3d(-8%, -6%, 0) scale(1.15); opacity: 0.55; }
-            50% { transform: translate3d(8%, 6%, 0) scale(1.25); opacity: 0.8; }
+            0% { transform: translate3d(-150%, 0, 0) skewX(-20deg); }
+            100% { transform: translate3d(350%, 0, 0) skewX(-20deg); }
           }
         `}</style>
       )}
-      {/* 🌌 Aurora layer — soft drifting glow (transform-only, GPU smooth) */}
+      {/* 🌌 Moving light sheen — diagonal sweep (transform-only, single GPU layer) */}
       {isGalaxy && (
         <div style={{
           position:"absolute",
-          inset:"-20%",
-          background:"radial-gradient(ellipse at 30% 30%, rgba(236,72,153,0.45) 0%, transparent 50%), radial-gradient(ellipse at 70% 70%, rgba(34,211,238,0.35) 0%, transparent 50%)",
-          animation:"galaxyAurora 7s ease-in-out infinite",
-          pointerEvents:"none",
-          zIndex: 1,
-          willChange:"transform, opacity",
-        }}/>
-      )}
-      {/* 🌌 Moving light sheen — diagonal sweep (transform-only) */}
-      {isGalaxy && (
-        <div style={{
-          position:"absolute",
-          top:0,bottom:0,
+          top:0,bottom:0,left:0,
           width:"40%",
-          background:"linear-gradient(90deg, transparent, rgba(255,255,255,0.18), transparent)",
-          animation:"galaxySheen 4s ease-in-out infinite",
+          background:"linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)",
+          animation:"galaxySheen 3.5s ease-in-out infinite",
           pointerEvents:"none",
           zIndex: 2,
           willChange:"transform",
+          backfaceVisibility:"hidden",
         }}/>
       )}
       {/* 🌌 Galaxy particles — opacity only, no scale (less GPU work) */}
@@ -5534,6 +5522,8 @@ function PlayerCard({ card, size = "L", animated = false, flippable = false }) {
               zIndex: 4,
               pointerEvents:"none",
               willChange: "opacity",
+              backfaceVisibility:"hidden",
+              transform:"translateZ(0)",
             }}/>
           ))}
           {/* Corner brackets — static, no animation */}
