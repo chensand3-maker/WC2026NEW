@@ -10,7 +10,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.32.1";
+const APP_VERSION = "3.32.2";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -15673,170 +15673,78 @@ export default function App() {
         />
       )}
 
-      {/* 🌌 GALAXY SPINNING — dramatic full-screen animation */}
+      {/* 🌌 GALAXY SPINNING — purple gradient background, simple */}
       {galaxySpinning && (
         <div style={{
           position:"fixed",inset:0,zIndex:10000,
-          background:"radial-gradient(ellipse at center, #1e1b4b 0%, #0a0118 70%, #000 100%)",
-          overflow:"hidden",
+          background:"radial-gradient(ellipse at center, #4c1d95 0%, #1e1b4b 60%, #0a0118 100%)",
           display:"flex",alignItems:"center",justifyContent:"center",
+          flexDirection:"column",
         }}>
           <style>{`
-            @keyframes galaxySwirl {
-              from { transform: rotate(0deg) scale(1); }
-              to { transform: rotate(360deg) scale(1.05); }
-            }
-            @keyframes galaxyPulse {
-              0%, 100% { opacity: 0.6; transform: scale(1); }
-              50% { opacity: 1; transform: scale(1.15); }
-            }
-            @keyframes galaxyStar {
-              0%, 100% { opacity: 0.2; transform: scale(0.5); }
-              50% { opacity: 1; transform: scale(1.4); }
-            }
             @keyframes galaxyFadeIn {
-              from { opacity: 0; transform: scale(0.6); }
-              to { opacity: 1; transform: scale(1); }
+              from { opacity: 0; }
+              to { opacity: 1; }
             }
-            @keyframes galaxyOrbit {
-              from { transform: rotate(0deg) translateX(140px) rotate(0deg); }
-              to { transform: rotate(360deg) translateX(140px) rotate(-360deg); }
+            @keyframes galaxyPulseGentle {
+              0%, 100% { opacity: 0.7; }
+              50% { opacity: 1; }
             }
-            @keyframes galaxyTextGlow {
-              0%, 100% { text-shadow: 0 0 30px rgba(192,132,252,0.8), 0 0 60px rgba(236,72,153,0.6); }
-              50% { text-shadow: 0 0 50px rgba(192,132,252,1), 0 0 100px rgba(236,72,153,0.9); }
-            }
-            @keyframes meteor {
-              0% { transform: translate(-100px, -100px) rotate(45deg); opacity: 0; }
-              10% { opacity: 1; }
-              100% { transform: translate(120vw, 120vh) rotate(45deg); opacity: 0; }
+            @keyframes slotReelGalaxy {
+              0% { transform: translateY(0); }
+              100% { transform: translateY(-720px); }
             }
           `}</style>
 
-          {/* Rotating conic galaxy background */}
           <div style={{
-            position:"absolute",
-            width:"200vmax",height:"200vmax",
-            background:"conic-gradient(from 0deg,#1e1b4b,#4c1d95,#be185d,#9333ea,#1e3a8a,#0e7490,#1e1b4b)",
-            opacity:0.4,
-            animation:"galaxySwirl 30s linear infinite",
-            willChange:"transform",
-          }}/>
-
-          {/* Center pulsing core */}
-          <div style={{
-            position:"absolute",
-            width:300,height:300,
-            background:"radial-gradient(circle, rgba(236,72,153,0.6) 0%, rgba(139,92,246,0.4) 40%, transparent 70%)",
-            borderRadius:"50%",
-            filter:"blur(20px)",
-            animation:"galaxyPulse 3s ease-in-out infinite",
-          }}/>
-
-          {/* Twinkling stars (24 of them) */}
-          {Array.from({length: 24}).map((_, i) => {
-            const positions = [
-              {top:"8%",left:"12%",d:"0s"},
-              {top:"15%",left:"82%",d:"0.3s"},
-              {top:"22%",left:"45%",d:"0.6s"},
-              {top:"35%",left:"8%",d:"0.9s"},
-              {top:"42%",left:"92%",d:"1.2s"},
-              {top:"55%",left:"22%",d:"1.5s"},
-              {top:"62%",left:"75%",d:"0.2s"},
-              {top:"70%",left:"38%",d:"0.5s"},
-              {top:"78%",left:"15%",d:"0.8s"},
-              {top:"85%",left:"88%",d:"1.1s"},
-              {top:"5%",left:"55%",d:"1.4s"},
-              {top:"25%",left:"68%",d:"0.4s"},
-              {top:"48%",left:"55%",d:"1.7s"},
-              {top:"65%",left:"5%",d:"0.7s"},
-              {top:"88%",left:"42%",d:"1.0s"},
-              {top:"18%",left:"28%",d:"1.3s"},
-              {top:"38%",left:"35%",d:"0.1s"},
-              {top:"58%",left:"95%",d:"1.6s"},
-              {top:"75%",left:"58%",d:"0.45s"},
-              {top:"12%",left:"68%",d:"1.45s"},
-              {top:"3%",left:"35%",d:"0.85s"},
-              {top:"92%",left:"22%",d:"0.25s"},
-              {top:"50%",left:"3%",d:"0.65s"},
-              {top:"30%",left:"15%",d:"1.85s"},
-            ];
-            const p = positions[i];
-            const size = 2 + (i % 4);
-            return (
-              <div key={i} style={{
-                position:"absolute",
-                top: p.top, left: p.left,
-                width: size, height: size,
-                background:"#fff",
-                borderRadius:"50%",
-                boxShadow:`0 0 ${size*3}px #fff, 0 0 ${size*6}px rgba(236,72,153,0.7)`,
-                animation:`galaxyStar 2.5s ease-in-out infinite`,
-                animationDelay: p.d,
-                willChange:"opacity, transform",
-              }}/>
-            );
-          })}
-
-          {/* Orbiting planets — small colored dots around center */}
-          <div style={{position:"absolute",width:0,height:0}}>
-            {[
-              {color:"#f0abfc",size:8,duration:"6s"},
-              {color:"#c084fc",size:10,duration:"8s"},
-              {color:"#818cf8",size:6,duration:"5s"},
-              {color:"#22d3ee",size:7,duration:"7s"},
-            ].map((p, i) => (
-              <div key={i} style={{
-                position:"absolute",
-                width:p.size,height:p.size,
-                background:p.color,
-                borderRadius:"50%",
-                boxShadow:`0 0 12px ${p.color}`,
-                animation:`galaxyOrbit ${p.duration} linear infinite`,
-                animationDelay:`${i * 0.5}s`,
-                willChange:"transform",
-              }}/>
-            ))}
-          </div>
-
-          {/* Center content */}
-          <div style={{
-            position:"relative",zIndex:10,
+            animation:"galaxyFadeIn 0.5s ease",
             textAlign:"center",
-            animation:"galaxyFadeIn 1s cubic-bezier(0.34, 1.56, 0.64, 1)",
           }}>
             <div style={{
-              fontSize:64,
-              marginBottom:14,
-              animation:"galaxyPulse 2s ease-in-out infinite",
-              filter:"drop-shadow(0 0 30px rgba(236,72,153,0.8))",
+              fontSize:48,
+              marginBottom:18,
+              animation:"galaxyPulseGentle 2s ease-in-out infinite",
             }}>🌌</div>
 
             <div style={{
-              fontSize:32,fontWeight:900,letterSpacing:6,
-              background:"linear-gradient(90deg,#f0abfc,#c084fc,#818cf8,#22d3ee,#f0abfc)",
-              backgroundSize:"200% 100%",
-              WebkitBackgroundClip:"text",
-              WebkitTextFillColor:"transparent",
-              backgroundClip:"text",
-              animation:"galaxyTextGlow 2s ease-in-out infinite, galaxySwirl 4s linear infinite",
-              marginBottom:6,
+              fontSize:24,fontWeight:900,letterSpacing:4,
+              color:"#e9d5ff",
+              marginBottom:20,
             }}>
-              GALAXY
+              GALAXY SPIN
             </div>
+
+            {/* 🎰 Slot reel — same style as regular roulette but purple */}
             <div style={{
-              fontSize:13,color:"rgba(255,255,255,0.7)",
-              letterSpacing:4,fontWeight:700,
+              width:160,height:160,
+              background:"rgba(0,0,0,0.5)",
+              border:"3px solid #c084fc",
+              borderRadius:14,
+              overflow:"hidden",
+              position:"relative",
+              boxShadow:"0 0 30px rgba(192,132,252,0.5), inset 0 0 20px rgba(0,0,0,0.6)",
+              margin:"0 auto",
             }}>
-              🌟 חיפוש מצטיין... 🌟
+              <div style={{
+                animation:"slotReelGalaxy 0.18s linear infinite",
+                display:"flex",flexDirection:"column",
+              }}>
+                {["🌌","✨","⭐","💫","🌟","🪐","⚽","🏆","🎴","💎"].concat(["🌌","✨","⭐","💫","🌟","🪐","⚽","🏆","🎴","💎"]).map((emoji, i) => (
+                  <div key={i} style={{
+                    height:160,
+                    display:"flex",alignItems:"center",justifyContent:"center",
+                    fontSize:80,
+                  }}>{emoji}</div>
+                ))}
+              </div>
             </div>
 
             <div style={{
-              marginTop:30,
-              fontSize:10,color:"rgba(255,255,255,0.5)",
-              letterSpacing:2,
+              marginTop:20,
+              fontSize:12,color:"rgba(255,255,255,0.6)",
+              letterSpacing:3,
             }}>
-              TOP 25/26
+              🌟 מחפש מצטיין... 🌟
             </div>
           </div>
         </div>
