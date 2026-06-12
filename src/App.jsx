@@ -10,7 +10,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.32.2";
+const APP_VERSION = "3.32.3";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -4740,7 +4740,7 @@ function playWinSound(rarity) {
 
 // 🎁 DAILY BONUS MODAL — shows the 7-day reward grid + claim button
 
-function RouletteModal({ coins, isSpinning, pendingCard, onSpin, onLegendsSpin, legendsSpinAvailable, onGalaxySpin, galaxyTestMode, spinCount, onClose, onShowCollection }) {
+function RouletteModal({ coins, isSpinning, pendingCard, onSpin, onLegendsSpin, legendsSpinAvailable, onGalaxySpin, galaxyTestMode, galaxySpinning, spinCount, onClose, onShowCollection }) {
   const t = useT();
   const canSpin = coins.balance >= COINS.SPIN && !isSpinning;
   const [leverPulled, setLeverPulled] = useState(false);
@@ -4766,9 +4766,12 @@ function RouletteModal({ coins, isSpinning, pendingCard, onSpin, onLegendsSpin, 
   return (
     <div onClick={() => !isSpinning && onClose()} style={{
       position:"fixed",inset:0,zIndex:9000,
-      background:"radial-gradient(circle at center, rgba(51,65,85,0.85), rgba(36,49,80,0.92))",
+      background: galaxySpinning
+        ? "radial-gradient(ellipse at center, #4c1d95 0%, #1e1b4b 50%, #0a0118 100%)"
+        : "radial-gradient(circle at center, rgba(51,65,85,0.85), rgba(36,49,80,0.92))",
       display:"flex",alignItems:"center",justifyContent:"center",
       padding:14,
+      transition:"background 0.4s ease",
     }}>
       <style>{`
         @keyframes rouletteSpinIn {
@@ -15673,83 +15676,6 @@ export default function App() {
         />
       )}
 
-      {/* 🌌 GALAXY SPINNING — purple gradient background, simple */}
-      {galaxySpinning && (
-        <div style={{
-          position:"fixed",inset:0,zIndex:10000,
-          background:"radial-gradient(ellipse at center, #4c1d95 0%, #1e1b4b 60%, #0a0118 100%)",
-          display:"flex",alignItems:"center",justifyContent:"center",
-          flexDirection:"column",
-        }}>
-          <style>{`
-            @keyframes galaxyFadeIn {
-              from { opacity: 0; }
-              to { opacity: 1; }
-            }
-            @keyframes galaxyPulseGentle {
-              0%, 100% { opacity: 0.7; }
-              50% { opacity: 1; }
-            }
-            @keyframes slotReelGalaxy {
-              0% { transform: translateY(0); }
-              100% { transform: translateY(-720px); }
-            }
-          `}</style>
-
-          <div style={{
-            animation:"galaxyFadeIn 0.5s ease",
-            textAlign:"center",
-          }}>
-            <div style={{
-              fontSize:48,
-              marginBottom:18,
-              animation:"galaxyPulseGentle 2s ease-in-out infinite",
-            }}>🌌</div>
-
-            <div style={{
-              fontSize:24,fontWeight:900,letterSpacing:4,
-              color:"#e9d5ff",
-              marginBottom:20,
-            }}>
-              GALAXY SPIN
-            </div>
-
-            {/* 🎰 Slot reel — same style as regular roulette but purple */}
-            <div style={{
-              width:160,height:160,
-              background:"rgba(0,0,0,0.5)",
-              border:"3px solid #c084fc",
-              borderRadius:14,
-              overflow:"hidden",
-              position:"relative",
-              boxShadow:"0 0 30px rgba(192,132,252,0.5), inset 0 0 20px rgba(0,0,0,0.6)",
-              margin:"0 auto",
-            }}>
-              <div style={{
-                animation:"slotReelGalaxy 0.18s linear infinite",
-                display:"flex",flexDirection:"column",
-              }}>
-                {["🌌","✨","⭐","💫","🌟","🪐","⚽","🏆","🎴","💎"].concat(["🌌","✨","⭐","💫","🌟","🪐","⚽","🏆","🎴","💎"]).map((emoji, i) => (
-                  <div key={i} style={{
-                    height:160,
-                    display:"flex",alignItems:"center",justifyContent:"center",
-                    fontSize:80,
-                  }}>{emoji}</div>
-                ))}
-              </div>
-            </div>
-
-            <div style={{
-              marginTop:20,
-              fontSize:12,color:"rgba(255,255,255,0.6)",
-              letterSpacing:3,
-            }}>
-              🌟 מחפש מצטיין... 🌟
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* 🎰 Roulette */}
       {showRoulette && !spinResult && (
         <RouletteModal
@@ -15761,6 +15687,7 @@ export default function App() {
           legendsSpinAvailable={legendsSpinAvailable}
           onGalaxySpin={handleGalaxySpin}
           galaxyTestMode={galaxyTestMode}
+          galaxySpinning={galaxySpinning}
           spinCount={spinCount}
           onClose={()=>setShowRoulette(false)}
           onShowCollection={()=>setShowCollection(true)}
