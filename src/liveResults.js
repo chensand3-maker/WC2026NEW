@@ -69,7 +69,8 @@ function normalizeTeam(name) {
 }
 
 const CACHE_KEY = "wc2026_live_cache_v4";
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutes — balance freshness with API quota (100/day free)
+// 🚀 With 7500 calls/day we can be aggressive: 1 minute cache during live matches
+const CACHE_TTL = 1 * 60 * 1000;
 
 function getCache() {
   try {

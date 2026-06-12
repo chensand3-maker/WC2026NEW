@@ -10,7 +10,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.29.3";
+const APP_VERSION = "3.30.1";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -9058,8 +9058,9 @@ function Welcome({ onStart, onImport }) {
   );
 }
 
-function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, awayInputId, nextInputId, lockable = true, leagueMembers = null, onShowDetails = null }) {
+function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, awayInputId, nextInputId, lockable = true, leagueMembers = null, onShowDetails = null, defaultCollapsed = false }) {
   const [showAllPicks, setShowAllPicks] = useState(false);
+  const [collapsed, setCollapsed] = useState(defaultCollapsed);
   const t = useT();
   const { lang } = useContext(LangContext);
   const isRTL = lang === "he";
@@ -9278,6 +9279,21 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
         {sc && <span style={{color:sc.text,fontWeight:700,whiteSpace:"nowrap"}}>{sc.label} +{score.points}</span>}
         {!sc && !isLocked && hasResult && <span style={{color:"#22c55e"}} title={t("matchcard.predicted")}>✓</span>}
         {!sc && !isLocked && !hasResult && <span style={{color:"#64748b",opacity:0.5}} title={t("matchcard.noPick")}>⚪</span>}
+        {/* 🗜️ Collapse toggle — only for finished matches */}
+        {actual && actual.h !== undefined && actual.h !== "" && actual.isLive !== true && (
+          <button
+            onClick={() => setCollapsed(c => !c)}
+            style={{
+              background:"transparent",border:"none",
+              color:"#94a3b8",cursor:"pointer",
+              fontSize:14,padding:"2px 6px",
+              fontFamily:"inherit",
+            }}
+            title={collapsed ? "הרחב" : "צמצם"}
+          >
+            {collapsed ? "🔽" : "🔼"}
+          </button>
+        )}
       </div>
       <div style={{display:"grid",gridTemplateColumns:"1fr auto 1fr",alignItems:"center",gap:8,direction:"ltr"}}>
         <div style={{display:"flex",alignItems:"center",gap:8,justifyContent:"flex-end",opacity:(result==="away" && showHighlight)?0.5:1}}>
@@ -9430,32 +9446,54 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
         </div>
         );
       })()}
-      {fixture.venue && (
+      {!collapsed && fixture.venue && (
         <div style={{marginTop:5,fontSize:9,color:"#475569",textAlign:"center",letterSpacing:1}}>
           📍 {fixture.venue}
         </div>
       )}
 
       {/* 📊 View match details button — only for finished matches with onShowDetails */}
-      {actual && actual.h !== undefined && actual.h !== "" && onShowDetails && (
+      {!collapsed && actual && actual.h !== undefined && actual.h !== "" && onShowDetails && (
         <button
           onClick={() => onShowDetails(fixture)}
           style={{
             marginTop:10,width:"100%",
-            padding:"7px 12px",
-            background:"linear-gradient(180deg,rgba(168,85,247,0.18),rgba(168,85,247,0.08))",
+            padding:"10px 12px",
+            background:"linear-gradient(135deg,rgba(168,85,247,0.15),rgba(168,85,247,0.05))",
             border:"1px solid rgba(168,85,247,0.4)",
             borderRadius:8,
-            color:"#c4b5fd",fontSize:11,fontWeight:700,letterSpacing:1,
+            color:"#a855f7",fontSize:12,fontWeight:700,
             cursor:"pointer",fontFamily:"inherit",
+            display:"flex",alignItems:"center",justifyContent:"center",gap:6,
+          }}>
+          ⚽ ראה מי הבקיע
+        </button>
+      )}
+
+      {/* 📺 YouTube highlights button — only for finished matches */}
+      {!collapsed && actual && actual.h !== undefined && actual.h !== "" && actual.isLive !== true && (
+        <button
+          onClick={() => {
+            // Search within FIFA's official YouTube channel
+            const query = encodeURIComponent(`${home.n} ${away.n} highlights`);
+            window.open(`https://www.youtube.com/@FIFA/search?query=${query}`, "_blank");
           }}
-        >
-          ⚽ {t("matchdetails.viewBtn")}
+          style={{
+            marginTop:8,width:"100%",
+            padding:"10px 12px",
+            background:"linear-gradient(135deg,rgba(239,68,68,0.15),rgba(239,68,68,0.05))",
+            border:"1px solid rgba(239,68,68,0.4)",
+            borderRadius:8,
+            color:"#ef4444",fontSize:12,fontWeight:700,
+            cursor:"pointer",fontFamily:"inherit",
+            display:"flex",alignItems:"center",justifyContent:"center",gap:6,
+          }}>
+          📺 תקציר בערוץ FIFA הרשמי
         </button>
       )}
 
       {/* 🧠 LEAGUE INSIGHTS: % pick distribution, shown after kickoff */}
-      {insights && (
+      {!collapsed && insights && (
         <div style={{
           marginTop:10,padding:"8px 10px",
           background:"linear-gradient(135deg,rgba(168,85,247,0.08),rgba(36,49,80,0.4))",
@@ -9993,7 +10031,8 @@ function TodayScreen({ picks, actuals, onPick, onBack, onGoToBracket, leagueMemb
     else if (k < tomorrowEnd.getTime()) tomorrowMatches.push(m);
   }
 
-  const renderMatchRow = (m) => {
+  const renderMatchRow = (m, opts = {}) => {
+    const isFinishedSection = opts.isFinishedSection || false;
     if (m.type === "group") {
       const f = m.fixture;
       const p = picks[f.id];
@@ -10020,6 +10059,7 @@ function TodayScreen({ picks, actuals, onPick, onBack, onGoToBracket, leagueMemb
           lockable={true}
           leagueMembers={leagueMembers}
           onShowDetails={hasResult ? onShowDetails : null}
+          defaultCollapsed={isFinishedSection}
         />
       );
     }
@@ -10177,15 +10217,7 @@ function TodayScreen({ picks, actuals, onPick, onBack, onGoToBracket, leagueMemb
         </div>
       )}
 
-      {/* 🏁 Just finished matches (separate section) */}
-      {justFinishedMatches.length > 0 && (
-        <div style={{marginBottom:18}}>
-          <div style={{fontSize:11,color:"#94a3b8",letterSpacing:3,marginBottom:8,fontWeight:700}}>
-            🏁 {t("today.justFinished")}
-          </div>
-          {justFinishedMatches.map(renderMatchRow)}
-        </div>
-      )}
+      {/* 🏁 Just finished moved BELOW today/tomorrow */}
 
       {/* Today */}
       <div style={{marginBottom:18}}>
@@ -10198,7 +10230,7 @@ function TodayScreen({ picks, actuals, onPick, onBack, onGoToBracket, leagueMemb
       </div>
 
       {/* Tomorrow */}
-      <div>
+      <div style={{marginBottom:18}}>
         <div style={{fontSize:11,color:"#a78bfa",letterSpacing:3,marginBottom:8,fontWeight:700}}>
           🌅 {t("today.tomorrow")} ({tomorrowMatches.length})
         </div>
@@ -10206,6 +10238,16 @@ function TodayScreen({ picks, actuals, onPick, onBack, onGoToBracket, leagueMemb
           ? renderEmptySection(t("today.noMatchesTomorrow"))
           : tomorrowMatches.map(renderMatchRow)}
       </div>
+
+      {/* 🏁 Just finished matches — at the bottom for less clutter */}
+      {justFinishedMatches.length > 0 && (
+        <div style={{marginBottom:18}}>
+          <div style={{fontSize:11,color:"#94a3b8",letterSpacing:3,marginBottom:8,fontWeight:700}}>
+            🏁 {t("today.justFinished")}
+          </div>
+          {justFinishedMatches.map(m => renderMatchRow(m, { isFinishedSection: true }))}
+        </div>
+      )}
     </div>
   );
 }
@@ -14070,13 +14112,21 @@ export default function App() {
   const didInitialFetch = useRef(false);
   useEffect(() => {
     if (!name) return;
-    if (didInitialFetch.current) return; // 🛡️ Only ONCE per session
+    if (didInitialFetch.current) return;
     didInitialFetch.current = true;
-    // 📡 ONE-TIME fetch shortly after load.
-    // No auto-polling — saves the free API quota.
-    // Users can press the 🔄 refresh button anytime to get fresh data.
     const initial = setTimeout(() => { fetchAndApplyLive(); fetchAndApplyTopScorers(); }, 3000);
     return () => clearTimeout(initial);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [name]);
+
+  // 🔴 Auto-poll every 90 seconds during live matches (saves API quota when no matches)
+  useEffect(() => {
+    if (!name) return;
+    const interval = setInterval(() => {
+      // shouldFetchLive() is defined inside fetchAndApplyLive and will skip if no active matches
+      fetchAndApplyLive();
+    }, 90 * 1000);
+    return () => clearInterval(interval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [name]);
 
