@@ -10,7 +10,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.30.2";
+const APP_VERSION = "3.30.5";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -9295,6 +9295,37 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
           </button>
         )}
       </div>
+      {/* 🗜️ Compact view when collapsed */}
+      {collapsed && actual && actual.h !== undefined && actual.h !== "" ? (
+        <div
+          onClick={() => setCollapsed(false)}
+          style={{
+            display:"flex",alignItems:"center",justifyContent:"center",
+            gap:8,padding:"10px 8px",
+            direction:"ltr",cursor:"pointer",
+            background: sc?.bg || "rgba(36,49,80,0.3)",
+            borderRadius:8,
+            border:`1px solid ${sc?.border || "rgba(71,85,105,0.4)"}`,
+          }}
+        >
+          <span style={{fontSize:13,fontWeight:700,color:"#f1f5f9"}}>{home.f} {home.n}</span>
+          <span style={{
+            fontSize:15,fontWeight:900,
+            color: sc?.text || "#22c55e",
+            padding:"3px 10px",
+            background:"#1e2940",borderRadius:6,
+            unicodeBidi:"isolate",
+          }}>{actual.h} - {actual.a}</span>
+          <span style={{fontSize:13,fontWeight:700,color:"#f1f5f9"}}>{away.n} {away.f}</span>
+          {score?.points > 0 && (
+            <span style={{
+              fontSize:11,fontWeight:800,
+              color: sc?.text || "#22c55e",
+              marginInlineStart:6,
+            }}>+{score.points}</span>
+          )}
+        </div>
+      ) : (
       <div style={{display:"grid",gridTemplateColumns:"1fr auto 1fr",alignItems:"center",gap:8,direction:"ltr"}}>
         <div style={{display:"flex",alignItems:"center",gap:8,justifyContent:"flex-end",opacity:(result==="away" && showHighlight)?0.5:1}}>
           <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",minWidth:0}}>
@@ -9346,8 +9377,9 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
           </div>
         </div>
       </div>
+      )}
       {/* 💡 Editable hint — only when not locked + has pick */}
-      {!isLocked && hasResult && (
+      {!collapsed && !isLocked && hasResult && (
         <div style={{
           marginTop:6,fontSize:9,color:"#64748b",
           textAlign:"center",letterSpacing:1,
@@ -9386,7 +9418,7 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
           </div>
         );
       })()}
-      {actual && actual.h !== undefined && actual.h !== "" && (() => {
+      {!collapsed && actual && actual.h !== undefined && actual.h !== "" && (() => {
         const matchStarted = Date.now() >= new Date(fixture.kickoff).getTime();
         const minSinceKickoff = (Date.now() - new Date(fixture.kickoff).getTime()) / (60 * 1000);
         // 🔴 Use the API's isLive flag if present, fallback to time-based
@@ -9470,16 +9502,14 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
         </button>
       )}
 
-      {/* 📺 YouTube highlights button — only for finished matches */}
+      {/* 📺 FIFA shorts button — only for finished matches */}
       {!collapsed && actual && actual.h !== undefined && actual.h !== "" && actual.isLive !== true && (
         <button
           onClick={() => {
-            // 🎬 Best results: include date for accuracy + "extended highlights" to filter out shorts
-            const date = fixture.kickoff ? new Date(fixture.kickoff) : null;
-            const dateStr = date ? `${date.getDate()} ${date.toLocaleString('en', { month: 'short' })}` : '';
-            const query = encodeURIComponent(`${home.n} vs ${away.n} extended highlights world cup ${dateStr}`);
-            // sp=EgIYAg = filter to videos > 4 minutes (avoids shorts)
-            window.open(`https://www.youtube.com/results?search_query=${query}&sp=EgIYAg%253D%253D`, "_blank");
+            // 🎬 Search Shorts only on YouTube with FIFA + team names
+            // sp=EgQQAUAB filters to Shorts (videos < 60 sec, vertical)
+            const query = encodeURIComponent(`${home.n} vs ${away.n} FIFA`);
+            window.open(`https://www.youtube.com/results?search_query=${query}&sp=EgQQAUAB`, "_blank");
           }}
           style={{
             marginTop:8,width:"100%",
@@ -9491,7 +9521,7 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
             cursor:"pointer",fontFamily:"inherit",
             display:"flex",alignItems:"center",justifyContent:"center",gap:6,
           }}>
-          📺 תקציר מלא ב-YouTube
+          📱 שורט FIFA של המשחק
         </button>
       )}
 
@@ -10351,33 +10381,65 @@ function GroupView({ group, picks, actuals, standings, bestThirds, liveStandings
         <div style={{fontSize:10,color:"#475569",letterSpacing:2,marginTop:8}}>{t("group.typeAuto")}</div>
       </div>
 
-      {[1,2,3].map(md => (
-        <div key={md} style={{marginBottom:14}}>
-          <div style={{fontSize:10,color:"#64748b",letterSpacing:3,marginBottom:6,paddingLeft:4}}>━━ {t("match.matchday")} {md}</div>
-          {fixtures.filter(f => f.matchday === md).map(f => {
-            const idx = orderedIds.indexOf(f.id);
-            const nextId = idx >= 0 && idx < orderedIds.length - 1 ? orderedIds[idx + 1] : null;
-            // 🗜️ Auto-collapse finished matches (90+ min past kickoff with score)
+      {(() => {
+        // 📍 Split into pending and finished, render pending first, then finished at the bottom
+        const pendingMds = [];
+        const finishedMatches = [];
+        [1,2,3].forEach(md => {
+          const mdFixtures = fixtures.filter(f => f.matchday === md);
+          const pending = [];
+          mdFixtures.forEach(f => {
             const actual = actuals[f.id];
-            const hasFinalScore = actual && actual.h !== undefined && actual.h !== "" && actual.isLive !== true;
+            const isFinished = actual && actual.h !== undefined && actual.h !== "" && actual.isLive !== true;
             const minSince = f.kickoff ? (Date.now() - new Date(f.kickoff).getTime()) / 60000 : 0;
-            const shouldCollapse = hasFinalScore && minSince > 95;
-            return (
-              <MatchCard
-                key={f.id} fixture={f} pick={picks[f.id]} actual={actuals[f.id]}
-                onPick={p => onPick(f.id, p)} showResults={showResults}
-                homeInputId={inputId(f.id, "h")}
-                awayInputId={inputId(f.id, "a")}
-                nextInputId={nextId ? inputId(nextId, "h") : null}
-                lockable={scope === "p"}
-                leagueMembers={scope === "p" ? leagueMembers : null}
-                onShowDetails={onShowDetails}
-                defaultCollapsed={shouldCollapse}
-              />
-            );
-          })}
-        </div>
-      ))}
+            if (isFinished && minSince > 95) {
+              finishedMatches.push(f);
+            } else {
+              pending.push(f);
+            }
+          });
+          if (pending.length > 0) pendingMds.push({ md, matches: pending });
+        });
+
+        const renderMatch = (f) => {
+          const idx = orderedIds.indexOf(f.id);
+          const nextId = idx >= 0 && idx < orderedIds.length - 1 ? orderedIds[idx + 1] : null;
+          const actual = actuals[f.id];
+          const hasFinalScore = actual && actual.h !== undefined && actual.h !== "" && actual.isLive !== true;
+          const minSince = f.kickoff ? (Date.now() - new Date(f.kickoff).getTime()) / 60000 : 0;
+          const shouldCollapse = hasFinalScore && minSince > 95;
+          return (
+            <MatchCard
+              key={f.id} fixture={f} pick={picks[f.id]} actual={actuals[f.id]}
+              onPick={p => onPick(f.id, p)} showResults={showResults}
+              homeInputId={inputId(f.id, "h")}
+              awayInputId={inputId(f.id, "a")}
+              nextInputId={nextId ? inputId(nextId, "h") : null}
+              lockable={scope === "p"}
+              leagueMembers={scope === "p" ? leagueMembers : null}
+              onShowDetails={onShowDetails}
+              defaultCollapsed={shouldCollapse}
+            />
+          );
+        };
+
+        return (
+          <>
+            {pendingMds.map(({ md, matches }) => (
+              <div key={md} style={{marginBottom:14}}>
+                <div style={{fontSize:10,color:"#64748b",letterSpacing:3,marginBottom:6,paddingLeft:4}}>━━ {t("match.matchday")} {md}</div>
+                {matches.map(renderMatch)}
+              </div>
+            ))}
+            {finishedMatches.length > 0 && (
+              <div style={{marginBottom:14}}>
+                <div style={{fontSize:10,color:"#94a3b8",letterSpacing:3,marginBottom:6,paddingLeft:4}}>━━ 🏁 משחקים שהסתיימו</div>
+                {finishedMatches.map(renderMatch)}
+              </div>
+            )}
+          </>
+        );
+      })()}
 
       <StandingsTable group={group} standings={standings} bestThirds={bestThirds} liveStandings={liveStandings} liveBestThirds={liveBestThirds} hasActuals={hasActuals} />
 
