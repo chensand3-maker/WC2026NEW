@@ -89,7 +89,16 @@ function normalizeTeam(name) {
 }
 
 const CACHE_KEY = "wc2026_live_cache_v5";
-const CACHE_TTL = 1 * 60 * 1000;
+const CACHE_TTL = 60 * 1000; // 1 minute
+
+export function clearLiveCache() {
+  try {
+    // Clear all versions
+    for (let v = 1; v <= 5; v++) {
+      localStorage.removeItem(`wc2026_live_cache_v${v}`);
+    }
+  } catch {}
+}
 
 function getCache() {
   try {
@@ -111,9 +120,11 @@ function setCache(data) {
 const ACTIVE_STATUSES = ["FT", "AET", "PEN", "1H", "HT", "2H", "ET", "BT", "P", "LIVE"];
 const FINISHED_STATUSES = ["FT", "AET", "PEN"];
 
-export async function fetchLiveResults() {
-  const cached = getCache();
-  if (cached) return cached.data;
+export async function fetchLiveResults(force = false) {
+  if (!force) {
+    const cached = getCache();
+    if (cached) return cached.data;
+  }
 
   if (!API_FOOTBALL_KEY || API_FOOTBALL_KEY === "PASTE_HERE") {
     throw new Error("API-Football key not set");

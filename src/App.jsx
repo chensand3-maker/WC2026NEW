@@ -6,22 +6,26 @@ import {
   sendGiftToLeague,
   fetchAllGlobalUsers, deleteGlobalUser,
 } from "./firebase";
-import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnockoutToBracket, fetchTopScorers, fetchMatchDetails, getApiFixtureId } from "./liveResults";
+import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWinners, mapKnockoutToBracket, fetchTopScorers, fetchMatchDetails, getApiFixtureId } from "./liveResults";
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.33.6";
+const APP_VERSION = "3.33.7";
 
-// 🧹 Auto-clear stale cache from old versions — runs once on load
+// 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
   try {
-    const OLD_CACHE_KEYS = [
-      "wc2026_live_cache_v1",
-      "wc2026_live_cache_v2",
-      "wc2026_live_cache_v3",
-      "wc2026_live_cache_v4",
-    ];
-    OLD_CACHE_KEYS.forEach(k => localStorage.removeItem(k));
+    for (let v = 1; v <= 4; v++) {
+      localStorage.removeItem(`wc2026_live_cache_v${v}`);
+    }
+    // Also clear v5 if it's older than 2 minutes (stale from previous session)
+    const v5 = localStorage.getItem("wc2026_live_cache_v5");
+    if (v5) {
+      const parsed = JSON.parse(v5);
+      if (Date.now() - parsed.fetchedAt > 2 * 60 * 1000) {
+        localStorage.removeItem("wc2026_live_cache_v5");
+      }
+    }
   } catch {}
 })();
 
@@ -14503,21 +14507,15 @@ export default function App() {
   };
 
   const fetchAndApplyLive = async (force = false) => {
-    // 🛡️ Skip API call when no match is active (saves quota)
     if (!force && !shouldFetchLive()) {
       console.log("[API] Skipped — no active matches");
       return;
     }
-    // 🧹 On manual refresh: clear ALL cache versions to force fresh data
     if (force) {
-      try {
-        ["v1","v2","v3","v4","v5"].forEach(v =>
-          localStorage.removeItem(`wc2026_live_cache_${v}`)
-        );
-      } catch {}
+      clearLiveCache(); // 🧹 wipe ALL cache versions before fetching
     }
     try {
-      const data = await fetchLiveResults();
+      const data = await fetchLiveResults(force);
       console.log("[API] Raw response:", data);
       setLiveData(data);
       const mapped = mapResultsToFixtures(data, FIXTURES);
