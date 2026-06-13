@@ -10,7 +10,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.33.7";
+const APP_VERSION = "3.33.8";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -10502,31 +10502,32 @@ function TodayScreen({ picks, actuals, onPick, onBack, onGoToBracket, leagueMemb
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14,gap:8}}>
         <button onClick={onBack} style={{...ghostBtn,padding:"7px 14px",width:"auto"}}>{t("welcome.back")}</button>
         <div style={{display:"flex",gap:6}}>
-          <button onClick={() => {
+          <button onClick={async () => {
             try {
-              const dbg = JSON.parse(localStorage.getItem("wc2026_api_debug_v1") || "null");
-              const dbg2 = JSON.parse(localStorage.getItem("wc2026_api_debug2_v1") || "null");
               const stats = JSON.parse(localStorage.getItem("wc2026_api_stats_v1") || "null");
-              if (!dbg && !dbg2 && !stats) {
-                alert("עוד לא נקראו נתונים מה-API");
-                return;
-              }
+              const dbg2 = JSON.parse(localStorage.getItem("wc2026_api_debug2_v1") || "null");
               const age = dbg2 ? Math.floor((Date.now() - dbg2.ts) / 1000) : "?";
               let msg = `📡 דיבוג API\n\n`;
               if (stats) {
-                msg += `📊 קריאות היום (${stats.date}): ${stats.calls || 0} / 100\n\n`;
+                msg += `📊 קריאות היום (${stats.date}): ${stats.calls || 0} / 7500\n`;
+                const lastCall = stats.lastCall ? Math.floor((Date.now() - stats.lastCall) / 1000) : "?";
+                msg += `🕐 קריאה אחרונה: לפני ${lastCall} שניות\n\n`;
               }
-              msg += `רענון אחרון: לפני ${age} שניות\n\n`;
               if (dbg2) {
-                msg += `📊 סה"כ משחקים מה-API: ${dbg2.totalReturned}\n`;
-                msg += `🔢 ב-API.results: ${dbg2.results}\n\n`;
+                msg += `📋 debug נשמר: לפני ${age} שניות\n`;
+                msg += `📊 משחקים מה-API: ${dbg2.totalReturned}\n\n`;
                 if (dbg2.errors && Object.keys(dbg2.errors).length > 0) {
-                  msg += `⚠️ שגיאות API:\n${JSON.stringify(dbg2.errors, null, 2)}\n\n`;
+                  msg += `⚠️ שגיאות:\n${JSON.stringify(dbg2.errors)}\n\n`;
                 }
                 msg += `📋 סטטוסים:\n${JSON.stringify(dbg2.statusCounts, null, 2)}\n\n`;
-                msg += `🔍 דוגמאות:\n${JSON.stringify(dbg2.sample, null, 2).slice(0, 500)}`;
+                msg += `🔍 דוגמאות:\n${JSON.stringify(dbg2.sample?.slice(0,3), null, 2).slice(0, 400)}`;
               }
-              alert(msg);
+              const confirmed = window.confirm(msg + "\n\n--- לחץ OK לרענון מאולץ ---");
+              if (confirmed) {
+                showToast("🔄 טוען...", "info");
+                await fetchAndApplyLive(true);
+                showToast("✅ עודכן!", "success");
+              }
             } catch (e) {
               alert("שגיאה: " + e.message);
             }
