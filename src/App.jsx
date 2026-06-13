@@ -10,7 +10,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.33.9";
+const APP_VERSION = "3.34.0";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -14495,8 +14495,8 @@ export default function App() {
   // (currently in progress OR finished in the last 2 hours)
   const shouldFetchLive = () => {
     const now = Date.now();
-    const WINDOW_BEFORE = 10 * 60 * 1000;     // 10 min before kickoff
-    const WINDOW_AFTER  = 6 * 60 * 60 * 1000; // 6 hours after kickoff (covers extra time + delays)
+    const WINDOW_BEFORE = 10 * 60 * 1000;      // 10 min before kickoff
+    const WINDOW_AFTER  = 24 * 60 * 60 * 1000; // 24 hours — catch any match from today
     for (const f of FIXTURES) {
       const k = new Date(f.kickoff || 0).getTime();
       if (!k) continue;

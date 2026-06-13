@@ -33,6 +33,7 @@ const TEAM_NAME_MAP = {
   "Australia": "Australia",
   "Turkey": "Türkiye",
   "Türkiye": "Türkiye",
+  "Turkiye": "Türkiye",
   // Group E
   "Germany": "Germany",
   "Curaçao": "Curaçao",
