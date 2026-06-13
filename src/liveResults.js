@@ -155,18 +155,23 @@ export async function fetchLiveResults(force = false) {
   const statusCounts = {};
   const teamPairsRaw = [];
   const allTeamNames = new Set();
+  const activeMatches = [];
   for (const fx of json.response) {
     const s = fx.fixture?.status?.short || "UNKNOWN";
     statusCounts[s] = (statusCounts[s] || 0) + 1;
     allTeamNames.add(fx.teams?.home?.name);
     allTeamNames.add(fx.teams?.away?.name);
-    if (teamPairsRaw.length < 8) {
-      teamPairsRaw.push({
+    // Save ALL active/finished matches (not NS)
+    if (s !== "NS" && s !== "TBD" && s !== "PST") {
+      activeMatches.push({
         home: fx.teams?.home?.name,
         away: fx.teams?.away?.name,
+        homeNorm: normalizeTeam(fx.teams?.home?.name),
+        awayNorm: normalizeTeam(fx.teams?.away?.name),
         status: s,
         score: `${fx.goals?.home ?? "?"}-${fx.goals?.away ?? "?"}`,
         round: fx.league?.round,
+        elapsed: fx.fixture?.status?.elapsed,
       });
     }
   }
@@ -175,7 +180,7 @@ export async function fetchLiveResults(force = false) {
       ts: Date.now(),
       totalReturned: json.response.length,
       statusCounts,
-      sample: teamPairsRaw,
+      sample: activeMatches,
       allTeams: [...allTeamNames].sort(),
       errors: json.errors,
       results: json.results,
