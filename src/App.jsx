@@ -10,7 +10,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.33.8";
+const APP_VERSION = "3.33.9";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -14647,18 +14647,20 @@ export default function App() {
     if (!name) return;
     if (didInitialFetch.current) return;
     didInitialFetch.current = true;
-    const initial = setTimeout(() => { fetchAndApplyLive(); fetchAndApplyTopScorers(); }, 3000);
+    // 🚀 Fetch immediately on load — always force to bypass stale cache
+    clearLiveCache();
+    const initial = setTimeout(() => { fetchAndApplyLive(true); fetchAndApplyTopScorers(true); }, 2000);
     return () => clearTimeout(initial);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [name]);
 
-  // 🔴 Auto-poll every 90 seconds during live matches (saves API quota when no matches)
+  // 🔄 Auto-refresh every 5 minutes — no conditions, always runs
   useEffect(() => {
     if (!name) return;
     const interval = setInterval(() => {
-      // shouldFetchLive() is defined inside fetchAndApplyLive and will skip if no active matches
-      fetchAndApplyLive();
-    }, 90 * 1000);
+      clearLiveCache();
+      fetchAndApplyLive(true);
+    }, 5 * 60 * 1000);
     return () => clearInterval(interval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [name]);
