@@ -10,7 +10,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.34.1";
+const APP_VERSION = "3.34.3";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -1182,8 +1182,8 @@ const SCHEDULE = {
   "Morocco|Haiti":        { kickoff: _utc(2026,6,24,22, 0), venue: "Mercedes-Benz Stadium, Atlanta" },
   // ── Group D ──
   "USA|Paraguay":         { kickoff: _utc(2026,6,13, 1, 0), venue: "SoFi Stadium, Inglewood" },
-  "Australia|Türkiye":    { kickoff: _utc(2026,6,14, 4, 0), venue: "BC Place, Vancouver" },
-  "Türkiye|Paraguay":     { kickoff: _utc(2026,6,19, 4, 0), venue: "Levi's Stadium, Santa Clara" },
+  "Australia|Türkiye":    { kickoff: _utc(2026,6,14, 1, 0), venue: "BC Place, Vancouver" },
+  "Türkiye|Paraguay":     { kickoff: _utc(2026,6,20, 4, 0), venue: "Levi's Stadium, Santa Clara" },
   "USA|Australia":        { kickoff: _utc(2026,6,19,19, 0), venue: "Lumen Field, Seattle" },
   "Türkiye|USA":          { kickoff: _utc(2026,6,26, 2, 0), venue: "SoFi Stadium, Inglewood" },
   "Paraguay|Australia":   { kickoff: _utc(2026,6,26, 2, 0), venue: "Levi's Stadium, Santa Clara" },
