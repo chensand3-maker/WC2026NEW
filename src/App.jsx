@@ -10,7 +10,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.35.3";
+const APP_VERSION = "3.35.4";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -14543,7 +14543,7 @@ export default function App() {
         }
       }
       const newActuals = Object.keys(mapped).length > 0
-        ? { ...mapped, ...meaningfulActuals } // manual entries win over auto
+        ? { ...meaningfulActuals, ...mapped } // API wins over manual/firebase
         : actuals;
 
       if (Object.keys(mapped).length > 0) {
