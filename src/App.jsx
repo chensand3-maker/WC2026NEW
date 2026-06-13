@@ -10,7 +10,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.35.1";
+const APP_VERSION = "3.35.2";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -15224,7 +15224,18 @@ export default function App() {
           onBack={()=>setScreen("group")}
           onGoToBracket={()=>setScreen("bracket")}
           leagueMembers={leagueData ? Object.values(leagueData.members || {}) : null}
-          onRefresh={() => { showToast(t("toast.refreshing"), "info"); fetchAndApplyLive(true); fetchAndApplyTopScorers(true); }}
+          onRefresh={() => {
+            showToast(t("toast.refreshing"), "info");
+            clearLiveCache();
+            fetchAndApplyLive(true).then(() => {
+              const dbg2 = JSON.parse(localStorage.getItem("wc2026_api_debug2_v1") || "null");
+              if (dbg2) {
+                const age = Math.floor((Date.now() - dbg2.ts) / 1000);
+                showToast(`✅ ${dbg2.totalReturned} matches | ${age}s ago | ${JSON.stringify(dbg2.statusCounts)}`, "success");
+              }
+            });
+            fetchAndApplyTopScorers(true);
+          }}
           onShowDetails={(fix) => setMatchDetailsFor(fix)}
         />
       )}
