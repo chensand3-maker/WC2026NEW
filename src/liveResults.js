@@ -5,59 +5,79 @@ const API_FOOTBALL_KEY = "50b86c6e4ce49b2c24362c4947a7e3d5";
 const API_URL = "https://v3.football.api-sports.io";
 
 const TEAM_NAME_MAP = {
-  "USA": "USA",
-  "United States": "USA",
+  // Group A
   "Mexico": "Mexico",
-  "Canada": "Canada",
   "South Africa": "South Africa",
   "South Korea": "South Korea",
   "Korea Republic": "South Korea",
+  "Korea South": "South Korea",
   "Czech Republic": "Czechia",
   "Czechia": "Czechia",
+  // Group B
+  "Canada": "Canada",
   "Bosnia and Herzegovina": "Bosnia",
+  "Bosnia & Herzegovina": "Bosnia",
+  "Bosnia": "Bosnia",
+  "BiH": "Bosnia",
   "Qatar": "Qatar",
   "Switzerland": "Switzerland",
+  // Group C
   "Brazil": "Brazil",
   "Morocco": "Morocco",
   "Haiti": "Haiti",
   "Scotland": "Scotland",
+  // Group D
+  "USA": "USA",
+  "United States": "USA",
   "Paraguay": "Paraguay",
   "Australia": "Australia",
   "Turkey": "Türkiye",
   "Türkiye": "Türkiye",
+  // Group E
   "Germany": "Germany",
   "Curaçao": "Curaçao",
   "Curacao": "Curaçao",
   "Ivory Coast": "Côte d'Ivoire",
   "Côte d'Ivoire": "Côte d'Ivoire",
+  "Cote d'Ivoire": "Côte d'Ivoire",
   "Ecuador": "Ecuador",
+  // Group F
   "Netherlands": "Netherlands",
   "Japan": "Japan",
   "Sweden": "Sweden",
   "Tunisia": "Tunisia",
+  // Group G
   "Belgium": "Belgium",
   "Egypt": "Egypt",
   "Iran": "Iran",
   "IR Iran": "Iran",
   "New Zealand": "New Zealand",
+  // Group H
   "Spain": "Spain",
   "Cape Verde": "Cabo Verde",
+  "Cape Verde Islands": "Cabo Verde",
   "Cabo Verde": "Cabo Verde",
   "Saudi Arabia": "Saudi Arabia",
   "Uruguay": "Uruguay",
+  // Group I
   "France": "France",
   "Senegal": "Senegal",
   "Iraq": "Iraq",
   "Norway": "Norway",
+  // Group J
   "Argentina": "Argentina",
   "Algeria": "Algeria",
   "Austria": "Austria",
   "Jordan": "Jordan",
+  // Group K
   "Portugal": "Portugal",
   "DR Congo": "DR Congo",
   "Congo DR": "DR Congo",
+  "Democratic Republic of Congo": "DR Congo",
+  "Congo": "DR Congo",
   "Uzbekistan": "Uzbekistan",
   "Colombia": "Colombia",
+  // Group L
   "England": "England",
   "Croatia": "Croatia",
   "Ghana": "Ghana",
@@ -123,10 +143,13 @@ export async function fetchLiveResults() {
   // 🐛 Debug: track all statuses returned by the API
   const statusCounts = {};
   const teamPairsRaw = [];
+  const allTeamNames = new Set();
   for (const fx of json.response) {
     const s = fx.fixture?.status?.short || "UNKNOWN";
     statusCounts[s] = (statusCounts[s] || 0) + 1;
-    if (teamPairsRaw.length < 5) {
+    allTeamNames.add(fx.teams?.home?.name);
+    allTeamNames.add(fx.teams?.away?.name);
+    if (teamPairsRaw.length < 8) {
       teamPairsRaw.push({
         home: fx.teams?.home?.name,
         away: fx.teams?.away?.name,
@@ -142,6 +165,7 @@ export async function fetchLiveResults() {
       totalReturned: json.response.length,
       statusCounts,
       sample: teamPairsRaw,
+      allTeams: [...allTeamNames].sort(),
       errors: json.errors,
       results: json.results,
     }));
