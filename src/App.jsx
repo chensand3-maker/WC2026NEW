@@ -10,7 +10,20 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.33.5";
+const APP_VERSION = "3.33.6";
+
+// 🧹 Auto-clear stale cache from old versions — runs once on load
+(function clearOldCaches() {
+  try {
+    const OLD_CACHE_KEYS = [
+      "wc2026_live_cache_v1",
+      "wc2026_live_cache_v2",
+      "wc2026_live_cache_v3",
+      "wc2026_live_cache_v4",
+    ];
+    OLD_CACHE_KEYS.forEach(k => localStorage.removeItem(k));
+  } catch {}
+})();
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
