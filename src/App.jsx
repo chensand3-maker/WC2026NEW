@@ -10,7 +10,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.34.3";
+const APP_VERSION = "3.34.4";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -294,7 +294,7 @@ const TRANSLATIONS = {
     "onboarding.step3": "Watch who nails the predictions",
     "onboarding.slide4Title": "Roulette & Cards",
     "onboarding.coinsTitle": "Earn coins",
-    "onboarding.rarityTitle": "5 RARITY TIERS",
+    "onboarding.rarityTitle": "7 RARITY TIERS",
     "onboarding.spinTip": "Spin for 100 🪙 — collect 300+ player cards",
     "onboarding.collectTip": "Find your collection in the menu (☰)",
     "onboarding.dupTip": "Duplicate cards refund coins automatically",
@@ -815,7 +815,7 @@ const TRANSLATIONS = {
     "onboarding.step3": "תראה מי קולע הכי טוב",
     "onboarding.slide4Title": "רולטה וקלפים",
     "onboarding.coinsTitle": "צבור מטבעות",
-    "onboarding.rarityTitle": "5 רמות נדירות",
+    "onboarding.rarityTitle": "7 רמות נדירות",
     "onboarding.spinTip": "סיבוב עולה 100 🪙 — אסוף 300+ קלפי שחקנים",
     "onboarding.collectTip": "מצא את האוסף שלך בתפריט (☰)",
     "onboarding.dupTip": "קלפים כפולים מחזירים לך מטבעות אוטומטית",
@@ -3073,10 +3073,11 @@ const CARDS_BY_RARITY = {
 
 // Rarity probabilities (must sum to 100) — Legendary intentionally very rare
 // Regular spin odds (harder to get top tier — legendary stays at 2%, rest reduced)
-const RARITY_ODDS = { L: 2, E: 5, R: 15, U: 28, C: 50 };
+const RARITY_ODDS = { L: 2, E: 5, R: 15, U: 28, C: 50 }; // X=1% handled separately, B=quiz only
 
 // Visual config per rarity tier — used by the card UI later
 const RARITY_CONFIG = {
+  B: { label: "BALLON D'OR", color: "#f5d76e", bgGrad: "linear-gradient(165deg,#fffff8 0%,#fdf8e8 15%,#faf0cc 35%,#f5e6b0 55%,#faf0d0 75%,#fffff0 100%)", glow: "rgba(212,175,55,0.95)", emoji: "🏅", coins: 8000 },
   G: { label: "LEGEND",    color: "#22c55e", bgGrad: "linear-gradient(135deg,#14532d,#16a34a,#bbf7d0,#16a34a,#14532d)", glow: "rgba(34,197,94,0.7)", emoji: "🟢", coins: 500 },
   F: { label: "FRIEND",    color: "#ffffff", bgGrad: "linear-gradient(135deg,#f8fafc,#ffffff,#e2e8f0,#ffffff,#f8fafc)", glow: "rgba(255,255,255,0.7)", emoji: "⭐", coins: 800 },
   X: { label: "GALAXY",    color: "#c084fc", bgGrad: "linear-gradient(135deg,#1e1b4b 0%,#4c1d95 25%,#9333ea 50%,#be185d 75%,#1e3a8a 100%)", glow: "rgba(192,132,252,0.9)", emoji: "🌌", coins: 3000 },
@@ -3112,18 +3113,20 @@ function rollOneCard() {
   return pool[Math.floor(Math.random() * pool.length)];
 }
 
-// 🎮 Player rating (FIFA-style 55-99 score)
-// New bands per user request: Legendary 95-99, Epic 85-94, Rare 75-84, Uncommon 65-74, Common 55-64
+// 🎮 Player rating — 7 tiers
+// B=Ballon d'Or 97-99 | X=Galaxy 90-96 | L=Legendary 85-89
+// E=Epic 75-79 | R=Rare 70-74 | U=Uncommon 60-69 | C=Common 50-59
 const RATING_RANGES = {
-  G: { min: 90, max: 99 },  // Legend — hall of fame, spans wider range
-  F: { min: 95, max: 99 },  // 🎴 Friends — all 99 by default (overridden by manualRating)
-  X: { min: 92, max: 99 },  // 🌌 Galaxy — top of the top
-  T: { min: 10, max: 40 },  // 🗑️ Trash — Israeli "legends" with low ratings
-  L: { min: 95, max: 99 },  // Legendary
-  E: { min: 85, max: 94 },  // Epic
-  R: { min: 75, max: 84 },  // Rare
-  U: { min: 65, max: 74 },  // Uncommon
-  C: { min: 55, max: 64 },  // Common
+  B: { min: 97, max: 99 },  // 🏅 Ballon d'Or — only Ballon winners
+  G: { min: 90, max: 99 },  // Legend — hall of fame (kept for compatibility)
+  F: { min: 97, max: 99 },  // 🎴 Friends — overridden by manualRating
+  X: { min: 90, max: 96 },  // 🌌 Galaxy — top of the top
+  T: { min: 10, max: 40 },  // 🗑️ Trash
+  L: { min: 85, max: 89 },  // 🏆 Legendary
+  E: { min: 75, max: 79 },  // 💎 Epic
+  R: { min: 70, max: 74 },  // 🔥 Rare
+  U: { min: 60, max: 69 },  // 💧 Uncommon
+  C: { min: 50, max: 59 },  // ⚪ Common
 };
 
 // Manual ratings for the top players — locked to specific values to feel like FC25
