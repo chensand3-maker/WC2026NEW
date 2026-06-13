@@ -10,7 +10,7 @@ import { fetchLiveResults, mapResultsToFixtures, mapKnockoutToWinners, mapKnocko
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.33.3";
+const APP_VERSION = "3.33.5";
 
 // ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
 // Bilingual support: English (default) + Hebrew (RTL).
@@ -5485,8 +5485,8 @@ function PlayerCard({ card, size = "L", animated = false, flippable = false }) {
           }
         `}</style>
       )}
-      {/* 🌌 Moving light sheen — diagonal sweep (transform-only, single GPU layer) */}
-      {isGalaxy && (
+      {/* 🌌 Moving light sheen — only when animated (single card view), not in grids */}
+      {isGalaxy && animated && (
         <div style={{
           position:"absolute",
           top:0,bottom:0,left:0,
@@ -5499,7 +5499,7 @@ function PlayerCard({ card, size = "L", animated = false, flippable = false }) {
           backfaceVisibility:"hidden",
         }}/>
       )}
-      {/* 🌌 Galaxy particles — opacity only, no scale (less GPU work) */}
+      {/* 🌌 Galaxy particles — animated only in single-card view; static dots in grids */}
       {isGalaxy && (
         <>
           {[
@@ -5517,11 +5517,12 @@ function PlayerCard({ card, size = "L", animated = false, flippable = false }) {
               background:"#fff",
               borderRadius:"50%",
               boxShadow:"0 0 6px #fff",
-              animation: `galaxyTwinkle 2.5s ease-in-out infinite`,
+              animation: animated ? `galaxyTwinkle 2.5s ease-in-out infinite` : "none",
               animationDelay: p.d,
+              opacity: animated ? undefined : 0.7,
               zIndex: 4,
               pointerEvents:"none",
-              willChange: "opacity",
+              willChange: animated ? "opacity" : undefined,
               backfaceVisibility:"hidden",
               transform:"translateZ(0)",
             }}/>
@@ -12179,8 +12180,8 @@ function LeagueHub({
             // For my own profile, use my local collection (fresh).
             // For friends, use what's synced to Firebase.
             const theirCollection = m.isMe ? (cardCollection || {}) : migrateCardCollection(m.cardCollection || {});
-            // Full pool = current players + legends + Israeli trash
-            const fullPool = [...CARDS, ...LEGEND_CARDS, ...ISRAELI_LEGENDS];
+            // Full pool = galaxy + current players + legends + friends + Israeli trash
+            const fullPool = [...GALAXY_CARDS, ...CARDS, ...LEGEND_CARDS, ...FRIEND_CARDS, ...ISRAELI_LEGENDS];
             const ownedCards = fullPool.filter(c => (theirCollection[c.id] || 0) > 0);
             // Sort owned by rarity (legends first, then best to common, then trash)
             const rarityOrder = { X: 0, G: 1, L: 2, E: 3, R: 4, U: 5, C: 6, T: 7 };
@@ -14476,12 +14477,11 @@ export default function App() {
   // (currently in progress OR finished in the last 2 hours)
   const shouldFetchLive = () => {
     const now = Date.now();
-    const WINDOW_BEFORE = 5 * 60 * 1000;      // 5 min before kickoff
-    const WINDOW_AFTER  = 3 * 60 * 60 * 1000; // 3 hours after kickoff
+    const WINDOW_BEFORE = 10 * 60 * 1000;     // 10 min before kickoff
+    const WINDOW_AFTER  = 6 * 60 * 60 * 1000; // 6 hours after kickoff (covers extra time + delays)
     for (const f of FIXTURES) {
       const k = new Date(f.kickoff || 0).getTime();
       if (!k) continue;
-      // Is this match currently active or just ended?
       if (now >= k - WINDOW_BEFORE && now <= k + WINDOW_AFTER) {
         return true;
       }
@@ -14494,6 +14494,14 @@ export default function App() {
     if (!force && !shouldFetchLive()) {
       console.log("[API] Skipped — no active matches");
       return;
+    }
+    // 🧹 On manual refresh: clear ALL cache versions to force fresh data
+    if (force) {
+      try {
+        ["v1","v2","v3","v4","v5"].forEach(v =>
+          localStorage.removeItem(`wc2026_live_cache_${v}`)
+        );
+      } catch {}
     }
     try {
       const data = await fetchLiveResults();

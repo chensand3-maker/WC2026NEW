@@ -88,8 +88,7 @@ function normalizeTeam(name) {
   return TEAM_NAME_MAP[name] || name;
 }
 
-const CACHE_KEY = "wc2026_live_cache_v4";
-// 🚀 With 7500 calls/day we can be aggressive: 1 minute cache during live matches
+const CACHE_KEY = "wc2026_live_cache_v5";
 const CACHE_TTL = 1 * 60 * 1000;
 
 function getCache() {
