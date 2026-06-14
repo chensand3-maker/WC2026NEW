@@ -10,7 +10,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.35.5";
+const APP_VERSION = "3.36.3";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -3780,13 +3780,12 @@ function OnboardingTutorial({ onDone }) {
             borderRadius:12,padding:"12px",marginBottom:14,
           }}>
             <div style={{fontSize:11,color:"#cbd5e1",fontWeight:700,marginBottom:8,textAlign:"center",letterSpacing:2}}>{t("onboarding.rarityTitle")}</div>
-            <div style={{display:"grid",gridTemplateColumns:"repeat(5, 1fr)",gap:4}}>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(4, 1fr)",gap:4,marginBottom:4}}>
               {[
-                { e: "🏆", l: "LEG", c: "#fbbf24", p: "3%" },
-                { e: "💎", l: "EPIC", c: "#a855f7", p: "12%" },
-                { e: "🔥", l: "RARE", c: "#ef4444", p: "22%" },
-                { e: "💧", l: "UNC", c: "#3b82f6", p: "28%" },
-                { e: "⚪", l: "COM", c: "#94a3b8", p: "35%" },
+                { e: "💎", l: "EPIC",     c: "#a855f7", p: "5%" },
+                { e: "🔥", l: "RARE",     c: "#ef4444", p: "15%" },
+                { e: "💧", l: "UNCOMMON", c: "#3b82f6", p: "28%" },
+                { e: "⚪", l: "COMMON",   c: "#94a3b8", p: "48.5%" },
               ].map(r => (
                 <div key={r.l} style={{
                   textAlign:"center",
@@ -3795,7 +3794,25 @@ function OnboardingTutorial({ onDone }) {
                   border:`1px solid ${r.c}44`,
                 }}>
                   <div style={{fontSize:18,marginBottom:2}}>{r.e}</div>
-                  <div style={{fontSize:8,color:r.c,fontWeight:900,letterSpacing:0.5}}>{r.l}</div>
+                  <div style={{fontSize:7,color:r.c,fontWeight:900,letterSpacing:0.5}}>{r.l}</div>
+                  <div style={{fontSize:9,color:"#94a3b8",fontWeight:700,marginTop:2}}>{r.p}</div>
+                </div>
+              ))}
+            </div>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(3, 1fr)",gap:4}}>
+              {[
+                { e: "🏅", l: "BALLON D'OR", c: "#f5d76e", p: "0.5%" },
+                { e: "🌌", l: "GALAXY",    c: "#c084fc", p: "1%" },
+                { e: "🏆", l: "LEGENDARY", c: "#fbbf24", p: "2%" },
+              ].map(r => (
+                <div key={r.l} style={{
+                  textAlign:"center",
+                  padding:"6px 2px",borderRadius:6,
+                  background:`${r.c}15`,
+                  border:`1px solid ${r.c}55`,
+                }}>
+                  <div style={{fontSize:18,marginBottom:2}}>{r.e}</div>
+                  <div style={{fontSize:7,color:r.c,fontWeight:900,letterSpacing:0.5}}>{r.l}</div>
                   <div style={{fontSize:9,color:"#94a3b8",fontWeight:700,marginTop:2}}>{r.p}</div>
                 </div>
               ))}
@@ -4323,7 +4340,7 @@ function WorldLeaderboard({ userId, name, onClose }) {
 }
 
 // ─── SIDEBAR: hamburger menu drawer that slides in from one side ─────────────
-function Sidebar({ open, onClose, name, lang, setLang, onShowProfile, onShowRules, onShowBackup, onShowTutorial, onShowAchievements, onShowRoulette, onShowWrapped, onShowAdmin, onShowAdminGift, onShowGlobalAdmin, onShowLuckyWheel, onShowCoinWheel, coinWheelAvailable, wheelAvailable, hlPlaysToday, onLogout, onReset, totalPoints, unlockedCount, coinBalance }) {
+function Sidebar({ open, onClose, name, lang, setLang, onShowProfile, onShowRules, onShowBackup, onShowTutorial, onShowAchievements, onShowRoulette, onShowWrapped, onShowAdmin, onShowAdminGift, onShowGlobalAdmin, onShowLuckyWheel, onShowCoinWheel, onShowQuiz, coinWheelAvailable, wheelAvailable, hlPlaysToday, onLogout, onReset, totalPoints, unlockedCount, coinBalance }) {
   const t = useT();
   const isRTL = lang === "he";
 
@@ -4407,6 +4424,11 @@ function Sidebar({ open, onClose, name, lang, setLang, onShowProfile, onShowRule
             icon="🎰"
             label={`${t("sidebar.roulette")}${coinBalance ? ` · 🪙 ${coinBalance}` : ""}`}
             onClick={()=>{onClose();onShowRoulette();}}
+          />
+          <SidebarItem
+            icon="🧠"
+            label="חידון כדורגל"
+            onClick={()=>{onClose();onShowQuiz?.();}}
           />
           <SidebarItem
             icon="🎴"
@@ -5112,6 +5134,36 @@ function RouletteModal({ coins, isSpinning, pendingCard, onSpin, onLegendsSpin, 
         }}>
           🃏 {t("roulette.viewCollection")}
         </button>
+
+        {/* 📊 Rarity odds legend */}
+        <div style={{marginTop:12,padding:"10px 12px",background:"rgba(15,23,42,0.6)",borderRadius:12,border:"1px solid rgba(71,85,105,0.25)"}}>
+          <div style={{fontSize:9,fontWeight:800,color:"#64748b",letterSpacing:2,textAlign:"center",marginBottom:8}}>
+            🎲 סיכויי נדירות — רולטה רגילה
+          </div>
+          <div style={{display:"flex",flexDirection:"column",gap:4}}>
+            {[
+              {emoji:"⚪",label:"COMMON",   pct:"48.5%", color:"#94a3b8"},
+              {emoji:"💧",label:"UNCOMMON", pct:"28%",   color:"#60a5fa"},
+              {emoji:"🔥",label:"RARE",     pct:"15%",   color:"#ef4444"},
+              {emoji:"💎",label:"EPIC",     pct:"5%",    color:"#a855f7"},
+              {emoji:"🏆",label:"LEGENDARY",pct:"2%",    color:"#fbbf24"},
+              {emoji:"🌌",label:"GALAXY",   pct:"1%",    color:"#c084fc"},
+              {emoji:"🏅",label:"BALLON D'OR",pct:"0.5%",color:"#f5d76e"},
+            ].map(({emoji,label,pct,color}) => (
+              <div key={label} style={{display:"flex",alignItems:"center",gap:8}}>
+                <span style={{fontSize:13,width:20,textAlign:"center"}}>{emoji}</span>
+                <span style={{fontSize:10,fontWeight:700,color,flex:1}}>{label}</span>
+                <div style={{flex:2,height:4,background:"rgba(71,85,105,0.3)",borderRadius:4,overflow:"hidden"}}>
+                  <div style={{
+                    height:"100%",borderRadius:4,background:color,
+                    width: pct === "48.5%" ? "97%" : pct === "28%" ? "56%" : pct === "15%" ? "30%" : pct === "5%" ? "10%" : pct === "2%" ? "4%" : pct === "1%" ? "2%" : "1%",
+                  }}/>
+                </div>
+                <span style={{fontSize:10,fontWeight:900,color,width:36,textAlign:"end"}}>{pct}</span>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -6950,8 +7002,366 @@ function CoinFlipWheelModal({ onClose, isAvailable, coinBalance, cardCollection,
   );
 }
 
+// ─── 🧠 QUIZ SCREEN ──────────────────────────────────────────────────────────
+const QUIZ_FLAGS = [
+  {flag:"🇧🇷",a:"ברזיל",options:["ארגנטינה","ברזיל","קולומביה","אורוגוואי"]},
+  {flag:"🇩🇪",a:"גרמניה",options:["אוסטריה","שוויץ","גרמניה","הולנד"]},
+  {flag:"🇵🇹",a:"פורטוגל",options:["ספרד","איטליה","פורטוגל","גיאורגיה"]},
+  {flag:"🇦🇷",a:"ארגנטינה",options:["אורוגוואי","ארגנטינה","יוון","פינלנד"]},
+  {flag:"🇳🇱",a:"הולנד",options:["לוקסמבורג","בלגיה","צרפת","הולנד"]},
+  {flag:"🇯🇵",a:"יפן",options:["יפן","דנמרק","שוויץ","קנדה"]},
+  {flag:"🇲🇦",a:"מרוקו",options:["תוניסיה","מרוקו","אלג'יריה","מצרים"]},
+  {flag:"🇭🇷",a:"קרואטיה",options:["סלובקיה","קרואטיה","סלובניה","צ'כיה"]},
+  {flag:"🇧🇪",a:"בלגיה",options:["גרמניה","הולנד","בלגיה","לוקסמבורג"]},
+  {flag:"🇸🇦",a:"ערב הסעודית",options:["איחוד האמירויות","ערב הסעודית","ירדן","מצרים"]},
+  {flag:"🇬🇭",a:"גאנה",options:["ניגריה","טוגו","גאנה","קוטה דיבואר"]},
+  {flag:"🇨🇭",a:"שוויץ",options:["אוסטריה","דנמרק","שוויץ","נורווגיה"]},
+  {flag:"🇸🇳",a:"סנגל",options:["גינאה","מאלי","סנגל","קמרון"]},
+  {flag:"🇺🇾",a:"אורוגוואי",options:["ארגנטינה","אורוגוואי","פרגוואי","בוליביה"]},
+  {flag:"🇰🇷",a:"קוריאה הדרומית",options:["יפן","קוריאה הצפונית","סין","קוריאה הדרומית"]},
+  {flag:"🇮🇷",a:"איראן",options:["עיראק","אפגניסטן","פקיסטן","איראן"]},
+  {flag:"🇨🇲",a:"קמרון",options:["גאנה","ניגריה","קמרון","סנגל"]},
+  {flag:"🇪🇨",a:"אקוודור",options:["קולומביה","ונצואלה","אקוודור","פרו"]},
+  {flag:"🇳🇴",a:"נורווגיה",options:["דנמרק","שוודיה","נורווגיה","פינלנד"]},
+  {flag:"🇦🇺",a:"אוסטרליה",options:["ניו זילנד","אוסטרליה","פיג'י","פפואה"]},
+  {flag:"🇫🇷",a:"צרפת",options:["בלגיה","איטליה","צרפת","ספרד"]},
+  {flag:"🇪🇸",a:"ספרד",options:["פורטוגל","אנדורה","ספרד","צרפת"]},
+  {flag:"🇮🇹",a:"איטליה",options:["ספרד","אירלנד","איטליה","מקסיקו"]},
+  {flag:"🇲🇽",a:"מקסיקו",options:["מקסיקו","איטליה","בולגריה","הונגריה"]},
+  {flag:"🇨🇦",a:"קנדה",options:["קנדה","דנמרק","שוויץ","אוסטריה"]},
+  {flag:"🇺🇸",a:'ארה"ב',options:['ארה"ב',"אוסטרליה","ניו זילנד","בריטניה"]},
+  {flag:"🇵🇱",a:"פולין",options:["אוסטריה","פולין","הונגריה","צ'כיה"]},
+  {flag:"🇩🇰",a:"דנמרק",options:["נורווגיה","דנמרק","שוודיה","פינלנד"]},
+  {flag:"🇸🇪",a:"שוודיה",options:["נורווגיה","דנמרק","שוודיה","פינלנד"]},
+  {flag:"🇨🇴",a:"קולומביה",options:["ונצואלה","אקוודור","קולומביה","פרו"]},
+  {flag:"🇶🇦",a:"קטאר",options:["בחריין","כווית","קטאר","עומאן"]},
+  {flag:"🇿🇦",a:"דרום אפריקה",options:["זימבבואה","נמיביה","דרום אפריקה","בוצואנה"]},
+  {flag:"🇳🇬",a:"ניגריה",options:["קמרון","גאנה","ניגריה","בנין"]},
+  {flag:"🇺🇦",a:"אוקראינה",options:["בלארוס","מולדובה","אוקראינה","פולין"]},
+  {flag:"🇬🇷",a:"יוון",options:["קפריסין","יוון","ישראל","בולגריה"]},
+  {flag:"🇷🇸",a:"סרביה",options:["קרואטיה","בוסניה","סרביה","מונטנגרו"]},
+  {flag:"🇨🇿",a:"צ'כיה",options:["פולין","סלובקיה","צ'כיה","אוסטריה"]},
+  {flag:"🇭🇺",a:"הונגריה",options:["רומניה","אוסטריה","הונגריה","פולין"]},
+  {flag:"🇮🇱",a:"ישראל",options:["לבנון","ירדן","ישראל","קפריסין"]},
+  {flag:"🇹🇷",a:"טורקיה",options:["ארמניה","גיאורגיה","יוון","טורקיה"]},
+  {flag:"🇪🇬",a:"מצרים",options:["לוב","סודאן","מצרים","ירדן"]},
+  {flag:"🇨🇮",a:"קוטה דיבואר",options:["גאנה","ליבריה","גינאה","קוטה דיבואר"]},
+  {flag:"🇹🇳",a:"תוניסיה",options:["לוב","אלג'יריה","מרוקו","תוניסיה"]},
+  {flag:"🇩🇿",a:"אלג'יריה",options:["מרוקו","תוניסיה","אלג'יריה","לוב"]},
+  {flag:"🇨🇳",a:"סין",options:["יפן","קוריאה","טייוואן","סין"]},
+  {flag:"🇮🇳",a:"הודו",options:["פקיסטן","בנגלדש","סרי לנקה","הודו"]},
+  {flag:"🇷🇺",a:"רוסיה",options:["בלארוס","רוסיה","סלובקיה","סרביה"]},
+  {flag:"🇷🇴",a:"רומניה",options:["בולגריה","רומניה","מולדובה","הונגריה"]},
+  {flag:"🇧🇬",a:"בולגריה",options:["רומניה","בולגריה","מולדובה","מקדוניה"]},
+];
+
+const LETTERS = ["א","ב","ג","ד"];
+
+function shuffleArr(arr) { return [...arr].sort(()=>Math.random()-0.5); }
+
+function QuizScreen({ onClose, onCoinsEarned, leagueMembers = {}, userId, userName, onUpdateQuizBest }) {
+  const [phase, setPhase] = useState("home"); // home | flags | result
+  const [questions, setQuestions] = useState([]);
+  const [current, setCurrent] = useState(0);
+  const [correct, setCorrect] = useState(0);
+  const [lives, setLives] = useState(3);
+  const [answered, setAnswered] = useState(false);
+  const [chosenIdx, setChosenIdx] = useState(null);
+  const [timeLeft, setTimeLeft] = useState(15);
+  const [lifelines, setLifelines] = useState({skip:true, fifty:true, audience:true});
+  const [hiddenOpts, setHiddenOpts] = useState([]);
+  const [audiencePcts, setAudiencePcts] = useState(null);
+  const [prizeText, setPrizeText] = useState("");
+  const [personalBest] = useState(() => parseInt(localStorage.getItem("wc2026_quiz_best_v1")||"0",10));
+
+  // Build leaderboard
+  const leaderboard = Object.entries(leagueMembers).map(([uid, m]) => ({
+    name: m.name || "—",
+    score: uid === userId ? Math.max(personalBest, m.quizBestFlags || 0) : (m.quizBestFlags || 0),
+    isMe: uid === userId,
+  })).sort((a,b) => b.score - a.score);
+  if (!leaderboard.find(m=>m.isMe) && personalBest > 0) {
+    leaderboard.push({name: userName||"אני", score: personalBest, isMe: true});
+    leaderboard.sort((a,b)=>b.score-a.score);
+  }
+
+  function startFlags() {
+    const q = shuffleArr(QUIZ_FLAGS);
+    setQuestions(q);
+    setCurrent(0); setCorrect(0); setLives(3);
+    setAnswered(false); setChosenIdx(null);
+    setHiddenOpts([]); setAudiencePcts(null);
+    setLifelines({skip:true,fifty:true,audience:true});
+    setTimeLeft(15); setPhase("flags");
+  }
+
+  // Timer
+  useEffect(() => {
+    if (phase !== "flags" || answered) return;
+    if (timeLeft <= 0) { handleAnswer(null); return; }
+    const t = setTimeout(() => setTimeLeft(p=>p-1), 1000);
+    return () => clearTimeout(t);
+  }, [phase, timeLeft, answered]);
+
+  function handleAnswer(idx) {
+    if (answered) return;
+    setAnswered(true);
+    setChosenIdx(idx);
+    const q = questions[current];
+    const opts = shuffleArr(q.options);
+    const correctIdx = opts.findIndex(o=>o===q.a);
+    const isCorrect = idx !== null && opts[idx] === q.a;
+
+    if (isCorrect) {
+      setCorrect(p=>p+1);
+    } else {
+      const newLives = lives - 1;
+      setLives(newLives);
+      if (newLives <= 0) {
+        setTimeout(() => finishQuiz(correct + (isCorrect?1:0)), 1200);
+        return;
+      }
+    }
+    setTimeout(() => {
+      if (current + 1 >= questions.length) {
+        // loop — infinite!
+        const more = shuffleArr(QUIZ_FLAGS);
+        setQuestions(p => [...p, ...more]);
+      }
+      setCurrent(p=>p+1);
+      setAnswered(false); setChosenIdx(null);
+      setHiddenOpts([]); setAudiencePcts(null);
+      setTimeLeft(15);
+    }, 900);
+  }
+
+  function finishQuiz(finalCorrect) {
+    if (onUpdateQuizBest) onUpdateQuizBest(finalCorrect);
+    let prize = "";
+    let coins = 0;
+    if (finalCorrect >= 20) { prize = "🎫 טוקן לחידון כלליות!"; }
+    else if (finalCorrect >= 10) { prize = "💰 500 מטבעות"; coins = 500; }
+    else { prize = "אין פרס הפעם"; }
+    if (coins > 0 && onCoinsEarned) onCoinsEarned(coins);
+    setPrizeText(prize);
+    setPhase("result");
+  }
+
+  function useLifeline(type) {
+    if (!lifelines[type] || answered) return;
+    setLifelines(p=>({...p,[type]:false}));
+    const q = questions[current];
+    const opts = shuffleArr(q.options);
+    if (type === "skip") {
+      setAnswered(true);
+      setTimeout(() => {
+        setCurrent(p=>p+1); setAnswered(false);
+        setChosenIdx(null); setHiddenOpts([]); setAudiencePcts(null); setTimeLeft(15);
+      }, 100);
+    } else if (type === "fifty") {
+      const wrong = opts.map((o,i)=>i).filter(i=>opts[i]!==q.a);
+      setHiddenOpts(shuffleArr(wrong).slice(0,2));
+    } else if (type === "audience") {
+      const correctIdx = opts.findIndex(o=>o===q.a);
+      const pcts = opts.map((_,i) => i===correctIdx ? 52+Math.floor(Math.random()*25) : 5+Math.floor(Math.random()*12));
+      const total = pcts.reduce((a,b)=>a+b,0);
+      setAudiencePcts(pcts.map(p=>Math.round(p/total*100)));
+    }
+  }
+
+  const q = questions[current];
+  const opts = q ? shuffleArr([...q.options]) : [];
+
+  // ── HOME ──
+  if (phase === "home") return (
+    <div style={{position:"fixed",inset:0,zIndex:9200,background:"linear-gradient(180deg,#050912,#0f172a)",display:"flex",flexDirection:"column",overflowY:"auto"}}>
+      <div style={{padding:"18px 20px 0",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+        <div style={{fontSize:20,fontWeight:900,color:"#f1f5f9"}}>🧠 חידון</div>
+        <button onClick={onClose} style={{background:"transparent",border:"none",color:"#94a3b8",fontSize:24,cursor:"pointer"}}>✕</button>
+      </div>
+
+      <div style={{padding:"20px 16px",display:"flex",flexDirection:"column",gap:14}}>
+
+        {/* FLAGS CARD */}
+        <div style={{background:"rgba(34,197,94,0.08)",border:"1.5px solid rgba(34,197,94,0.35)",borderRadius:18,padding:"18px 16px"}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
+            <div style={{fontSize:32}}>🌍</div>
+            <div style={{background:"rgba(34,197,94,0.15)",border:"1px solid rgba(34,197,94,0.4)",borderRadius:20,padding:"3px 12px",fontSize:11,fontWeight:800,color:"#22c55e"}}>אין סוף!</div>
+          </div>
+          <div style={{fontSize:18,fontWeight:900,color:"#f1f5f9",marginBottom:4}}>חידון דגלים</div>
+          <div style={{fontSize:12,color:"#94a3b8",marginBottom:12}}>זהה דגלים מכל העולם — כמה תגיע?</div>
+          <div style={{background:"rgba(34,197,94,0.08)",borderRadius:12,padding:"10px 12px",marginBottom:12}}>
+            <div style={{fontSize:10,fontWeight:800,color:"#22c55e",marginBottom:6,letterSpacing:1}}>🎁 פרסים</div>
+            <div style={{display:"flex",flexDirection:"column",gap:5,fontSize:12,color:"#cbd5e1"}}>
+              <div style={{display:"flex",justifyContent:"space-between"}}><span>10 נכון</span><span style={{color:"#fbbf24",fontWeight:800}}>💰 500 מטבעות</span></div>
+              <div style={{height:1,background:"rgba(34,197,94,0.15)"}}/>
+              <div style={{display:"flex",justifyContent:"space-between"}}><span>20 נכון</span><span style={{color:"#22c55e",fontWeight:900}}>🎫 טוקן לחידון כלליות</span></div>
+              <div style={{height:1,background:"rgba(34,197,94,0.15)"}}/>
+              <div style={{display:"flex",justifyContent:"space-between"}}><span>אחרי 20 →</span><span style={{color:"#c084fc",fontWeight:800}}>🏆 שיא קבוצתי!</span></div>
+            </div>
+          </div>
+          <button onClick={startFlags} style={{width:"100%",padding:"14px",borderRadius:13,background:"linear-gradient(135deg,#16a34a,#22c55e)",border:"none",color:"#fff",fontSize:16,fontWeight:900,fontFamily:"inherit",cursor:"pointer",boxShadow:"0 6px 20px rgba(34,197,94,0.4)"}}>
+            🌍 התחל דגלים
+          </button>
+        </div>
+
+        {/* LEADERBOARD */}
+        {leaderboard.length > 0 && (
+          <div style={{background:"rgba(15,23,42,0.6)",border:"1px solid rgba(168,85,247,0.25)",borderRadius:14,overflow:"hidden"}}>
+            <div style={{padding:"8px 14px",background:"rgba(168,85,247,0.1)",fontSize:10,color:"#c4b5fd",fontWeight:800,letterSpacing:1.5}}>
+              👑 שיאי דגלים — הליגה שלך
+            </div>
+            {leaderboard.slice(0,5).map((m,i)=>{
+              const medals=["🥇","🥈","🥉","4️⃣","5️⃣"];
+              return (
+                <div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"9px 14px",borderTop:i>0?"1px solid rgba(71,85,105,0.2)":"none",background:m.isMe?"rgba(251,191,36,0.06)":"transparent"}}>
+                  <span style={{fontSize:14,width:22,textAlign:"center"}}>{medals[i]}</span>
+                  <span style={{flex:1,fontSize:13,fontWeight:m.isMe?900:700,color:m.isMe?"#fbbf24":"#cbd5e1"}}>{m.name}{m.isMe?" (אני)":""}</span>
+                  <span style={{fontSize:16,fontWeight:900,color:i===0?"#c4b5fd":"#64748b"}}>{m.score}</span>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* COMING SOON — General */}
+        <div style={{background:"rgba(99,102,241,0.06)",border:"1.5px dashed rgba(99,102,241,0.3)",borderRadius:18,padding:"16px",textAlign:"center",opacity:0.7}}>
+          <div style={{fontSize:28,marginBottom:6}}>⚽</div>
+          <div style={{fontSize:15,fontWeight:900,color:"#818cf8"}}>שאלות כלליות</div>
+          <div style={{fontSize:11,color:"#64748b",marginTop:4}}>בקרוב — 50 שאלות, פרס קלף!</div>
+        </div>
+      </div>
+    </div>
+  );
+
+  // ── RESULT ──
+  if (phase === "result") return (
+    <div style={{position:"fixed",inset:0,zIndex:9200,background:"linear-gradient(180deg,#050912,#0f172a)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:28,gap:16,textAlign:"center"}}>
+      <div style={{fontSize:72}}>{correct>=20?"🏅":correct>=10?"⭐":"😅"}</div>
+      <div style={{fontSize:24,fontWeight:900,color:"#f1f5f9"}}>{correct>=20?"מושלם!":correct>=10?"כל הכבוד!":"נסה שוב"}</div>
+      <div style={{background:"rgba(30,41,59,0.8)",border:"1.5px solid rgba(99,102,241,0.3)",borderRadius:18,padding:"20px 30px",width:"100%"}}>
+        <div style={{fontSize:52,fontWeight:900,color:"#f5d76e",lineHeight:1}}>{correct}</div>
+        <div style={{fontSize:12,color:"#94a3b8",marginTop:4}}>דגלים נכונים</div>
+      </div>
+      <div style={{background:"rgba(251,191,36,0.1)",border:"1.5px solid rgba(251,191,36,0.3)",borderRadius:14,padding:"14px 20px",width:"100%"}}>
+        <div style={{fontSize:10,color:"#fbbf24",fontWeight:800,letterSpacing:2,marginBottom:4}}>🎁 פרס שלך</div>
+        <div style={{fontSize:18,fontWeight:900,color:"#f1f5f9"}}>{prizeText}</div>
+      </div>
+      <div style={{display:"flex",flexDirection:"column",gap:8,width:"100%"}}>
+        <button onClick={startFlags} style={{padding:"14px",borderRadius:13,background:"linear-gradient(135deg,#16a34a,#22c55e)",border:"none",color:"#fff",fontSize:15,fontWeight:900,fontFamily:"inherit",cursor:"pointer"}}>🔄 שחק שוב</button>
+        <button onClick={()=>setPhase("home")} style={{padding:"14px",borderRadius:13,background:"rgba(30,41,59,0.8)",color:"#cbd5e1",border:"1.5px solid rgba(71,85,105,0.4)",fontSize:14,fontWeight:700,fontFamily:"inherit",cursor:"pointer"}}>🏠 חזור לתפריט</button>
+      </div>
+    </div>
+  );
+
+  // ── PLAYING FLAGS ──
+  const pct = timeLeft / 15;
+  const circumference = 2 * Math.PI * 18;
+  const color = timeLeft > 10 ? "#22c55e" : timeLeft > 5 ? "#f59e0b" : "#ef4444";
+
+  return (
+    <div style={{position:"fixed",inset:0,zIndex:9200,background:"linear-gradient(180deg,#050912,#0f172a)",display:"flex",flexDirection:"column",padding:"10px 16px 12px",gap:8}}>
+      {/* Header */}
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexShrink:0}}>
+        <div>
+          <div style={{fontSize:11,fontWeight:700,color:"#64748b"}}>שאלה <span style={{color:"#f1f5f9",fontWeight:900}}>{current+1}</span></div>
+          <div style={{fontSize:16,letterSpacing:1}}>{"❤️".repeat(lives)}{"🖤".repeat(3-lives)}</div>
+        </div>
+        <div style={{textAlign:"center"}}>
+          <div style={{fontSize:20,fontWeight:900,color:"#22c55e"}}>{correct}</div>
+          <div style={{fontSize:9,color:"#64748b"}}>נכון ✅</div>
+        </div>
+      </div>
+
+      {/* Progress dots */}
+      <div style={{display:"flex",gap:3,flexShrink:0,overflow:"hidden"}}>
+        {Array.from({length:Math.min(current+5,30)}).map((_,i)=>(
+          <div key={i} style={{flex:1,height:4,borderRadius:3,background:i<correct?"#22c55e":i===current?"#3b82f6":"rgba(71,85,105,0.3)"}}/>
+        ))}
+      </div>
+
+      {/* Timer */}
+      <div style={{display:"flex",alignItems:"center",gap:10,background:"rgba(15,23,42,0.6)",border:"1px solid rgba(71,85,105,0.3)",borderRadius:14,padding:"8px 12px",flexShrink:0}}>
+        <div style={{position:"relative",width:42,height:42,flexShrink:0}}>
+          <svg viewBox="0 0 42 42" width="42" height="42" style={{transform:"rotate(-90deg)"}}>
+            <circle fill="none" stroke="rgba(71,85,105,0.3)" strokeWidth="4" cx="21" cy="21" r="18"/>
+            <circle fill="none" stroke={color} strokeWidth="4" strokeLinecap="round" cx="21" cy="21" r="18"
+              strokeDasharray={circumference} strokeDashoffset={circumference*(1-pct)} style={{transition:"stroke-dashoffset 1s linear,stroke 0.3s"}}/>
+          </svg>
+          <div style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",fontSize:14,fontWeight:900,color}}>{timeLeft}</div>
+        </div>
+        <div style={{flex:1}}>
+          <div style={{fontSize:10,color:"#64748b",marginBottom:3}}>⏱️ זמן נותר</div>
+          <div style={{height:4,background:"rgba(71,85,105,0.3)",borderRadius:4,overflow:"hidden"}}>
+            <div style={{height:"100%",width:(pct*100)+"%",background:color,borderRadius:4,transition:"width 1s linear"}}/>
+          </div>
+        </div>
+        <div style={{fontSize:10,fontWeight:800,padding:"3px 9px",borderRadius:20,background:"rgba(34,197,94,0.15)",color:"#22c55e",border:"1px solid rgba(34,197,94,0.3)"}}>🌍 דגלים</div>
+      </div>
+
+      {/* Flag + question */}
+      <div style={{background:"rgba(30,41,59,0.7)",border:"1.5px solid rgba(99,102,241,0.25)",borderRadius:16,padding:"14px 14px",flexShrink:0,textAlign:"center"}}>
+        <div style={{fontSize:10,fontWeight:800,letterSpacing:2,color:"#6366f1",marginBottom:8}}>🌍 זהה את הדגל</div>
+        <div style={{fontSize:80,lineHeight:1,marginBottom:6,filter:"drop-shadow(0 4px 12px rgba(0,0,0,0.4))"}}>{q?.flag}</div>
+        <div style={{fontSize:16,fontWeight:800,color:"#f1f5f9"}}>איזו מדינה?</div>
+      </div>
+
+      {/* Answers */}
+      <div style={{display:"flex",flexDirection:"column",gap:7,flex:1}}>
+        {opts.map((opt,i)=>{
+          const isHidden = hiddenOpts.includes(i);
+          const isCorrectOpt = opt === q?.a;
+          const chosen = chosenIdx === i;
+          let bg = "rgba(30,41,59,0.65)"; let border = "rgba(71,85,105,0.35)"; let textColor="#e2e8f0";
+          if (answered) {
+            if (isCorrectOpt) { bg="rgba(34,197,94,0.18)"; border="#22c55e"; textColor="#86efac"; }
+            else if (chosen) { bg="rgba(239,68,68,0.12)"; border="#ef4444"; textColor="#fca5a5"; }
+            else { bg="rgba(30,41,59,0.3)"; textColor="#64748b"; }
+          }
+          return (
+            <button key={i} disabled={answered||isHidden} onClick={()=>handleAnswer(i)} style={{
+              display:"flex",alignItems:"center",gap:10,padding:"0 12px",
+              borderRadius:13,border:`2px solid ${isHidden?"transparent":border}`,
+              background:isHidden?"transparent":bg,
+              color:textColor,fontSize:14,fontWeight:700,fontFamily:"inherit",
+              cursor:answered||isHidden?"default":"pointer",
+              flex:1,visibility:isHidden?"hidden":"visible",
+              transition:"all 0.15s",
+            }}>
+              <div style={{width:28,height:28,borderRadius:8,background:"rgba(71,85,105,0.35)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:900,color:"#94a3b8",flexShrink:0}}>
+                {LETTERS[i]}
+              </div>
+              <span style={{flex:1,textAlign:"right"}}>{opt}</span>
+              {audiencePcts && !isHidden && (
+                <span style={{fontSize:11,fontWeight:900,background:"rgba(71,85,105,0.3)",padding:"2px 7px",borderRadius:8,color:"#94a3b8"}}>{audiencePcts[i]}%</span>
+              )}
+              {answered && isCorrectOpt && <span>✅</span>}
+              {answered && chosen && !isCorrectOpt && <span>❌</span>}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Lifelines */}
+      <div style={{display:"flex",gap:8,flexShrink:0}}>
+        {[
+          {key:"skip",icon:"⏭️",label:"דלג"},
+          {key:"fifty",icon:"🎯",label:"50:50"},
+          {key:"audience",icon:"👥",label:"קהל"},
+        ].map(ll=>(
+          <button key={ll.key} onClick={()=>useLifeline(ll.key)} disabled={!lifelines[ll.key]||answered}
+            style={{flex:1,padding:"8px 4px",borderRadius:12,border:"1.5px solid rgba(71,85,105,0.4)",background:"rgba(15,23,42,0.7)",color:"#f1f5f9",fontFamily:"inherit",cursor:lifelines[ll.key]&&!answered?"pointer":"default",opacity:lifelines[ll.key]?1:0.3,textAlign:"center"}}>
+            <div style={{fontSize:20}}>{ll.icon}</div>
+            <div style={{fontSize:9,fontWeight:800,color:"#94a3b8"}}>{ll.label}</div>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ─── 🎴 HIGHER / LOWER — guess if next card has higher or lower rating ─────────
-function LuckyWheelModal({ onClose, onWin, onUpdateBestStreak, personalBest, leagueRecord, freePlaysLeft, coinBalance, onUseFree, onPayPlay }) {
+function LuckyWheelModal({ onClose, onWin, onUpdateBestStreak, personalBest, leagueRecord, leaderboard = [], freePlaysLeft, coinBalance, onUseFree, onPayPlay }) {
   // Game states: "idle" (not playing), "playing", "lost", "won"
   const [gameState, setGameState] = useState("idle");
   const [currentCard, setCurrentCard] = useState(null);
@@ -6964,11 +7374,11 @@ function LuckyWheelModal({ onClose, onWin, onUpdateBestStreak, personalBest, lea
   const timerRef = useRef(null);
 
   // Pick a card from the "regular" mundial pool only (no friends/legends/Israelis)
-  // Only cards with rating 70-99 (tighter range = more challenging guesses)
+  // Only cards with rating 60-95 (wider range = more challenging guesses)
   const pickRandomCard = () => {
     const pool = CARDS.filter(c => {
       const r = getPlayerRating(c);
-      return r >= 70 && r <= 99;
+      return r >= 60 && r <= 95;
     });
     return pool[Math.floor(Math.random() * pool.length)];
   };
@@ -7126,34 +7536,51 @@ function LuckyWheelModal({ onClose, onWin, onUpdateBestStreak, personalBest, lea
             <div style={{fontSize:13,color:"#cbd5e1",lineHeight:1.6,marginBottom:14,padding:"0 8px"}}>
               נחש אם הקלף הבא יקבל ציון <b style={{color:"#22c55e"}}>גבוה יותר</b> או <b style={{color:"#ef4444"}}>נמוך יותר</b><br/>
               <span style={{fontSize:11,color:"#94a3b8"}}>
-                ⏱️ 10 שניות להחליט · 🔄 תיקו = הגרלה חוזרת
+                ⏱️ 10 שניות להחליט · 🔄 תיקו = הגרלה חוזרת<br/>
+                🎯 טווח ציונים: <b style={{color:"#fbbf24"}}>60–95</b> — קשה יותר!
               </span>
             </div>
 
-            {/* 🏆 Records */}
-            <div style={{
-              display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,
-              marginBottom:14,
-            }}>
+            {/* 🏆 Personal best + Leaderboard */}
+            <div style={{marginBottom:14}}>
+              {/* Personal best */}
               <div style={{
                 background:"linear-gradient(135deg,rgba(251,191,36,0.15),rgba(15,23,42,0.7))",
                 border:"1px solid rgba(251,191,36,0.3)",
-                borderRadius:10,padding:"10px 8px",textAlign:"center",
+                borderRadius:10,padding:"10px 12px",marginBottom:8,
+                display:"flex",alignItems:"center",justifyContent:"space-between",
               }}>
-                <div style={{fontSize:9,color:"#fbbf24",fontWeight:800,letterSpacing:1,marginBottom:2}}>🏆 השיא שלך</div>
-                <div style={{fontSize:22,fontWeight:900,color:"#fbbf24"}}>{personalBest || 0}</div>
+                <div style={{fontSize:10,color:"#fbbf24",fontWeight:800,letterSpacing:1}}>🏆 השיא שלך</div>
+                <div style={{fontSize:24,fontWeight:900,color:"#fbbf24"}}>{personalBest || 0}</div>
               </div>
-              <div style={{
-                background:"linear-gradient(135deg,rgba(168,85,247,0.15),rgba(15,23,42,0.7))",
-                border:"1px solid rgba(168,85,247,0.3)",
-                borderRadius:10,padding:"10px 8px",textAlign:"center",
-              }}>
-                <div style={{fontSize:9,color:"#c4b5fd",fontWeight:800,letterSpacing:1,marginBottom:2}}>👑 שיא הליגה</div>
-                <div style={{fontSize:22,fontWeight:900,color:"#c4b5fd"}}>{leagueRecord?.streak || 0}</div>
-                {leagueRecord?.streak > 0 && (
-                  <div style={{fontSize:9,color:"#a78bfa",marginTop:2}}>{leagueRecord.name}</div>
-                )}
-              </div>
+
+              {/* League leaderboard */}
+              {leaderboard.length > 0 && (
+                <div style={{background:"rgba(15,23,42,0.6)",border:"1px solid rgba(168,85,247,0.25)",borderRadius:10,overflow:"hidden"}}>
+                  <div style={{padding:"7px 12px",background:"rgba(168,85,247,0.12)",fontSize:9,color:"#c4b5fd",fontWeight:800,letterSpacing:1.5}}>
+                    👑 טבלת שיאים — הליגה שלך
+                  </div>
+                  {leaderboard.slice(0,5).map((m, i) => {
+                    const medals = ["🥇","🥈","🥉","4️⃣","5️⃣"];
+                    return (
+                      <div key={i} style={{
+                        display:"flex",alignItems:"center",gap:8,
+                        padding:"7px 12px",
+                        borderTop: i > 0 ? "1px solid rgba(71,85,105,0.2)" : "none",
+                        background: m.isMe ? "rgba(251,191,36,0.06)" : "transparent",
+                      }}>
+                        <span style={{fontSize:14,width:20,textAlign:"center"}}>{medals[i]}</span>
+                        <span style={{flex:1,fontSize:12,fontWeight: m.isMe ? 900 : 700,color: m.isMe ? "#fbbf24" : "#cbd5e1"}}>
+                          {m.name}{m.isMe ? " (אני)" : ""}
+                        </span>
+                        <span style={{fontSize:14,fontWeight:900,color: i===0 ? "#c4b5fd" : "#64748b"}}>
+                          {m.streak}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
 
             {/* Prize ladder */}
@@ -7526,7 +7953,7 @@ function GlobalAdminModal({ onClose, galaxyTestMode, setGalaxyTestMode, onGiveCo
   const [error, setError] = useState("");
   const [removingUid, setRemovingUid] = useState(null);
   const [search, setSearch] = useState("");
-  const [adminTab, setAdminTab] = useState("users"); // "users" | "galaxy"
+  const [adminTab, setAdminTab] = useState("users"); // "users" | "galaxy" | "quiz"
 
   // 🔐 Secret code — only Chen knows it
   const ADMIN_CODE = "Chen-Boss-2026";
@@ -7669,9 +8096,37 @@ function GlobalAdminModal({ onClose, galaxyTestMode, setGalaxyTestMode, onGiveCo
                 }}>
                 🌌 קלפי GALAXY
               </button>
+              <button
+                onClick={() => setAdminTab("quiz")}
+                style={{
+                  flex:1,padding:"10px 8px",
+                  background: adminTab === "quiz" ? "rgba(34,197,94,0.2)" : "rgba(36,49,80,0.4)",
+                  border: `1px solid ${adminTab === "quiz" ? "rgba(34,197,94,0.6)" : "rgba(71,85,105,0.4)"}`,
+                  borderRadius:10,
+                  color: adminTab === "quiz" ? "#86efac" : "#94a3b8",
+                  fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"inherit",
+                }}>
+                🧠 חידון
+              </button>
             </div>
 
-            {adminTab === "galaxy" ? (
+            {adminTab === "quiz" ? (
+              // 🧠 QUIZ TEST PANEL
+              <div>
+                <div style={{background:"linear-gradient(135deg,rgba(34,197,94,0.15),rgba(34,197,94,0.05))",border:"1px solid rgba(34,197,94,0.4)",borderRadius:12,padding:"14px",marginBottom:14,textAlign:"center"}}>
+                  <div style={{fontSize:14,fontWeight:900,color:"#86efac",marginBottom:4}}>🧠 בדיקת חידון דגלים</div>
+                  <div style={{fontSize:11,color:"#94a3b8"}}>רק מנהל רואה את זה — לבדיקה לפני פרסום</div>
+                </div>
+                <QuizScreen
+                  onClose={() => {}}
+                  onCoinsEarned={() => {}}
+                  leagueMembers={{}}
+                  userId=""
+                  userName="Admin"
+                  onUpdateQuizBest={() => {}}
+                />
+              </div>
+            ) : adminTab === "galaxy" ? (
               // 🌌 GALAXY CARDS GALLERY
               <div>
                 <div style={{
@@ -14319,6 +14774,7 @@ export default function App() {
   const [liveError, setLiveError] = useState("");
   const [showBackup, setShowBackup] = useState(false);
   const [showSidebar, setShowSidebar] = useState(false);
+  const [showQuiz, setShowQuiz] = useState(false);
   const [confirmAction, setConfirmAction] = useState(null);
   const [showIntro, setShowIntro] = useState(!saved?.name);
   // Onboarding: shown once after first welcome
@@ -15396,6 +15852,7 @@ export default function App() {
         onShowAdminGift={leagueData?.createdBy === name && activeLeagueCode ? () => setShowAdminGift(true) : null}
         onShowGlobalAdmin={()=>setShowGlobalAdmin(true)}
         onShowLuckyWheel={()=>setShowLuckyWheel(true)}
+        onShowQuiz={()=>setShowQuiz(true)}
         onShowCoinWheel={()=>setShowCoinWheel(true)}
         coinWheelAvailable={coinWheelAvailable}
         wheelAvailable={wheelAvailable}
@@ -15585,20 +16042,19 @@ export default function App() {
 
       {/* 🎴 Higher/Lower Game */}
       {showLuckyWheel && (() => {
-        // Compute league top score (include self for instant updates)
+        // Build full leaderboard sorted by hlBestStreak
         const members = leagueData?.members ? Object.entries(leagueData.members) : [];
-        let leagueRecord = { name: "—", streak: 0 };
-        for (const [uid, m] of members) {
-          // Use local hlBestStreak for ourselves (instant), Firebase value for others
-          const memberStreak = uid === userId ? Math.max(hlBestStreak, m.hlBestStreak || 0) : (m.hlBestStreak || 0);
-          if (memberStreak > leagueRecord.streak) {
-            leagueRecord = { name: m.name || "—", streak: memberStreak };
-          }
+        const leaderboard = members.map(([uid, m]) => ({
+          name: m.name || "—",
+          streak: uid === userId ? Math.max(hlBestStreak, m.hlBestStreak || 0) : (m.hlBestStreak || 0),
+          isMe: uid === userId,
+        }));
+        // Add self if not in members
+        if (!leaderboard.find(m => m.isMe)) {
+          leaderboard.push({ name: name || "אני", streak: hlBestStreak, isMe: true });
         }
-        // Fallback if we're not in any league member entries yet
-        if (hlBestStreak > leagueRecord.streak) {
-          leagueRecord = { name: name || "אני", streak: hlBestStreak };
-        }
+        leaderboard.sort((a, b) => b.streak - a.streak);
+        const leagueRecord = leaderboard[0] || { name: "—", streak: 0 };
         return (
         <LuckyWheelModal
           onClose={()=>setShowLuckyWheel(false)}
@@ -15617,6 +16073,7 @@ export default function App() {
           }}
           personalBest={hlBestStreak}
           leagueRecord={leagueRecord}
+          leaderboard={leaderboard}
           freePlaysLeft={Math.max(0, 5 - hlPlaysToday) + luckyWheelExtraSpins}
           coinBalance={coins?.balance || 0}
           onUseFree={() => {
@@ -15835,6 +16292,28 @@ export default function App() {
             <span>+{coinFlash.amount}</span>
           </div>
         </div>
+      )}
+      {showQuiz && (
+        <QuizScreen
+          onClose={() => setShowQuiz(false)}
+          onCoinsEarned={(amount) => {
+            setCoins(prev => {
+              const updated = { ...prev, balance: (prev?.balance || 0) + amount };
+              try { localStorage.setItem("wc2026_coins_v7", JSON.stringify(updated)); } catch {}
+              return updated;
+            });
+          }}
+          leagueMembers={leagueData?.members || {}}
+          userId={userId}
+          userName={name}
+          onUpdateQuizBest={(score) => {
+            const key = "wc2026_quiz_best_v1";
+            const prev = parseInt(localStorage.getItem(key) || "0", 10);
+            if (score > prev) {
+              localStorage.setItem(key, String(score));
+            }
+          }}
+        />
       )}
       </div>
     </div>
