@@ -10,7 +10,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.37.7";
+const APP_VERSION = "3.38.0";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -7189,7 +7189,7 @@ const LETTERS = ["א","ב","ג","ד"];
 
 function shuffleArr(arr) { return [...arr].sort(()=>Math.random()-0.5); }
 
-function QuizScreen({ onClose, onCoinsEarned, leagueMembers = {}, userId, userName, onUpdateQuizBest, personalBestOverride }) {
+function QuizScreen({ onClose, onCoinsEarned, leagueMembers = {}, userId, userName, onUpdateQuizBest, personalBestOverride, onTokenChange, onCardWon }) {
   const [phase, setPhase] = useState("home"); // home | flags | general | result
   const [quizType, setQuizType] = useState("flags"); // flags | general
   const [questions, setQuestions] = useState([]);
@@ -7206,6 +7206,8 @@ function QuizScreen({ onClose, onCoinsEarned, leagueMembers = {}, userId, userNa
   const [tokens, setTokens] = useState(() => parseInt(localStorage.getItem("wc2026_quiz_tokens_v1")||"0",10));
   const [personalBest] = useState(() => parseInt(localStorage.getItem("wc2026_quiz_best_v1")||"0",10));
   const effectiveBest = personalBestOverride ?? personalBest;
+  const [prizeCard, setPrizeCard] = useState(null); // card to reveal after quiz
+  const [revealingCard, setRevealingCard] = useState(false);
 
   const GENERAL_Q = [
     {q:"כמה פעמים זכתה ברזיל במונדיאל?",a:"5",options:["4","5","6","3"],cat:"נבחרות",diff:"קל"},
@@ -7273,11 +7275,13 @@ function QuizScreen({ onClose, onCoinsEarned, leagueMembers = {}, userId, userNa
     const n = tokens + 1;
     setTokens(n);
     try { localStorage.setItem("wc2026_quiz_tokens_v1", String(n)); } catch {}
+    onTokenChange?.(n);
   }
   function useToken() {
     const n = Math.max(0, tokens - 1);
     setTokens(n);
     try { localStorage.setItem("wc2026_quiz_tokens_v1", String(n)); } catch {}
+    onTokenChange?.(n);
   }
 
   // Build leaderboard from league members
@@ -7286,8 +7290,9 @@ function QuizScreen({ onClose, onCoinsEarned, leagueMembers = {}, userId, userNa
     score: uid === userId ? Math.max(effectiveBest, m.quizBestFlags || 0) : (m.quizBestFlags || 0),
     isMe: uid === userId,
   })).sort((a,b) => b.score - a.score);
-  if (!leaderboard.find(m=>m.isMe) && personalBest > 0) {
-    leaderboard.push({name: userName||"אני", score: personalBest, isMe: true});
+  // Always include self
+  if (!leaderboard.find(m=>m.isMe)) {
+    leaderboard.push({name: userName||"אני", score: effectiveBest || 0, isMe: true});
     leaderboard.sort((a,b)=>b.score-a.score);
   }
 
@@ -7331,19 +7336,30 @@ function QuizScreen({ onClose, onCoinsEarned, leagueMembers = {}, userId, userNa
 
   function finishQuiz(finalCorrect) {
     if (onUpdateQuizBest && quizType==="flags") onUpdateQuizBest(finalCorrect);
-    let prize="", coins=0;
+    let prize="", coins=0, cardRarity=null;
     if (quizType==="flags") {
       if (finalCorrect >= 20) { prize="🎫 טוקן!"; addToken(); }
       else if (finalCorrect >= 10) { prize="💰 500 מטבעות"; coins=500; }
       else prize="אין פרס הפעם 😅";
     } else {
-      if (finalCorrect===50) prize="🏅 Ballon d'Or נדיר!";
-      else if (finalCorrect>=35) prize="🏅 קלף Ballon d'Or";
-      else if (finalCorrect>=25) prize="🌌 קלף GALAXY";
+      if (finalCorrect===50) { prize="🏅 Ballon d'Or נדיר!"; cardRarity="B"; }
+      else if (finalCorrect>=35) { prize="🏅 קלף Ballon d'Or"; cardRarity="B"; }
+      else if (finalCorrect>=25) { prize="🌌 קלף GALAXY"; cardRarity="X"; }
       else if (finalCorrect>=10) { prize="💰 2,000 מטבעות"; coins=2000; }
       else prize="אין פרס הפעם 😅";
     }
     if (coins>0 && onCoinsEarned) onCoinsEarned(coins);
+    // If card prize — pick a real card and trigger reveal
+    if (cardRarity && onCardWon) {
+      const pool = CARDS_BY_RARITY[cardRarity] || [];
+      const card = pool[Math.floor(Math.random() * pool.length)];
+      if (card) {
+        setPrizeCard(card);
+        setRevealingCard(true);
+        onCardWon(card);
+        return; // CardRevealModal will show, result shown after
+      }
+    }
     setPrizeText(prize); setPhase("result");
   }
 
@@ -7372,6 +7388,22 @@ function QuizScreen({ onClose, onCoinsEarned, leagueMembers = {}, userId, userNa
   const pct = timeLeft / totalTime;
   const circumference = 2 * Math.PI * 18;
   const timerColor = pct > 0.5 ? "#22c55e" : pct > 0.25 ? "#f59e0b" : "#ef4444";
+
+  // ── CARD REVEAL ── show roulette-style reveal when card is won
+  if (revealingCard && prizeCard) return (
+    <div style={{position:"fixed",inset:0,zIndex:9200}}>
+      <CardRevealModal
+        result={{card: prizeCard, isDuplicate: false, refund: 0}}
+        freshSpin={true}
+        onClose={() => {
+          setRevealingCard(false);
+          setPrizeText(`🎴 קלף ${RARITY_CONFIG[prizeCard.rarity]?.label || ""} — ${prizeCard.name}!`);
+          setPrizeCard(null);
+          setPhase("result");
+        }}
+      />
+    </div>
+  );
 
   // ── HOME ──
   if (phase === "home") return (
@@ -14466,7 +14498,7 @@ export default function App() {
     try { return parseInt(localStorage.getItem("wc2026_quiz_best_v1") || "0", 10) || 0; }
     catch { return 0; }
   });
-  const [quizTokens] = useState(() => {
+  const [quizTokens, setQuizTokens] = useState(() => {
     try { return parseInt(localStorage.getItem("wc2026_quiz_tokens_v1") || "0", 10) || 0; }
     catch { return 0; }
   });
@@ -16564,12 +16596,20 @@ export default function App() {
           leagueMembers={leagueData?.members || {}}
           userId={userId}
           userName={name}
+          personalBestOverride={quizBestFlags}
+          onTokenChange={(n) => setQuizTokens(n)}
+          onCardWon={(card) => {
+            // Add card to collection
+            const newCollection = { ...cardCollection, [card.id]: (cardCollection[card.id] || 0) + 1 };
+            setCardCollection(newCollection);
+            try { localStorage.setItem("wc2026_cards_v2", JSON.stringify(newCollection)); } catch {}
+          }}
           onUpdateQuizBest={(score) => {
             const key = "wc2026_quiz_best_v1";
             const prev = parseInt(localStorage.getItem(key) || "0", 10);
             if (score > prev) {
               localStorage.setItem(key, String(score));
-              setQuizBestFlags(score); // triggers Firebase sync
+              setQuizBestFlags(score);
             }
           }}
         />
