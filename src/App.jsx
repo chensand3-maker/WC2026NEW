@@ -10,7 +10,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.36.7";
+const APP_VERSION = "3.36.9";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -5118,18 +5118,6 @@ function RouletteModal({ coins, isSpinning, pendingCard, onSpin, onLegendsSpin, 
           🃏 {t("roulette.viewCollection")}
         </button>
 
-        {/* 🧠 Quiz shortcut */}
-        <button onClick={onShowQuiz} style={{
-          width:"100%",marginTop:6,padding:"10px",borderRadius:10,
-          background:"rgba(34,197,94,0.08)",
-          color:"#86efac",
-          border:"1px solid rgba(34,197,94,0.3)",
-          fontSize:12,fontWeight:800,
-          fontFamily:"inherit",cursor:"pointer",
-        }}>
-          🧠 חידון דגלים — 20 נכון = 🎫 טוקן לשאלות
-        </button>
-
         {/* 📊 Rarity odds legend — boxes */}
         <div style={{marginTop:12,padding:"10px 12px",background:"rgba(15,23,42,0.6)",borderRadius:12,border:"1px solid rgba(71,85,105,0.25)"}}>
           <div style={{fontSize:9,fontWeight:800,color:"#64748b",letterSpacing:2,textAlign:"center",marginBottom:8}}>
@@ -7059,19 +7047,473 @@ const LETTERS = ["א","ב","ג","ד"];
 function shuffleArr(arr) { return [...arr].sort(()=>Math.random()-0.5); }
 
 function QuizScreen({ onClose, onCoinsEarned, leagueMembers = {}, userId, userName, onUpdateQuizBest }) {
-  const [phase, setPhase] = useState("home"); // home | flags | result
+  const [phase, setPhase] = useState("home"); // home | flags | general | result
+  const [quizType, setQuizType] = useState("flags"); // flags | general
   const [questions, setQuestions] = useState([]);
   const [current, setCurrent] = useState(0);
   const [correct, setCorrect] = useState(0);
   const [lives, setLives] = useState(3);
   const [answered, setAnswered] = useState(false);
   const [chosenIdx, setChosenIdx] = useState(null);
-  const [timeLeft, setTimeLeft] = useState(15);
-  const [lifelines, setLifelines] = useState({skip:true, fifty:true, audience:true});
+  const [timeLeft, setTimeLeft] = useState(10);
   const [hiddenOpts, setHiddenOpts] = useState([]);
   const [audiencePcts, setAudiencePcts] = useState(null);
+  const [lifelines, setLifelines] = useState({skip:true,fifty:true,audience:true});
   const [prizeText, setPrizeText] = useState("");
+  const [tokens, setTokens] = useState(() => parseInt(localStorage.getItem("wc2026_quiz_tokens_v1")||"0",10));
   const [personalBest] = useState(() => parseInt(localStorage.getItem("wc2026_quiz_best_v1")||"0",10));
+
+  const GENERAL_Q = [
+    {q:"כמה פעמים זכתה ברזיל במונדיאל?",a:"5",options:["4","5","6","3"],cat:"נבחרות",diff:"קל"},
+    {q:"מי כבש הכי הרבה שערים בהיסטוריה של מונדיאל?",a:"מירוסלב קלוזה",options:["פלה","מירוסלב קלוזה","רונאלדו הברזילאי","ז'וסט פונטן"],cat:"שיאים",diff:"קל"},
+    {q:"כמה כדורי זהב יש למסי?",a:"8",options:["6","7","8","5"],cat:"שחקנים",diff:"קל"},
+    {q:"מי זכה בכדור הזהב במונדיאל 2022?",a:"ליאונל מסי",options:["מבאפה","נייאמר","ליאונל מסי","מודריץ'"],cat:"שחקנים",diff:"קל"},
+    {q:"כמה פעמים זכתה גרמניה במונדיאל?",a:"4",options:["3","5","4","2"],cat:"נבחרות",diff:"קל"},
+    {q:"מי ניצח בגמר מונדיאל 2018?",a:"צרפת",options:["ברזיל","ארגנטינה","צרפת","קרואטיה"],cat:"היסטוריה",diff:"קל"},
+    {q:"כמה כדורי זהב יש לרונאלדו CR7?",a:"5",options:["4","5","6","3"],cat:"שחקנים",diff:"קל"},
+    {q:"בכמה נבחרות יהיה מונדיאל 2026?",a:"48",options:["32","40","48","36"],cat:"מונדיאל 2026",diff:"קל"},
+    {q:"מי ניצח בגמר מונדיאל 2014?",a:"גרמניה",options:["ברזיל","ארגנטינה","גרמניה","הולנד"],cat:"היסטוריה",diff:"קל"},
+    {q:"מה שם מגרש ריאל מדריד?",a:"Santiago Bernabéu",options:["Camp Nou","Metropolitano","Santiago Bernabéu","Mestalla"],cat:"מועדונים",diff:"קל"},
+    {q:"כמה פעמים זכתה ארגנטינה במונדיאל?",a:"3",options:["2","3","4","1"],cat:"נבחרות",diff:"קל"},
+    {q:"כמה פעמים זכתה צרפת במונדיאל?",a:"2",options:["1","2","3","4"],cat:"נבחרות",diff:"קל"},
+    {q:"מי ניצח בגביע אירופה EURO 2024?",a:"ספרד",options:["אנגליה","ספרד","גרמניה","צרפת"],cat:"היסטוריה",diff:"קל"},
+    {q:"מה שם ליגת הכדורגל הגרמנית?",a:"Bundesliga",options:["German League","Bundesliga","Super Liga","Euro League"],cat:"כללי",diff:"קל"},
+    {q:"מי מכונה 'La Pulga' (הפרעוש)?",a:"מסי",options:["נייאמר","ויניסיוס","מסי","אגואירו"],cat:"שחקנים",diff:"קל"},
+    {q:"מי הוא הכדורגלן עם הכי הרבה שערים בליגת האלופות?",a:"כריסטיאנו רונאלדו",options:["מסי","בנזמה","כריסטיאנו רונאלדו","ראול"],cat:"שחקנים",diff:"קל"},
+    {q:"כמה שחקנים ניתן להכניס כחילופים?",a:"5",options:["3","4","5","6"],cat:"כללי",diff:"קל"},
+    {q:"מי ניצח בגמר מונדיאל 2010?",a:"ספרד",options:["הולנד","גרמניה","ספרד","ברזיל"],cat:"היסטוריה",diff:"קל"},
+    {q:"מונדיאל 2010 התקיים ב...?",a:"דרום אפריקה",options:["ברזיל","דרום אפריקה","קניה","מצרים"],cat:"היסטוריה",diff:"קל"},
+    {q:"מי קיבל כדור הזהב 2024?",a:"רודרי",options:["הולאנד","ויניסיוס","מסי","רודרי"],cat:"שחקנים",diff:"קל"},
+    // בינוני
+    {q:"מי כבש שלושה שערים בגמר מונדיאל 2022?",a:"אמבאפה",options:["מסי","אמבאפה","ג'ירו","גריזמן"],cat:"היסטוריה",diff:"בינוני"},
+    {q:"כמה שחקנים בסגל מונדיאל 2026?",a:"26",options:["23","26","22","24"],cat:"מונדיאל 2026",diff:"בינוני"},
+    {q:"מי זכה בכדור הזהב של מונדיאל 2018?",a:"מודריץ'",options:["מסי","רונאלדו","מודריץ'","אמבאפה"],cat:"היסטוריה",diff:"בינוני"},
+    {q:"מי היה הכוכב של נבחרת מרוקו 2022?",a:"אשרף חקימי",options:["זיאש","אשרף חקימי","בונו","ען-נסירי"],cat:"שחקנים",diff:"בינוני"},
+    {q:"כמה פעמים ריאל מדריד זכתה בליגת האלופות?",a:"15",options:["13","15","12","14"],cat:"מועדונים",diff:"בינוני"},
+    {q:"מה שם הגביע הדרום אמריקאי?",a:"Copa Libertadores",options:["Copa Sudamericana","Copa Libertadores","CONMEBOL Cup","Copa America"],cat:"מועדונים",diff:"בינוני"},
+    {q:"כמה שערים כבש רונאלדו CR7 בנבחרת פורטוגל?",a:"135",options:["109","135","98","120"],cat:"שחקנים",diff:"בינוני"},
+    {q:"מי הוא המאמן של מנצ'סטר סיטי?",a:"פפ גוארדיולה",options:["ז'וזה מורינייו","פפ גוארדיולה","יורגן קלופ","אנצ'לוטי"],cat:"מאמנים",diff:"בינוני"},
+    {q:"כמה שערים כבש מסי בנבחרת ארגנטינה?",a:"109",options:["98","109","120","95"],cat:"שחקנים",diff:"בינוני"},
+    {q:"מי ניצח בגביע אמריקה 2024?",a:"ארגנטינה",options:["ברזיל","ארגנטינה","קולומביה","אורוגוואי"],cat:"היסטוריה",diff:"בינוני"},
+    {q:"באיזה שנה נולד לאמין יאמאל?",a:"2007",options:["2003","2004","2007","2005"],cat:"שחקנים",diff:"בינוני"},
+    {q:"מי ניצח בגביע אירופה 2016?",a:"פורטוגל",options:["צרפת","גרמניה","פורטוגל","ספרד"],cat:"היסטוריה",diff:"בינוני"},
+    {q:"כמה קבוצות מאפריקה במונדיאל 2026?",a:"9",options:["6","8","9","10"],cat:"מונדיאל 2026",diff:"בינוני"},
+    {q:"מי ניצח במונדיאל 1998?",a:"צרפת",options:["ברזיל","צרפת","גרמניה","איטליה"],cat:"היסטוריה",diff:"בינוני"},
+    {q:"מתי הוכנס ה-VAR רשמית למונדיאל?",a:"2018",options:["2014","2018","2022","2010"],cat:"כללי",diff:"בינוני"},
+    {q:"מי הוא המאמן שזכה ב-3 ליגות אלופות ברצף עם ריאל?",a:"זינדין זידאן",options:["קרלו אנצ'לוטי","זינדין זידאן","ז'וזה מורינייו","פאבלו מאצ'ין"],cat:"מאמנים",diff:"בינוני"},
+    {q:"מי קיבל כרטיס אדום בגמר מונדיאל 2006?",a:"זינדין זידאן",options:["זינדין זידאן","רונאלדו","הנרי","קאנאווארו"],cat:"היסטוריה",diff:"בינוני"},
+    {q:"מה גיל מסי כשזכה בכדור הזהב הראשון?",a:"22",options:["20","21","22","23"],cat:"שחקנים",diff:"בינוני"},
+    {q:"כמה ניצחונות ברצף שמר ארסנל ב-2003/04?",a:"49",options:["38","42","49","52"],cat:"מועדונים",diff:"בינוני"},
+    {q:"מי ניצח בגביע אמריקה 2021?",a:"ארגנטינה",options:["ברזיל","ארגנטינה","קולומביה","אורוגוואי"],cat:"היסטוריה",diff:"בינוני"},
+    // קשה
+    {q:"כמה שערים כבש קלוזה במונדיאל — שיא?",a:"16",options:["14","16","12","18"],cat:"שיאים",diff:"קשה"},
+    {q:"מי ניצח ב'Maracanazo' 1950?",a:"אורוגוואי",options:["ארגנטינה","אורוגוואי","פרגוואי","צ'ילה"],cat:"היסטוריה",diff:"קשה"},
+    {q:"מי זכה ב'שחקן המאה' FIFA 2000?",a:"פלה ומראדונה",options:["פלה בלבד","מראדונה בלבד","פלה ומראדונה","רונאלדו"],cat:"שחקנים",diff:"קשה"},
+    {q:"ממה עשוי גביע המונדיאל?",a:"זהב מלא",options:["כסף מוזהב","פלטינה","זהב מלא","ברונזה מוזהבת"],cat:"כללי",diff:"קשה"},
+    {q:"כמה שערים כבש מסי בשנת 2012?",a:"91",options:["79","86","91","98"],cat:"שיאים",diff:"קשה"},
+    {q:"מי הוא שחקן עם הכי הרבה הופעות בנבחרת ספרד?",a:"סרחיו ראמוס",options:["קאסיאס","סרחיו ראמוס","שאבי","אינייסטה"],cat:"שחקנים",diff:"קשה"},
+    {q:"כמה פעמים איטליה הגיעה לגמר מונדיאל?",a:"6",options:["4","5","6","7"],cat:"נבחרות",diff:"קשה"},
+    {q:"מה הניצחון הגדול ביותר בהיסטוריית מונדיאל?",a:"הונגריה 10-1 אל סלבדור",options:["ברזיל 10-1 בוליביה","הונגריה 10-1 אל סלבדור","גרמניה 8-0 ערב הסעודית","צרפת 6-0 אקוודור"],cat:"שיאים",diff:"קשה"},
+    {q:"מי כבש שערים ב-5 מונדיאלים שונים?",a:"כריסטיאנו רונאלדו",options:["מסי","פלה","כריסטיאנו רונאלדו","מירוסלב קלוזה"],cat:"שחקנים",diff:"קשה"},
+    {q:"כמה קבוצות ממונדיאל 1930?",a:"13",options:["16","13","12","8"],cat:"היסטוריה",diff:"קשה"},
+  ];
+
+  // Sort general by difficulty
+  const GENERAL_SORTED = [
+    ...GENERAL_Q.filter(q=>q.diff==="קל"),
+    ...GENERAL_Q.filter(q=>q.diff==="בינוני"),
+    ...GENERAL_Q.filter(q=>q.diff==="קשה"),
+  ];
+
+  function addToken() {
+    const n = tokens + 1;
+    setTokens(n);
+    try { localStorage.setItem("wc2026_quiz_tokens_v1", String(n)); } catch {}
+  }
+  function useToken() {
+    const n = Math.max(0, tokens - 1);
+    setTokens(n);
+    try { localStorage.setItem("wc2026_quiz_tokens_v1", String(n)); } catch {}
+  }
+
+  // Build leaderboard
+  const leaderboard = Object.entries(leagueMembers).map(([uid, m]) => ({
+    name: m.name || "—",
+    score: uid === userId ? Math.max(personalBest, m.quizBestFlags || 0) : (m.quizBestFlags || 0),
+    isMe: uid === userId,
+  })).sort((a,b) => b.score - a.score);
+  if (!leaderboard.find(m=>m.isMe) && personalBest > 0) {
+    leaderboard.push({name: userName||"אני", score: personalBest, isMe: true});
+    leaderboard.sort((a,b)=>b.score-a.score);
+  }
+
+  function startFlags() {
+    setQuizType("flags");
+    const q = shuffleArr(QUIZ_FLAGS);
+    setQuestions(q);
+    setCurrent(0); setCorrect(0); setLives(3);
+    setAnswered(false); setChosenIdx(null);
+    setHiddenOpts([]); setAudiencePcts(null);
+    setLifelines({skip:false,fifty:false,audience:false});
+    setTimeLeft(10); setPhase("flags");
+  }
+
+  function startGeneral(free) {
+    if (!free) {
+      if ((onCoinsEarned && false) || true) { // deduct 1000 coins
+        onCoinsEarned(-1000);
+      }
+    } else {
+      useToken();
+    }
+    setQuizType("general");
+    // Take 50 sorted by difficulty
+    const easy = shuffleArr(GENERAL_SORTED.filter(q=>q.diff==="קל")).slice(0,20);
+    const mid  = shuffleArr(GENERAL_SORTED.filter(q=>q.diff==="בינוני")).slice(0,19);
+    const hard = shuffleArr(GENERAL_SORTED.filter(q=>q.diff==="קשה")).slice(0,11);
+    setQuestions([...easy,...mid,...hard]);
+    setCurrent(0); setCorrect(0); setLives(3);
+    setAnswered(false); setChosenIdx(null);
+    setHiddenOpts([]); setAudiencePcts(null);
+    setLifelines({skip:true,fifty:true,audience:true});
+    setTimeLeft(20); setPhase("general");
+  }
+
+  const isFlags = phase === "flags";
+  const isGeneral = phase === "general";
+
+  // Timer
+  useEffect(() => {
+    if (phase !== "flags" && phase !== "general") return;
+    if (answered) return;
+    if (timeLeft <= 0) { handleAnswer(null); return; }
+    const t = setTimeout(() => setTimeLeft(p=>p-1), 1000);
+    return () => clearTimeout(t);
+  }, [phase, timeLeft, answered]);
+
+  const [shuffledOpts, setShuffledOpts] = useState([]);
+  useEffect(() => {
+    if (questions[current]) {
+      setShuffledOpts(shuffleArr([...questions[current].options]));
+    }
+  }, [current, questions.length]);
+
+  function handleAnswer(idx) {
+    if (answered) return;
+    setAnswered(true);
+    setChosenIdx(idx);
+    const q = questions[current];
+    const isCorrect = idx !== null && shuffledOpts[idx] === q.a;
+    if (isCorrect) { setCorrect(p=>p+1); }
+    else {
+      const newLives = lives - 1;
+      setLives(newLives);
+      if (newLives <= 0) {
+        setTimeout(() => finishQuiz(correct+(isCorrect?1:0)), 1200);
+        return;
+      }
+    }
+    setTimeout(() => {
+      if (isFlags) {
+        if (current + 1 >= questions.length) {
+          setQuestions(shuffleArr([...QUIZ_FLAGS]));
+          setCurrent(0);
+        } else { setCurrent(p=>p+1); }
+        setTimeLeft(10);
+      } else {
+        if (current + 1 >= questions.length) { finishQuiz(correct+(isCorrect?1:0)); return; }
+        setCurrent(p=>p+1);
+        setTimeLeft(20);
+      }
+      setAnswered(false); setChosenIdx(null); setHiddenOpts([]); setAudiencePcts(null);
+    }, 900);
+  }
+
+  function finishQuiz(finalCorrect) {
+    if (onUpdateQuizBest && isFlags) onUpdateQuizBest(finalCorrect);
+    let prize = ""; let coins = 0;
+    if (isFlags) {
+      if (finalCorrect >= 20) { prize = "🎫 טוקן לחידון כלליות!"; addToken(); }
+      else if (finalCorrect >= 10) { prize = "💰 500 מטבעות"; coins = 500; }
+      else { prize = "אין פרס הפעם 😅"; }
+    } else {
+      if (finalCorrect === 50) { prize = "🏅 Ballon d'Or נדיר!"; }
+      else if (finalCorrect >= 35) { prize = "🏅 קלף Ballon d'Or"; }
+      else if (finalCorrect >= 25) { prize = "🌌 קלף GALAXY"; }
+      else if (finalCorrect >= 10) { prize = "💰 2,000 מטבעות"; coins = 2000; }
+      else { prize = "אין פרס הפעם 😅"; }
+    }
+    if (coins > 0 && onCoinsEarned) onCoinsEarned(coins);
+    setPrizeText(prize);
+    setPhase("result");
+  }
+
+  function useLifeline(type) {
+    if (!lifelines[type] || answered) return;
+    setLifelines(p=>({...p,[type]:false}));
+    const q = questions[current];
+    if (type === "skip") {
+      setAnswered(true);
+      setTimeout(() => {
+        setCurrent(p=>p+1); setAnswered(false);
+        setChosenIdx(null); setHiddenOpts([]); setAudiencePcts(null);
+        setTimeLeft(isFlags?10:20);
+      }, 100);
+    } else if (type === "fifty") {
+      const wrong = shuffledOpts.map((_,i)=>i).filter(i=>shuffledOpts[i]!==q.a);
+      setHiddenOpts(shuffleArr(wrong).slice(0,2));
+    } else if (type === "audience") {
+      const correctIdx = shuffledOpts.findIndex(o=>o===q.a);
+      const pcts = shuffledOpts.map((_,i) => i===correctIdx ? 52+Math.floor(Math.random()*25) : 5+Math.floor(Math.random()*12));
+      const total = pcts.reduce((a,b)=>a+b,0);
+      setAudiencePcts(pcts.map(p=>Math.round(p/total*100)));
+    }
+  }
+
+  const q = questions[current];
+  const opts = shuffledOpts;
+  const totalTime = isFlags ? 10 : 20;
+  const pct = timeLeft / totalTime;
+  const circumference = 2 * Math.PI * 18;
+  const color = pct > 0.5 ? "#22c55e" : pct > 0.25 ? "#f59e0b" : "#ef4444";
+
+  // ── HOME ──
+  if (phase === "home") return (
+    <div style={{position:"fixed",inset:0,zIndex:9200,background:"linear-gradient(180deg,#050912,#0f172a)",display:"flex",flexDirection:"column",overflowY:"auto"}}>
+      <div style={{padding:"18px 20px 0",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+        <div style={{fontSize:20,fontWeight:900,color:"#f1f5f9"}}>🧠 חידון</div>
+        <div style={{display:"flex",alignItems:"center",gap:10}}>
+          {tokens > 0 && (
+            <div style={{background:"rgba(251,191,36,0.15)",border:"1px solid rgba(251,191,36,0.4)",borderRadius:20,padding:"4px 12px",fontSize:12,fontWeight:800,color:"#fbbf24"}}>
+              🎫 {tokens} טוקן{tokens>1?"ים":""}
+            </div>
+          )}
+          <button onClick={onClose} style={{background:"transparent",border:"none",color:"#94a3b8",fontSize:24,cursor:"pointer"}}>✕</button>
+        </div>
+      </div>
+
+      <div style={{padding:"20px 16px",display:"flex",flexDirection:"column",gap:14}}>
+
+        {/* FLAGS CARD */}
+        <div style={{background:"rgba(34,197,94,0.08)",border:"1.5px solid rgba(34,197,94,0.35)",borderRadius:18,padding:"18px 16px"}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
+            <div style={{fontSize:32}}>🌍</div>
+            <div style={{background:"rgba(34,197,94,0.15)",border:"1px solid rgba(34,197,94,0.4)",borderRadius:20,padding:"3px 12px",fontSize:11,fontWeight:800,color:"#22c55e"}}>∞ אין סוף</div>
+          </div>
+          <div style={{fontSize:18,fontWeight:900,color:"#f1f5f9",marginBottom:4}}>חידון דגלים</div>
+          <div style={{fontSize:12,color:"#94a3b8",marginBottom:12}}>10 שניות לשאלה • אין גלגלי הצלה • כמה תגיע?</div>
+          <div style={{background:"rgba(34,197,94,0.08)",borderRadius:12,padding:"10px 12px",marginBottom:12}}>
+            <div style={{fontSize:10,fontWeight:800,color:"#22c55e",marginBottom:6,letterSpacing:1}}>🎁 פרסים</div>
+            <div style={{display:"flex",flexDirection:"column",gap:5,fontSize:12,color:"#cbd5e1"}}>
+              <div style={{display:"flex",justifyContent:"space-between"}}><span>10 נכון</span><span style={{color:"#fbbf24",fontWeight:800}}>💰 500 מטבעות</span></div>
+              <div style={{height:1,background:"rgba(34,197,94,0.15)"}}/>
+              <div style={{display:"flex",justifyContent:"space-between"}}><span>20 נכון</span><span style={{color:"#fbbf24",fontWeight:900}}>🎫 טוקן</span></div>
+              <div style={{height:1,background:"rgba(34,197,94,0.15)"}}/>
+              <div style={{display:"flex",justifyContent:"space-between"}}><span>אחרי 20</span><span style={{color:"#c084fc",fontWeight:800}}>🏆 שיא קבוצתי!</span></div>
+            </div>
+          </div>
+          <button onClick={startFlags} style={{width:"100%",padding:"14px",borderRadius:13,background:"linear-gradient(135deg,#16a34a,#22c55e)",border:"none",color:"#fff",fontSize:16,fontWeight:900,fontFamily:"inherit",cursor:"pointer",boxShadow:"0 6px 20px rgba(34,197,94,0.4)"}}>
+            🌍 התחל דגלים
+          </button>
+        </div>
+
+        {/* GENERAL QUIZ CARD */}
+        <div style={{background:"rgba(99,102,241,0.08)",border:"1.5px solid rgba(99,102,241,0.35)",borderRadius:18,padding:"18px 16px"}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
+            <div style={{fontSize:32}}>⚽</div>
+            <div style={{background:"rgba(99,102,241,0.15)",border:"1px solid rgba(99,102,241,0.4)",borderRadius:20,padding:"3px 12px",fontSize:11,fontWeight:800,color:"#818cf8"}}>50 שאלות</div>
+          </div>
+          <div style={{fontSize:18,fontWeight:900,color:"#f1f5f9",marginBottom:4}}>שאלות כלליות</div>
+          <div style={{fontSize:12,color:"#94a3b8",marginBottom:12}}>20 שניות לשאלה • 3 גלגלי הצלה • קושי עולה</div>
+
+          {/* Token/cost banner */}
+          <div style={{background:tokens>0?"rgba(251,191,36,0.1)":"rgba(239,68,68,0.08)",border:`1px solid ${tokens>0?"rgba(251,191,36,0.4)":"rgba(239,68,68,0.3)"}`,borderRadius:12,padding:"9px 12px",marginBottom:12,display:"flex",alignItems:"center",gap:8}}>
+            <span style={{fontSize:20}}>{tokens>0?"🎫":"💰"}</span>
+            <div>
+              <div style={{fontSize:12,fontWeight:900,color:tokens>0?"#fbbf24":"#f87171"}}>
+                {tokens>0?`יש לך ${tokens} טוקן — כניסה חינם!`:"נדרש טוקן או 1,000 מטבעות"}
+              </div>
+              <div style={{fontSize:10,color:"#94a3b8",marginTop:1}}>
+                {tokens>0?"הטוקן יימשך בהתחלת המשחק":"קבל טוקן בחידון דגלים — 20 נכון"}
+              </div>
+            </div>
+          </div>
+
+          <div style={{background:"rgba(99,102,241,0.08)",borderRadius:12,padding:"10px 12px",marginBottom:12}}>
+            <div style={{fontSize:10,fontWeight:800,color:"#818cf8",marginBottom:6,letterSpacing:1}}>🎴 פרסים</div>
+            <div style={{display:"flex",flexDirection:"column",gap:4,fontSize:11,color:"#cbd5e1"}}>
+              <div style={{display:"flex",justifyContent:"space-between"}}><span>10+ נכון</span><span style={{color:"#fbbf24",fontWeight:800}}>💰 2,000</span></div>
+              <div style={{display:"flex",justifyContent:"space-between"}}><span>25+ נכון</span><span style={{color:"#c084fc",fontWeight:800}}>🌌 GALAXY</span></div>
+              <div style={{display:"flex",justifyContent:"space-between"}}><span>35+ נכון</span><span style={{color:"#f5d76e",fontWeight:800}}>🏅 Ballon d'Or</span></div>
+              <div style={{display:"flex",justifyContent:"space-between"}}><span>50/50</span><span style={{color:"#f5d76e",fontWeight:900}}>🏅 נדיר!</span></div>
+            </div>
+          </div>
+
+          {tokens > 0 ? (
+            <button onClick={()=>startGeneral(true)} style={{width:"100%",padding:"14px",borderRadius:13,background:"linear-gradient(135deg,#4f46e5,#7c3aed)",border:"none",color:"#fff",fontSize:16,fontWeight:900,fontFamily:"inherit",cursor:"pointer",boxShadow:"0 6px 20px rgba(99,102,241,0.4)"}}>
+              🎫 התחל עם טוקן — חינם
+            </button>
+          ) : (
+            <button onClick={()=>startGeneral(false)} style={{width:"100%",padding:"14px",borderRadius:13,background:"linear-gradient(135deg,#374151,#4b5563)",border:"1px solid rgba(99,102,241,0.4)",color:"#cbd5e1",fontSize:14,fontWeight:900,fontFamily:"inherit",cursor:"pointer"}}>
+              🪙 התחל — 1,000 מטבעות
+            </button>
+          )}
+        </div>
+
+        {/* LEADERBOARD */}
+        {leaderboard.length > 0 && (
+          <div style={{background:"rgba(15,23,42,0.6)",border:"1px solid rgba(168,85,247,0.25)",borderRadius:14,overflow:"hidden"}}>
+            <div style={{padding:"8px 14px",background:"rgba(168,85,247,0.1)",fontSize:10,color:"#c4b5fd",fontWeight:800,letterSpacing:1.5}}>
+              👑 שיאי דגלים — הליגה שלך
+            </div>
+            {leaderboard.slice(0,5).map((m,i)=>{
+              const medals=["🥇","🥈","🥉","4️⃣","5️⃣"];
+              return (
+                <div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"9px 14px",borderTop:i>0?"1px solid rgba(71,85,105,0.2)":"none",background:m.isMe?"rgba(251,191,36,0.06)":"transparent"}}>
+                  <span style={{fontSize:14,width:22,textAlign:"center"}}>{medals[i]}</span>
+                  <span style={{flex:1,fontSize:13,fontWeight:m.isMe?900:700,color:m.isMe?"#fbbf24":"#cbd5e1"}}>{m.name}{m.isMe?" (אני)":""}</span>
+                  <span style={{fontSize:16,fontWeight:900,color:i===0?"#c4b5fd":"#64748b"}}>{m.score}</span>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  // ── RESULT ──
+  if (phase === "result") return (
+    <div style={{position:"fixed",inset:0,zIndex:9200,background:"linear-gradient(180deg,#050912,#0f172a)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:28,gap:14,textAlign:"center"}}>
+      <div style={{fontSize:64}}>{correct>=(isFlags?20:35)?"🏅":correct>=(isFlags?10:10)?"⭐":"😅"}</div>
+      <div style={{fontSize:22,fontWeight:900,color:"#f1f5f9"}}>{correct>=(isFlags?20:35)?"מושלם!":correct>=(isFlags?10:10)?"כל הכבוד!":"נסה שוב"}</div>
+      <div style={{background:"rgba(30,41,59,0.8)",border:"1.5px solid rgba(99,102,241,0.3)",borderRadius:18,padding:"18px 28px",width:"100%"}}>
+        <div style={{fontSize:48,fontWeight:900,color:"#f5d76e",lineHeight:1}}>{correct}</div>
+        <div style={{fontSize:12,color:"#94a3b8",marginTop:4}}>{isFlags?"דגלים נכונים":`מתוך ${questions.length} שאלות`}</div>
+      </div>
+      <div style={{background:"rgba(251,191,36,0.1)",border:"1.5px solid rgba(251,191,36,0.3)",borderRadius:14,padding:"12px 18px",width:"100%"}}>
+        <div style={{fontSize:10,color:"#fbbf24",fontWeight:800,letterSpacing:2,marginBottom:4}}>🎁 פרס שלך</div>
+        <div style={{fontSize:16,fontWeight:900,color:"#f1f5f9"}}>{prizeText}</div>
+      </div>
+      {tokens > 0 && (
+        <div style={{background:"rgba(251,191,36,0.08)",border:"1px solid rgba(251,191,36,0.25)",borderRadius:12,padding:"8px 16px",width:"100%",textAlign:"center",fontSize:12,color:"#fbbf24",fontWeight:700}}>
+          🎫 יש לך {tokens} טוקן{tokens>1?"ים":""}
+        </div>
+      )}
+      <div style={{display:"flex",flexDirection:"column",gap:8,width:"100%"}}>
+        <button onClick={isFlags?startFlags:()=>startGeneral(tokens>0)} style={{padding:"13px",borderRadius:13,background:isFlags?"linear-gradient(135deg,#16a34a,#22c55e)":"linear-gradient(135deg,#4f46e5,#7c3aed)",border:"none",color:"#fff",fontSize:15,fontWeight:900,fontFamily:"inherit",cursor:"pointer"}}>🔄 שחק שוב</button>
+        <button onClick={()=>setPhase("home")} style={{padding:"13px",borderRadius:13,background:"rgba(30,41,59,0.8)",color:"#cbd5e1",border:"1.5px solid rgba(71,85,105,0.4)",fontSize:13,fontWeight:700,fontFamily:"inherit",cursor:"pointer"}}>🏠 תפריט</button>
+      </div>
+    </div>
+  );
+
+  // ── PLAYING ──
+  return (
+    <div style={{position:"fixed",inset:0,zIndex:9200,background:"linear-gradient(180deg,#050912,#0f172a)",display:"flex",flexDirection:"column",padding:"10px 16px 12px",gap:8}}>
+      {/* Header */}
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexShrink:0}}>
+        <div>
+          <div style={{fontSize:11,fontWeight:700,color:"#64748b"}}>שאלה <span style={{color:"#f1f5f9",fontWeight:900}}>{current+1}</span>{!isFlags && ` / ${questions.length}`}</div>
+          <div style={{fontSize:16,letterSpacing:1}}>{"❤️".repeat(lives)}{"🖤".repeat(3-lives)}</div>
+        </div>
+        <div style={{textAlign:"center"}}>
+          <div style={{fontSize:20,fontWeight:900,color:"#22c55e"}}>{correct}</div>
+          <div style={{fontSize:9,color:"#64748b"}}>נכון ✅</div>
+        </div>
+      </div>
+
+      {/* Progress dots */}
+      <div style={{display:"flex",gap:3,flexShrink:0,overflow:"hidden"}}>
+        {Array.from({length:Math.min(current+8,30)}).map((_,i)=>(
+          <div key={i} style={{flex:1,height:4,borderRadius:3,background:i<correct?"#22c55e":i===current?"#3b82f6":"rgba(71,85,105,0.3)"}}/>
+        ))}
+      </div>
+
+      {/* Timer */}
+      <div style={{display:"flex",alignItems:"center",gap:10,background:"rgba(15,23,42,0.6)",border:"1px solid rgba(71,85,105,0.3)",borderRadius:14,padding:"8px 12px",flexShrink:0}}>
+        <div style={{position:"relative",width:42,height:42,flexShrink:0}}>
+          <svg viewBox="0 0 42 42" width="42" height="42" style={{transform:"rotate(-90deg)"}}>
+            <circle fill="none" stroke="rgba(71,85,105,0.3)" strokeWidth="4" cx="21" cy="21" r="18"/>
+            <circle fill="none" stroke={color} strokeWidth="4" strokeLinecap="round" cx="21" cy="21" r="18"
+              strokeDasharray={circumference} strokeDashoffset={circumference*(1-pct)} style={{transition:"stroke-dashoffset 1s linear,stroke 0.3s"}}/>
+          </svg>
+          <div style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",fontSize:14,fontWeight:900,color}}>{timeLeft}</div>
+        </div>
+        <div style={{flex:1}}>
+          <div style={{fontSize:10,color:"#64748b",marginBottom:3}}>⏱️ {totalTime} שניות</div>
+          <div style={{height:4,background:"rgba(71,85,105,0.3)",borderRadius:4,overflow:"hidden"}}>
+            <div style={{height:"100%",width:(pct*100)+"%",background:color,borderRadius:4,transition:"width 1s linear"}}/>
+          </div>
+        </div>
+        <div style={{fontSize:10,fontWeight:800,padding:"3px 9px",borderRadius:20,background:isFlags?"rgba(34,197,94,0.15)":"rgba(99,102,241,0.15)",color:isFlags?"#22c55e":"#818cf8",border:`1px solid ${isFlags?"rgba(34,197,94,0.3)":"rgba(99,102,241,0.3)"}`}}>
+          {isFlags?"🌍 דגלים":"⚽ כלליות"}
+        </div>
+      </div>
+
+      {/* Question */}
+      <div style={{background:"rgba(30,41,59,0.7)",border:"1.5px solid rgba(99,102,241,0.25)",borderRadius:16,padding:"12px 14px",flexShrink:0,textAlign:"center"}}>
+        {isFlags ? (
+          <>
+            <div style={{fontSize:10,fontWeight:800,letterSpacing:2,color:"#6366f1",marginBottom:6}}>🌍 זהה את הדגל</div>
+            <div style={{fontSize:78,lineHeight:1,marginBottom:4}}>{q?.flag}</div>
+            <div style={{fontSize:15,fontWeight:800,color:"#f1f5f9"}}>איזו מדינה?</div>
+          </>
+        ) : (
+          <>
+            <div style={{fontSize:10,fontWeight:800,letterSpacing:1.5,color:"#6366f1",marginBottom:6}}>⚽ {q?.cat || "כדורגל"}</div>
+            <div style={{fontSize:15,fontWeight:800,color:"#f1f5f9",lineHeight:1.4}}>{q?.q}</div>
+          </>
+        )}
+      </div>
+
+      {/* Answers */}
+      <div style={{display:"flex",flexDirection:"column",gap:7,flex:1}}>
+        {opts.map((opt,i)=>{
+          if (hiddenOpts.includes(i)) return <div key={i} style={{flex:1}}/>;
+          const isCorrectOpt = opt === q?.a;
+          const chosen = chosenIdx === i;
+          let bg="rgba(30,41,59,0.65)",border="rgba(71,85,105,0.35)",textColor="#e2e8f0";
+          if (answered) {
+            if (isCorrectOpt) { bg="rgba(34,197,94,0.18)"; border="#22c55e"; textColor="#86efac"; }
+            else if (chosen) { bg="rgba(239,68,68,0.12)"; border="#ef4444"; textColor="#fca5a5"; }
+            else { bg="rgba(30,41,59,0.3)"; textColor="#64748b"; }
+          }
+          return (
+            <button key={i} disabled={answered} onClick={()=>handleAnswer(i)} style={{
+              display:"flex",alignItems:"center",gap:10,padding:"0 12px",
+              borderRadius:13,border:`2px solid ${border}`,background:bg,
+              color:textColor,fontSize:13,fontWeight:700,fontFamily:"inherit",
+              cursor:answered?"default":"pointer",flex:1,transition:"all 0.15s",
+            }}>
+              <div style={{width:26,height:26,borderRadius:8,background:"rgba(71,85,105,0.35)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:900,color:"#94a3b8",flexShrink:0}}>{LETTERS[i]}</div>
+              <span style={{flex:1,textAlign:"right"}}>{opt}</span>
+              {audiencePcts && <span style={{fontSize:10,fontWeight:900,background:"rgba(71,85,105,0.3)",padding:"2px 6px",borderRadius:8,color:"#94a3b8"}}>{audiencePcts[i]}%</span>}
+              {answered && isCorrectOpt && <span>✅</span>}
+              {answered && chosen && !isCorrectOpt && <span>❌</span>}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Lifelines — only for general quiz */}
+      {isGeneral && (
+        <div style={{display:"flex",gap:8,flexShrink:0}}>
+          {[
+            {key:"skip",icon:"⏭️",label:"דלג"},
+            {key:"fifty",icon:"🎯",label:"50:50"},
+            {key:"audience",icon:"👥",label:"קהל"},
+          ].map(ll=>(
+            <button key={ll.key} onClick={()=>useLifeline(ll.key)} disabled={!lifelines[ll.key]||answered}
+              style={{flex:1,padding:"7px 4px",borderRadius:12,border:"1.5px solid rgba(71,85,105,0.4)",background:"rgba(15,23,42,0.7)",color:"#f1f5f9",fontFamily:"inherit",cursor:lifelines[ll.key]&&!answered?"pointer":"default",opacity:lifelines[ll.key]?1:0.3,textAlign:"center"}}>
+              <div style={{fontSize:18}}>{ll.icon}</div>
+              <div style={{fontSize:9,fontWeight:800,color:"#94a3b8"}}>{ll.label}</div>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
   // Build leaderboard
   const leaderboard = Object.entries(leagueMembers).map(([uid, m]) => ({
@@ -7090,8 +7532,8 @@ function QuizScreen({ onClose, onCoinsEarned, leagueMembers = {}, userId, userNa
     setCurrent(0); setCorrect(0); setLives(3);
     setAnswered(false); setChosenIdx(null);
     setHiddenOpts([]); setAudiencePcts(null);
-    setLifelines({skip:true,fifty:true,audience:true});
-    setTimeLeft(15); setPhase("flags");
+    setLifelines({skip:false,fifty:false,audience:false}); // ❌ no lifelines in flags
+    setTimeLeft(10); setPhase("flags"); // ⏱️ 10 seconds
   }
 
   // Timer
@@ -7130,13 +7572,16 @@ function QuizScreen({ onClose, onCoinsEarned, leagueMembers = {}, userId, userNa
     }
     setTimeout(() => {
       if (current + 1 >= questions.length) {
-        const more = shuffleArr(QUIZ_FLAGS);
-        setQuestions(p => [...p, ...more]);
+        // infinite loop — re-shuffle completely
+        const more = shuffleArr([...QUIZ_FLAGS]);
+        setQuestions(more);
+        setCurrent(0);
+      } else {
+        setCurrent(p=>p+1);
       }
-      setCurrent(p=>p+1);
       setAnswered(false); setChosenIdx(null);
       setHiddenOpts([]); setAudiencePcts(null);
-      setTimeLeft(15);
+      setTimeLeft(10); // ⏱️ 10 seconds
     }, 900);
   }
 
@@ -7276,93 +7721,8 @@ function QuizScreen({ onClose, onCoinsEarned, leagueMembers = {}, userId, userNa
           <div style={{fontSize:9,color:"#64748b"}}>נכון ✅</div>
         </div>
       </div>
-
-      {/* Progress dots */}
-      <div style={{display:"flex",gap:3,flexShrink:0,overflow:"hidden"}}>
-        {Array.from({length:Math.min(current+5,30)}).map((_,i)=>(
-          <div key={i} style={{flex:1,height:4,borderRadius:3,background:i<correct?"#22c55e":i===current?"#3b82f6":"rgba(71,85,105,0.3)"}}/>
-        ))}
-      </div>
-
-      {/* Timer */}
-      <div style={{display:"flex",alignItems:"center",gap:10,background:"rgba(15,23,42,0.6)",border:"1px solid rgba(71,85,105,0.3)",borderRadius:14,padding:"8px 12px",flexShrink:0}}>
-        <div style={{position:"relative",width:42,height:42,flexShrink:0}}>
-          <svg viewBox="0 0 42 42" width="42" height="42" style={{transform:"rotate(-90deg)"}}>
-            <circle fill="none" stroke="rgba(71,85,105,0.3)" strokeWidth="4" cx="21" cy="21" r="18"/>
-            <circle fill="none" stroke={color} strokeWidth="4" strokeLinecap="round" cx="21" cy="21" r="18"
-              strokeDasharray={circumference} strokeDashoffset={circumference*(1-pct)} style={{transition:"stroke-dashoffset 1s linear,stroke 0.3s"}}/>
-          </svg>
-          <div style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",fontSize:14,fontWeight:900,color}}>{timeLeft}</div>
-        </div>
-        <div style={{flex:1}}>
-          <div style={{fontSize:10,color:"#64748b",marginBottom:3}}>⏱️ זמן נותר</div>
-          <div style={{height:4,background:"rgba(71,85,105,0.3)",borderRadius:4,overflow:"hidden"}}>
-            <div style={{height:"100%",width:(pct*100)+"%",background:color,borderRadius:4,transition:"width 1s linear"}}/>
-          </div>
-        </div>
-        <div style={{fontSize:10,fontWeight:800,padding:"3px 9px",borderRadius:20,background:"rgba(34,197,94,0.15)",color:"#22c55e",border:"1px solid rgba(34,197,94,0.3)"}}>🌍 דגלים</div>
-      </div>
-
-      {/* Flag + question */}
-      <div style={{background:"rgba(30,41,59,0.7)",border:"1.5px solid rgba(99,102,241,0.25)",borderRadius:16,padding:"14px 14px",flexShrink:0,textAlign:"center"}}>
-        <div style={{fontSize:10,fontWeight:800,letterSpacing:2,color:"#6366f1",marginBottom:8}}>🌍 זהה את הדגל</div>
-        <div style={{fontSize:80,lineHeight:1,marginBottom:6,filter:"drop-shadow(0 4px 12px rgba(0,0,0,0.4))"}}>{q?.flag}</div>
-        <div style={{fontSize:16,fontWeight:800,color:"#f1f5f9"}}>איזו מדינה?</div>
-      </div>
-
-      {/* Answers */}
-      <div style={{display:"flex",flexDirection:"column",gap:7,flex:1}}>
-        {opts.map((opt,i)=>{
-          const isHidden = hiddenOpts.includes(i);
-          const isCorrectOpt = opt === q?.a;
-          const chosen = chosenIdx === i;
-          let bg = "rgba(30,41,59,0.65)"; let border = "rgba(71,85,105,0.35)"; let textColor="#e2e8f0";
-          if (answered) {
-            if (isCorrectOpt) { bg="rgba(34,197,94,0.18)"; border="#22c55e"; textColor="#86efac"; }
-            else if (chosen) { bg="rgba(239,68,68,0.12)"; border="#ef4444"; textColor="#fca5a5"; }
-            else { bg="rgba(30,41,59,0.3)"; textColor="#64748b"; }
-          }
-          return (
-            <button key={i} disabled={answered||isHidden} onClick={()=>handleAnswer(i)} style={{
-              display:"flex",alignItems:"center",gap:10,padding:"0 12px",
-              borderRadius:13,border:`2px solid ${isHidden?"transparent":border}`,
-              background:isHidden?"transparent":bg,
-              color:textColor,fontSize:14,fontWeight:700,fontFamily:"inherit",
-              cursor:answered||isHidden?"default":"pointer",
-              flex:1,visibility:isHidden?"hidden":"visible",
-              transition:"all 0.15s",
-            }}>
-              <div style={{width:28,height:28,borderRadius:8,background:"rgba(71,85,105,0.35)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:900,color:"#94a3b8",flexShrink:0}}>
-                {LETTERS[i]}
-              </div>
-              <span style={{flex:1,textAlign:"right"}}>{opt}</span>
-              {audiencePcts && !isHidden && (
-                <span style={{fontSize:11,fontWeight:900,background:"rgba(71,85,105,0.3)",padding:"2px 7px",borderRadius:8,color:"#94a3b8"}}>{audiencePcts[i]}%</span>
-              )}
-              {answered && isCorrectOpt && <span>✅</span>}
-              {answered && chosen && !isCorrectOpt && <span>❌</span>}
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Lifelines */}
-      <div style={{display:"flex",gap:8,flexShrink:0}}>
-        {[
-          {key:"skip",icon:"⏭️",label:"דלג"},
-          {key:"fifty",icon:"🎯",label:"50:50"},
-          {key:"audience",icon:"👥",label:"קהל"},
-        ].map(ll=>(
-          <button key={ll.key} onClick={()=>useLifeline(ll.key)} disabled={!lifelines[ll.key]||answered}
-            style={{flex:1,padding:"8px 4px",borderRadius:12,border:"1.5px solid rgba(71,85,105,0.4)",background:"rgba(15,23,42,0.7)",color:"#f1f5f9",fontFamily:"inherit",cursor:lifelines[ll.key]&&!answered?"pointer":"default",opacity:lifelines[ll.key]?1:0.3,textAlign:"center"}}>
-            <div style={{fontSize:20}}>{ll.icon}</div>
-            <div style={{fontSize:9,fontWeight:800,color:"#94a3b8"}}>{ll.label}</div>
-          </button>
-        ))}
-      </div>
     </div>
   );
-}
 
 // ─── 🎴 HIGHER / LOWER — guess if next card has higher or lower rating ─────────
 function LuckyWheelModal({ onClose, onWin, onUpdateBestStreak, personalBest, leagueRecord, leaderboard = [], freePlaysLeft, coinBalance, onUseFree, onPayPlay }) {
