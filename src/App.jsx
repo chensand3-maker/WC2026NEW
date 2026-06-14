@@ -10,7 +10,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.36.6";
+const APP_VERSION = "3.36.7";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -4780,7 +4780,7 @@ function playWinSound(rarity) {
 
 // 🎁 DAILY BONUS MODAL — shows the 7-day reward grid + claim button
 
-function RouletteModal({ coins, isSpinning, pendingCard, onSpin, onLegendsSpin, legendsSpinAvailable, onGalaxySpin, galaxyTestMode, galaxySpinning, spinCount, onClose, onShowCollection }) {
+function RouletteModal({ coins, isSpinning, pendingCard, onSpin, onLegendsSpin, legendsSpinAvailable, onGalaxySpin, galaxyTestMode, galaxySpinning, spinCount, onClose, onShowCollection, onShowQuiz }) {
   const t = useT();
   const canSpin = coins.balance >= COINS.SPIN && !isSpinning;
   const [leverPulled, setLeverPulled] = useState(false);
@@ -4809,8 +4809,9 @@ function RouletteModal({ coins, isSpinning, pendingCard, onSpin, onLegendsSpin, 
       background: galaxySpinning
         ? "radial-gradient(ellipse at center, #4c1d95 0%, #1e1b4b 50%, #0a0118 100%)"
         : "radial-gradient(circle at center, rgba(51,65,85,0.85), rgba(36,49,80,0.92))",
-      display:"flex",alignItems:"center",justifyContent:"center",
+      display:"flex",alignItems:"flex-start",justifyContent:"center",
       padding:14,
+      overflowY:"auto",
       transition:"background 0.4s ease",
     }}>
       <style>{`
@@ -5098,9 +5099,9 @@ function RouletteModal({ coins, isSpinning, pendingCard, onSpin, onLegendsSpin, 
               animation: isSpinning ? "none" : "galaxyShimmer 5s linear infinite",
               position:"relative",
             }}>
-            🌌 GALAXY SPIN
+            🌌 GALAXY SPIN — סיכויים כפולים!
             <div style={{fontSize:10,marginTop:3,opacity:0.95,letterSpacing:0.5,fontWeight:700}}>
-              {galaxyTestMode ? "🧪 מצב בדיקה — חינם" : "🪙 1000 · 5% למצטייני 25/26"}
+              {galaxyTestMode ? "🧪 מצב בדיקה — חינם" : "🪙 1000 · 🏅0.5%→1% · 🌌1%→3% · 🏆2%→6%"}
             </div>
           </button>
         )}
@@ -5115,6 +5116,18 @@ function RouletteModal({ coins, isSpinning, pendingCard, onSpin, onLegendsSpin, 
           fontFamily:"inherit",cursor:"pointer",
         }}>
           🃏 {t("roulette.viewCollection")}
+        </button>
+
+        {/* 🧠 Quiz shortcut */}
+        <button onClick={onShowQuiz} style={{
+          width:"100%",marginTop:6,padding:"10px",borderRadius:10,
+          background:"rgba(34,197,94,0.08)",
+          color:"#86efac",
+          border:"1px solid rgba(34,197,94,0.3)",
+          fontSize:12,fontWeight:800,
+          fontFamily:"inherit",cursor:"pointer",
+        }}>
+          🧠 חידון דגלים — 20 נכון = 🎫 טוקן לשאלות
         </button>
 
         {/* 📊 Rarity odds legend — boxes */}
@@ -14367,16 +14380,17 @@ export default function App() {
     const cost = 1000;
     if (!isTest && (coins?.balance || 0) < cost) return;
 
-    // 🎲 Galaxy Spin odds:
-    // 5% GALAXY (top 25/26)
-    // 15% LEGENDARY  | 30% EPIC  | 30% RARE  | 20% UNCOMMON
+    // 🎲 Galaxy Spin odds — DOUBLE vs regular:
+    // 1% BALLON D'OR | 3% GALAXY | 6% LEGENDARY | 15% EPIC | 20% RARE | 30% UNCOMMON | 25% COMMON
     const roll = Math.random() * 100;
     let initialRarity;
-    if (roll < 5) initialRarity = "X";
-    else if (roll < 20) initialRarity = "L";
-    else if (roll < 50) initialRarity = "E";
-    else if (roll < 80) initialRarity = "R";
-    else initialRarity = "U";
+    if (roll < 1) initialRarity = "B";
+    else if (roll < 4) initialRarity = "X";
+    else if (roll < 10) initialRarity = "L";
+    else if (roll < 25) initialRarity = "E";
+    else if (roll < 45) initialRarity = "R";
+    else if (roll < 75) initialRarity = "U";
+    else initialRarity = "C";
 
     // 🛡️ Premium tiers (X, L, E) — exclude duplicates
     // Fallback: if all cards in that tier owned, drop to next tier
@@ -16217,6 +16231,7 @@ export default function App() {
           spinCount={spinCount}
           onClose={()=>setShowRoulette(false)}
           onShowCollection={()=>setShowCollection(true)}
+          onShowQuiz={()=>{ setShowRoulette(false); setShowQuiz(true); }}
         />
       )}
 
