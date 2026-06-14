@@ -10,7 +10,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.36.5";
+const APP_VERSION = "3.36.6";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -5002,24 +5002,6 @@ function RouletteModal({ coins, isSpinning, pendingCard, onSpin, onLegendsSpin, 
               }
             `}</style>
           </div>
-        </div>
-
-        {/* Rarity legend */}
-        <div style={{display:"grid",gridTemplateColumns:"repeat(5, 1fr)",gap:4,marginBottom:18}}>
-          {Object.entries(RARITY_ODDS).map(([r, pct]) => {
-            const cfg = RARITY_CONFIG[r];
-            return (
-              <div key={r} style={{
-                textAlign:"center",
-                padding:"4px 2px",borderRadius:6,
-                background:`${cfg.color}11`,
-                border:`1px solid ${cfg.color}44`,
-              }}>
-                <div style={{fontSize:8,color:cfg.color,fontWeight:800,letterSpacing:0.5,marginBottom:2}}>{cfg.label.slice(0,4)}</div>
-                <div style={{fontSize:11,color:"#f1f5f9",fontWeight:700}}>{pct}%</div>
-              </div>
-            );
-          })}
         </div>
 
         {/* Balance + spin button */}
