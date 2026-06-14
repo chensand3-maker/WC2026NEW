@@ -10,7 +10,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.37.4";
+const APP_VERSION = "3.37.5";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -7189,7 +7189,7 @@ const LETTERS = ["א","ב","ג","ד"];
 
 function shuffleArr(arr) { return [...arr].sort(()=>Math.random()-0.5); }
 
-function QuizScreen({ onClose, onCoinsEarned, leagueMembers = {}, userId, userName, onUpdateQuizBest }) {
+function QuizScreen({ onClose, onCoinsEarned, leagueMembers = {}, userId, userName, onUpdateQuizBest, personalBestOverride }) {
   const [phase, setPhase] = useState("home"); // home | flags | general | result
   const [quizType, setQuizType] = useState("flags"); // flags | general
   const [questions, setQuestions] = useState([]);
@@ -7205,6 +7205,7 @@ function QuizScreen({ onClose, onCoinsEarned, leagueMembers = {}, userId, userNa
   const [prizeText, setPrizeText] = useState("");
   const [tokens, setTokens] = useState(() => parseInt(localStorage.getItem("wc2026_quiz_tokens_v1")||"0",10));
   const [personalBest] = useState(() => parseInt(localStorage.getItem("wc2026_quiz_best_v1")||"0",10));
+  const effectiveBest = personalBestOverride ?? personalBest;
 
   const GENERAL_Q = [
     {q:"כמה פעמים זכתה ברזיל במונדיאל?",a:"5",options:["4","5","6","3"],cat:"נבחרות",diff:"קל"},
@@ -7282,7 +7283,7 @@ function QuizScreen({ onClose, onCoinsEarned, leagueMembers = {}, userId, userNa
   // Build leaderboard from league members
   const leaderboard = Object.entries(leagueMembers).map(([uid, m]) => ({
     name: m.name || "—",
-    score: uid === userId ? Math.max(personalBest, m.quizBestFlags || 0) : (m.quizBestFlags || 0),
+    score: uid === userId ? Math.max(effectiveBest, m.quizBestFlags || 0) : (m.quizBestFlags || 0),
     isMe: uid === userId,
   })).sort((a,b) => b.score - a.score);
   if (!leaderboard.find(m=>m.isMe) && personalBest > 0) {
@@ -14453,6 +14454,10 @@ export default function App() {
     try { return parseInt(localStorage.getItem("wc2026_hl_best_v1") || "0", 10) || 0; }
     catch { return 0; }
   });
+  const [quizBestFlags, setQuizBestFlags] = useState(() => {
+    try { return parseInt(localStorage.getItem("wc2026_quiz_best_v1") || "0", 10) || 0; }
+    catch { return 0; }
+  });
   const [hlPlaysToday, setHlPlaysToday] = useState(() => {
     try {
       const data = JSON.parse(localStorage.getItem("wc2026_hl_plays_v1") || "{}");
@@ -15152,12 +15157,13 @@ export default function App() {
           unlockedAchievements: Array.from(unlockedAchievements || []),
           pickedAtHours: pickedAtHours || [],
           hlBestStreak: hlBestStreak || 0, // 🎴 Higher/Lower record
+          quizBestFlags: quizBestFlags || 0, // 🧠 Quiz flags best score
         })
           .catch(err => console.error(`Failed to push picks to ${code}:`, err));
       });
     }, 800);
     return () => clearTimeout(handle);
-  }, [leagueCodes.join("|"), userId, name, picks, koWinners, winnerPick, topScorerPick, cardCollection, coins?.balance, unlockedAchievements, pickedAtHours, hlBestStreak]);
+  }, [leagueCodes.join("|"), userId, name, picks, koWinners, winnerPick, topScorerPick, cardCollection, coins?.balance, unlockedAchievements, pickedAtHours, hlBestStreak, quizBestFlags]);
 
   // ─── GLOBAL PROFILE: push to the worldwide leaderboard (every user) ──────
   // Independent of league membership — everyone is on the global board.
@@ -15184,11 +15190,11 @@ export default function App() {
         total += (actualTopScorer.goals || 0) * POINTS.TOP_SCORER_GOAL;
       }
       updateMyGlobalProfile(userId, name, picks, koWinners, {
-        winnerPick, topScorerPick, koPicks, totalPoints: total, cardCollection, hlBestStreak,
+        winnerPick, topScorerPick, koPicks, totalPoints: total, cardCollection, hlBestStreak, quizBestFlags,
       }).catch(err => console.error("Failed to push global profile:", err));
     }, 1200);
     return () => clearTimeout(handle);
-  }, [userId, name, picks, koWinners, koPicks, winnerPick, topScorerPick, actuals, actualKoScores, actualWinner, actualTopScorer, cardCollection, hlBestStreak]);
+  }, [userId, name, picks, koWinners, koPicks, winnerPick, topScorerPick, actuals, actualKoScores, actualWinner, actualTopScorer, cardCollection, hlBestStreak, quizBestFlags]);
 
   // ─── LIVE RESULTS AUTO-FETCH ───────────────────────────────────────────────
   // Poll API-Football every 5 min for new match results
@@ -16550,6 +16556,7 @@ export default function App() {
             const prev = parseInt(localStorage.getItem(key) || "0", 10);
             if (score > prev) {
               localStorage.setItem(key, String(score));
+              setQuizBestFlags(score); // triggers Firebase sync
             }
           }}
         />
