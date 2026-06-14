@@ -10,7 +10,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.37.5";
+const APP_VERSION = "3.37.6";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -7441,19 +7441,27 @@ function QuizScreen({ onClose, onCoinsEarned, leagueMembers = {}, userId, userNa
           )}
         </div>
 
-        {/* Leaderboard */}
-        {leaderboard.length > 0 && (
-          <div style={{background:"rgba(15,23,42,0.6)",border:"1px solid rgba(168,85,247,0.25)",borderRadius:14,overflow:"hidden"}}>
-            <div style={{padding:"8px 14px",background:"rgba(168,85,247,0.1)",fontSize:10,color:"#c4b5fd",fontWeight:800,letterSpacing:1.5}}>👑 שיאי דגלים — הליגה</div>
-            {leaderboard.slice(0,5).map((m,i)=>(
-              <div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"9px 14px",borderTop:i>0?"1px solid rgba(71,85,105,0.2)":"none",background:m.isMe?"rgba(251,191,36,0.06)":"transparent"}}>
-                <span style={{fontSize:14,width:22,textAlign:"center"}}>{"🥇🥈🥉4️⃣5️⃣"[i*2]+("🥇🥈🥉4️⃣5️⃣"[i*2+1]||"")}</span>
-                <span style={{flex:1,fontSize:13,fontWeight:m.isMe?900:700,color:m.isMe?"#fbbf24":"#cbd5e1"}}>{m.name}{m.isMe?" (אני)":""}</span>
-                <span style={{fontSize:16,fontWeight:900,color:i===0?"#c4b5fd":"#64748b"}}>{m.score}</span>
-              </div>
-            ))}
-          </div>
-        )}
+        {/* Leaderboard — always show */}
+        {(() => {
+          // Build display list: leaderboard + self if not in it
+          const medals = ["🥇","🥈","🥉","4️⃣","5️⃣"];
+          const displayList = leaderboard.length > 0 ? leaderboard.slice(0,5) : [{name: userName||"אני", score: effectiveBest, isMe: true}];
+          // Make sure self appears even if score is 0
+          const hasSelf = displayList.some(m=>m.isMe);
+          if (!hasSelf) displayList.push({name: userName||"אני", score: effectiveBest, isMe: true});
+          return (
+            <div style={{background:"rgba(15,23,42,0.6)",border:"1px solid rgba(168,85,247,0.25)",borderRadius:14,overflow:"hidden"}}>
+              <div style={{padding:"8px 14px",background:"rgba(168,85,247,0.1)",fontSize:10,color:"#c4b5fd",fontWeight:800,letterSpacing:1.5}}>👑 שיאי דגלים — הליגה שלי</div>
+              {displayList.map((m,i)=>(
+                <div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"9px 14px",borderTop:i>0?"1px solid rgba(71,85,105,0.2)":"none",background:m.isMe?"rgba(251,191,36,0.06)":"transparent"}}>
+                  <span style={{fontSize:14,width:22,textAlign:"center"}}>{medals[i]||`${i+1}`}</span>
+                  <span style={{flex:1,fontSize:13,fontWeight:m.isMe?900:700,color:m.isMe?"#fbbf24":"#cbd5e1"}}>{m.name}{m.isMe?" (אני)":""}</span>
+                  <span style={{fontSize:16,fontWeight:900,color:i===0?"#c4b5fd":"#64748b"}}>{m.score||0}</span>
+                </div>
+              ))}
+            </div>
+          );
+        })()}
       </div>
     </div>
   );
