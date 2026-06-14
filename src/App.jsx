@@ -10,7 +10,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.35.4";
+const APP_VERSION = "3.35.5";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -1182,7 +1182,7 @@ const SCHEDULE = {
   "Morocco|Haiti":        { kickoff: _utc(2026,6,24,22, 0), venue: "Mercedes-Benz Stadium, Atlanta" },
   // ── Group D ──
   "USA|Paraguay":         { kickoff: _utc(2026,6,13, 1, 0), venue: "SoFi Stadium, Inglewood" },
-  "Australia|Türkiye":    { kickoff: _utc(2026,6,14, 1, 0), venue: "BC Place, Vancouver" },
+  "Australia|Türkiye":    { kickoff: _utc(2026,6,14, 4, 0), venue: "BC Place, Vancouver" },
   "Türkiye|Paraguay":     { kickoff: _utc(2026,6,20, 4, 0), venue: "Levi's Stadium, Santa Clara" },
   "USA|Australia":        { kickoff: _utc(2026,6,19,19, 0), venue: "Lumen Field, Seattle" },
   "Türkiye|USA":          { kickoff: _utc(2026,6,26, 2, 0), venue: "SoFi Stadium, Inglewood" },
@@ -10417,8 +10417,14 @@ function TodayScreen({ picks, actuals, onPick, onBack, onGoToBracket, leagueMemb
       justFinishedMatches.push(m);
       continue;
     }
-    // Past matches not live → skip from main lists
-    if (k < now) continue;
+    // Past matches not live → show if within 12 hours, collapsed
+    if (k < now) {
+      const hoursSinceKickoff = (now - k) / (60 * 60 * 1000);
+      if (hoursSinceKickoff <= 12 && hasFinalScore) {
+        justFinishedMatches.push(m);
+      }
+      continue;
+    }
     // Future matches → bucket by today / tomorrow
     const isToday = k < todayStart.getTime() + 24 * 60 * 60 * 1000;
     if (isToday) todayMatches.push(m);
