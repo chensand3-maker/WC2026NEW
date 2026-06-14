@@ -10,7 +10,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.35.5";
+const APP_VERSION = "3.37.2";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -3069,6 +3069,18 @@ const CARDS_BY_RARITY = {
   R: CARDS.filter(c => c.rarity === "R"),
   U: CARDS.filter(c => c.rarity === "U"),
   C: CARDS.filter(c => c.rarity === "C"),
+  B: [ // 🏅 Ballon d'Or — legendary winners
+    { id:"ballon-messi",    name:"Lionel Messi",       team:"Argentina", pos:"CF",  rarity:"B", rating:99, flag:"🇦🇷", ballons:8, years:"2009,2010,2011,2012,2015,2019,2021,2023" },
+    { id:"ballon-cr7",      name:"Cristiano Ronaldo",  team:"Portugal",  pos:"CF",  rarity:"B", rating:98, flag:"🇵🇹", ballons:5, years:"2008,2013,2014,2016,2017" },
+    { id:"ballon-modric",   name:"Luka Modrić",        team:"Croatia",   pos:"CM",  rarity:"B", rating:97, flag:"🇭🇷", ballons:1, years:"2018" },
+    { id:"ballon-cruyff",   name:"Johan Cruyff",       team:"Netherlands",pos:"CF", rarity:"B", rating:98, flag:"🇳🇱", ballons:3, years:"1971,1973,1974" },
+    { id:"ballon-platini",  name:"Michel Platini",     team:"France",    pos:"AM",  rarity:"B", rating:97, flag:"🇫🇷", ballons:3, years:"1983,1984,1985" },
+    { id:"ballon-r9",       name:"Ronaldo Nazário",    team:"Brazil",    pos:"CF",  rarity:"B", rating:98, flag:"🇧🇷", ballons:2, years:"1997,2002" },
+    { id:"ballon-ronaldinho",name:"Ronaldinho",         team:"Brazil",    pos:"AM",  rarity:"B", rating:97, flag:"🇧🇷", ballons:1, years:"2005" },
+    { id:"ballon-kaka",     name:"Kaká",               team:"Brazil",    pos:"AM",  rarity:"B", rating:97, flag:"🇧🇷", ballons:1, years:"2007" },
+    { id:"ballon-sheva",    name:"Andriy Shevchenko",  team:"Ukraine",   pos:"CF",  rarity:"B", rating:97, flag:"🇺🇦", ballons:1, years:"2004" },
+    { id:"ballon-dembele",  name:"Ousmane Dembélé",    team:"France",    pos:"RW",  rarity:"B", rating:97, flag:"🇫🇷", ballons:1, years:"2025" },
+  ],
 };
 
 // Rarity probabilities (must sum to 100) — Legendary intentionally very rare
@@ -3780,13 +3792,12 @@ function OnboardingTutorial({ onDone }) {
             borderRadius:12,padding:"12px",marginBottom:14,
           }}>
             <div style={{fontSize:11,color:"#cbd5e1",fontWeight:700,marginBottom:8,textAlign:"center",letterSpacing:2}}>{t("onboarding.rarityTitle")}</div>
-            <div style={{display:"grid",gridTemplateColumns:"repeat(5, 1fr)",gap:4}}>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(4, 1fr)",gap:4,marginBottom:4}}>
               {[
-                { e: "🏆", l: "LEG", c: "#fbbf24", p: "3%" },
-                { e: "💎", l: "EPIC", c: "#a855f7", p: "12%" },
-                { e: "🔥", l: "RARE", c: "#ef4444", p: "22%" },
-                { e: "💧", l: "UNC", c: "#3b82f6", p: "28%" },
-                { e: "⚪", l: "COM", c: "#94a3b8", p: "35%" },
+                { e: "💎", l: "EPIC",     c: "#a855f7", p: "5%" },
+                { e: "🔥", l: "RARE",     c: "#ef4444", p: "15%" },
+                { e: "💧", l: "UNCOMMON", c: "#3b82f6", p: "28%" },
+                { e: "⚪", l: "COMMON",   c: "#94a3b8", p: "48.5%" },
               ].map(r => (
                 <div key={r.l} style={{
                   textAlign:"center",
@@ -3795,7 +3806,25 @@ function OnboardingTutorial({ onDone }) {
                   border:`1px solid ${r.c}44`,
                 }}>
                   <div style={{fontSize:18,marginBottom:2}}>{r.e}</div>
-                  <div style={{fontSize:8,color:r.c,fontWeight:900,letterSpacing:0.5}}>{r.l}</div>
+                  <div style={{fontSize:7,color:r.c,fontWeight:900,letterSpacing:0.5}}>{r.l}</div>
+                  <div style={{fontSize:9,color:"#94a3b8",fontWeight:700,marginTop:2}}>{r.p}</div>
+                </div>
+              ))}
+            </div>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(3, 1fr)",gap:4}}>
+              {[
+                { e: "🏅", l: "BALLON D'OR", c: "#f5d76e", p: "0.5%" },
+                { e: "🌌", l: "GALAXY",    c: "#c084fc", p: "1%" },
+                { e: "🏆", l: "LEGENDARY", c: "#fbbf24", p: "2%" },
+              ].map(r => (
+                <div key={r.l} style={{
+                  textAlign:"center",
+                  padding:"6px 2px",borderRadius:6,
+                  background:`${r.c}15`,
+                  border:`1px solid ${r.c}55`,
+                }}>
+                  <div style={{fontSize:18,marginBottom:2}}>{r.e}</div>
+                  <div style={{fontSize:7,color:r.c,fontWeight:900,letterSpacing:0.5}}>{r.l}</div>
                   <div style={{fontSize:9,color:"#94a3b8",fontWeight:700,marginTop:2}}>{r.p}</div>
                 </div>
               ))}
@@ -4323,7 +4352,7 @@ function WorldLeaderboard({ userId, name, onClose }) {
 }
 
 // ─── SIDEBAR: hamburger menu drawer that slides in from one side ─────────────
-function Sidebar({ open, onClose, name, lang, setLang, onShowProfile, onShowRules, onShowBackup, onShowTutorial, onShowAchievements, onShowRoulette, onShowWrapped, onShowAdmin, onShowAdminGift, onShowGlobalAdmin, onShowLuckyWheel, onShowCoinWheel, coinWheelAvailable, wheelAvailable, hlPlaysToday, onLogout, onReset, totalPoints, unlockedCount, coinBalance }) {
+function Sidebar({ open, onClose, name, lang, setLang, onShowProfile, onShowRules, onShowBackup, onShowTutorial, onShowAchievements, onShowRoulette, onShowWrapped, onShowAdmin, onShowAdminGift, onShowGlobalAdmin, onShowLuckyWheel, onShowCoinWheel, onShowQuiz, coinWheelAvailable, wheelAvailable, hlPlaysToday, onLogout, onReset, totalPoints, unlockedCount, coinBalance }) {
   const t = useT();
   const isRTL = lang === "he";
 
@@ -4407,6 +4436,11 @@ function Sidebar({ open, onClose, name, lang, setLang, onShowProfile, onShowRule
             icon="🎰"
             label={`${t("sidebar.roulette")}${coinBalance ? ` · 🪙 ${coinBalance}` : ""}`}
             onClick={()=>{onClose();onShowRoulette();}}
+          />
+          <SidebarItem
+            icon="🧠"
+            label="חידון כדורגל"
+            onClick={()=>{onClose();onShowQuiz?.();}}
           />
           <SidebarItem
             icon="🎴"
@@ -4758,7 +4792,7 @@ function playWinSound(rarity) {
 
 // 🎁 DAILY BONUS MODAL — shows the 7-day reward grid + claim button
 
-function RouletteModal({ coins, isSpinning, pendingCard, onSpin, onLegendsSpin, legendsSpinAvailable, onGalaxySpin, galaxyTestMode, galaxySpinning, spinCount, onClose, onShowCollection }) {
+function RouletteModal({ coins, isSpinning, pendingCard, onSpin, onLegendsSpin, legendsSpinAvailable, onGalaxySpin, galaxyTestMode, galaxySpinning, spinCount, onClose, onShowCollection, onShowQuiz }) {
   const t = useT();
   const canSpin = coins.balance >= COINS.SPIN && !isSpinning;
   const [leverPulled, setLeverPulled] = useState(false);
@@ -4787,8 +4821,9 @@ function RouletteModal({ coins, isSpinning, pendingCard, onSpin, onLegendsSpin, 
       background: galaxySpinning
         ? "radial-gradient(ellipse at center, #4c1d95 0%, #1e1b4b 50%, #0a0118 100%)"
         : "radial-gradient(circle at center, rgba(51,65,85,0.85), rgba(36,49,80,0.92))",
-      display:"flex",alignItems:"center",justifyContent:"center",
+      display:"flex",alignItems:"flex-start",justifyContent:"center",
       padding:14,
+      overflowY:"auto",
       transition:"background 0.4s ease",
     }}>
       <style>{`
@@ -4982,24 +5017,6 @@ function RouletteModal({ coins, isSpinning, pendingCard, onSpin, onLegendsSpin, 
           </div>
         </div>
 
-        {/* Rarity legend */}
-        <div style={{display:"grid",gridTemplateColumns:"repeat(5, 1fr)",gap:4,marginBottom:18}}>
-          {Object.entries(RARITY_ODDS).map(([r, pct]) => {
-            const cfg = RARITY_CONFIG[r];
-            return (
-              <div key={r} style={{
-                textAlign:"center",
-                padding:"4px 2px",borderRadius:6,
-                background:`${cfg.color}11`,
-                border:`1px solid ${cfg.color}44`,
-              }}>
-                <div style={{fontSize:8,color:cfg.color,fontWeight:800,letterSpacing:0.5,marginBottom:2}}>{cfg.label.slice(0,4)}</div>
-                <div style={{fontSize:11,color:"#f1f5f9",fontWeight:700}}>{pct}%</div>
-              </div>
-            );
-          })}
-        </div>
-
         {/* Balance + spin button */}
         <div style={{
           background:"#1e2940",
@@ -5094,9 +5111,9 @@ function RouletteModal({ coins, isSpinning, pendingCard, onSpin, onLegendsSpin, 
               animation: isSpinning ? "none" : "galaxyShimmer 5s linear infinite",
               position:"relative",
             }}>
-            🌌 GALAXY SPIN
+            🌌 GALAXY SPIN — סיכויים כפולים!
             <div style={{fontSize:10,marginTop:3,opacity:0.95,letterSpacing:0.5,fontWeight:700}}>
-              {galaxyTestMode ? "🧪 מצב בדיקה — חינם" : "🪙 1000 · 5% למצטייני 25/26"}
+              {galaxyTestMode ? "🧪 מצב בדיקה — חינם" : "🪙 1000 · 🏅0.5%→1% · 🌌1%→3% · 🏆2%→6%"}
             </div>
           </button>
         )}
@@ -5112,6 +5129,40 @@ function RouletteModal({ coins, isSpinning, pendingCard, onSpin, onLegendsSpin, 
         }}>
           🃏 {t("roulette.viewCollection")}
         </button>
+
+        {/* 📊 Rarity odds legend — boxes */}
+        <div style={{marginTop:12,padding:"10px 12px",background:"rgba(15,23,42,0.6)",borderRadius:12,border:"1px solid rgba(71,85,105,0.25)"}}>
+          <div style={{fontSize:9,fontWeight:800,color:"#64748b",letterSpacing:2,textAlign:"center",marginBottom:8}}>
+            🎲 סיכויי נדירות — רולטה רגילה
+          </div>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:4,marginBottom:4}}>
+            {[
+              {e:"💎",l:"EPIC",    c:"#a855f7",p:"5%"},
+              {e:"🔥",l:"RARE",   c:"#ef4444",p:"15%"},
+              {e:"💧",l:"UNCOMMON",c:"#60a5fa",p:"28%"},
+              {e:"⚪",l:"COMMON", c:"#94a3b8",p:"48.5%"},
+            ].map(r=>(
+              <div key={r.l} style={{textAlign:"center",padding:"6px 2px",borderRadius:6,background:`${r.c}15`,border:`1px solid ${r.c}44`}}>
+                <div style={{fontSize:16,marginBottom:2}}>{r.e}</div>
+                <div style={{fontSize:7,color:r.c,fontWeight:900,letterSpacing:0.5}}>{r.l}</div>
+                <div style={{fontSize:9,color:"#94a3b8",fontWeight:700,marginTop:2}}>{r.p}</div>
+              </div>
+            ))}
+          </div>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:4}}>
+            {[
+              {e:"🏅",l:"BALLON D'OR",c:"#f5d76e",p:"0.5%"},
+              {e:"🌌",l:"GALAXY",     c:"#c084fc",p:"1%"},
+              {e:"🏆",l:"LEGENDARY",  c:"#fbbf24",p:"2%"},
+            ].map(r=>(
+              <div key={r.l} style={{textAlign:"center",padding:"6px 2px",borderRadius:6,background:`${r.c}15`,border:`1px solid ${r.c}55`}}>
+                <div style={{fontSize:16,marginBottom:2}}>{r.e}</div>
+                <div style={{fontSize:7,color:r.c,fontWeight:900,letterSpacing:0.5}}>{r.l}</div>
+                <div style={{fontSize:9,color:"#94a3b8",fontWeight:700,marginTop:2}}>{r.p}</div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -6950,8 +7001,445 @@ function CoinFlipWheelModal({ onClose, isAvailable, coinBalance, cardCollection,
   );
 }
 
+// ─── 🧠 QUIZ SCREEN ──────────────────────────────────────────────────────────
+const QUIZ_FLAGS = [
+  {flag:"🇧🇷",a:"ברזיל",options:["ארגנטינה","ברזיל","קולומביה","אורוגוואי"]},
+  {flag:"🇩🇪",a:"גרמניה",options:["אוסטריה","שוויץ","גרמניה","הולנד"]},
+  {flag:"🇵🇹",a:"פורטוגל",options:["ספרד","איטליה","פורטוגל","גיאורגיה"]},
+  {flag:"🇦🇷",a:"ארגנטינה",options:["אורוגוואי","ארגנטינה","יוון","פינלנד"]},
+  {flag:"🇳🇱",a:"הולנד",options:["לוקסמבורג","בלגיה","צרפת","הולנד"]},
+  {flag:"🇯🇵",a:"יפן",options:["יפן","דנמרק","שוויץ","קנדה"]},
+  {flag:"🇲🇦",a:"מרוקו",options:["תוניסיה","מרוקו","אלג'יריה","מצרים"]},
+  {flag:"🇭🇷",a:"קרואטיה",options:["סלובקיה","קרואטיה","סלובניה","צ'כיה"]},
+  {flag:"🇧🇪",a:"בלגיה",options:["גרמניה","הולנד","בלגיה","לוקסמבורג"]},
+  {flag:"🇸🇦",a:"ערב הסעודית",options:["איחוד האמירויות","ערב הסעודית","ירדן","מצרים"]},
+  {flag:"🇬🇭",a:"גאנה",options:["ניגריה","טוגו","גאנה","קוטה דיבואר"]},
+  {flag:"🇨🇭",a:"שוויץ",options:["אוסטריה","דנמרק","שוויץ","נורווגיה"]},
+  {flag:"🇸🇳",a:"סנגל",options:["גינאה","מאלי","סנגל","קמרון"]},
+  {flag:"🇺🇾",a:"אורוגוואי",options:["ארגנטינה","אורוגוואי","פרגוואי","בוליביה"]},
+  {flag:"🇰🇷",a:"קוריאה הדרומית",options:["יפן","קוריאה הצפונית","סין","קוריאה הדרומית"]},
+  {flag:"🇮🇷",a:"איראן",options:["עיראק","אפגניסטן","פקיסטן","איראן"]},
+  {flag:"🇨🇲",a:"קמרון",options:["גאנה","ניגריה","קמרון","סנגל"]},
+  {flag:"🇪🇨",a:"אקוודור",options:["קולומביה","ונצואלה","אקוודור","פרו"]},
+  {flag:"🇳🇴",a:"נורווגיה",options:["דנמרק","שוודיה","נורווגיה","פינלנד"]},
+  {flag:"🇦🇺",a:"אוסטרליה",options:["ניו זילנד","אוסטרליה","פיג'י","פפואה"]},
+  {flag:"🇫🇷",a:"צרפת",options:["בלגיה","איטליה","צרפת","ספרד"]},
+  {flag:"🇪🇸",a:"ספרד",options:["פורטוגל","אנדורה","ספרד","צרפת"]},
+  {flag:"🇮🇹",a:"איטליה",options:["ספרד","אירלנד","איטליה","מקסיקו"]},
+  {flag:"🇲🇽",a:"מקסיקו",options:["מקסיקו","איטליה","בולגריה","הונגריה"]},
+  {flag:"🇨🇦",a:"קנדה",options:["קנדה","דנמרק","שוויץ","אוסטריה"]},
+  {flag:"🇺🇸",a:'ארה"ב',options:['ארה"ב',"אוסטרליה","ניו זילנד","בריטניה"]},
+  {flag:"🇵🇱",a:"פולין",options:["אוסטריה","פולין","הונגריה","צ'כיה"]},
+  {flag:"🇩🇰",a:"דנמרק",options:["נורווגיה","דנמרק","שוודיה","פינלנד"]},
+  {flag:"🇸🇪",a:"שוודיה",options:["נורווגיה","דנמרק","שוודיה","פינלנד"]},
+  {flag:"🇨🇴",a:"קולומביה",options:["ונצואלה","אקוודור","קולומביה","פרו"]},
+  {flag:"🇶🇦",a:"קטאר",options:["בחריין","כווית","קטאר","עומאן"]},
+  {flag:"🇿🇦",a:"דרום אפריקה",options:["זימבבואה","נמיביה","דרום אפריקה","בוצואנה"]},
+  {flag:"🇳🇬",a:"ניגריה",options:["קמרון","גאנה","ניגריה","בנין"]},
+  {flag:"🇺🇦",a:"אוקראינה",options:["בלארוס","מולדובה","אוקראינה","פולין"]},
+  {flag:"🇬🇷",a:"יוון",options:["קפריסין","יוון","ישראל","בולגריה"]},
+  {flag:"🇷🇸",a:"סרביה",options:["קרואטיה","בוסניה","סרביה","מונטנגרו"]},
+  {flag:"🇨🇿",a:"צ'כיה",options:["פולין","סלובקיה","צ'כיה","אוסטריה"]},
+  {flag:"🇭🇺",a:"הונגריה",options:["רומניה","אוסטריה","הונגריה","פולין"]},
+  {flag:"🇮🇱",a:"ישראל",options:["לבנון","ירדן","ישראל","קפריסין"]},
+  {flag:"🇹🇷",a:"טורקיה",options:["ארמניה","גיאורגיה","יוון","טורקיה"]},
+  {flag:"🇪🇬",a:"מצרים",options:["לוב","סודאן","מצרים","ירדן"]},
+  {flag:"🇨🇮",a:"קוטה דיבואר",options:["גאנה","ליבריה","גינאה","קוטה דיבואר"]},
+  {flag:"🇹🇳",a:"תוניסיה",options:["לוב","אלג'יריה","מרוקו","תוניסיה"]},
+  {flag:"🇩🇿",a:"אלג'יריה",options:["מרוקו","תוניסיה","אלג'יריה","לוב"]},
+  {flag:"🇨🇳",a:"סין",options:["יפן","קוריאה","טייוואן","סין"]},
+  {flag:"🇮🇳",a:"הודו",options:["פקיסטן","בנגלדש","סרי לנקה","הודו"]},
+  {flag:"🇷🇺",a:"רוסיה",options:["בלארוס","רוסיה","סלובקיה","סרביה"]},
+  {flag:"🇷🇴",a:"רומניה",options:["בולגריה","רומניה","מולדובה","הונגריה"]},
+  {flag:"🇧🇬",a:"בולגריה",options:["רומניה","בולגריה","מולדובה","מקדוניה"]},
+];
+
+const LETTERS = ["א","ב","ג","ד"];
+
+function shuffleArr(arr) { return [...arr].sort(()=>Math.random()-0.5); }
+
+function QuizScreen({ onClose, onCoinsEarned, leagueMembers = {}, userId, userName, onUpdateQuizBest }) {
+  const [phase, setPhase] = useState("home"); // home | flags | general | result
+  const [quizType, setQuizType] = useState("flags"); // flags | general
+  const [questions, setQuestions] = useState([]);
+  const [current, setCurrent] = useState(0);
+  const [correct, setCorrect] = useState(0);
+  const [lives, setLives] = useState(3);
+  const [answered, setAnswered] = useState(false);
+  const [chosenIdx, setChosenIdx] = useState(null);
+  const [timeLeft, setTimeLeft] = useState(10);
+  const [hiddenOpts, setHiddenOpts] = useState([]);
+  const [audiencePcts, setAudiencePcts] = useState(null);
+  const [lifelines, setLifelines] = useState({skip:true,fifty:true,audience:true});
+  const [prizeText, setPrizeText] = useState("");
+  const [tokens, setTokens] = useState(() => parseInt(localStorage.getItem("wc2026_quiz_tokens_v1")||"0",10));
+  const [personalBest] = useState(() => parseInt(localStorage.getItem("wc2026_quiz_best_v1")||"0",10));
+
+  const GENERAL_Q = [
+    {q:"כמה פעמים זכתה ברזיל במונדיאל?",a:"5",options:["4","5","6","3"],cat:"נבחרות",diff:"קל"},
+    {q:"מי כבש הכי הרבה שערים בהיסטוריה של מונדיאל?",a:"מירוסלב קלוזה",options:["פלה","מירוסלב קלוזה","רונאלדו הברזילאי","ז'וסט פונטן"],cat:"שיאים",diff:"קל"},
+    {q:"כמה כדורי זהב יש למסי?",a:"8",options:["6","7","8","5"],cat:"שחקנים",diff:"קל"},
+    {q:"מי זכה בכדור הזהב במונדיאל 2022?",a:"ליאונל מסי",options:["מבאפה","נייאמר","ליאונל מסי","מודריץ'"],cat:"שחקנים",diff:"קל"},
+    {q:"כמה פעמים זכתה גרמניה במונדיאל?",a:"4",options:["3","5","4","2"],cat:"נבחרות",diff:"קל"},
+    {q:"מי ניצח בגמר מונדיאל 2018?",a:"צרפת",options:["ברזיל","ארגנטינה","צרפת","קרואטיה"],cat:"היסטוריה",diff:"קל"},
+    {q:"כמה כדורי זהב יש לרונאלדו CR7?",a:"5",options:["4","5","6","3"],cat:"שחקנים",diff:"קל"},
+    {q:"בכמה נבחרות יהיה מונדיאל 2026?",a:"48",options:["32","40","48","36"],cat:"מונדיאל 2026",diff:"קל"},
+    {q:"מי ניצח בגמר מונדיאל 2014?",a:"גרמניה",options:["ברזיל","ארגנטינה","גרמניה","הולנד"],cat:"היסטוריה",diff:"קל"},
+    {q:"מה שם מגרש ריאל מדריד?",a:"Santiago Bernabéu",options:["Camp Nou","Metropolitano","Santiago Bernabéu","Mestalla"],cat:"מועדונים",diff:"קל"},
+    {q:"כמה פעמים זכתה ארגנטינה במונדיאל?",a:"3",options:["2","3","4","1"],cat:"נבחרות",diff:"קל"},
+    {q:"כמה פעמים זכתה צרפת במונדיאל?",a:"2",options:["1","2","3","4"],cat:"נבחרות",diff:"קל"},
+    {q:"מי ניצח בגביע אירופה EURO 2024?",a:"ספרד",options:["אנגליה","ספרד","גרמניה","צרפת"],cat:"היסטוריה",diff:"קל"},
+    {q:"מה שם ליגת הכדורגל הגרמנית?",a:"Bundesliga",options:["German League","Bundesliga","Super Liga","Euro League"],cat:"כללי",diff:"קל"},
+    {q:"מי מכונה 'La Pulga' (הפרעוש)?",a:"מסי",options:["נייאמר","ויניסיוס","מסי","אגואירו"],cat:"שחקנים",diff:"קל"},
+    {q:"מי הוא הכדורגלן עם הכי הרבה שערים בליגת האלופות?",a:"כריסטיאנו רונאלדו",options:["מסי","בנזמה","כריסטיאנו רונאלדו","ראול"],cat:"שחקנים",diff:"קל"},
+    {q:"כמה שחקנים ניתן להכניס כחילופים?",a:"5",options:["3","4","5","6"],cat:"כללי",diff:"קל"},
+    {q:"מי ניצח בגמר מונדיאל 2010?",a:"ספרד",options:["הולנד","גרמניה","ספרד","ברזיל"],cat:"היסטוריה",diff:"קל"},
+    {q:"מונדיאל 2010 התקיים ב...?",a:"דרום אפריקה",options:["ברזיל","דרום אפריקה","קניה","מצרים"],cat:"היסטוריה",diff:"קל"},
+    {q:"מי קיבל כדור הזהב 2024?",a:"רודרי",options:["הולאנד","ויניסיוס","מסי","רודרי"],cat:"שחקנים",diff:"קל"},
+    // בינוני
+    {q:"מי כבש שלושה שערים בגמר מונדיאל 2022?",a:"אמבאפה",options:["מסי","אמבאפה","ג'ירו","גריזמן"],cat:"היסטוריה",diff:"בינוני"},
+    {q:"כמה שחקנים בסגל מונדיאל 2026?",a:"26",options:["23","26","22","24"],cat:"מונדיאל 2026",diff:"בינוני"},
+    {q:"מי זכה בכדור הזהב של מונדיאל 2018?",a:"מודריץ'",options:["מסי","רונאלדו","מודריץ'","אמבאפה"],cat:"היסטוריה",diff:"בינוני"},
+    {q:"מי היה הכוכב של נבחרת מרוקו 2022?",a:"אשרף חקימי",options:["זיאש","אשרף חקימי","בונו","ען-נסירי"],cat:"שחקנים",diff:"בינוני"},
+    {q:"כמה פעמים ריאל מדריד זכתה בליגת האלופות?",a:"15",options:["13","15","12","14"],cat:"מועדונים",diff:"בינוני"},
+    {q:"מה שם הגביע הדרום אמריקאי?",a:"Copa Libertadores",options:["Copa Sudamericana","Copa Libertadores","CONMEBOL Cup","Copa America"],cat:"מועדונים",diff:"בינוני"},
+    {q:"כמה שערים כבש רונאלדו CR7 בנבחרת פורטוגל?",a:"135",options:["109","135","98","120"],cat:"שחקנים",diff:"בינוני"},
+    {q:"מי הוא המאמן של מנצ'סטר סיטי?",a:"פפ גוארדיולה",options:["ז'וזה מורינייו","פפ גוארדיולה","יורגן קלופ","אנצ'לוטי"],cat:"מאמנים",diff:"בינוני"},
+    {q:"כמה שערים כבש מסי בנבחרת ארגנטינה?",a:"109",options:["98","109","120","95"],cat:"שחקנים",diff:"בינוני"},
+    {q:"מי ניצח בגביע אמריקה 2024?",a:"ארגנטינה",options:["ברזיל","ארגנטינה","קולומביה","אורוגוואי"],cat:"היסטוריה",diff:"בינוני"},
+    {q:"באיזה שנה נולד לאמין יאמאל?",a:"2007",options:["2003","2004","2007","2005"],cat:"שחקנים",diff:"בינוני"},
+    {q:"מי ניצח בגביע אירופה 2016?",a:"פורטוגל",options:["צרפת","גרמניה","פורטוגל","ספרד"],cat:"היסטוריה",diff:"בינוני"},
+    {q:"כמה קבוצות מאפריקה במונדיאל 2026?",a:"9",options:["6","8","9","10"],cat:"מונדיאל 2026",diff:"בינוני"},
+    {q:"מי ניצח במונדיאל 1998?",a:"צרפת",options:["ברזיל","צרפת","גרמניה","איטליה"],cat:"היסטוריה",diff:"בינוני"},
+    {q:"מתי הוכנס ה-VAR רשמית למונדיאל?",a:"2018",options:["2014","2018","2022","2010"],cat:"כללי",diff:"בינוני"},
+    {q:"מי הוא המאמן שזכה ב-3 ליגות אלופות ברצף עם ריאל?",a:"זינדין זידאן",options:["קרלו אנצ'לוטי","זינדין זידאן","ז'וזה מורינייו","פאבלו מאצ'ין"],cat:"מאמנים",diff:"בינוני"},
+    {q:"מי קיבל כרטיס אדום בגמר מונדיאל 2006?",a:"זינדין זידאן",options:["זינדין זידאן","רונאלדו","הנרי","קאנאווארו"],cat:"היסטוריה",diff:"בינוני"},
+    {q:"מה גיל מסי כשזכה בכדור הזהב הראשון?",a:"22",options:["20","21","22","23"],cat:"שחקנים",diff:"בינוני"},
+    {q:"כמה ניצחונות ברצף שמר ארסנל ב-2003/04?",a:"49",options:["38","42","49","52"],cat:"מועדונים",diff:"בינוני"},
+    {q:"מי ניצח בגביע אמריקה 2021?",a:"ארגנטינה",options:["ברזיל","ארגנטינה","קולומביה","אורוגוואי"],cat:"היסטוריה",diff:"בינוני"},
+    // קשה
+    {q:"כמה שערים כבש קלוזה במונדיאל — שיא?",a:"16",options:["14","16","12","18"],cat:"שיאים",diff:"קשה"},
+    {q:"מי ניצח ב'Maracanazo' 1950?",a:"אורוגוואי",options:["ארגנטינה","אורוגוואי","פרגוואי","צ'ילה"],cat:"היסטוריה",diff:"קשה"},
+    {q:"מי זכה ב'שחקן המאה' FIFA 2000?",a:"פלה ומראדונה",options:["פלה בלבד","מראדונה בלבד","פלה ומראדונה","רונאלדו"],cat:"שחקנים",diff:"קשה"},
+    {q:"ממה עשוי גביע המונדיאל?",a:"זהב מלא",options:["כסף מוזהב","פלטינה","זהב מלא","ברונזה מוזהבת"],cat:"כללי",diff:"קשה"},
+    {q:"כמה שערים כבש מסי בשנת 2012?",a:"91",options:["79","86","91","98"],cat:"שיאים",diff:"קשה"},
+    {q:"מי הוא שחקן עם הכי הרבה הופעות בנבחרת ספרד?",a:"סרחיו ראמוס",options:["קאסיאס","סרחיו ראמוס","שאבי","אינייסטה"],cat:"שחקנים",diff:"קשה"},
+    {q:"כמה פעמים איטליה הגיעה לגמר מונדיאל?",a:"6",options:["4","5","6","7"],cat:"נבחרות",diff:"קשה"},
+    {q:"מה הניצחון הגדול ביותר בהיסטוריית מונדיאל?",a:"הונגריה 10-1 אל סלבדור",options:["ברזיל 10-1 בוליביה","הונגריה 10-1 אל סלבדור","גרמניה 8-0 ערב הסעודית","צרפת 6-0 אקוודור"],cat:"שיאים",diff:"קשה"},
+    {q:"מי כבש שערים ב-5 מונדיאלים שונים?",a:"כריסטיאנו רונאלדו",options:["מסי","פלה","כריסטיאנו רונאלדו","מירוסלב קלוזה"],cat:"שחקנים",diff:"קשה"},
+    {q:"כמה קבוצות ממונדיאל 1930?",a:"13",options:["16","13","12","8"],cat:"היסטוריה",diff:"קשה"},
+  ];
+
+  // Sort general by difficulty
+  const GENERAL_SORTED = [
+    ...GENERAL_Q.filter(q=>q.diff==="קל"),
+    ...GENERAL_Q.filter(q=>q.diff==="בינוני"),
+    ...GENERAL_Q.filter(q=>q.diff==="קשה"),
+  ];
+
+  function addToken() {
+    const n = tokens + 1;
+    setTokens(n);
+    try { localStorage.setItem("wc2026_quiz_tokens_v1", String(n)); } catch {}
+  }
+  function useToken() {
+    const n = Math.max(0, tokens - 1);
+    setTokens(n);
+    try { localStorage.setItem("wc2026_quiz_tokens_v1", String(n)); } catch {}
+  }
+
+  // Build leaderboard from league members
+  const leaderboard = Object.entries(leagueMembers).map(([uid, m]) => ({
+    name: m.name || "—",
+    score: uid === userId ? Math.max(personalBest, m.quizBestFlags || 0) : (m.quizBestFlags || 0),
+    isMe: uid === userId,
+  })).sort((a,b) => b.score - a.score);
+  if (!leaderboard.find(m=>m.isMe) && personalBest > 0) {
+    leaderboard.push({name: userName||"אני", score: personalBest, isMe: true});
+    leaderboard.sort((a,b)=>b.score-a.score);
+  }
+
+  // ── Timer ──
+  useEffect(() => {
+    if (phase !== "flags" && phase !== "general") return;
+    if (answered) return;
+    if (timeLeft <= 0) { handleAnswer(null); return; }
+    const t = setTimeout(() => setTimeLeft(p=>p-1), 1000);
+    return () => clearTimeout(t);
+  }, [phase, timeLeft, answered]);
+
+  // ── Shuffle opts once per question ──
+  const [shuffledOpts, setShuffledOpts] = useState([]);
+  useEffect(() => {
+    if (questions[current]) setShuffledOpts(shuffleArr([...questions[current].options]));
+  }, [current, questions.length]);
+
+  function handleAnswer(idx) {
+    if (answered) return;
+    setAnswered(true); setChosenIdx(idx);
+    const q = questions[current];
+    const isCorrect = idx !== null && shuffledOpts[idx] === q.a;
+    if (isCorrect) { setCorrect(p=>p+1); }
+    else {
+      const nl = lives - 1; setLives(nl);
+      if (nl <= 0) { setTimeout(() => finishQuiz(correct+(isCorrect?1:0)), 1200); return; }
+    }
+    setTimeout(() => {
+      if (quizType === "flags") {
+        if (current + 1 >= questions.length) { setQuestions(shuffleArr([...QUIZ_FLAGS])); setCurrent(0); }
+        else setCurrent(p=>p+1);
+        setTimeLeft(10);
+      } else {
+        if (current + 1 >= questions.length) { finishQuiz(correct+(isCorrect?1:0)); return; }
+        setCurrent(p=>p+1); setTimeLeft(20);
+      }
+      setAnswered(false); setChosenIdx(null); setHiddenOpts([]); setAudiencePcts(null);
+    }, 900);
+  }
+
+  function finishQuiz(finalCorrect) {
+    if (onUpdateQuizBest && quizType==="flags") onUpdateQuizBest(finalCorrect);
+    let prize="", coins=0;
+    if (quizType==="flags") {
+      if (finalCorrect >= 20) { prize="🎫 טוקן!"; addToken(); }
+      else if (finalCorrect >= 10) { prize="💰 500 מטבעות"; coins=500; }
+      else prize="אין פרס הפעם 😅";
+    } else {
+      if (finalCorrect===50) prize="🏅 Ballon d'Or נדיר!";
+      else if (finalCorrect>=35) prize="🏅 קלף Ballon d'Or";
+      else if (finalCorrect>=25) prize="🌌 קלף GALAXY";
+      else if (finalCorrect>=10) { prize="💰 2,000 מטבעות"; coins=2000; }
+      else prize="אין פרס הפעם 😅";
+    }
+    if (coins>0 && onCoinsEarned) onCoinsEarned(coins);
+    setPrizeText(prize); setPhase("result");
+  }
+
+  function useLifeline(type) {
+    if (!lifelines[type]||answered) return;
+    setLifelines(p=>({...p,[type]:false}));
+    const q=questions[current];
+    if (type==="skip") {
+      setAnswered(true);
+      setTimeout(()=>{setCurrent(p=>p+1);setAnswered(false);setChosenIdx(null);setHiddenOpts([]);setAudiencePcts(null);setTimeLeft(quizType==="flags"?10:20);},100);
+    } else if (type==="fifty") {
+      const wrong=shuffledOpts.map((_,i)=>i).filter(i=>shuffledOpts[i]!==q.a);
+      setHiddenOpts(shuffleArr(wrong).slice(0,2));
+    } else if (type==="audience") {
+      const ci=shuffledOpts.findIndex(o=>o===q.a);
+      const pcts=shuffledOpts.map((_,i)=>i===ci?52+Math.floor(Math.random()*25):5+Math.floor(Math.random()*12));
+      const total=pcts.reduce((a,b)=>a+b,0);
+      setAudiencePcts(pcts.map(p=>Math.round(p/total*100)));
+    }
+  }
+
+  const q = questions[current];
+  const opts = shuffledOpts;
+  const isFlags = quizType==="flags";
+  const totalTime = isFlags ? 10 : 20;
+  const pct = timeLeft / totalTime;
+  const circumference = 2 * Math.PI * 18;
+  const timerColor = pct > 0.5 ? "#22c55e" : pct > 0.25 ? "#f59e0b" : "#ef4444";
+
+  // ── HOME ──
+  if (phase === "home") return (
+    <div style={{position:"fixed",inset:0,zIndex:9200,background:"linear-gradient(180deg,#050912,#0f172a)",display:"flex",flexDirection:"column",overflowY:"auto"}}>
+      <div style={{padding:"18px 20px 0",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+        <div style={{fontSize:20,fontWeight:900,color:"#f1f5f9"}}>🧠 חידון</div>
+        <div style={{display:"flex",alignItems:"center",gap:10}}>
+          {tokens > 0 && <div style={{background:"rgba(251,191,36,0.15)",border:"1px solid rgba(251,191,36,0.4)",borderRadius:20,padding:"4px 12px",fontSize:12,fontWeight:800,color:"#fbbf24"}}>🎫 {tokens}</div>}
+          <button onClick={onClose} style={{background:"transparent",border:"none",color:"#94a3b8",fontSize:24,cursor:"pointer"}}>✕</button>
+        </div>
+      </div>
+      <div style={{padding:"20px 16px",display:"flex",flexDirection:"column",gap:14}}>
+
+        {/* 🌍 FLAGS */}
+        <div style={{background:"rgba(34,197,94,0.08)",border:"1.5px solid rgba(34,197,94,0.35)",borderRadius:18,padding:"18px 16px"}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
+            <div style={{fontSize:32}}>🌍</div>
+            <div style={{background:"rgba(34,197,94,0.15)",border:"1px solid rgba(34,197,94,0.4)",borderRadius:20,padding:"3px 12px",fontSize:11,fontWeight:800,color:"#22c55e"}}>∞ אין סוף</div>
+          </div>
+          <div style={{fontSize:18,fontWeight:900,color:"#f1f5f9",marginBottom:4}}>חידון דגלים</div>
+          <div style={{fontSize:12,color:"#94a3b8",marginBottom:12}}>10 שניות לשאלה • אין גלגלי הצלה • כמה תגיע?</div>
+          <div style={{background:"rgba(34,197,94,0.08)",borderRadius:12,padding:"10px 12px",marginBottom:12}}>
+            <div style={{fontSize:10,fontWeight:800,color:"#22c55e",marginBottom:6,letterSpacing:1}}>🎁 פרסים</div>
+            <div style={{display:"flex",flexDirection:"column",gap:5,fontSize:12,color:"#cbd5e1"}}>
+              <div style={{display:"flex",justifyContent:"space-between"}}><span>10 נכון</span><span style={{color:"#fbbf24",fontWeight:800}}>💰 500</span></div>
+              <div style={{height:1,background:"rgba(34,197,94,0.15)"}}/>
+              <div style={{display:"flex",justifyContent:"space-between"}}><span>20 נכון</span><span style={{color:"#fbbf24",fontWeight:900}}>🎫 טוקן</span></div>
+              <div style={{height:1,background:"rgba(34,197,94,0.15)"}}/>
+              <div style={{display:"flex",justifyContent:"space-between"}}><span>מעל 20</span><span style={{color:"#c084fc",fontWeight:800}}>🏆 שיא!</span></div>
+            </div>
+          </div>
+          <button onClick={()=>{setQuizType("flags");const q=shuffleArr(QUIZ_FLAGS);setQuestions(q);setCurrent(0);setCorrect(0);setLives(3);setAnswered(false);setChosenIdx(null);setHiddenOpts([]);setAudiencePcts(null);setLifelines({skip:false,fifty:false,audience:false});setTimeLeft(10);setPhase("flags");}} style={{width:"100%",padding:"14px",borderRadius:13,background:"linear-gradient(135deg,#16a34a,#22c55e)",border:"none",color:"#fff",fontSize:16,fontWeight:900,fontFamily:"inherit",cursor:"pointer",boxShadow:"0 6px 20px rgba(34,197,94,0.4)"}}>
+            🌍 התחל דגלים
+          </button>
+        </div>
+
+        {/* ⚽ GENERAL */}
+        <div style={{background:"rgba(99,102,241,0.08)",border:"1.5px solid rgba(99,102,241,0.35)",borderRadius:18,padding:"18px 16px"}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
+            <div style={{fontSize:32}}>⚽</div>
+            <div style={{background:"rgba(99,102,241,0.15)",border:"1px solid rgba(99,102,241,0.4)",borderRadius:20,padding:"3px 12px",fontSize:11,fontWeight:800,color:"#818cf8"}}>50 שאלות</div>
+          </div>
+          <div style={{fontSize:18,fontWeight:900,color:"#f1f5f9",marginBottom:4}}>שאלות כלליות</div>
+          <div style={{fontSize:12,color:"#94a3b8",marginBottom:12}}>20 שניות • 3 גלגלי הצלה • קושי עולה</div>
+          <div style={{background:tokens>0?"rgba(251,191,36,0.1)":"rgba(99,102,241,0.08)",border:`1px solid ${tokens>0?"rgba(251,191,36,0.4)":"rgba(99,102,241,0.3)"}`,borderRadius:12,padding:"9px 12px",marginBottom:12,display:"flex",alignItems:"center",gap:8}}>
+            <span style={{fontSize:20}}>{tokens>0?"🎫":"🪙"}</span>
+            <div>
+              <div style={{fontSize:12,fontWeight:900,color:tokens>0?"#fbbf24":"#94a3b8"}}>{tokens>0?`${tokens} טוקן — כניסה חינם`:"1,000 מטבעות או טוקן מדגלים"}</div>
+            </div>
+          </div>
+          <div style={{background:"rgba(99,102,241,0.08)",borderRadius:12,padding:"10px 12px",marginBottom:12}}>
+            <div style={{fontSize:10,fontWeight:800,color:"#818cf8",marginBottom:6}}>🎴 פרסים</div>
+            <div style={{display:"flex",flexDirection:"column",gap:4,fontSize:11,color:"#cbd5e1"}}>
+              <div style={{display:"flex",justifyContent:"space-between"}}><span>10+</span><span style={{color:"#fbbf24"}}>💰 2,000</span></div>
+              <div style={{display:"flex",justifyContent:"space-between"}}><span>25+</span><span style={{color:"#c084fc"}}>🌌 GALAXY</span></div>
+              <div style={{display:"flex",justifyContent:"space-between"}}><span>35+</span><span style={{color:"#f5d76e"}}>🏅 Ballon d'Or</span></div>
+            </div>
+          </div>
+          {tokens > 0 ? (
+            <button onClick={()=>{useToken();setQuizType("general");const easy=shuffleArr(GENERAL_Q.filter(q=>q.diff==="קל")).slice(0,20);const mid=shuffleArr(GENERAL_Q.filter(q=>q.diff==="בינוני")).slice(0,19);const hard=shuffleArr(GENERAL_Q.filter(q=>q.diff==="קשה")).slice(0,11);setQuestions([...easy,...mid,...hard]);setCurrent(0);setCorrect(0);setLives(3);setAnswered(false);setChosenIdx(null);setHiddenOpts([]);setAudiencePcts(null);setLifelines({skip:true,fifty:true,audience:true});setTimeLeft(20);setPhase("general");}} style={{width:"100%",padding:"14px",borderRadius:13,background:"linear-gradient(135deg,#4f46e5,#7c3aed)",border:"none",color:"#fff",fontSize:15,fontWeight:900,fontFamily:"inherit",cursor:"pointer",boxShadow:"0 6px 20px rgba(99,102,241,0.4)"}}>
+              🎫 התחל עם טוקן — חינם
+            </button>
+          ) : (
+            <button onClick={()=>{if(onCoinsEarned)onCoinsEarned(-1000);setQuizType("general");const easy=shuffleArr(GENERAL_Q.filter(q=>q.diff==="קל")).slice(0,20);const mid=shuffleArr(GENERAL_Q.filter(q=>q.diff==="בינוני")).slice(0,19);const hard=shuffleArr(GENERAL_Q.filter(q=>q.diff==="קשה")).slice(0,11);setQuestions([...easy,...mid,...hard]);setCurrent(0);setCorrect(0);setLives(3);setAnswered(false);setChosenIdx(null);setHiddenOpts([]);setAudiencePcts(null);setLifelines({skip:true,fifty:true,audience:true});setTimeLeft(20);setPhase("general");}} style={{width:"100%",padding:"14px",borderRadius:13,background:"rgba(30,41,59,0.8)",color:"#cbd5e1",border:"1px solid rgba(99,102,241,0.4)",fontSize:14,fontWeight:900,fontFamily:"inherit",cursor:"pointer"}}>
+              🪙 התחל — 1,000 מטבעות
+            </button>
+          )}
+        </div>
+
+        {/* Leaderboard */}
+        {leaderboard.length > 0 && (
+          <div style={{background:"rgba(15,23,42,0.6)",border:"1px solid rgba(168,85,247,0.25)",borderRadius:14,overflow:"hidden"}}>
+            <div style={{padding:"8px 14px",background:"rgba(168,85,247,0.1)",fontSize:10,color:"#c4b5fd",fontWeight:800,letterSpacing:1.5}}>👑 שיאי דגלים — הליגה</div>
+            {leaderboard.slice(0,5).map((m,i)=>(
+              <div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"9px 14px",borderTop:i>0?"1px solid rgba(71,85,105,0.2)":"none",background:m.isMe?"rgba(251,191,36,0.06)":"transparent"}}>
+                <span style={{fontSize:14,width:22,textAlign:"center"}}>{"🥇🥈🥉4️⃣5️⃣"[i*2]+("🥇🥈🥉4️⃣5️⃣"[i*2+1]||"")}</span>
+                <span style={{flex:1,fontSize:13,fontWeight:m.isMe?900:700,color:m.isMe?"#fbbf24":"#cbd5e1"}}>{m.name}{m.isMe?" (אני)":""}</span>
+                <span style={{fontSize:16,fontWeight:900,color:i===0?"#c4b5fd":"#64748b"}}>{m.score}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  // ── RESULT ──
+  if (phase === "result") return (
+    <div style={{position:"fixed",inset:0,zIndex:9200,background:"linear-gradient(180deg,#050912,#0f172a)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:28,gap:14,textAlign:"center"}}>
+      <div style={{fontSize:64}}>{correct>=(isFlags?20:35)?"🏅":correct>=(isFlags?10:10)?"⭐":"😅"}</div>
+      <div style={{fontSize:22,fontWeight:900,color:"#f1f5f9"}}>{correct>=(isFlags?20:35)?"מושלם!":correct>=10?"כל הכבוד!":"נסה שוב"}</div>
+      <div style={{background:"rgba(30,41,59,0.8)",border:"1.5px solid rgba(99,102,241,0.3)",borderRadius:18,padding:"18px 28px",width:"100%"}}>
+        <div style={{fontSize:48,fontWeight:900,color:"#f5d76e",lineHeight:1}}>{correct}</div>
+        <div style={{fontSize:12,color:"#94a3b8",marginTop:4}}>{isFlags?"דגלים נכונים":`מתוך ${questions.length} שאלות`}</div>
+      </div>
+      <div style={{background:"rgba(251,191,36,0.1)",border:"1.5px solid rgba(251,191,36,0.3)",borderRadius:14,padding:"12px 18px",width:"100%"}}>
+        <div style={{fontSize:10,color:"#fbbf24",fontWeight:800,letterSpacing:2,marginBottom:4}}>🎁 פרס שלך</div>
+        <div style={{fontSize:16,fontWeight:900,color:"#f1f5f9"}}>{prizeText}</div>
+      </div>
+      {tokens > 0 && <div style={{fontSize:12,color:"#fbbf24",fontWeight:700}}>🎫 יש לך {tokens} טוקן</div>}
+      <div style={{display:"flex",flexDirection:"column",gap:8,width:"100%"}}>
+        <button onClick={()=>setPhase("home")} style={{padding:"13px",borderRadius:13,background:"linear-gradient(135deg,#4f46e5,#7c3aed)",border:"none",color:"#fff",fontSize:15,fontWeight:900,fontFamily:"inherit",cursor:"pointer"}}>🏠 תפריט</button>
+      </div>
+    </div>
+  );
+
+  // ── PLAYING ──
+  return (
+    <div style={{position:"fixed",inset:0,zIndex:9200,background:"linear-gradient(180deg,#050912,#0f172a)",display:"flex",flexDirection:"column",padding:"10px 16px 12px",gap:8}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexShrink:0}}>
+        <div>
+          <div style={{fontSize:11,fontWeight:700,color:"#64748b"}}>שאלה <span style={{color:"#f1f5f9",fontWeight:900}}>{current+1}</span>{!isFlags&&` / ${questions.length}`}</div>
+          <div style={{fontSize:16,letterSpacing:1}}>{"❤️".repeat(lives)}{"🖤".repeat(3-lives)}</div>
+        </div>
+        <div style={{textAlign:"center"}}>
+          <div style={{fontSize:20,fontWeight:900,color:"#22c55e"}}>{correct}</div>
+          <div style={{fontSize:9,color:"#64748b"}}>נכון ✅</div>
+        </div>
+      </div>
+
+      <div style={{display:"flex",gap:3,flexShrink:0,overflow:"hidden"}}>
+        {Array.from({length:Math.min(current+8,30)}).map((_,i)=>(
+          <div key={i} style={{flex:1,height:4,borderRadius:3,background:i<correct?"#22c55e":i===current?"#3b82f6":"rgba(71,85,105,0.3)"}}/>
+        ))}
+      </div>
+
+      <div style={{display:"flex",alignItems:"center",gap:10,background:"rgba(15,23,42,0.6)",border:"1px solid rgba(71,85,105,0.3)",borderRadius:14,padding:"8px 12px",flexShrink:0}}>
+        <div style={{position:"relative",width:42,height:42,flexShrink:0}}>
+          <svg viewBox="0 0 42 42" width="42" height="42" style={{transform:"rotate(-90deg)"}}>
+            <circle fill="none" stroke="rgba(71,85,105,0.3)" strokeWidth="4" cx="21" cy="21" r="18"/>
+            <circle fill="none" stroke={timerColor} strokeWidth="4" strokeLinecap="round" cx="21" cy="21" r="18"
+              strokeDasharray={circumference} strokeDashoffset={circumference*(1-pct)} style={{transition:"stroke-dashoffset 1s linear,stroke 0.3s"}}/>
+          </svg>
+          <div style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",fontSize:14,fontWeight:900,color:timerColor}}>{timeLeft}</div>
+        </div>
+        <div style={{flex:1}}>
+          <div style={{fontSize:10,color:"#64748b",marginBottom:3}}>⏱️ {totalTime} שניות</div>
+          <div style={{height:4,background:"rgba(71,85,105,0.3)",borderRadius:4,overflow:"hidden"}}>
+            <div style={{height:"100%",width:(pct*100)+"%",background:timerColor,borderRadius:4,transition:"width 1s linear"}}/>
+          </div>
+        </div>
+        <div style={{fontSize:10,fontWeight:800,padding:"3px 9px",borderRadius:20,background:isFlags?"rgba(34,197,94,0.15)":"rgba(99,102,241,0.15)",color:isFlags?"#22c55e":"#818cf8",border:`1px solid ${isFlags?"rgba(34,197,94,0.3)":"rgba(99,102,241,0.3)"}`}}>
+          {isFlags?"🌍":"⚽"}
+        </div>
+      </div>
+
+      <div style={{background:"rgba(30,41,59,0.7)",border:"1.5px solid rgba(99,102,241,0.25)",borderRadius:16,padding:"12px 14px",flexShrink:0,textAlign:"center"}}>
+        {isFlags ? (
+          <>
+            <div style={{fontSize:10,fontWeight:800,letterSpacing:2,color:"#6366f1",marginBottom:6}}>🌍 זהה את הדגל</div>
+            <div style={{fontSize:78,lineHeight:1,marginBottom:4}}>{q?.flag}</div>
+            <div style={{fontSize:15,fontWeight:800,color:"#f1f5f9"}}>איזו מדינה?</div>
+          </>
+        ) : (
+          <>
+            <div style={{fontSize:10,fontWeight:800,letterSpacing:1.5,color:"#6366f1",marginBottom:6}}>⚽ {q?.cat||"כדורגל"}</div>
+            <div style={{fontSize:15,fontWeight:800,color:"#f1f5f9",lineHeight:1.4}}>{q?.q}</div>
+          </>
+        )}
+      </div>
+
+      <div style={{display:"flex",flexDirection:"column",gap:7,flex:1}}>
+        {opts.map((opt,i)=>{
+          if (hiddenOpts.includes(i)) return <div key={i} style={{flex:1}}/>;
+          const isCorrectOpt=opt===q?.a, chosen=chosenIdx===i;
+          let bg="rgba(30,41,59,0.65)",border="rgba(71,85,105,0.35)",tc="#e2e8f0";
+          if (answered) {
+            if (isCorrectOpt) {bg="rgba(34,197,94,0.18)";border="#22c55e";tc="#86efac";}
+            else if (chosen) {bg="rgba(239,68,68,0.12)";border="#ef4444";tc="#fca5a5";}
+            else {bg="rgba(30,41,59,0.3)";tc="#64748b";}
+          }
+          return (
+            <button key={i} disabled={answered} onClick={()=>handleAnswer(i)} style={{display:"flex",alignItems:"center",gap:10,padding:"0 12px",borderRadius:13,border:`2px solid ${border}`,background:bg,color:tc,fontSize:13,fontWeight:700,fontFamily:"inherit",cursor:answered?"default":"pointer",flex:1,transition:"all 0.15s"}}>
+              <div style={{width:26,height:26,borderRadius:8,background:"rgba(71,85,105,0.35)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:900,color:"#94a3b8",flexShrink:0}}>{LETTERS[i]}</div>
+              <span style={{flex:1,textAlign:"right"}}>{opt}</span>
+              {audiencePcts&&<span style={{fontSize:10,fontWeight:900,background:"rgba(71,85,105,0.3)",padding:"2px 6px",borderRadius:8,color:"#94a3b8"}}>{audiencePcts[i]}%</span>}
+              {answered&&isCorrectOpt&&<span>✅</span>}
+              {answered&&chosen&&!isCorrectOpt&&<span>❌</span>}
+            </button>
+          );
+        })}
+      </div>
+
+      {!isFlags && (
+        <div style={{display:"flex",gap:8,flexShrink:0}}>
+          {[{key:"skip",icon:"⏭️",label:"דלג"},{key:"fifty",icon:"🎯",label:"50:50"},{key:"audience",icon:"👥",label:"קהל"}].map(ll=>(
+            <button key={ll.key} onClick={()=>useLifeline(ll.key)} disabled={!lifelines[ll.key]||answered}
+              style={{flex:1,padding:"7px 4px",borderRadius:12,border:"1.5px solid rgba(71,85,105,0.4)",background:"rgba(15,23,42,0.7)",color:"#f1f5f9",fontFamily:"inherit",cursor:lifelines[ll.key]&&!answered?"pointer":"default",opacity:lifelines[ll.key]?1:0.3,textAlign:"center"}}>
+              <div style={{fontSize:18}}>{ll.icon}</div>
+              <div style={{fontSize:9,fontWeight:800,color:"#94a3b8"}}>{ll.label}</div>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── 🎴 HIGHER / LOWER — guess if next card has higher or lower rating ─────────
-function LuckyWheelModal({ onClose, onWin, onUpdateBestStreak, personalBest, leagueRecord, freePlaysLeft, coinBalance, onUseFree, onPayPlay }) {
+function LuckyWheelModal({ onClose, onWin, onUpdateBestStreak, personalBest, leagueRecord, leaderboard = [], freePlaysLeft, coinBalance, onUseFree, onPayPlay }) {
   // Game states: "idle" (not playing), "playing", "lost", "won"
   const [gameState, setGameState] = useState("idle");
   const [currentCard, setCurrentCard] = useState(null);
@@ -6964,11 +7452,11 @@ function LuckyWheelModal({ onClose, onWin, onUpdateBestStreak, personalBest, lea
   const timerRef = useRef(null);
 
   // Pick a card from the "regular" mundial pool only (no friends/legends/Israelis)
-  // Only cards with rating 70-99 (tighter range = more challenging guesses)
+  // Only cards with rating 60-95 (wider range = more challenging guesses)
   const pickRandomCard = () => {
     const pool = CARDS.filter(c => {
       const r = getPlayerRating(c);
-      return r >= 70 && r <= 99;
+      return r >= 60 && r <= 95;
     });
     return pool[Math.floor(Math.random() * pool.length)];
   };
@@ -7126,34 +7614,51 @@ function LuckyWheelModal({ onClose, onWin, onUpdateBestStreak, personalBest, lea
             <div style={{fontSize:13,color:"#cbd5e1",lineHeight:1.6,marginBottom:14,padding:"0 8px"}}>
               נחש אם הקלף הבא יקבל ציון <b style={{color:"#22c55e"}}>גבוה יותר</b> או <b style={{color:"#ef4444"}}>נמוך יותר</b><br/>
               <span style={{fontSize:11,color:"#94a3b8"}}>
-                ⏱️ 10 שניות להחליט · 🔄 תיקו = הגרלה חוזרת
+                ⏱️ 10 שניות להחליט · 🔄 תיקו = הגרלה חוזרת<br/>
+                🎯 טווח ציונים: <b style={{color:"#fbbf24"}}>60–95</b> — קשה יותר!
               </span>
             </div>
 
-            {/* 🏆 Records */}
-            <div style={{
-              display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,
-              marginBottom:14,
-            }}>
+            {/* 🏆 Personal best + Leaderboard */}
+            <div style={{marginBottom:14}}>
+              {/* Personal best */}
               <div style={{
                 background:"linear-gradient(135deg,rgba(251,191,36,0.15),rgba(15,23,42,0.7))",
                 border:"1px solid rgba(251,191,36,0.3)",
-                borderRadius:10,padding:"10px 8px",textAlign:"center",
+                borderRadius:10,padding:"10px 12px",marginBottom:8,
+                display:"flex",alignItems:"center",justifyContent:"space-between",
               }}>
-                <div style={{fontSize:9,color:"#fbbf24",fontWeight:800,letterSpacing:1,marginBottom:2}}>🏆 השיא שלך</div>
-                <div style={{fontSize:22,fontWeight:900,color:"#fbbf24"}}>{personalBest || 0}</div>
+                <div style={{fontSize:10,color:"#fbbf24",fontWeight:800,letterSpacing:1}}>🏆 השיא שלך</div>
+                <div style={{fontSize:24,fontWeight:900,color:"#fbbf24"}}>{personalBest || 0}</div>
               </div>
-              <div style={{
-                background:"linear-gradient(135deg,rgba(168,85,247,0.15),rgba(15,23,42,0.7))",
-                border:"1px solid rgba(168,85,247,0.3)",
-                borderRadius:10,padding:"10px 8px",textAlign:"center",
-              }}>
-                <div style={{fontSize:9,color:"#c4b5fd",fontWeight:800,letterSpacing:1,marginBottom:2}}>👑 שיא הליגה</div>
-                <div style={{fontSize:22,fontWeight:900,color:"#c4b5fd"}}>{leagueRecord?.streak || 0}</div>
-                {leagueRecord?.streak > 0 && (
-                  <div style={{fontSize:9,color:"#a78bfa",marginTop:2}}>{leagueRecord.name}</div>
-                )}
-              </div>
+
+              {/* League leaderboard */}
+              {leaderboard.length > 0 && (
+                <div style={{background:"rgba(15,23,42,0.6)",border:"1px solid rgba(168,85,247,0.25)",borderRadius:10,overflow:"hidden"}}>
+                  <div style={{padding:"7px 12px",background:"rgba(168,85,247,0.12)",fontSize:9,color:"#c4b5fd",fontWeight:800,letterSpacing:1.5}}>
+                    👑 טבלת שיאים — הליגה שלך
+                  </div>
+                  {leaderboard.slice(0,5).map((m, i) => {
+                    const medals = ["🥇","🥈","🥉","4️⃣","5️⃣"];
+                    return (
+                      <div key={i} style={{
+                        display:"flex",alignItems:"center",gap:8,
+                        padding:"7px 12px",
+                        borderTop: i > 0 ? "1px solid rgba(71,85,105,0.2)" : "none",
+                        background: m.isMe ? "rgba(251,191,36,0.06)" : "transparent",
+                      }}>
+                        <span style={{fontSize:14,width:20,textAlign:"center"}}>{medals[i]}</span>
+                        <span style={{flex:1,fontSize:12,fontWeight: m.isMe ? 900 : 700,color: m.isMe ? "#fbbf24" : "#cbd5e1"}}>
+                          {m.name}{m.isMe ? " (אני)" : ""}
+                        </span>
+                        <span style={{fontSize:14,fontWeight:900,color: i===0 ? "#c4b5fd" : "#64748b"}}>
+                          {m.streak}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
 
             {/* Prize ladder */}
@@ -7526,7 +8031,7 @@ function GlobalAdminModal({ onClose, galaxyTestMode, setGalaxyTestMode, onGiveCo
   const [error, setError] = useState("");
   const [removingUid, setRemovingUid] = useState(null);
   const [search, setSearch] = useState("");
-  const [adminTab, setAdminTab] = useState("users"); // "users" | "galaxy"
+  const [adminTab, setAdminTab] = useState("users"); // "users" | "galaxy" | "quiz"
 
   // 🔐 Secret code — only Chen knows it
   const ADMIN_CODE = "Chen-Boss-2026";
@@ -7669,9 +8174,37 @@ function GlobalAdminModal({ onClose, galaxyTestMode, setGalaxyTestMode, onGiveCo
                 }}>
                 🌌 קלפי GALAXY
               </button>
+              <button
+                onClick={() => setAdminTab("quiz")}
+                style={{
+                  flex:1,padding:"10px 8px",
+                  background: adminTab === "quiz" ? "rgba(34,197,94,0.2)" : "rgba(36,49,80,0.4)",
+                  border: `1px solid ${adminTab === "quiz" ? "rgba(34,197,94,0.6)" : "rgba(71,85,105,0.4)"}`,
+                  borderRadius:10,
+                  color: adminTab === "quiz" ? "#86efac" : "#94a3b8",
+                  fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"inherit",
+                }}>
+                🧠 חידון
+              </button>
             </div>
 
-            {adminTab === "galaxy" ? (
+            {adminTab === "quiz" ? (
+              // 🧠 QUIZ TEST PANEL
+              <div>
+                <div style={{background:"linear-gradient(135deg,rgba(34,197,94,0.15),rgba(34,197,94,0.05))",border:"1px solid rgba(34,197,94,0.4)",borderRadius:12,padding:"14px",marginBottom:14,textAlign:"center"}}>
+                  <div style={{fontSize:14,fontWeight:900,color:"#86efac",marginBottom:4}}>🧠 בדיקת חידון דגלים</div>
+                  <div style={{fontSize:11,color:"#94a3b8"}}>רק מנהל רואה את זה — לבדיקה לפני פרסום</div>
+                </div>
+                <QuizScreen
+                  onClose={() => {}}
+                  onCoinsEarned={() => {}}
+                  leagueMembers={{}}
+                  userId=""
+                  userName="Admin"
+                  onUpdateQuizBest={() => {}}
+                />
+              </div>
+            ) : adminTab === "galaxy" ? (
               // 🌌 GALAXY CARDS GALLERY
               <div>
                 <div style={{
@@ -8481,19 +9014,22 @@ function CardRevealModal({ result, onClose, freshSpin = false }) {
 // ─── 🃏 COLLECTION VIEWER ──────────────────────────────────────────────────
 function CollectionModal({ collection, onClose }) {
   const t = useT();
-  const [section, setSection] = useState("players"); // "players" | "legends"
+  const [section, setSection] = useState("players"); // "players" | "legends" | "ballon"
   const [filter, setFilter] = useState("all");
   const [previewCard, setPreviewCard] = useState(null);
 
+  const BALLON_CARDS = CARDS_BY_RARITY.B;
+
   const filteredCards = useMemo(() => {
-    const rarityOrder = { F: 0, X: 1, G: 2, L: 3, E: 4, R: 5, U: 6, C: 7, T: 8 };
+    const rarityOrder = { F: 0, X: 1, G: 2, L: 3, E: 4, R: 5, U: 6, C: 7, T: 8, B: -1 };
     const sorter = (a, b) => {
       const r = (rarityOrder[a.rarity] ?? 99) - (rarityOrder[b.rarity] ?? 99);
       if (r !== 0) return r;
       return a.name.localeCompare(b.name);
     };
-    // Pool is determined by section
-    const pool = section === "legends" ? [...LEGEND_CARDS, ...ISRAELI_LEGENDS, ...FRIEND_CARDS] : [...GALAXY_CARDS, ...CARDS];
+    const pool = section === "legends" ? [...LEGEND_CARDS, ...ISRAELI_LEGENDS, ...FRIEND_CARDS]
+               : section === "ballon"  ? BALLON_CARDS
+               : [...GALAXY_CARDS, ...CARDS];
     let cards;
     if (filter === "all") cards = pool;
     else if (filter === "owned") cards = pool.filter(c => (collection[c.id] || 0) > 0);
@@ -8503,7 +9039,9 @@ function CollectionModal({ collection, onClose }) {
   }, [section, filter, collection]);
 
   // Stats — per section
-  const sectionPool = section === "legends" ? [...LEGEND_CARDS, ...ISRAELI_LEGENDS, ...FRIEND_CARDS] : [...GALAXY_CARDS, ...CARDS];
+  const sectionPool = section === "legends" ? [...LEGEND_CARDS, ...ISRAELI_LEGENDS, ...FRIEND_CARDS]
+                    : section === "ballon"  ? BALLON_CARDS
+                    : [...GALAXY_CARDS, ...CARDS];
   const ownedCount = sectionPool.filter(c => (collection[c.id] || 0) > 0).length;
   const totalCount = sectionPool.length;
   const pct = Math.round((ownedCount / totalCount) * 100);
@@ -8536,7 +9074,7 @@ function CollectionModal({ collection, onClose }) {
           }}>✕</button>
         </div>
 
-        {/* 🎯 Section toggle — Players vs Legends */}
+        {/* 🎯 Section toggle — Players | Legends | Ballon d'Or */}
         <div style={{
           display:"flex",gap:0,marginBottom:10,
           background:"rgba(36,49,80,0.6)",borderRadius:10,padding:3,
@@ -8545,14 +9083,20 @@ function CollectionModal({ collection, onClose }) {
             flex:1,padding:"8px 6px",border:"none",borderRadius:8,
             background: section === "players" ? "linear-gradient(135deg,#fbbf24,#f59e0b)" : "transparent",
             color: section === "players" ? "#1e2940" : "#94a3b8",
-            fontSize:12,fontWeight:900,cursor:"pointer",fontFamily:"inherit",
-          }}>⚽ שחקני המונדיאל</button>
+            fontSize:11,fontWeight:900,cursor:"pointer",fontFamily:"inherit",
+          }}>⚽ שחקנים</button>
           <button onClick={() => { setSection("legends"); setFilter("all"); }} style={{
             flex:1,padding:"8px 6px",border:"none",borderRadius:8,
             background: section === "legends" ? "linear-gradient(135deg,#16a34a,#22c55e)" : "transparent",
             color: section === "legends" ? "#0a0a0a" : "#94a3b8",
-            fontSize:12,fontWeight:900,cursor:"pointer",fontFamily:"inherit",
-          }}>🟢 אגדות 🗑️</button>
+            fontSize:11,fontWeight:900,cursor:"pointer",fontFamily:"inherit",
+          }}>🟢 אגדות</button>
+          <button onClick={() => { setSection("ballon"); setFilter("all"); }} style={{
+            flex:1,padding:"8px 6px",border:"none",borderRadius:8,
+            background: section === "ballon" ? "linear-gradient(135deg,#b8860b,#f5d76e,#b8860b)" : "transparent",
+            color: section === "ballon" ? "#1a0a00" : "#94a3b8",
+            fontSize:11,fontWeight:900,cursor:"pointer",fontFamily:"inherit",
+          }}>🏅 Ballon</button>
         </div>
 
         {/* Progress */}
@@ -8681,6 +9225,7 @@ function CollectionModal({ collection, onClose }) {
           {filteredCards.map(card => {
             const count = collection[card.id] || 0;
             const owned = count > 0;
+            const isBallon = card.rarity === "B";
             return (
               <div
                 key={card.id}
@@ -8688,13 +9233,28 @@ function CollectionModal({ collection, onClose }) {
                 className={owned ? "card-tilt" : ""}
                 style={{
                   position:"relative",
-                  opacity: owned ? 1 : 0.3,
-                  filter: owned ? "none" : "grayscale(1)",
+                  opacity: owned ? 1 : (isBallon ? 1 : 0.3),
+                  filter: owned ? "none" : (isBallon ? "none" : "grayscale(1)"),
                   cursor: owned ? "pointer" : "default",
                 }}
               >
-                <PlayerCard card={card} size="S" animated={owned} />
-                {!owned && (
+                {/* Ballon d'Or spoiler — hide card until owned */}
+                {isBallon && !owned ? (
+                  <div style={{
+                    width:"100%",aspectRatio:"2/3",borderRadius:10,
+                    background:"linear-gradient(165deg,#1a1200,#2d2000,#1a1200)",
+                    border:"2px solid rgba(212,175,55,0.4)",
+                    display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",
+                    gap:6,
+                  }}>
+                    <div style={{fontSize:28}}>🏅</div>
+                    <div style={{fontSize:8,color:"rgba(212,175,55,0.6)",fontWeight:800,letterSpacing:1,textAlign:"center",padding:"0 4px"}}>BALLON D'OR</div>
+                    <div style={{fontSize:18}}>🔒</div>
+                  </div>
+                ) : (
+                  <PlayerCard card={card} size="S" animated={owned} />
+                )}
+                {!owned && !isBallon && (
                   <div style={{
                     position:"absolute",top:0,left:0,right:0,bottom:0,
                     display:"flex",alignItems:"center",justifyContent:"center",
@@ -12205,13 +12765,14 @@ function LeagueHub({
             // For my own profile, use my local collection (fresh).
             // For friends, use what's synced to Firebase.
             const theirCollection = m.isMe ? (cardCollection || {}) : migrateCardCollection(m.cardCollection || {});
-            // Full pool = galaxy + current players + legends + friends + Israeli trash
-            const fullPool = [...GALAXY_CARDS, ...CARDS, ...LEGEND_CARDS, ...FRIEND_CARDS, ...ISRAELI_LEGENDS];
+            // Full pool including Ballon d'Or
+            const BALLON_CARDS = CARDS_BY_RARITY.B;
+            const fullPool = [...BALLON_CARDS, ...GALAXY_CARDS, ...CARDS, ...LEGEND_CARDS, ...FRIEND_CARDS, ...ISRAELI_LEGENDS];
             const ownedCards = fullPool.filter(c => (theirCollection[c.id] || 0) > 0);
-            // Sort owned by rarity (legends first, then best to common, then trash)
-            const rarityOrder = { X: 0, G: 1, L: 2, E: 3, R: 4, U: 5, C: 6, T: 7 };
+            // Sort owned by rarity (ballon first, then legends, then best to common, then trash)
+            const rarityOrder = { B: -1, X: 0, G: 1, L: 2, E: 3, R: 4, U: 5, C: 6, T: 7 };
             ownedCards.sort((a, b) => {
-              const r = rarityOrder[a.rarity] - rarityOrder[b.rarity];
+              const r = (rarityOrder[a.rarity]??99) - (rarityOrder[b.rarity]??99);
               if (r !== 0) return r;
               return b.name.localeCompare(a.name);
             });
@@ -12221,8 +12782,8 @@ function LeagueHub({
             const topCard = ownedCards.length > 0
               ? ownedCards.reduce((best, c) => getPlayerRating(c) > getPlayerRating(best) ? c : best, ownedCards[0])
               : null;
-            // Rarity breakdown (G/L/E/R/U/C — trash skipped in stats grid for clean look)
-            const byRarity = ["G","L","E","R","U","C"].map(r => ({
+            // Rarity breakdown including B
+            const byRarity = ["B","G","L","E","R","U","C"].map(r => ({
               r, count: ownedCards.filter(c => c.rarity === r).length,
               total: CARDS_BY_RARITY[r]?.length || 0,
             }));
@@ -13921,16 +14482,17 @@ export default function App() {
     const cost = 1000;
     if (!isTest && (coins?.balance || 0) < cost) return;
 
-    // 🎲 Galaxy Spin odds:
-    // 5% GALAXY (top 25/26)
-    // 15% LEGENDARY  | 30% EPIC  | 30% RARE  | 20% UNCOMMON
+    // 🎲 Galaxy Spin odds — DOUBLE vs regular:
+    // 1% BALLON D'OR | 3% GALAXY | 6% LEGENDARY | 15% EPIC | 20% RARE | 30% UNCOMMON | 25% COMMON
     const roll = Math.random() * 100;
     let initialRarity;
-    if (roll < 5) initialRarity = "X";
-    else if (roll < 20) initialRarity = "L";
-    else if (roll < 50) initialRarity = "E";
-    else if (roll < 80) initialRarity = "R";
-    else initialRarity = "U";
+    if (roll < 1) initialRarity = "B";
+    else if (roll < 4) initialRarity = "X";
+    else if (roll < 10) initialRarity = "L";
+    else if (roll < 25) initialRarity = "E";
+    else if (roll < 45) initialRarity = "R";
+    else if (roll < 75) initialRarity = "U";
+    else initialRarity = "C";
 
     // 🛡️ Premium tiers (X, L, E) — exclude duplicates
     // Fallback: if all cards in that tier owned, drop to next tier
@@ -14319,6 +14881,7 @@ export default function App() {
   const [liveError, setLiveError] = useState("");
   const [showBackup, setShowBackup] = useState(false);
   const [showSidebar, setShowSidebar] = useState(false);
+  const [showQuiz, setShowQuiz] = useState(false);
   const [confirmAction, setConfirmAction] = useState(null);
   const [showIntro, setShowIntro] = useState(!saved?.name);
   // Onboarding: shown once after first welcome
@@ -15396,6 +15959,7 @@ export default function App() {
         onShowAdminGift={leagueData?.createdBy === name && activeLeagueCode ? () => setShowAdminGift(true) : null}
         onShowGlobalAdmin={()=>setShowGlobalAdmin(true)}
         onShowLuckyWheel={()=>setShowLuckyWheel(true)}
+        onShowQuiz={()=>setShowQuiz(true)}
         onShowCoinWheel={()=>setShowCoinWheel(true)}
         coinWheelAvailable={coinWheelAvailable}
         wheelAvailable={wheelAvailable}
@@ -15585,20 +16149,19 @@ export default function App() {
 
       {/* 🎴 Higher/Lower Game */}
       {showLuckyWheel && (() => {
-        // Compute league top score (include self for instant updates)
+        // Build full leaderboard sorted by hlBestStreak
         const members = leagueData?.members ? Object.entries(leagueData.members) : [];
-        let leagueRecord = { name: "—", streak: 0 };
-        for (const [uid, m] of members) {
-          // Use local hlBestStreak for ourselves (instant), Firebase value for others
-          const memberStreak = uid === userId ? Math.max(hlBestStreak, m.hlBestStreak || 0) : (m.hlBestStreak || 0);
-          if (memberStreak > leagueRecord.streak) {
-            leagueRecord = { name: m.name || "—", streak: memberStreak };
-          }
+        const leaderboard = members.map(([uid, m]) => ({
+          name: m.name || "—",
+          streak: uid === userId ? Math.max(hlBestStreak, m.hlBestStreak || 0) : (m.hlBestStreak || 0),
+          isMe: uid === userId,
+        }));
+        // Add self if not in members
+        if (!leaderboard.find(m => m.isMe)) {
+          leaderboard.push({ name: name || "אני", streak: hlBestStreak, isMe: true });
         }
-        // Fallback if we're not in any league member entries yet
-        if (hlBestStreak > leagueRecord.streak) {
-          leagueRecord = { name: name || "אני", streak: hlBestStreak };
-        }
+        leaderboard.sort((a, b) => b.streak - a.streak);
+        const leagueRecord = leaderboard[0] || { name: "—", streak: 0 };
         return (
         <LuckyWheelModal
           onClose={()=>setShowLuckyWheel(false)}
@@ -15617,6 +16180,7 @@ export default function App() {
           }}
           personalBest={hlBestStreak}
           leagueRecord={leagueRecord}
+          leaderboard={leaderboard}
           freePlaysLeft={Math.max(0, 5 - hlPlaysToday) + luckyWheelExtraSpins}
           coinBalance={coins?.balance || 0}
           onUseFree={() => {
@@ -15769,6 +16333,7 @@ export default function App() {
           spinCount={spinCount}
           onClose={()=>setShowRoulette(false)}
           onShowCollection={()=>setShowCollection(true)}
+          onShowQuiz={()=>{ setShowRoulette(false); setShowQuiz(true); }}
         />
       )}
 
@@ -15835,6 +16400,28 @@ export default function App() {
             <span>+{coinFlash.amount}</span>
           </div>
         </div>
+      )}
+      {showQuiz && (
+        <QuizScreen
+          onClose={() => setShowQuiz(false)}
+          onCoinsEarned={(amount) => {
+            setCoins(prev => {
+              const updated = { ...prev, balance: (prev?.balance || 0) + amount };
+              try { localStorage.setItem("wc2026_coins_v7", JSON.stringify(updated)); } catch {}
+              return updated;
+            });
+          }}
+          leagueMembers={leagueData?.members || {}}
+          userId={userId}
+          userName={name}
+          onUpdateQuizBest={(score) => {
+            const key = "wc2026_quiz_best_v1";
+            const prev = parseInt(localStorage.getItem(key) || "0", 10);
+            if (score > prev) {
+              localStorage.setItem(key, String(score));
+            }
+          }}
+        />
       )}
       </div>
     </div>
