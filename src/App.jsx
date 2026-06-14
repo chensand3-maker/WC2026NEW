@@ -10,7 +10,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.36.3";
+const APP_VERSION = "3.36.4";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -7103,14 +7103,21 @@ function QuizScreen({ onClose, onCoinsEarned, leagueMembers = {}, userId, userNa
     return () => clearTimeout(t);
   }, [phase, timeLeft, answered]);
 
+  const [shuffledOpts, setShuffledOpts] = useState([]);
+
+  // Shuffle options once per question change
+  useEffect(() => {
+    if (questions[current]) {
+      setShuffledOpts(shuffleArr([...questions[current].options]));
+    }
+  }, [current, questions.length]);
+
   function handleAnswer(idx) {
     if (answered) return;
     setAnswered(true);
     setChosenIdx(idx);
     const q = questions[current];
-    const opts = shuffleArr(q.options);
-    const correctIdx = opts.findIndex(o=>o===q.a);
-    const isCorrect = idx !== null && opts[idx] === q.a;
+    const isCorrect = idx !== null && shuffledOpts[idx] === q.a;
 
     if (isCorrect) {
       setCorrect(p=>p+1);
@@ -7124,7 +7131,6 @@ function QuizScreen({ onClose, onCoinsEarned, leagueMembers = {}, userId, userNa
     }
     setTimeout(() => {
       if (current + 1 >= questions.length) {
-        // loop — infinite!
         const more = shuffleArr(QUIZ_FLAGS);
         setQuestions(p => [...p, ...more]);
       }
@@ -7151,7 +7157,6 @@ function QuizScreen({ onClose, onCoinsEarned, leagueMembers = {}, userId, userNa
     if (!lifelines[type] || answered) return;
     setLifelines(p=>({...p,[type]:false}));
     const q = questions[current];
-    const opts = shuffleArr(q.options);
     if (type === "skip") {
       setAnswered(true);
       setTimeout(() => {
@@ -7159,18 +7164,18 @@ function QuizScreen({ onClose, onCoinsEarned, leagueMembers = {}, userId, userNa
         setChosenIdx(null); setHiddenOpts([]); setAudiencePcts(null); setTimeLeft(15);
       }, 100);
     } else if (type === "fifty") {
-      const wrong = opts.map((o,i)=>i).filter(i=>opts[i]!==q.a);
+      const wrong = shuffledOpts.map((_,i)=>i).filter(i=>shuffledOpts[i]!==q.a);
       setHiddenOpts(shuffleArr(wrong).slice(0,2));
     } else if (type === "audience") {
-      const correctIdx = opts.findIndex(o=>o===q.a);
-      const pcts = opts.map((_,i) => i===correctIdx ? 52+Math.floor(Math.random()*25) : 5+Math.floor(Math.random()*12));
+      const correctIdx = shuffledOpts.findIndex(o=>o===q.a);
+      const pcts = shuffledOpts.map((_,i) => i===correctIdx ? 52+Math.floor(Math.random()*25) : 5+Math.floor(Math.random()*12));
       const total = pcts.reduce((a,b)=>a+b,0);
       setAudiencePcts(pcts.map(p=>Math.round(p/total*100)));
     }
   }
 
   const q = questions[current];
-  const opts = q ? shuffleArr([...q.options]) : [];
+  const opts = shuffledOpts;
 
   // ── HOME ──
   if (phase === "home") return (
