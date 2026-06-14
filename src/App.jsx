@@ -10,7 +10,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.36.4";
+const APP_VERSION = "3.36.5";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -5135,31 +5135,35 @@ function RouletteModal({ coins, isSpinning, pendingCard, onSpin, onLegendsSpin, 
           🃏 {t("roulette.viewCollection")}
         </button>
 
-        {/* 📊 Rarity odds legend */}
+        {/* 📊 Rarity odds legend — boxes */}
         <div style={{marginTop:12,padding:"10px 12px",background:"rgba(15,23,42,0.6)",borderRadius:12,border:"1px solid rgba(71,85,105,0.25)"}}>
           <div style={{fontSize:9,fontWeight:800,color:"#64748b",letterSpacing:2,textAlign:"center",marginBottom:8}}>
             🎲 סיכויי נדירות — רולטה רגילה
           </div>
-          <div style={{display:"flex",flexDirection:"column",gap:4}}>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:4,marginBottom:4}}>
             {[
-              {emoji:"⚪",label:"COMMON",   pct:"48.5%", color:"#94a3b8"},
-              {emoji:"💧",label:"UNCOMMON", pct:"28%",   color:"#60a5fa"},
-              {emoji:"🔥",label:"RARE",     pct:"15%",   color:"#ef4444"},
-              {emoji:"💎",label:"EPIC",     pct:"5%",    color:"#a855f7"},
-              {emoji:"🏆",label:"LEGENDARY",pct:"2%",    color:"#fbbf24"},
-              {emoji:"🌌",label:"GALAXY",   pct:"1%",    color:"#c084fc"},
-              {emoji:"🏅",label:"BALLON D'OR",pct:"0.5%",color:"#f5d76e"},
-            ].map(({emoji,label,pct,color}) => (
-              <div key={label} style={{display:"flex",alignItems:"center",gap:8}}>
-                <span style={{fontSize:13,width:20,textAlign:"center"}}>{emoji}</span>
-                <span style={{fontSize:10,fontWeight:700,color,flex:1}}>{label}</span>
-                <div style={{flex:2,height:4,background:"rgba(71,85,105,0.3)",borderRadius:4,overflow:"hidden"}}>
-                  <div style={{
-                    height:"100%",borderRadius:4,background:color,
-                    width: pct === "48.5%" ? "97%" : pct === "28%" ? "56%" : pct === "15%" ? "30%" : pct === "5%" ? "10%" : pct === "2%" ? "4%" : pct === "1%" ? "2%" : "1%",
-                  }}/>
-                </div>
-                <span style={{fontSize:10,fontWeight:900,color,width:36,textAlign:"end"}}>{pct}</span>
+              {e:"💎",l:"EPIC",    c:"#a855f7",p:"5%"},
+              {e:"🔥",l:"RARE",   c:"#ef4444",p:"15%"},
+              {e:"💧",l:"UNCOMMON",c:"#60a5fa",p:"28%"},
+              {e:"⚪",l:"COMMON", c:"#94a3b8",p:"48.5%"},
+            ].map(r=>(
+              <div key={r.l} style={{textAlign:"center",padding:"6px 2px",borderRadius:6,background:`${r.c}15`,border:`1px solid ${r.c}44`}}>
+                <div style={{fontSize:16,marginBottom:2}}>{r.e}</div>
+                <div style={{fontSize:7,color:r.c,fontWeight:900,letterSpacing:0.5}}>{r.l}</div>
+                <div style={{fontSize:9,color:"#94a3b8",fontWeight:700,marginTop:2}}>{r.p}</div>
+              </div>
+            ))}
+          </div>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:4}}>
+            {[
+              {e:"🏅",l:"BALLON D'OR",c:"#f5d76e",p:"0.5%"},
+              {e:"🌌",l:"GALAXY",     c:"#c084fc",p:"1%"},
+              {e:"🏆",l:"LEGENDARY",  c:"#fbbf24",p:"2%"},
+            ].map(r=>(
+              <div key={r.l} style={{textAlign:"center",padding:"6px 2px",borderRadius:6,background:`${r.c}15`,border:`1px solid ${r.c}55`}}>
+                <div style={{fontSize:16,marginBottom:2}}>{r.e}</div>
+                <div style={{fontSize:7,color:r.c,fontWeight:900,letterSpacing:0.5}}>{r.l}</div>
+                <div style={{fontSize:9,color:"#94a3b8",fontWeight:700,marginTop:2}}>{r.p}</div>
               </div>
             ))}
           </div>
