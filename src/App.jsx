@@ -10,7 +10,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.37.6";
+const APP_VERSION = "3.37.7";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -4352,7 +4352,7 @@ function WorldLeaderboard({ userId, name, onClose }) {
 }
 
 // ─── SIDEBAR: hamburger menu drawer that slides in from one side ─────────────
-function Sidebar({ open, onClose, name, lang, setLang, onShowProfile, onShowRules, onShowBackup, onShowTutorial, onShowAchievements, onShowRoulette, onShowWrapped, onShowAdmin, onShowAdminGift, onShowGlobalAdmin, onShowLuckyWheel, onShowCoinWheel, onShowQuiz, coinWheelAvailable, wheelAvailable, hlPlaysToday, onLogout, onReset, totalPoints, unlockedCount, coinBalance }) {
+function Sidebar({ open, onClose, name, lang, setLang, onShowProfile, onShowRules, onShowBackup, onShowTutorial, onShowAchievements, onShowRoulette, onShowWrapped, onShowAdmin, onShowAdminGift, onShowGlobalAdmin, onShowLuckyWheel, onShowCoinWheel, onShowQuiz, quizTokens, coinWheelAvailable, wheelAvailable, hlPlaysToday, onLogout, onReset, totalPoints, unlockedCount, coinBalance }) {
   const t = useT();
   const isRTL = lang === "he";
 
@@ -4439,7 +4439,7 @@ function Sidebar({ open, onClose, name, lang, setLang, onShowProfile, onShowRule
           />
           <SidebarItem
             icon="🧠"
-            label="חידון כדורגל"
+            label={`חידון כדורגל${quizTokens > 0 ? ` · 🎫×${quizTokens}` : ""}`}
             onClick={()=>{onClose();onShowQuiz?.();}}
           />
           <SidebarItem
@@ -14466,6 +14466,10 @@ export default function App() {
     try { return parseInt(localStorage.getItem("wc2026_quiz_best_v1") || "0", 10) || 0; }
     catch { return 0; }
   });
+  const [quizTokens] = useState(() => {
+    try { return parseInt(localStorage.getItem("wc2026_quiz_tokens_v1") || "0", 10) || 0; }
+    catch { return 0; }
+  });
   const [hlPlaysToday, setHlPlaysToday] = useState(() => {
     try {
       const data = JSON.parse(localStorage.getItem("wc2026_hl_plays_v1") || "{}");
@@ -16105,6 +16109,7 @@ export default function App() {
         onShowGlobalAdmin={()=>setShowGlobalAdmin(true)}
         onShowLuckyWheel={()=>setShowLuckyWheel(true)}
         onShowQuiz={()=>setShowQuiz(true)}
+        quizTokens={quizTokens}
         onShowCoinWheel={()=>setShowCoinWheel(true)}
         coinWheelAvailable={coinWheelAvailable}
         wheelAvailable={wheelAvailable}
