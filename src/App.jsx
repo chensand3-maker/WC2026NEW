@@ -10,7 +10,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.38.0";
+const APP_VERSION = "3.38.2";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -7284,17 +7284,23 @@ function QuizScreen({ onClose, onCoinsEarned, leagueMembers = {}, userId, userNa
     onTokenChange?.(n);
   }
 
-  // Build leaderboard from league members
-  const leaderboard = Object.entries(leagueMembers).map(([uid, m]) => ({
-    name: m.name || "—",
-    score: uid === userId ? Math.max(effectiveBest, m.quizBestFlags || 0) : (m.quizBestFlags || 0),
-    isMe: uid === userId,
-  })).sort((a,b) => b.score - a.score);
-  // Always include self
-  if (!leaderboard.find(m=>m.isMe)) {
-    leaderboard.push({name: userName||"אני", score: effectiveBest || 0, isMe: true});
-    leaderboard.sort((a,b)=>b.score-a.score);
-  }
+  const [personalBestGeneral, setPersonalBestGeneral] = useState(() => parseInt(localStorage.getItem("wc2026_quiz_best_general_v1")||"0",10));
+
+  // Build leaderboards — separate for flags and general
+  const buildBoard = (field, myBest) => {
+    const board = Object.entries(leagueMembers).map(([uid, m]) => ({
+      name: m.name || "—",
+      score: uid === userId ? Math.max(myBest, m[field] || 0) : (m[field] || 0),
+      isMe: uid === userId,
+    })).sort((a,b) => b.score - a.score);
+    if (!board.find(m=>m.isMe)) {
+      board.push({name: userName||"אני", score: myBest||0, isMe: true});
+      board.sort((a,b)=>b.score-a.score);
+    }
+    return board;
+  };
+  const leaderboardFlags   = buildBoard("quizBestFlags",   effectiveBest);
+  const leaderboardGeneral = buildBoard("quizBestGeneral", personalBestGeneral);
 
   // ── Timer ──
   useEffect(() => {
@@ -7336,6 +7342,15 @@ function QuizScreen({ onClose, onCoinsEarned, leagueMembers = {}, userId, userNa
 
   function finishQuiz(finalCorrect) {
     if (onUpdateQuizBest && quizType==="flags") onUpdateQuizBest(finalCorrect);
+    if (quizType==="general") {
+      const key = "wc2026_quiz_best_general_v1";
+      const prev = parseInt(localStorage.getItem(key)||"0",10);
+      if (finalCorrect > prev) {
+        localStorage.setItem(key, String(finalCorrect));
+        setPersonalBestGeneral(finalCorrect);
+        onUpdateQuizBest && onUpdateQuizBest(finalCorrect, "general");
+      }
+    }
     let prize="", coins=0, cardRarity=null;
     if (quizType==="flags") {
       if (finalCorrect >= 20) { prize="🎫 טוקן!"; addToken(); }
@@ -7411,7 +7426,7 @@ function QuizScreen({ onClose, onCoinsEarned, leagueMembers = {}, userId, userNa
       <div style={{padding:"18px 20px 0",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
         <div style={{fontSize:20,fontWeight:900,color:"#f1f5f9"}}>🧠 חידון</div>
         <div style={{display:"flex",alignItems:"center",gap:10}}>
-          {tokens > 0 && <div style={{background:"rgba(251,191,36,0.15)",border:"1px solid rgba(251,191,36,0.4)",borderRadius:20,padding:"4px 12px",fontSize:12,fontWeight:800,color:"#fbbf24"}}>🎫 {tokens}</div>}
+          <div style={{background:tokens>0?"rgba(251,191,36,0.15)":"rgba(71,85,105,0.2)",border:`1px solid ${tokens>0?"rgba(251,191,36,0.4)":"rgba(71,85,105,0.4)"}`,borderRadius:20,padding:"4px 12px",fontSize:12,fontWeight:800,color:tokens>0?"#fbbf24":"#64748b"}}>🎫 {tokens} טוקן{tokens!==1?"ים":""}</div>
           <button onClick={onClose} style={{background:"transparent",border:"none",color:"#94a3b8",fontSize:24,cursor:"pointer"}}>✕</button>
         </div>
       </div>
@@ -7473,22 +7488,44 @@ function QuizScreen({ onClose, onCoinsEarned, leagueMembers = {}, userId, userNa
           )}
         </div>
 
-        {/* Leaderboard — always show */}
+        {/* Flags leaderboard */}
         {(() => {
-          // Build display list: leaderboard + self if not in it
           const medals = ["🥇","🥈","🥉","4️⃣","5️⃣"];
-          const displayList = leaderboard.length > 0 ? leaderboard.slice(0,5) : [{name: userName||"אני", score: effectiveBest, isMe: true}];
-          // Make sure self appears even if score is 0
-          const hasSelf = displayList.some(m=>m.isMe);
-          if (!hasSelf) displayList.push({name: userName||"אני", score: effectiveBest, isMe: true});
+          const displayList = [...leaderboardFlags.slice(0,5)];
+          if (!displayList.some(m=>m.isMe)) {
+            displayList.push({name: userName||"אני", score: effectiveBest||0, isMe: true});
+            displayList.sort((a,b)=>b.score-a.score);
+          }
           return (
             <div style={{background:"rgba(15,23,42,0.6)",border:"1px solid rgba(168,85,247,0.25)",borderRadius:14,overflow:"hidden"}}>
-              <div style={{padding:"8px 14px",background:"rgba(168,85,247,0.1)",fontSize:10,color:"#c4b5fd",fontWeight:800,letterSpacing:1.5}}>👑 שיאי דגלים — הליגה שלי</div>
+              <div style={{padding:"8px 14px",background:"rgba(168,85,247,0.1)",fontSize:10,color:"#c4b5fd",fontWeight:800,letterSpacing:1.5}}>🌍 שיאי דגלים — הליגה</div>
               {displayList.map((m,i)=>(
                 <div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"9px 14px",borderTop:i>0?"1px solid rgba(71,85,105,0.2)":"none",background:m.isMe?"rgba(251,191,36,0.06)":"transparent"}}>
-                  <span style={{fontSize:14,width:22,textAlign:"center"}}>{medals[i]||`${i+1}`}</span>
+                  <span style={{fontSize:16,width:24,textAlign:"center",flexShrink:0}}>{medals[i]||`${i+1}`}</span>
                   <span style={{flex:1,fontSize:13,fontWeight:m.isMe?900:700,color:m.isMe?"#fbbf24":"#cbd5e1"}}>{m.name}{m.isMe?" (אני)":""}</span>
-                  <span style={{fontSize:16,fontWeight:900,color:i===0?"#c4b5fd":"#64748b"}}>{m.score||0}</span>
+                  <span style={{fontSize:16,fontWeight:900,color:i===0?"#c4b5fd":"#94a3b8"}}>{m.score||0}</span>
+                </div>
+              ))}
+            </div>
+          );
+        })()}
+
+        {/* General quiz leaderboard */}
+        {(() => {
+          const medals = ["🥇","🥈","🥉","4️⃣","5️⃣"];
+          const displayList = [...leaderboardGeneral.slice(0,5)];
+          if (!displayList.some(m=>m.isMe)) {
+            displayList.push({name: userName||"אני", score: personalBestGeneral||0, isMe: true});
+            displayList.sort((a,b)=>b.score-a.score);
+          }
+          return (
+            <div style={{background:"rgba(15,23,42,0.6)",border:"1px solid rgba(99,102,241,0.25)",borderRadius:14,overflow:"hidden"}}>
+              <div style={{padding:"8px 14px",background:"rgba(99,102,241,0.1)",fontSize:10,color:"#818cf8",fontWeight:800,letterSpacing:1.5}}>⚽ שיאי כלליות — הליגה</div>
+              {displayList.map((m,i)=>(
+                <div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"9px 14px",borderTop:i>0?"1px solid rgba(71,85,105,0.2)":"none",background:m.isMe?"rgba(251,191,36,0.06)":"transparent"}}>
+                  <span style={{fontSize:16,width:24,textAlign:"center",flexShrink:0}}>{medals[i]||`${i+1}`}</span>
+                  <span style={{flex:1,fontSize:13,fontWeight:m.isMe?900:700,color:m.isMe?"#fbbf24":"#cbd5e1"}}>{m.name}{m.isMe?" (אני)":""}</span>
+                  <span style={{fontSize:16,fontWeight:900,color:i===0?"#818cf8":"#94a3b8"}}>{m.score||0}<span style={{fontSize:10,color:"#64748b"}}>/50</span></span>
                 </div>
               ))}
             </div>
@@ -14498,6 +14535,10 @@ export default function App() {
     try { return parseInt(localStorage.getItem("wc2026_quiz_best_v1") || "0", 10) || 0; }
     catch { return 0; }
   });
+  const [quizBestGeneral, setQuizBestGeneral] = useState(() => {
+    try { return parseInt(localStorage.getItem("wc2026_quiz_best_general_v1") || "0", 10) || 0; }
+    catch { return 0; }
+  });
   const [quizTokens, setQuizTokens] = useState(() => {
     try { return parseInt(localStorage.getItem("wc2026_quiz_tokens_v1") || "0", 10) || 0; }
     catch { return 0; }
@@ -15200,8 +15241,9 @@ export default function App() {
           coinBalance: coins?.balance || 0,
           unlockedAchievements: Array.from(unlockedAchievements || []),
           pickedAtHours: pickedAtHours || [],
-          hlBestStreak: hlBestStreak || 0, // 🎴 Higher/Lower record
-          quizBestFlags: quizBestFlags || 0, // 🧠 Quiz flags best score
+          hlBestStreak: hlBestStreak || 0,
+          quizBestFlags: quizBestFlags || 0,
+          quizBestGeneral: quizBestGeneral || 0,
         })
           .catch(err => console.error(`Failed to push picks to ${code}:`, err));
       });
@@ -15234,11 +15276,11 @@ export default function App() {
         total += (actualTopScorer.goals || 0) * POINTS.TOP_SCORER_GOAL;
       }
       updateMyGlobalProfile(userId, name, picks, koWinners, {
-        winnerPick, topScorerPick, koPicks, totalPoints: total, cardCollection, hlBestStreak, quizBestFlags,
+        winnerPick, topScorerPick, koPicks, totalPoints: total, cardCollection, hlBestStreak, quizBestFlags, quizBestGeneral,
       }).catch(err => console.error("Failed to push global profile:", err));
     }, 1200);
     return () => clearTimeout(handle);
-  }, [userId, name, picks, koWinners, koPicks, winnerPick, topScorerPick, actuals, actualKoScores, actualWinner, actualTopScorer, cardCollection, hlBestStreak, quizBestFlags]);
+  }, [userId, name, picks, koWinners, koPicks, winnerPick, topScorerPick, actuals, actualKoScores, actualWinner, actualTopScorer, cardCollection, hlBestStreak, quizBestFlags, quizBestGeneral]);
 
   // ─── LIVE RESULTS AUTO-FETCH ───────────────────────────────────────────────
   // Poll API-Football every 5 min for new match results
@@ -16604,12 +16646,21 @@ export default function App() {
             setCardCollection(newCollection);
             try { localStorage.setItem("wc2026_cards_v2", JSON.stringify(newCollection)); } catch {}
           }}
-          onUpdateQuizBest={(score) => {
-            const key = "wc2026_quiz_best_v1";
-            const prev = parseInt(localStorage.getItem(key) || "0", 10);
-            if (score > prev) {
-              localStorage.setItem(key, String(score));
-              setQuizBestFlags(score);
+          onUpdateQuizBest={(score, type) => {
+            if (type === "general") {
+              const key = "wc2026_quiz_best_general_v1";
+              const prev = parseInt(localStorage.getItem(key) || "0", 10);
+              if (score > prev) {
+                localStorage.setItem(key, String(score));
+                setQuizBestGeneral(score);
+              }
+            } else {
+              const key = "wc2026_quiz_best_v1";
+              const prev = parseInt(localStorage.getItem(key) || "0", 10);
+              if (score > prev) {
+                localStorage.setItem(key, String(score));
+                setQuizBestFlags(score);
+              }
             }
           }}
         />
