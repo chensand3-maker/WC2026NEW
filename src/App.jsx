@@ -10,7 +10,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.38.2";
+const APP_VERSION = "3.38.3";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -7357,9 +7357,9 @@ function QuizScreen({ onClose, onCoinsEarned, leagueMembers = {}, userId, userNa
       else if (finalCorrect >= 10) { prize="💰 500 מטבעות"; coins=500; }
       else prize="אין פרס הפעם 😅";
     } else {
-      if (finalCorrect===50) { prize="🏅 Ballon d'Or נדיר!"; cardRarity="B"; }
-      else if (finalCorrect>=35) { prize="🏅 קלף Ballon d'Or"; cardRarity="B"; }
-      else if (finalCorrect>=25) { prize="🌌 קלף GALAXY"; cardRarity="X"; }
+      if (finalCorrect>=50) { prize="🏅 Ballon d'Or נדיר!"; cardRarity="B"; }
+      else if (finalCorrect>=40) { prize="🏅 קלף Ballon d'Or"; cardRarity="B"; }
+      else if (finalCorrect>=30) { prize="🌌 קלף GALAXY"; cardRarity="X"; }
       else if (finalCorrect>=10) { prize="💰 2,000 מטבעות"; coins=2000; }
       else prize="אין פרס הפעם 😅";
     }
@@ -7473,8 +7473,9 @@ function QuizScreen({ onClose, onCoinsEarned, leagueMembers = {}, userId, userNa
             <div style={{fontSize:10,fontWeight:800,color:"#818cf8",marginBottom:6}}>🎴 פרסים</div>
             <div style={{display:"flex",flexDirection:"column",gap:4,fontSize:11,color:"#cbd5e1"}}>
               <div style={{display:"flex",justifyContent:"space-between"}}><span>10+</span><span style={{color:"#fbbf24"}}>💰 2,000</span></div>
-              <div style={{display:"flex",justifyContent:"space-between"}}><span>25+</span><span style={{color:"#c084fc"}}>🌌 GALAXY</span></div>
-              <div style={{display:"flex",justifyContent:"space-between"}}><span>35+</span><span style={{color:"#f5d76e"}}>🏅 Ballon d'Or</span></div>
+              <div style={{display:"flex",justifyContent:"space-between"}}><span>30+</span><span style={{color:"#c084fc"}}>🌌 GALAXY</span></div>
+              <div style={{display:"flex",justifyContent:"space-between"}}><span>40+</span><span style={{color:"#f5d76e"}}>🏅 Ballon d'Or</span></div>
+              <div style={{display:"flex",justifyContent:"space-between"}}><span>50/50</span><span style={{color:"#f5d76e",fontWeight:900}}>🏅 נדיר!</span></div>
             </div>
           </div>
           {tokens > 0 ? (
@@ -7569,11 +7570,29 @@ function QuizScreen({ onClose, onCoinsEarned, leagueMembers = {}, userId, userNa
         </div>
       </div>
 
-      <div style={{display:"flex",gap:3,flexShrink:0,overflow:"hidden"}}>
-        {Array.from({length:Math.min(current+8,30)}).map((_,i)=>(
-          <div key={i} style={{flex:1,height:4,borderRadius:3,background:i<correct?"#22c55e":i===current?"#3b82f6":"rgba(71,85,105,0.3)"}}/>
-        ))}
-      </div>
+      {/* Progress — milestones for general, dots for flags */}
+      {!isFlags ? (
+        <div style={{flexShrink:0}}>
+          <div style={{display:"flex",justifyContent:"space-between",fontSize:9,color:"#64748b",marginBottom:4,paddingInline:2}}>
+            <span style={{color:correct>=10?"#fbbf24":"#64748b"}}>10 💰</span>
+            <span style={{color:correct>=30?"#c084fc":"#64748b"}}>30 🌌</span>
+            <span style={{color:correct>=40?"#f5d76e":"#64748b"}}>40 🏅</span>
+            <span style={{color:correct>=50?"#f5d76e":"#64748b"}}>50 🏅✨</span>
+          </div>
+          <div style={{position:"relative",height:8,background:"rgba(71,85,105,0.3)",borderRadius:6,overflow:"visible"}}>
+            <div style={{height:"100%",width:`${(correct/50)*100}%`,background:correct>=40?"linear-gradient(90deg,#fbbf24,#f5d76e)":correct>=30?"linear-gradient(90deg,#7c3aed,#c084fc)":correct>=10?"linear-gradient(90deg,#d97706,#fbbf24)":"linear-gradient(90deg,#16a34a,#22c55e)",borderRadius:6,transition:"width 0.4s ease"}}/>
+            {[10,30,40,50].map(m=>(
+              <div key={m} style={{position:"absolute",top:"50%",left:`${(m/50)*100}%`,transform:"translate(-50%,-50%)",width:12,height:12,borderRadius:"50%",background:correct>=m?"#fbbf24":"rgba(71,85,105,0.8)",border:`2px solid ${correct>=m?"#fbbf24":"rgba(100,116,139,0.5)"}`,zIndex:2,transition:"background 0.3s"}}/>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <div style={{display:"flex",gap:3,flexShrink:0,overflow:"hidden"}}>
+          {Array.from({length:Math.min(current+8,30)}).map((_,i)=>(
+            <div key={i} style={{flex:1,height:4,borderRadius:3,background:i<correct?"#22c55e":i===current?"#3b82f6":"rgba(71,85,105,0.3)"}}/>
+          ))}
+        </div>
+      )}
 
       <div style={{display:"flex",alignItems:"center",gap:10,background:"rgba(15,23,42,0.6)",border:"1px solid rgba(71,85,105,0.3)",borderRadius:14,padding:"8px 12px",flexShrink:0}}>
         <div style={{position:"relative",width:42,height:42,flexShrink:0}}>
