@@ -10,7 +10,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.40.0";
+const APP_VERSION = "3.40.1";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -10525,49 +10525,67 @@ function LineupModal({ homeTeam, awayTeam, homeFlag, awayFlag, apiFixtureId, onC
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
-      // 1) Try real API-Football lineup
+      // 1) Try real API-Football lineup (only if we have a fixture ID)
       if (apiFixtureId) {
         try {
           const lineups = await fetchLineup(apiFixtureId);
           if (cancelled) return;
           const home = lineups.find(l => l.team === homeTeam) || lineups[0];
           const away = lineups.find(l => l.team === awayTeam) || lineups[1];
-          setData({
-            formation_home: home?.formation || "4-4-2",
-            players_home: home?.startXI || [],
-            formation_away: away?.formation || "4-4-2",
-            players_away: away?.startXI || [],
-            coach_home: home?.coach,
-            coach_away: away?.coach,
-          });
-          setSource("api");
-          setLoading(false);
-          return;
+          if (home?.startXI?.length >= 11 && away?.startXI?.length >= 11) {
+            setData({
+              formation_home: home.formation || "4-4-2",
+              players_home: home.startXI,
+              formation_away: away.formation || "4-4-2",
+              players_away: away.startXI,
+              coach_home: home.coach,
+              coach_away: away.coach,
+            });
+            setSource("api");
+            setLoading(false);
+            return;
+          }
         } catch(e) {
           if (cancelled) return;
-          // lineup not published yet — fall through to AI
+          // not published yet — fall through to static
         }
       }
-      // 2) Fallback: Claude AI estimated lineup
-      try {
-        const res = await fetch("https://api.anthropic.com/v1/messages", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            model: "claude-sonnet-4-6",
-            max_tokens: 1000,
-            messages: [{ role: "user", content: `Give me the expected starting 11 for ${homeTeam} vs ${awayTeam} at FIFA World Cup 2026. Return ONLY valid JSON, no markdown:\n{"formation_home":"4-3-3","players_home":["Name1",...11],"formation_away":"4-4-2","players_away":["Name1",...11]}` }]
-          })
+      if (cancelled) return;
+      // 2) Fallback: build estimated lineup from CARDS data
+      const buildSquad = (teamName) => {
+        const teamCards = CARDS.filter(c => c.team === teamName);
+        const byPos = { GK: [], D: [], M: [], F: [] };
+        for (const c of teamCards) {
+          const p = c.pos === "GK" ? "GK" : c.pos === "D" ? "D" : c.pos === "M" ? "M" : "F";
+          byPos[p].push(c.name);
+        }
+        // Build 4-3-3 if enough players, else 4-4-2
+        const gk = byPos.GK.slice(0, 1);
+        const def = byPos.D.slice(0, 4);
+        const mid = byPos.M.slice(0, 3);
+        const fwd = byPos.F.slice(0, 3);
+        if (gk.length + def.length + mid.length + fwd.length >= 11) {
+          return { formation: "4-3-3", players: [...gk, ...def, ...mid, ...fwd] };
+        }
+        // fallback 4-4-2
+        const mid2 = byPos.M.slice(0, 4);
+        const fwd2 = byPos.F.slice(0, 2);
+        return { formation: "4-4-2", players: [...gk, ...def, ...mid2, ...fwd2] };
+      };
+      const homeSquad = buildSquad(homeTeam);
+      const awaySquad = buildSquad(awayTeam);
+      if (homeSquad.players.length >= 11 && awaySquad.players.length >= 11) {
+        setData({
+          formation_home: homeSquad.formation,
+          players_home: homeSquad.players,
+          formation_away: awaySquad.formation,
+          players_away: awaySquad.players,
         });
-        const json = await res.json();
-        if (cancelled) return;
-        const text = json.content?.map(c => c.text || "").join("") || "";
-        const parsed = JSON.parse(text.replace(/```json|```/g, "").trim());
-        setData(parsed);
         setSource("ai");
         setLoading(false);
-      } catch(e) {
-        if (!cancelled) { setError("לא הצלחנו לטעון את ההרכב"); setLoading(false); }
+      } else {
+        setError("הרכב לא זמין עדיין");
+        setLoading(false);
       }
     };
     load();
