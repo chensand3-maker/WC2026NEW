@@ -10,7 +10,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.41.2";
+const APP_VERSION = "3.41.4";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -10570,31 +10570,29 @@ const WC2026_SQUADS = {
 // ═══════════════════════════════════════════════════════
 
 
-// Confirmed SofaScore event IDs for WC2026 matches
-const SOFA_EVENTS = {
-  "Mexico|South Africa":     { slug: "mexico-south-africa/LUbsGVb",              id: 15186710 },
-  "South Korea|Czechia":     { slug: "south-korea-czechia/oUbsKUb",              id: 15186720 },
-  "Canada|Bosnia":           { slug: "canada-bosnia-and-herzegovina/EObscVb",    id: 15186836 },
-  "Qatar|Switzerland":       { slug: "qatar-switzerland/ZTbsRVb",                id: 15186526 },
-  "Brazil|Morocco":          { slug: "morocco-brazil/YUbsDVb",                   id: 15186850 },
-  "Haiti|Scotland":          { slug: "haiti-scotland/VTbsEUc",                   id: 15186853 },
-  "USA|Paraguay":            { slug: "paraguay-usa/zUbsOVb",                     id: 15186873 },
-  "Australia|Türkiye":       { slug: "australia-turkiye/aUbsQUb",                id: 15186874 },
-  "Sweden|Tunisia":          { slug: "tunisia-sweden/NTbsEUb",                   id: 15186951 },
-  "Belgium|Egypt":           { slug: "egypt-belgium/rUbsiVb",                    id: 15186837 },
-  "Iran|New Zealand":        { slug: "new-zealand-iran/qVbsJVb",                 id: 15186832 },
-  "Spain|Cabo Verde":        { slug: "cabo-verde-spain/YTbsdVb",                 id: 15186783 },
-  "Saudi Arabia|Uruguay":    { slug: "saudi-arabia-uruguay/AUbsJWb",             id: 15186811 },
-  "France|Senegal":          { slug: "senegal-france/GObsOUb",                   id: 15186501 },
-  "Iraq|Norway":             { slug: "iraq-norway/AObsrVb",                      id: 15186773 },
+// SofaScore slug overrides for team names that differ
+const SOFA_SLUG = {
+  "Côte d'Ivoire": "ivory-coast",
+  "Curaçao":       "curacao",
+  "Türkiye":       "turkiye",
+  "Bosnia":        "bosnia-and-herzegovina",
+  "Cabo Verde":    "cape-verde",
+  "DR Congo":      "dr-congo",
 };
 
-const SOFA_BASE = "https://www.sofascore.com/football/tournament/world/world-championship/16#id:58210";
+function teamSlug(name) {
+  if (SOFA_SLUG[name]) return SOFA_SLUG[name];
+  // Normalize unicode accents then slugify
+  return name.normalize("NFD").replace(/[\u0300-\u036f]/g,"")
+    .toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
+}
 
+// Build SofaScore URL dynamically from team names — works for ALL 72 matches!
+// SofaScore resolves team1-team2 slugs automatically regardless of order
 function getSofaUrl(home, away) {
-  const e = SOFA_EVENTS[`${home}|${away}`] || SOFA_EVENTS[`${away}|${home}`];
-  if (!e) return SOFA_BASE;
-  return `https://www.sofascore.com/football/match/${e.slug}#id:${e.id},tab:lineups`;
+  const h = teamSlug(home);
+  const a = teamSlug(away);
+  return `https://www.sofascore.com/football/match/${h}-${a}#tab:lineups`;
 }
 
 function LineupButton({ homeTeam, awayTeam }) {
