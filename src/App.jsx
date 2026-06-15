@@ -10,7 +10,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.43.0";
+const APP_VERSION = "3.43.2";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -6460,6 +6460,22 @@ function LeagueAdminModal({ leagueData, leagueCode, onClose }) {
                     opacity: removingUid === m.uid ? 0.5 : 1,
                   }}>
                   {removingUid === m.uid ? "..." : "🗑️"}
+                </button>
+                <button
+                  onClick={() => {
+                    const key = `dailyQuiz_${new Date().toISOString().slice(0,10)}`;
+                    localStorage.removeItem(key);
+                    alert(`✅ חידון יומי אופס!\nעכשיו אפשר לשחק שוב.`);
+                  }}
+                  style={{
+                    flex:1,minWidth:"45%",padding:"7px 10px",
+                    background:"linear-gradient(180deg,rgba(217,119,6,0.2),rgba(217,119,6,0.1))",
+                    border:"1px solid rgba(251,191,36,0.4)",
+                    borderRadius:8,
+                    color:"#fbbf24",fontSize:11,fontWeight:700,
+                    cursor:"pointer",fontFamily:"inherit",
+                  }}>
+                  📅 אפס חידון יומי
                 </button>
               </div>
             </div>
