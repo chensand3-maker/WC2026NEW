@@ -10,7 +10,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.38.8";
+const APP_VERSION = "3.38.9";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -3365,6 +3365,8 @@ function _stringHash(str) {
 // Each player gets a deterministic rating. Manual override applies first (top stars),
 // otherwise hash within the rarity range gives a stable rating.
 function getPlayerRating(card) {
+  // Ballon d'Or cards always use their defined rating
+  if (card.rarity === "B") return card.rating || 97;
   // Built-in manualRating on the card itself (used by FRIEND_CARDS)
   if (card.manualRating != null) return card.manualRating;
   // Manual override for top players (matches FC25 prestige)
