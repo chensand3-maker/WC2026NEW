@@ -10,7 +10,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.39.2";
+const APP_VERSION = "3.39.3";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -5406,9 +5406,9 @@ function PlayerCard({ card, size = "L", animated = false, flippable = false }) {
   // Flip state — only used when flippable=true
   const [flipped, setFlipped] = useState(false);
 
-  const dims = size === "L" ? (isBallon ? { w: 290, h: 435, font: 18, flag: 80, position: 16, rating: 42, star: 11 } : { w: 240, h: 360, font: 18, flag: 80, position: 16, rating: 42, star: 11 })
-             : size === "M" ? (isBallon ? { w: 175, h: 262, font: 12, flag: 46, position: 11, rating: 24, star: 7 } : { w: 140, h: 210, font: 12, flag: 46, position: 11, rating: 24, star: 7 })
-             : (isBallon ? { w: 118, h: 172, font: 9, flag: 30, position: 8, rating: 17, star: 5 } : { w: 95, h: 138, font: 9, flag: 30, position: 8, rating: 17, star: 5 });
+  const dims = size === "L" ? (isBallon ? { w: 290, h: 391, font: 18, flag: 80, position: 16, rating: 42, star: 11 } : { w: 240, h: 360, font: 18, flag: 80, position: 16, rating: 42, star: 11 })
+             : size === "M" ? (isBallon ? { w: 175, h: 236, font: 12, flag: 46, position: 11, rating: 24, star: 7 } : { w: 140, h: 210, font: 12, flag: 46, position: 11, rating: 24, star: 7 })
+             : (isBallon ? { w: 118, h: 159, font: 9, flag: 30, position: 8, rating: 17, star: 5 } : { w: 95, h: 138, font: 9, flag: 30, position: 8, rating: 17, star: 5 });
 
   const posInfo = {
     GK: { label: "GOALKEEPER", short: "GK", color: "#fbbf24", icon: "🧤" },
@@ -5556,8 +5556,7 @@ function PlayerCard({ card, size = "L", animated = false, flippable = false }) {
             style={{
               width: "100%",
               height: "100%",
-              objectFit: "cover",
-              objectPosition: "top center",
+              objectFit: "fill",
               display: "block",
             }}
           />
