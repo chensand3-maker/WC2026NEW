@@ -10,7 +10,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.40.3";
+const APP_VERSION = "3.40.4";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -10577,7 +10577,31 @@ function LineupModal({ homeTeam, awayTeam, homeFlag, awayFlag, apiFixtureId, onC
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
-      // 1) Try real API-Football lineup (only if we have a fixture ID)
+
+      // 1) Try SofaScore via Vercel proxy (predicted lineup — available day before)
+      try {
+        const res = await fetch(`/api/lineup?home=${encodeURIComponent(homeTeam)}&away=${encodeURIComponent(awayTeam)}`);
+        if (!cancelled && res.ok) {
+          const json = await res.json();
+          if (json.home?.players?.length >= 11 && json.away?.players?.length >= 11) {
+            setData({
+              formation_home: json.home.formation || "4-3-3",
+              players_home: json.home.players,
+              formation_away: json.away.formation || "4-4-2",
+              players_away: json.away.players,
+              confirmed_home: json.home.confirmed,
+              confirmed_away: json.away.confirmed,
+            });
+            setSource(json.home.confirmed ? "api" : "sofascore");
+            setLoading(false);
+            return;
+          }
+        }
+      } catch(e) { /* fall through */ }
+
+      if (cancelled) return;
+
+      // 2) Try real API-Football lineup (published ~1hr before kickoff)
       if (apiFixtureId) {
         try {
           const lineups = await fetchLineup(apiFixtureId);
@@ -10597,13 +10621,12 @@ function LineupModal({ homeTeam, awayTeam, homeFlag, awayFlag, apiFixtureId, onC
             setLoading(false);
             return;
           }
-        } catch(e) {
-          if (cancelled) return;
-          // not published yet — fall through to static
-        }
+        } catch(e) { if (cancelled) return; }
       }
+
       if (cancelled) return;
-      // 2) Fallback: use hardcoded WC2026 squads
+
+      // 3) Fallback: hardcoded WC2026 squads
       const homeSquad = WC2026_SQUADS[homeTeam];
       const awaySquad = WC2026_SQUADS[awayTeam];
       if (homeSquad && awaySquad) {
@@ -10613,7 +10636,7 @@ function LineupModal({ homeTeam, awayTeam, homeFlag, awayFlag, apiFixtureId, onC
           formation_away: awaySquad.formation,
           players_away: awaySquad.players,
         });
-        setSource("ai");
+        setSource("hardcode");
         setLoading(false);
       } else {
         setError("הרכב לא זמין");
@@ -10715,7 +10738,11 @@ function LineupModal({ homeTeam, awayTeam, homeFlag, awayFlag, apiFixtureId, onC
               {renderPitch(data.formation_away, data.players_away, awayFlag, awayTeam, data.coach_away)}
             </div>
             <div style={{marginTop:10,fontSize:9,color:"#475569",textAlign:"center"}}>
-              {source === "api" ? "✅ הרכב רשמי בזמן אמת" : "🤖 הרכב משוער לפי AI — עשוי להשתנות"}
+              {source === "api"
+                ? "✅ הרכב רשמי בזמן אמת"
+                : source === "sofascore"
+                ? "🔮 הרכב משוער (SofaScore) — עשוי להשתנות"
+                : "📋 הרכב אומדן — בסיס על סגל ידוע"}
             </div>
           </>
         )}
