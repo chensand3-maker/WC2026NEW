@@ -10,7 +10,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.41.6";
+const APP_VERSION = "3.42.0";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -3072,16 +3072,16 @@ const CARDS_BY_RARITY = {
   U: CARDS.filter(c => c.rarity === "U"),
   C: CARDS.filter(c => c.rarity === "C"),
   B: [ // 🏅 Ballon d'Or — legendary winners
-    { id:"ballon-messi",    name:"Lionel Messi",       team:"Argentina", pos:"CF",  rarity:"B", rating:99, flag:"🇦🇷", ballons:8, years:"2009,2010,2011,2012,2015,2019,2021,2023" },
-    { id:"ballon-cr7",      name:"Cristiano Ronaldo",  team:"Portugal",  pos:"CF",  rarity:"B", rating:98, flag:"🇵🇹", ballons:5, years:"2008,2013,2014,2016,2017" },
-    { id:"ballon-modric",   name:"Luka Modrić",        team:"Croatia",   pos:"CM",  rarity:"B", rating:97, flag:"🇭🇷", ballons:1, years:"2018" },
-    { id:"ballon-cruyff",   name:"Johan Cruyff",       team:"Netherlands",pos:"CF", rarity:"B", rating:98, flag:"🇳🇱", ballons:3, years:"1971,1973,1974" },
-    { id:"ballon-platini",  name:"Michel Platini",     team:"France",    pos:"AM",  rarity:"B", rating:97, flag:"🇫🇷", ballons:3, years:"1983,1984,1985" },
-    { id:"ballon-r9",       name:"Ronaldo Nazário",    team:"Brazil",    pos:"CF",  rarity:"B", rating:98, flag:"🇧🇷", ballons:2, years:"1997,2002" },
-    { id:"ballon-ronaldinho",name:"Ronaldinho",         team:"Brazil",    pos:"AM",  rarity:"B", rating:97, flag:"🇧🇷", ballons:1, years:"2005" },
-    { id:"ballon-kaka",     name:"Kaká",               team:"Brazil",    pos:"AM",  rarity:"B", rating:97, flag:"🇧🇷", ballons:1, years:"2007" },
-    { id:"ballon-sheva",    name:"Andriy Shevchenko",  team:"Ukraine",   pos:"CF",  rarity:"B", rating:97, flag:"🇺🇦", ballons:1, years:"2004" },
-    { id:"ballon-dembele",  name:"Ousmane Dembélé",    team:"France",    pos:"RW",  rarity:"B", rating:97, flag:"🇫🇷", ballons:1, years:"2025" },
+    { id:"ballon-messi",     name:"Lionel Messi",      team:"Argentina",  pos:"CF", rarity:"B", rating:99, flag:"🇦🇷", ballons:8, goals:878, titles:45, years:"2009,2010,2011,2012,2015,2019,2021,2023" },
+    { id:"ballon-cr7",       name:"Cristiano Ronaldo", team:"Portugal",   pos:"CF", rarity:"B", rating:98, flag:"🇵🇹", ballons:5, goals:902, titles:34, years:"2008,2013,2014,2016,2017" },
+    { id:"ballon-modric",    name:"Luka Modrić",       team:"Croatia",    pos:"CM", rarity:"B", rating:97, flag:"🇭🇷", ballons:1, goals:60,  titles:26, years:"2018" },
+    { id:"ballon-cruyff",    name:"Johan Cruyff",      team:"Netherlands",pos:"CF", rarity:"B", rating:98, flag:"🇳🇱", ballons:3, goals:402, titles:14, years:"1971,1973,1974" },
+    { id:"ballon-platini",   name:"Michel Platini",    team:"France",     pos:"AM", rarity:"B", rating:97, flag:"🇫🇷", ballons:3, goals:353, titles:19, years:"1983,1984,1985" },
+    { id:"ballon-r9",        name:"Ronaldo Nazário",   team:"Brazil",     pos:"CF", rarity:"B", rating:98, flag:"🇧🇷", ballons:2, goals:414, titles:20, years:"1997,2002" },
+    { id:"ballon-ronaldinho",name:"Ronaldinho",         team:"Brazil",     pos:"AM", rarity:"B", rating:97, flag:"🇧🇷", ballons:1, goals:297, titles:18, years:"2005" },
+    { id:"ballon-kaka",      name:"Kaká",              team:"Brazil",     pos:"AM", rarity:"B", rating:97, flag:"🇧🇷", ballons:1, goals:204, titles:14, years:"2007" },
+    { id:"ballon-sheva",     name:"Andriy Shevchenko", team:"Ukraine",    pos:"CF", rarity:"B", rating:97, flag:"🇺🇦", ballons:1, goals:355, titles:13, years:"2004" },
+    { id:"ballon-dembele",   name:"Ousmane Dembélé",   team:"France",     pos:"RW", rarity:"B", rating:97, flag:"🇫🇷", ballons:1, goals:142, titles:12, years:"2025" },
   ],
 };
 
@@ -5395,9 +5395,9 @@ function PlayerCard({ card, size = "L", animated = false, flippable = false }) {
   // Flip state — only used when flippable=true
   const [flipped, setFlipped] = useState(false);
 
-  const dims = size === "L" ? (isBallon ? { w: 290, h: 391, font: 18, flag: 80, position: 16, rating: 42, star: 11 } : { w: 240, h: 360, font: 18, flag: 80, position: 16, rating: 42, star: 11 })
-             : size === "M" ? (isBallon ? { w: 175, h: 236, font: 12, flag: 46, position: 11, rating: 24, star: 7 } : { w: 140, h: 210, font: 12, flag: 46, position: 11, rating: 24, star: 7 })
-             : (isBallon ? { w: 118, h: 159, font: 9, flag: 30, position: 8, rating: 17, star: 5 } : { w: 95, h: 138, font: 9, flag: 30, position: 8, rating: 17, star: 5 });
+  const dims = size === "L" ? { w: 240, h: 360, font: 18, flag: 80, position: 16, rating: 42, star: 11 }
+             : size === "M" ? { w: 140, h: 210, font: 12, flag: 46, position: 11, rating: 24, star: 7 }
+             : { w: 95, h: 138, font: 9, flag: 30, position: 8, rating: 17, star: 5 };
 
   const posInfo = {
     GK: { label: "GOALKEEPER", short: "GK", color: "#fbbf24", icon: "🧤" },
@@ -5927,22 +5927,38 @@ function PlayerCard({ card, size = "L", animated = false, flippable = false }) {
             }}>
               🏅 {card.ballons}× BALLON D'OR
             </div>
-            {size !== "S" && card.years && (
+            {size !== "S" && (
               <div style={{
-                display:"flex",flexWrap:"wrap",justifyContent:"center",
-                gap:3,marginTop:4,
+                display:"flex",justifyContent:"center",gap: size==="L"?6:4,
+                marginTop: size==="L"?6:4,
               }}>
-                {card.years.split(",").map(y => (
-                  <span key={y} style={{
-                    background:"linear-gradient(135deg,#a07010,#f0c840,#a07010)",
-                    color:"#1a0a00",
-                    fontSize: size==="L" ? 8 : 7,
-                    fontWeight:900,
-                    padding:"2px 6px",
-                    borderRadius:20,
-                    boxShadow:"0 1px 4px rgba(0,0,0,0.15)",
-                    letterSpacing:0.5,
-                  }}>'{y.trim().slice(2)}</span>
+                {[
+                  { emoji:"⚽", label:"גולים", value: card.goals ?? "—" },
+                  { emoji:"🏆", label:"תארים", value: card.titles ?? "—" },
+                  { emoji:"🏅", label:"כדור זהב", value: card.ballons ?? "—" },
+                ].map(s => (
+                  <div key={s.label} style={{
+                    background:"rgba(0,0,0,0.45)",
+                    border:"1px solid rgba(212,175,55,0.5)",
+                    borderRadius: size==="L"?8:6,
+                    padding: size==="L"?"5px 8px":"3px 5px",
+                    display:"flex",flexDirection:"column",alignItems:"center",gap:1,
+                    minWidth: size==="L"?52:36,
+                  }}>
+                    <div style={{fontSize: size==="L"?12:9}}>{s.emoji}</div>
+                    <div style={{
+                      fontSize: size==="L"?13:9,
+                      fontWeight:900,
+                      color:"#ffe87c",
+                      lineHeight:1,
+                    }}>{s.value}</div>
+                    <div style={{
+                      fontSize: size==="L"?7:5,
+                      color:"rgba(255,220,100,0.7)",
+                      fontWeight:700,
+                      letterSpacing:0.5,
+                    }}>{s.label}</div>
+                  </div>
                 ))}
               </div>
             )}
@@ -6010,7 +6026,14 @@ function PlayerCard({ card, size = "L", animated = false, flippable = false }) {
   // Flippable wrapper with 3D flip
   return (
     <div
-      onClick={(e) => { e.stopPropagation(); setFlipped(f => !f); }}
+      onClick={(e) => {
+        e.stopPropagation();
+        if (!flipped) {
+          if (card.rarity === "B") playBallonSound();
+          else if (card.rarity === "X") playGalaxySound();
+        }
+        setFlipped(f => !f);
+      }}
       style={{
         width: dims.w, height: dims.h,
         perspective: 1000,
@@ -6663,6 +6686,84 @@ function playBoom() {
     osc.connect(gain); gain.connect(ctx.destination);
     osc.start(); osc.stop(ctx.currentTime + 0.45);
     setTimeout(() => ctx.close(), 600);
+  } catch {}
+}
+
+// 🏅 Ballon d'Or — gold coins cascade
+function playBallonSound() {
+  if (isMuted()) return;
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const master = ctx.createGain();
+    master.gain.setValueAtTime(0.18, ctx.currentTime);
+    master.connect(ctx.destination);
+    // Coin hits — series of bright metallic pings at different pitches
+    const coinFreqs = [1800, 2200, 1600, 2600, 2000, 2400, 1900, 2800];
+    coinFreqs.forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const g = ctx.createGain();
+      const t = ctx.currentTime + i * 0.07;
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(freq, t);
+      osc.frequency.exponentialRampToValueAtTime(freq * 0.6, t + 0.15);
+      g.gain.setValueAtTime(0, t);
+      g.gain.linearRampToValueAtTime(1, t + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.01, t + 0.18);
+      osc.connect(g); g.connect(master);
+      osc.start(t); osc.stop(t + 0.2);
+    });
+    // Final triumphant chord
+    [523, 659, 784, 1047].forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const g = ctx.createGain();
+      const t = ctx.currentTime + 0.6;
+      osc.type = "sine";
+      osc.frequency.value = freq;
+      g.gain.setValueAtTime(0.3, t);
+      g.gain.exponentialRampToValueAtTime(0.01, t + 0.8);
+      osc.connect(g); g.connect(master);
+      osc.start(t); osc.stop(t + 0.85);
+    });
+    setTimeout(() => ctx.close(), 2000);
+  } catch {}
+}
+
+// 🌌 Galaxy — magical sparkle shimmer
+function playGalaxySound() {
+  if (isMuted()) return;
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const master = ctx.createGain();
+    master.gain.setValueAtTime(0.15, ctx.currentTime);
+    master.connect(ctx.destination);
+    // Rising sparkle notes
+    const sparkleFreqs = [1200, 1500, 1800, 2100, 2500, 3000, 2700, 3200];
+    sparkleFreqs.forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const g = ctx.createGain();
+      const t = ctx.currentTime + i * 0.055;
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(freq * 0.5, t);
+      osc.frequency.exponentialRampToValueAtTime(freq, t + 0.08);
+      g.gain.setValueAtTime(0, t);
+      g.gain.linearRampToValueAtTime(0.8, t + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.01, t + 0.15);
+      osc.connect(g); g.connect(master);
+      osc.start(t); osc.stop(t + 0.18);
+    });
+    // Dreamy sustain chord
+    [880, 1108, 1320].forEach((freq) => {
+      const osc = ctx.createOscillator();
+      const g = ctx.createGain();
+      const t = ctx.currentTime + 0.45;
+      osc.type = "sine";
+      osc.frequency.value = freq;
+      g.gain.setValueAtTime(0.2, t);
+      g.gain.exponentialRampToValueAtTime(0.01, t + 1.0);
+      osc.connect(g); g.connect(master);
+      osc.start(t); osc.stop(t + 1.1);
+    });
+    setTimeout(() => ctx.close(), 2000);
   } catch {}
 }
 
@@ -10574,24 +10675,42 @@ const WC2026_SQUADS = {
 
 // Confirmed SofaScore event IDs — from sofascore.com URLs
 const SOFA_EVENTS = {
+  // Group A — MD1
   "Mexico|South Africa":     { slug: "mexico-south-africa/LUbsGVb",           id: 15186710 },
   "South Korea|Czechia":     { slug: "south-korea-czechia/oUbsKUb",           id: 15186720 },
+  // Group B — MD1
   "Canada|Bosnia":           { slug: "canada-bosnia-and-herzegovina/EObscVb", id: 15186836 },
   "Qatar|Switzerland":       { slug: "qatar-switzerland/ZTbsRVb",             id: 15186526 },
+  // Group C — MD1
   "Brazil|Morocco":          { slug: "morocco-brazil/YUbsDVb",                id: 15186850 },
   "Haiti|Scotland":          { slug: "haiti-scotland/VTbsEUc",                id: 15186853 },
+  // Group D — MD1
   "USA|Paraguay":            { slug: "paraguay-usa/zUbsOVb",                  id: 15186873 },
   "Australia|Türkiye":       { slug: "australia-turkiye/aUbsQUb",             id: 15186874 },
-  "Sweden|Tunisia":          { slug: "tunisia-sweden/NTbsEUb",                id: 15186951 },
-  "Netherlands|Japan":       { slug: "netherlands-japan/sUbsFVb",             id: 15186952 },
+  // Group E — MD1
   "Germany|Curaçao":         { slug: "curacao-germany/lUbsCqx",               id: 15186838 },
   "Côte d'Ivoire|Ecuador":   { slug: "cote-divoire-ecuador/hVbstVb",          id: 15186839 },
+  // Group F — MD1
+  "Netherlands|Japan":       { slug: "netherlands-japan/sUbsFVb",             id: 15186952 },
+  "Sweden|Tunisia":          { slug: "tunisia-sweden/NTbsEUb",                id: 15186951 },
+  // Group G — MD1
   "Belgium|Egypt":           { slug: "egypt-belgium/rUbsiVb",                 id: 15186837 },
   "Iran|New Zealand":        { slug: "new-zealand-iran/qVbsJVb",              id: 15186832 },
+  // Group H — MD1
   "Spain|Cabo Verde":        { slug: "cabo-verde-spain/YTbsdVb",              id: 15186783 },
   "Saudi Arabia|Uruguay":    { slug: "saudi-arabia-uruguay/AUbsJWb",          id: 15186811 },
+  // Group I — MD1
   "France|Senegal":          { slug: "senegal-france/GObsOUb",                id: 15186501 },
   "Iraq|Norway":             { slug: "iraq-norway/AObsrVb",                   id: 15186773 },
+  // Group J — MD1
+  "Argentina|Algeria":       { slug: "argentina-algeria/QTbsuWb",             id: 15186854 },
+  "Austria|Jordan":          { slug: "jordan-austria/tUbswVb",                id: null },
+  // Group K — MD1
+  "Portugal|DR Congo":       { slug: "dr-congo-portugal/eUbsyWb",             id: null },
+  "Uzbekistan|Colombia":     { slug: "colombia-uzbekistan/yUbsvWb",           id: null },
+  // Group L — MD1
+  "England|Croatia":         { slug: "croatia-england/nUbspUb",               id: null },
+  "Ghana|Panama":            { slug: "panama-ghana/oVbsodc",                  id: null },
 };
 
 // SofaScore team IDs — fallback to team page for unconfirmed matches
@@ -10612,7 +10731,10 @@ const SOFA_TEAMS = {
 
 function getSofaUrl(home, away) {
   const e = SOFA_EVENTS[`${home}|${away}`] || SOFA_EVENTS[`${away}|${home}`];
-  if (e) return `https://www.sofascore.com/football/match/${e.slug}#id:${e.id},tab:lineups`;
+  if (e) {
+    const base = `https://www.sofascore.com/football/match/${e.slug}`;
+    return e.id ? `${base}#id:${e.id},tab:lineups` : `${base}#tab:lineups`;
+  }
   const tid = SOFA_TEAMS[home];
   if (tid) {
     const slug = home.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g,"-");
