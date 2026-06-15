@@ -10,7 +10,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.42.2";
+const APP_VERSION = "3.42.3";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -8090,11 +8090,11 @@ function LuckyWheelModal({ onClose, onWin, onUpdateBestStreak, personalBest, lea
   const timerRef = useRef(null);
 
   // Pick a card from the "regular" mundial pool only (no friends/legends/Israelis)
-  // Only cards with rating 60-95 (wider range = more challenging guesses)
+  // Only cards with rating 60-90 (wider range = more challenging guesses)
   const pickRandomCard = () => {
     const pool = CARDS.filter(c => {
       const r = getPlayerRating(c);
-      return r >= 60 && r <= 95;
+      return r >= 60 && r <= 90;
     });
     return pool[Math.floor(Math.random() * pool.length)];
   };
