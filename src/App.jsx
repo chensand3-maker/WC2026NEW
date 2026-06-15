@@ -10,7 +10,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.43.6";
+const APP_VERSION = "3.43.7";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -8449,6 +8449,9 @@ const DAILY_Q = {
               </div>
               <div style={{fontSize:18,fontWeight:900,color:"#f1f5f9",marginBottom:4}}>חידון יומי</div>
               <div style={{fontSize:12,color:"#94a3b8",marginBottom:8}}>שאלות על הנבחרות שמשחקות היום</div>
+              <div style={{fontSize:11,color:"#64748b",marginBottom:10,lineHeight:1.5}}>
+                🎯 פעם אחת ביום בלבד · כל 5 נכון = קלף · ככל שתענה יותר הקלפים נדירים יותר · אין לבבות — תעבור על כל השאלות
+              </div>
               {todayTeams.length > 0 && (
                 <div style={{display:"flex",flexWrap:"wrap",gap:4,marginBottom:10}}>
                   {todayTeams.map(t => (
