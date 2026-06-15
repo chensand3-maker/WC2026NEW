@@ -10,7 +10,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.39.7";
+const APP_VERSION = "3.39.8";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -5591,30 +5591,13 @@ function PlayerCard({ card, size = "L", animated = false, flippable = false }) {
       )}
       {isBallon && (
         <style>{`
-          @keyframes ballonSheen {
-            0% { transform: translate3d(-150%, 0, 0) skewX(-20deg); opacity: 0; }
-            20% { opacity: 1; }
-            80% { opacity: 1; }
-            100% { transform: translate3d(350%, 0, 0) skewX(-20deg); opacity: 0; }
-          }
           @keyframes ballonGlow {
             0%, 100% { box-shadow: 0 0 30px rgba(212,175,55,0.6); }
             50% { box-shadow: 0 0 60px rgba(212,175,55,0.95), 0 0 100px rgba(212,175,55,0.4); }
           }
         `}</style>
       )}
-      {isBallon && animated && (
-        <div style={{
-          position:"absolute",
-          top:0,bottom:0,left:0,
-          width:"35%",
-          background:"linear-gradient(90deg, transparent, rgba(255,220,100,0.35), transparent)",
-          animation:"ballonSheen 4s ease-in-out infinite",
-          pointerEvents:"none",
-          zIndex:2,
-          willChange:"transform",
-        }}/>
-      )}
+      {/* no shimmer animation — causes flicker on mobile */}
       {/* 🌌 Moving light sheen — only when animated (single card view), not in grids */}
       {isGalaxy && animated && (
         <div style={{
@@ -5929,20 +5912,41 @@ function PlayerCard({ card, size = "L", animated = false, flippable = false }) {
           </div>
         )}
         {isBallon && (
-          <div style={{
-            fontSize: size === "L" ? 9 : 6,
-            fontWeight: 900,
-            letterSpacing: 1.5,
-            marginTop: 3,
-            padding: size === "L" ? "2px 10px" : "1px 5px",
-            background: "linear-gradient(90deg,#3d2800,#d4af37,#ffe87c,#d4af37,#3d2800)",
-            color: "#1a0a00",
-            borderRadius: 10,
-            display: "inline-block",
-            boxShadow: "0 2px 8px rgba(212,175,55,0.6)",
-          }}>
-            🏅 {card.ballons}× BALLON D'OR
-          </div>
+          <>
+            <div style={{
+              fontSize: size === "L" ? 9 : 6,
+              fontWeight: 900,
+              letterSpacing: 1.5,
+              marginTop: 3,
+              padding: size === "L" ? "2px 10px" : "1px 5px",
+              background: "linear-gradient(90deg,#3d2800,#d4af37,#ffe87c,#d4af37,#3d2800)",
+              color: "#1a0a00",
+              borderRadius: 10,
+              display: "inline-block",
+              boxShadow: "0 2px 8px rgba(212,175,55,0.6)",
+            }}>
+              🏅 {card.ballons}× BALLON D'OR
+            </div>
+            {size !== "S" && card.years && (
+              <div style={{
+                display:"flex",flexWrap:"wrap",justifyContent:"center",
+                gap:3,marginTop:4,
+              }}>
+                {card.years.split(",").map(y => (
+                  <span key={y} style={{
+                    background:"linear-gradient(135deg,#a07010,#f0c840,#a07010)",
+                    color:"#1a0a00",
+                    fontSize: size==="L" ? 8 : 7,
+                    fontWeight:900,
+                    padding:"2px 6px",
+                    borderRadius:20,
+                    boxShadow:"0 1px 4px rgba(0,0,0,0.15)",
+                    letterSpacing:0.5,
+                  }}>'{y.trim().slice(2)}</span>
+                ))}
+              </div>
+            )}
+          </>
         )}
       </div>
 
