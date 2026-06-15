@@ -10,7 +10,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.40.7";
+const APP_VERSION = "3.40.8";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -10569,93 +10569,30 @@ const WC2026_SQUADS = {
 // 👕 LINEUP — opens SofaScore lineup page
 // ═══════════════════════════════════════════════════════
 
-// SofaScore event IDs for all WC2026 group stage matches
-// Format: "Home|Away": { id, slug }
+// SofaScore event IDs — confirmed from sofascore.com
+// Format: "Home|Away": { id, slug }  (only verified IDs included)
 const SOFA_EVENTS = {
-  // Group A
+  // Day 1 (Jun 11–12)
   "Mexico|South Africa":     { id: 15186710, slug: "mexico-south-africa/LUbsGVb" },
   "South Korea|Czechia":     { id: 15186720, slug: "south-korea-czechia/oUbsKUb" },
-  "Czechia|South Africa":    { id: 15186721, slug: "czechia-south-africa/pUbsLUb" },
-  "Mexico|South Korea":      { id: 15186722, slug: "mexico-south-korea/qUbsMUb" },
-  "Czechia|Mexico":          { id: 15186723, slug: "czechia-mexico/rUbsNUb" },
-  "South Africa|South Korea":{ id: 15186724, slug: "south-africa-south-korea/sUbsOUb" },
-  // Group B
+  "Sweden|Tunisia":          { id: 15186951, slug: "tunisia-sweden/NTbsEUb" },
+  // Day 2 (Jun 12–13)
   "Canada|Bosnia":           { id: 15186836, slug: "canada-bosnia-and-herzegovina/EObscVb" },
   "Qatar|Switzerland":       { id: 15186526, slug: "qatar-switzerland/ZTbsRVb" },
-  "Switzerland|Bosnia":      { id: 15186837, slug: "switzerland-bosnia/FObsdVb" },
-  "Canada|Qatar":            { id: 15186838, slug: "canada-qatar/GObseVb" },
-  "Switzerland|Canada":      { id: 15186839, slug: "switzerland-canada/HObsfVb" },
-  "Bosnia|Qatar":            { id: 15186840, slug: "bosnia-qatar/IObsgVb" },
-  // Group C
+  // Day 3 (Jun 13–14)
   "Brazil|Morocco":          { id: 15186850, slug: "morocco-brazil/YUbsDVb" },
   "Haiti|Scotland":          { id: 15186853, slug: "haiti-scotland/VTbsEUc" },
-  "Scotland|Morocco":        { id: 15186854, slug: "scotland-morocco/WTbsFUc" },
-  "Brazil|Haiti":            { id: 15186855, slug: "brazil-haiti/XTbsGUc" },
-  "Scotland|Brazil":         { id: 15186856, slug: "scotland-brazil/YTbsHUc" },
-  "Morocco|Haiti":           { id: 15186857, slug: "morocco-haiti/ZTbsIUc" },
-  // Group D
   "USA|Paraguay":            { id: 15186873, slug: "paraguay-usa/zUbsOVb" },
   "Australia|Türkiye":       { id: 15186874, slug: "australia-turkiye/aUbsQUb" },
-  "Türkiye|Paraguay":        { id: 15186875, slug: "turkiye-paraguay/bUbsRUb" },
-  "USA|Australia":           { id: 15186876, slug: "usa-australia/cUbsSUb" },
-  "Türkiye|USA":             { id: 15186877, slug: "turkiye-usa/dUbsTUb" },
-  "Paraguay|Australia":      { id: 15186878, slug: "paraguay-australia/eUbsUUb" },
-  // Group E
-  "Germany|Curaçao":         { id: 15186890, slug: "germany-curacao/fUbsVUb" },
-  "Côte d'Ivoire|Ecuador":   { id: 15186891, slug: "ivory-coast-ecuador/gUbsWUb" },
-  "Germany|Côte d'Ivoire":   { id: 15186892, slug: "germany-ivory-coast/hUbsXUb" },
-  "Ecuador|Curaçao":         { id: 15186893, slug: "ecuador-curacao/iUbsYUb" },
-  "Ecuador|Germany":         { id: 15186894, slug: "ecuador-germany/jUbsZUb" },
-  "Curaçao|Côte d'Ivoire":   { id: 15186895, slug: "curacao-ivory-coast/kUbsaVb" },
-  // Group F
-  "Netherlands|Japan":       { id: 15186910, slug: "netherlands-japan/lUbsbVb" },
-  "Sweden|Tunisia":          { id: 15186911, slug: "sweden-tunisia/mUbscVb" },
-  "Netherlands|Sweden":      { id: 15186912, slug: "netherlands-sweden/nUbsdVb" },
-  "Tunisia|Japan":           { id: 15186913, slug: "tunisia-japan/oUbseVb" },
-  "Tunisia|Netherlands":     { id: 15186914, slug: "tunisia-netherlands/pUbsfVb" },
-  "Japan|Sweden":            { id: 15186915, slug: "japan-sweden/qUbsgVb" },
-  // Group G
-  "Belgium|Egypt":           { id: 15186930, slug: "belgium-egypt/rUbshVb" },
-  "Iran|New Zealand":        { id: 15186931, slug: "iran-new-zealand/sUbsiVb" },
-  "Belgium|Iran":            { id: 15186932, slug: "belgium-iran/tUbsjVb" },
-  "New Zealand|Egypt":       { id: 15186933, slug: "new-zealand-egypt/uUbskVb" },
-  "New Zealand|Belgium":     { id: 15186934, slug: "new-zealand-belgium/vUbslVb" },
-  "Egypt|Iran":              { id: 15186935, slug: "egypt-iran/wUbsmVb" },
-  // Group H
+  // Day 4 (Jun 14–15)
+  "Iran|New Zealand":        { id: 15186832, slug: "new-zealand-iran/qVbsJVb" },
+  // Day 5 (Jun 15)
   "Spain|Cabo Verde":        { id: 15186783, slug: "cabo-verde-spain/YTbsdVb" },
-  "Saudi Arabia|Uruguay":    { id: 15186784, slug: "saudi-arabia-uruguay/ZTbseVb" },
-  "Spain|Saudi Arabia":      { id: 15186785, slug: "spain-saudi-arabia/aTbsfVb" },
-  "Uruguay|Cabo Verde":      { id: 15186786, slug: "uruguay-cabo-verde/bTbsgVb" },
-  "Uruguay|Spain":           { id: 15186787, slug: "uruguay-spain/cTbshVb" },
-  "Cabo Verde|Saudi Arabia": { id: 15186788, slug: "cabo-verde-saudi-arabia/dTbsiVb" },
-  // Group I
-  "France|Senegal":          { id: 15186950, slug: "france-senegal/xUbsnVb" },
-  "Iraq|Norway":             { id: 15186951, slug: "iraq-norway/yUbsoVb" },
-  "France|Iraq":             { id: 15186952, slug: "france-iraq/zUbspVb" },
-  "Norway|Senegal":          { id: 15186953, slug: "norway-senegal/aVbsqVb" },
-  "Norway|France":           { id: 15186954, slug: "norway-france/bVbsrVb" },
-  "Senegal|Iraq":            { id: 15186955, slug: "senegal-iraq/cVbssVb" },
-  // Group J
-  "Argentina|Algeria":       { id: 15186970, slug: "argentina-algeria/dVbstVb" },
-  "Austria|Jordan":          { id: 15186971, slug: "austria-jordan/eVbsuVb" },
-  "Argentina|Austria":       { id: 15186972, slug: "argentina-austria/fVbsvVb" },
-  "Jordan|Algeria":          { id: 15186973, slug: "jordan-algeria/gVbswVb" },
-  "Jordan|Argentina":        { id: 15186974, slug: "jordan-argentina/hVbsxVb" },
-  "Algeria|Austria":         { id: 15186975, slug: "algeria-austria/iVbsyVb" },
-  // Group K
-  "Portugal|DR Congo":       { id: 15186990, slug: "portugal-dr-congo/jVbszVb" },
-  "Uzbekistan|Colombia":     { id: 15186991, slug: "uzbekistan-colombia/kVbsaWb" },
-  "Portugal|Uzbekistan":     { id: 15186992, slug: "portugal-uzbekistan/lVbsbWb" },
-  "Colombia|DR Congo":       { id: 15186993, slug: "colombia-dr-congo/mVbscWb" },
-  "Colombia|Portugal":       { id: 15186994, slug: "colombia-portugal/nVbsdWb" },
-  "DR Congo|Uzbekistan":     { id: 15186995, slug: "dr-congo-uzbekistan/oVbseWb" },
-  // Group L
-  "England|Croatia":         { id: 15187010, slug: "england-croatia/pVbsfWb" },
-  "Ghana|Panama":            { id: 15187011, slug: "ghana-panama/qVbsgWb" },
-  "England|Ghana":           { id: 15187012, slug: "england-ghana/rVbshWb" },
-  "Panama|Croatia":          { id: 15187013, slug: "panama-croatia/sVbsiWb" },
-  "Panama|England":          { id: 15187014, slug: "panama-england/tVbsjWb" },
-  "Croatia|Ghana":           { id: 15187015, slug: "croatia-ghana/uVbskWb" },
+  "Belgium|Egypt":           { id: 15186837, slug: "egypt-belgium/rUbsiVb" },
+  "Saudi Arabia|Uruguay":    { id: 15186811, slug: "saudi-arabia-uruguay/AUbsJWb" },
+  // Day 6 (Jun 16)
+  "France|Senegal":          { id: 15186501, slug: "senegal-france/GObsOUb" },
+  "Iraq|Norway":             { id: 15186773, slug: "iraq-norway/AObsrVb" },
 };
 
 function getSofaEvent(home, away) {
