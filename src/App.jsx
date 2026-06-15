@@ -10,7 +10,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.39.1";
+const APP_VERSION = "3.39.2";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -5536,7 +5536,35 @@ function PlayerCard({ card, size = "L", animated = false, flippable = false }) {
   );
 
   // ─── FRONT SIDE ─────────────────────────────────────────────────────
-  const renderFront = () => (
+  const renderFront = () => {
+    // 🏅 Ballon d'Or — show full card PNG, no regular frame
+    if (isBallon && BALLON_CARD_HTML[card.id]) {
+      return (
+        <div style={{
+          width: dims.w, height: dims.h,
+          borderRadius: 14,
+          overflow: "hidden",
+          position: "relative",
+          boxShadow: animated
+            ? `0 0 40px rgba(212,175,55,0.9), 0 0 80px rgba(212,175,55,0.4), 0 8px 24px rgba(0,0,0,0.5)`
+            : `0 4px 16px rgba(212,175,55,0.4), 0 2px 8px rgba(0,0,0,0.4)`,
+          flexShrink: 0,
+        }}>
+          <img
+            src={BALLON_CARD_HTML[card.id]}
+            alt={card.name}
+            style={{
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+              objectPosition: "top center",
+              display: "block",
+            }}
+          />
+        </div>
+      );
+    }
+    return (
     <div style={{
       width: dims.w, height: dims.h,
       background: isGalaxy
@@ -5982,6 +6010,7 @@ function PlayerCard({ card, size = "L", animated = false, flippable = false }) {
       )}
     </div>
   );
+  };
 
   // If not flippable, just return front
   if (!flippable) return renderFront();
