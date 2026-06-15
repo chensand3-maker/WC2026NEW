@@ -10,7 +10,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.40.6";
+const APP_VERSION = "3.40.7";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -10663,76 +10663,30 @@ function getSofaEvent(home, away) {
 }
 
 function LineupButton({ homeTeam, awayTeam, homeFlag, awayFlag }) {
-  const [open, setOpen] = useState(false);
   const event = getSofaEvent(homeTeam, awayTeam);
   const sofaUrl = event
     ? `https://www.sofascore.com/football/match/${event.slug}#id:${event.id},tab:lineups`
     : `https://www.sofascore.com/football/tournament/world/world-championship/16`;
 
   return (
-    <>
-      <button
-        onClick={e => { e.stopPropagation(); setOpen(true); }}
-        style={{
-          display:"flex",alignItems:"center",justifyContent:"center",gap:5,
-          width:"100%",marginTop:8,padding:"6px 10px",
-          background:"rgba(34,197,94,0.08)",
-          border:"1px solid rgba(34,197,94,0.25)",
-          borderRadius:8,color:"#4ade80",
-          fontSize:11,fontWeight:700,cursor:"pointer",
-          fontFamily:"inherit",letterSpacing:0.5,
-        }}
-      >
-        👕 הרכב משוער
-      </button>
-      {open && (
-        <div onClick={() => setOpen(false)} style={{
-          position:"fixed",inset:0,zIndex:9200,
-          background:"rgba(0,0,0,0.85)",backdropFilter:"blur(4px)",
-          display:"flex",flexDirection:"column",
-          animation:"goalFadeIn 0.2s ease-out",
-        }}>
-          <div onClick={e => e.stopPropagation()} style={{
-            display:"flex",justifyContent:"space-between",alignItems:"center",
-            padding:"10px 14px",
-            background:"#1a2744",
-            borderBottom:"1px solid rgba(34,197,94,0.3)",
-            flexShrink:0,
-          }}>
-            <div style={{fontSize:13,fontWeight:700,color:"#f1f5f9"}}>
-              👕 {homeFlag} {homeTeam} vs {awayTeam} {awayFlag}
-            </div>
-            <div style={{display:"flex",gap:8,alignItems:"center"}}>
-              <a
-                href={sofaUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={e => e.stopPropagation()}
-                style={{
-                  fontSize:10,color:"#4ade80",textDecoration:"none",
-                  border:"1px solid rgba(34,197,94,0.4)",
-                  borderRadius:6,padding:"3px 8px",fontWeight:700,
-                }}
-              >
-                פתח SofaScore ↗
-              </a>
-              <button onClick={() => setOpen(false)} style={{
-                background:"transparent",border:"none",color:"#94a3b8",
-                fontSize:20,cursor:"pointer",lineHeight:1,
-              }}>✕</button>
-            </div>
-          </div>
-          <iframe
-            src={sofaUrl}
-            style={{
-              flex:1,width:"100%",border:"none",
-              background:"#fff",
-            }}
-            title="SofaScore Lineups"
-          />
-        </div>
-      )}
-    </>
+    <a
+      href={sofaUrl}
+      target="_blank"
+      rel="noopener noreferrer"
+      onClick={e => e.stopPropagation()}
+      style={{
+        display:"flex",alignItems:"center",justifyContent:"center",gap:5,
+        width:"100%",marginTop:8,padding:"6px 10px",
+        background:"rgba(34,197,94,0.08)",
+        border:"1px solid rgba(34,197,94,0.25)",
+        borderRadius:8,color:"#4ade80",
+        fontSize:11,fontWeight:700,cursor:"pointer",
+        fontFamily:"inherit",letterSpacing:0.5,
+        textDecoration:"none",boxSizing:"border-box",
+      }}
+    >
+      👕 הרכב משוער ↗
+    </a>
   );
 }
 
