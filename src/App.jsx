@@ -10,7 +10,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.39.5";
+const APP_VERSION = "3.39.6";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -5350,6 +5350,34 @@ function getPlayerStats(card) {
   return { pace: stats[0], shooting: stats[1], passing: stats[2], defending: stats[3] };
 }
 
+// ═══════════════════════════════════════════════════════════
+// 🏅 BALLON D'OR CARD — completely separate component
+// ═══════════════════════════════════════════════════════════
+function BallonCard({ card, size = "L", animated = false }) {
+  const img = BALLON_CARD_HTML[card.id];
+  // Natural card ratio: PNG is 430×580 → 1:1.349
+  const w = size === "L" ? 290 : size === "M" ? 175 : 118;
+  const h = Math.round(w * 1.349);
+  return (
+    <div style={{
+      width: w,
+      height: h,
+      borderRadius: 14,
+      overflow: "hidden",
+      flexShrink: 0,
+      boxShadow: animated
+        ? "0 0 40px rgba(212,175,55,0.9), 0 0 80px rgba(212,175,55,0.4), 0 8px 24px rgba(0,0,0,0.5)"
+        : "0 4px 16px rgba(212,175,55,0.4), 0 2px 8px rgba(0,0,0,0.3)",
+    }}>
+      <img
+        src={img}
+        alt={card.name}
+        style={{ width: "100%", height: "100%", objectFit: "fill", display: "block" }}
+      />
+    </div>
+  );
+}
+
 function PlayerCard({ card, size = "L", animated = false, flippable = false }) {
   const isFriend = card.rarity === "F";
   const variant = card.variant || "default";
@@ -8095,6 +8123,7 @@ function LuckyWheelModal({ onClose, onWin, onUpdateBestStreak, personalBest, lea
 
   const renderMiniCard = (card) => {
     if (!card) return null;
+    if (card.rarity === "B") return <BallonCard card={card} size="M" animated={false} />;
     return <PlayerCard card={card} size="M" animated={false} />;
   };
 
@@ -9505,7 +9534,10 @@ function CardRevealModal({ result, onClose, freshSpin = false }) {
           ? `drop-shadow(0 0 16px ${cfg.glow})`
           : "none",
       }}>
-        <PlayerCard card={card} size="L" animated={true} />
+        {card.rarity === "B"
+          ? <BallonCard card={card} size="L" animated={true} />
+          : <PlayerCard card={card} size="L" animated={true} />
+        }
       </div>
 
       {/* Duplicate info */}
@@ -9787,7 +9819,9 @@ function CollectionModal({ collection, onClose }) {
                     <div style={{fontSize:18}}>🔒</div>
                   </div>
                 ) : (
-                  <PlayerCard card={card} size={isBallon ? "M" : "S"} animated={owned} />
+                  isBallon
+                    ? <BallonCard card={card} size="M" animated={owned} />
+                    : <PlayerCard card={card} size="S" animated={owned} />
                 )}
                 {!owned && !isBallon && (
                   <div style={{
