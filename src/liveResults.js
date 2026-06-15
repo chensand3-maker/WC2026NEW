@@ -443,3 +443,54 @@ export async function fetchTopScorers() {
   setTopScorersCache(out);
   return out;
 }
+
+// ── Lineup cache ────────────────────────────────────────────────────────────
+const LINEUP_CACHE_KEY = "wc2026_lineups_v1";
+const LINEUP_CACHE_TTL = 30 * 60 * 1000; // 30 min — lineups don't change often
+
+function getLineupCache(fixtureId) {
+  try {
+    const raw = localStorage.getItem(LINEUP_CACHE_KEY);
+    if (!raw) return null;
+    const cache = JSON.parse(raw);
+    const entry = cache[fixtureId];
+    if (!entry) return null;
+    if (Date.now() - entry.fetchedAt > LINEUP_CACHE_TTL) return null;
+    return entry.data;
+  } catch { return null; }
+}
+
+function setLineupCache(fixtureId, data) {
+  try {
+    const raw = localStorage.getItem(LINEUP_CACHE_KEY);
+    const cache = raw ? JSON.parse(raw) : {};
+    cache[fixtureId] = { fetchedAt: Date.now(), data };
+    localStorage.setItem(LINEUP_CACHE_KEY, JSON.stringify(cache));
+  } catch {}
+}
+
+export async function fetchLineup(apiFixtureId) {
+  if (!apiFixtureId) throw new Error("no_fixture_id");
+
+  const cached = getLineupCache(apiFixtureId);
+  if (cached) return cached;
+
+  const res = await fetch(`${API_URL}/fixtures/lineups?fixture=${apiFixtureId}`, {
+    headers: { "x-apisports-key": API_FOOTBALL_KEY },
+  });
+  if (!res.ok) throw new Error(`Lineup fetch failed: ${res.status}`);
+  const json = await res.json();
+
+  const lineups = json.response || [];
+  if (lineups.length < 2) throw new Error("lineup_not_ready");
+
+  const result = lineups.map(team => ({
+    team: normalizeTeam(team.team?.name || ""),
+    formation: team.formation || "4-4-2",
+    startXI: (team.startXI || []).map(p => p.player?.name || "").filter(Boolean),
+    coach: team.coach?.name || null,
+  }));
+
+  setLineupCache(apiFixtureId, result);
+  return result;
+}

@@ -6,11 +6,11 @@ import {
   sendGiftToLeague,
   fetchAllGlobalUsers, deleteGlobalUser,
 } from "./firebase";
-import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWinners, mapKnockoutToBracket, fetchTopScorers, fetchMatchDetails, getApiFixtureId } from "./liveResults";
+import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWinners, mapKnockoutToBracket, fetchTopScorers, fetchMatchDetails, getApiFixtureId, fetchLineup } from "./liveResults";
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.39.8";
+const APP_VERSION = "3.40.0";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -10513,7 +10513,199 @@ function Welcome({ onStart, onImport }) {
   );
 }
 
-function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, awayInputId, nextInputId, lockable = true, leagueMembers = null, onShowDetails = null, defaultCollapsed = false }) {
+// ═══════════════════════════════════════════════════════
+// 👕 LINEUP — real API-Football + Claude AI fallback
+// ═══════════════════════════════════════════════════════
+function LineupModal({ homeTeam, awayTeam, homeFlag, awayFlag, apiFixtureId, onClose }) {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [source, setSource] = useState(null); // "api" | "ai"
+
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      // 1) Try real API-Football lineup
+      if (apiFixtureId) {
+        try {
+          const lineups = await fetchLineup(apiFixtureId);
+          if (cancelled) return;
+          const home = lineups.find(l => l.team === homeTeam) || lineups[0];
+          const away = lineups.find(l => l.team === awayTeam) || lineups[1];
+          setData({
+            formation_home: home?.formation || "4-4-2",
+            players_home: home?.startXI || [],
+            formation_away: away?.formation || "4-4-2",
+            players_away: away?.startXI || [],
+            coach_home: home?.coach,
+            coach_away: away?.coach,
+          });
+          setSource("api");
+          setLoading(false);
+          return;
+        } catch(e) {
+          if (cancelled) return;
+          // lineup not published yet — fall through to AI
+        }
+      }
+      // 2) Fallback: Claude AI estimated lineup
+      try {
+        const res = await fetch("https://api.anthropic.com/v1/messages", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            model: "claude-sonnet-4-6",
+            max_tokens: 1000,
+            messages: [{ role: "user", content: `Give me the expected starting 11 for ${homeTeam} vs ${awayTeam} at FIFA World Cup 2026. Return ONLY valid JSON, no markdown:\n{"formation_home":"4-3-3","players_home":["Name1",...11],"formation_away":"4-4-2","players_away":["Name1",...11]}` }]
+          })
+        });
+        const json = await res.json();
+        if (cancelled) return;
+        const text = json.content?.map(c => c.text || "").join("") || "";
+        const parsed = JSON.parse(text.replace(/```json|```/g, "").trim());
+        setData(parsed);
+        setSource("ai");
+        setLoading(false);
+      } catch(e) {
+        if (!cancelled) { setError("לא הצלחנו לטעון את ההרכב"); setLoading(false); }
+      }
+    };
+    load();
+    return () => { cancelled = true; };
+  }, [homeTeam, awayTeam, apiFixtureId]);
+
+  const renderPitch = (formation, players, flag, teamName, coach) => {
+    if (!players || players.length < 11) return null;
+    const rows = formation.split("-").map(Number);
+    const allRows = [1, ...rows];
+    let idx = 0;
+    const sections = allRows.map(count => {
+      const group = players.slice(idx, idx + count);
+      idx += count;
+      return group;
+    });
+    return (
+      <div style={{ flex:1, minWidth:0 }}>
+        <div style={{ textAlign:"center", marginBottom:4, fontSize:12, fontWeight:700, color:"#f1f5f9" }}>
+          {flag} {teamName}
+        </div>
+        <div style={{ fontSize:9, color:"#94a3b8", textAlign:"center", marginBottom:6, letterSpacing:1 }}>
+          {formation}
+        </div>
+        <div style={{
+          background:"linear-gradient(180deg,#15803d,#16a34a,#15803d)",
+          borderRadius:8, padding:"10px 4px",
+          border:"1px solid rgba(255,255,255,0.1)",
+          display:"flex", flexDirection:"column-reverse", gap:8,
+        }}>
+          {sections.map((group, ri) => (
+            <div key={ri} style={{ display:"flex", justifyContent:"space-around" }}>
+              {group.map((name, pi) => (
+                <div key={pi} style={{ textAlign:"center", flex:1, minWidth:0, padding:"0 1px" }}>
+                  <div style={{
+                    width:26, height:26, borderRadius:"50%",
+                    background: ri === 0 ? "#fbbf24" : "#fff",
+                    border:"2px solid rgba(0,0,0,0.3)",
+                    margin:"0 auto 3px",
+                    display:"flex",alignItems:"center",justifyContent:"center",
+                    fontSize:9, fontWeight:900, color:"#1e2940",
+                  }}>
+                    {ri === 0 ? "🧤" : ri === sections.length-1 ? "⚡" : "●"}
+                  </div>
+                  <div style={{
+                    fontSize:7.5, color:"#fff", fontWeight:600, lineHeight:1.2,
+                    overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap",
+                    textShadow:"0 1px 3px rgba(0,0,0,0.8)",
+                  }}>
+                    {name.split(" ").pop()}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+        {coach && <div style={{fontSize:8,color:"#64748b",textAlign:"center",marginTop:4}}>🎽 {coach}</div>}
+      </div>
+    );
+  };
+
+  return (
+    <div onClick={onClose} style={{
+      position:"fixed",inset:0,zIndex:9200,
+      background:"rgba(0,0,0,0.85)",backdropFilter:"blur(6px)",
+      display:"flex",alignItems:"center",justifyContent:"center",
+      padding:14,animation:"goalFadeIn 0.25s ease-out",
+    }}>
+      <div onClick={e => e.stopPropagation()} style={{
+        maxWidth:480,width:"100%",maxHeight:"90vh",overflowY:"auto",
+        background:"linear-gradient(160deg,#1a2744,#1e2940)",
+        border:"1px solid rgba(34,197,94,0.3)",
+        borderRadius:16,padding:"16px 14px",
+        boxShadow:"0 20px 60px rgba(0,0,0,0.5)",
+      }}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+          <div style={{fontSize:14,fontWeight:800,color:"#f1f5f9"}}>👕 הרכב משוער</div>
+          <button onClick={onClose} style={{background:"transparent",border:"none",color:"#94a3b8",fontSize:20,cursor:"pointer"}}>✕</button>
+        </div>
+        <div style={{textAlign:"center",fontSize:11,color:"#64748b",marginBottom:12}}>
+          {homeTeam} vs {awayTeam}
+        </div>
+        {loading && (
+          <div style={{textAlign:"center",padding:"30px 0",color:"#94a3b8"}}>
+            <div style={{fontSize:28,marginBottom:8}}>⏳</div>
+            <div style={{fontSize:12}}>טוען הרכב...</div>
+          </div>
+        )}
+        {error && <div style={{textAlign:"center",padding:"20px",color:"#f87171"}}>{error}</div>}
+        {data && (
+          <>
+            <div style={{display:"flex",gap:10}}>
+              {renderPitch(data.formation_home, data.players_home, homeFlag, homeTeam, data.coach_home)}
+              <div style={{width:1,background:"rgba(71,85,105,0.4)"}}/>
+              {renderPitch(data.formation_away, data.players_away, awayFlag, awayTeam, data.coach_away)}
+            </div>
+            <div style={{marginTop:10,fontSize:9,color:"#475569",textAlign:"center"}}>
+              {source === "api" ? "✅ הרכב רשמי בזמן אמת" : "🤖 הרכב משוער לפי AI — עשוי להשתנות"}
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function LineupButton({ homeTeam, awayTeam, homeFlag, awayFlag, apiFixtureId }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <button
+        onClick={e => { e.stopPropagation(); setOpen(true); }}
+        style={{
+          display:"flex",alignItems:"center",justifyContent:"center",gap:5,
+          width:"100%",marginTop:8,padding:"6px 10px",
+          background:"rgba(34,197,94,0.08)",
+          border:"1px solid rgba(34,197,94,0.25)",
+          borderRadius:8,color:"#4ade80",
+          fontSize:11,fontWeight:700,cursor:"pointer",
+          fontFamily:"inherit",letterSpacing:0.5,
+        }}
+      >
+        👕 הרכב משוער
+      </button>
+      {open && (
+        <LineupModal
+          homeTeam={homeTeam} awayTeam={awayTeam}
+          homeFlag={homeFlag} awayFlag={awayFlag}
+          apiFixtureId={apiFixtureId}
+          onClose={() => setOpen(false)}
+        />
+      )}
+    </>
+  );
+}
+
+
+function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, awayInputId, nextInputId, lockable = true, leagueMembers = null, onShowDetails = null, defaultCollapsed = false, apiFixtureId = null }) {
   const [showAllPicks, setShowAllPicks] = useState(false);
   const [collapsed, setCollapsed] = useState(defaultCollapsed);
   const t = useT();
@@ -10832,6 +11024,10 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
           </div>
         </div>
       </div>
+      )}
+      {/* 👕 Lineup button */}
+      {!collapsed && (
+        <LineupButton homeTeam={fixture.home} awayTeam={fixture.away} homeFlag={home?.f} awayFlag={away?.f} apiFixtureId={apiFixtureId} />
       )}
       {/* 💡 Editable hint — only when not locked + has pick */}
       {!collapsed && !isLocked && hasResult && (
@@ -11459,7 +11655,7 @@ function NextMatchCountdown({ allMatches }) {
   );
 }
 
-function TodayScreen({ picks, actuals, onPick, onBack, onGoToBracket, leagueMembers = null, onRefresh, lastFetchAt, onShowDetails = null }) {
+function TodayScreen({ picks, actuals, onPick, onBack, onGoToBracket, leagueMembers = null, onRefresh, lastFetchAt, onShowDetails = null, liveData = null }) {
   const t = useT();
 
   // Group all fixtures (group + knockout) by date
@@ -11552,6 +11748,7 @@ function TodayScreen({ picks, actuals, onPick, onBack, onGoToBracket, leagueMemb
           leagueMembers={leagueMembers}
           onShowDetails={hasResult ? onShowDetails : null}
           defaultCollapsed={isFinishedSection}
+          apiFixtureId={getApiFixtureId(liveData, f)}
         />
       );
     }
@@ -16339,6 +16536,7 @@ export default function App() {
           onBack={()=>setScreen("group")}
           onGoToBracket={()=>setScreen("bracket")}
           leagueMembers={leagueData ? Object.values(leagueData.members || {}) : null}
+          liveData={liveData}
           onRefresh={() => {
             showToast(t("toast.refreshing"), "info");
             clearLiveCache();
