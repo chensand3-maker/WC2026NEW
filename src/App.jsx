@@ -10,7 +10,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.43.9";
+const APP_VERSION = "3.44.1";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -8470,6 +8470,47 @@ const DAILY_Q = {
                   📅 התחל חידון יומי
                 </button>
               )}
+
+              {/* 📅 Daily leaderboard */}
+              {(() => {
+                const medals = ["🥇","🥈","🥉","4️⃣","5️⃣","6️⃣","7️⃣","8️⃣"];
+                const today = todayStr;
+                const myDailyScore = (() => {
+                  try {
+                    const d = JSON.parse(localStorage.getItem("wc2026_daily_quiz_score_v1") || "{}");
+                    return d.date === today ? (d.score || 0) : null;
+                  } catch { return null; }
+                })();
+                const board = Object.entries(leagueMembers || {})
+                  .map(([uid, m]) => ({
+                    name: m.name || "—",
+                    score: uid === userId
+                      ? (myDailyScore ?? (m.dailyQuizDate === today ? m.dailyQuizScore || 0 : null))
+                      : (m.dailyQuizDate === today ? (m.dailyQuizScore || 0) : null),
+                    isMe: uid === userId,
+                    played: (uid === userId && myDailyScore !== null) || m.dailyQuizDate === today,
+                  }));
+                if (!board.find(m => m.isMe) && myDailyScore !== null) {
+                  board.push({ name: userName || "אני", score: myDailyScore, isMe: true, played: true });
+                }
+                board.sort((a,b) => (b.score ?? -1) - (a.score ?? -1));
+                if (board.length === 0) return null;
+                return (
+                  <div style={{marginTop:12,borderRadius:12,overflow:"hidden",border:"1px solid rgba(251,191,36,0.2)"}}>
+                    <div style={{padding:"6px 12px",background:"rgba(217,119,6,0.12)",fontSize:9,color:"#fbbf24",fontWeight:800,letterSpacing:1.5}}>📊 דירוג יומי</div>
+                    {board.map((m,i) => (
+                      <div key={i} style={{display:"flex",alignItems:"center",gap:8,padding:"7px 12px",borderTop:i>0?"1px solid rgba(71,85,105,0.15)":"none",background:m.isMe?"rgba(251,191,36,0.06)":"transparent"}}>
+                        <span style={{fontSize:13,width:20,textAlign:"center",flexShrink:0}}>{medals[i]||`${i+1}`}</span>
+                        <span style={{flex:1,fontSize:12,fontWeight:m.isMe?900:700,color:m.isMe?"#fbbf24":"#cbd5e1"}}>{m.name}{m.isMe?" (אני)":""}</span>
+                        {m.played
+                          ? <span style={{fontSize:13,fontWeight:900,color:i===0?"#fbbf24":"#94a3b8"}}>{m.score}</span>
+                          : <span style={{fontSize:10,color:"#475569"}}>עוד לא</span>
+                        }
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
             </div>
           );
         })()}
@@ -8630,16 +8671,19 @@ const DAILY_Q = {
         const medals = ["🥇","🥈","🥉","4️⃣","5️⃣","6️⃣","7️⃣","8️⃣"];
         const today = new Date().toISOString().slice(0,10);
         const myScore = correct;
-        const board = Object.entries(leagueMembers)
+        const board = Object.entries(leagueMembers || {})
           .map(([uid, m]) => ({
             name: m.name || "—",
             score: uid === userId ? myScore : (m.dailyQuizDate === today ? (m.dailyQuizScore || 0) : null),
             isMe: uid === userId,
             played: uid === userId || m.dailyQuizDate === today,
-          }))
-          .sort((a,b) => (b.score||0) - (a.score||0));
-        if (!board.find(m=>m.isMe)) board.push({name:userName||"אני",score:myScore,isMe:true,played:true});
-        board.sort((a,b)=>(b.score||0)-(a.score||0));
+          }));
+        // Always add self if not found
+        if (!board.find(m=>m.isMe)) {
+          board.push({name: userName||"אני", score: myScore, isMe: true, played: true});
+        }
+        board.sort((a,b)=>(b.score??-1)-(a.score??-1));
+        if (board.length === 0) return null;
         return (
           <div style={{background:"rgba(15,23,42,0.7)",border:"1.5px solid rgba(251,191,36,0.3)",borderRadius:14,overflow:"hidden",width:"100%"}}>
             <div style={{padding:"8px 14px",background:"rgba(217,119,6,0.15)",fontSize:10,color:"#fbbf24",fontWeight:800,letterSpacing:1.5}}>📅 חידון יומי — הליגה היום</div>
