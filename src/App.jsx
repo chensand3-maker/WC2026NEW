@@ -10,7 +10,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.42.8";
+const APP_VERSION = "3.42.9";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -8197,7 +8197,12 @@ const DAILY_Q = {
   // ── Shuffle opts once per question ──
   const [shuffledOpts, setShuffledOpts] = useState([]);
   useEffect(() => {
-    if (questions[current]) setShuffledOpts(shuffleArr([...questions[current].options]));
+    if (questions[current]) {
+      const q = questions[current];
+      const allOpts = [...(q.options || q.opts || []), q.a];
+      const unique = [...new Set(allOpts)];
+      setShuffledOpts(shuffleArr(unique));
+    }
   }, [current, questions.length]);
 
   function handleAnswer(idx) {
