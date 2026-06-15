@@ -10,7 +10,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.41.1";
+const APP_VERSION = "3.41.2";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -10570,30 +10570,38 @@ const WC2026_SQUADS = {
 // ═══════════════════════════════════════════════════════
 
 
-function LineupButton({ homeTeam, awayTeam, homeFlag, awayFlag }) {
-  const [url, setUrl] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const fallback = "https://www.sofascore.com/football/tournament/world/world-championship/16#id:58210";
+// Confirmed SofaScore event IDs for WC2026 matches
+const SOFA_EVENTS = {
+  "Mexico|South Africa":     { slug: "mexico-south-africa/LUbsGVb",              id: 15186710 },
+  "South Korea|Czechia":     { slug: "south-korea-czechia/oUbsKUb",              id: 15186720 },
+  "Canada|Bosnia":           { slug: "canada-bosnia-and-herzegovina/EObscVb",    id: 15186836 },
+  "Qatar|Switzerland":       { slug: "qatar-switzerland/ZTbsRVb",                id: 15186526 },
+  "Brazil|Morocco":          { slug: "morocco-brazil/YUbsDVb",                   id: 15186850 },
+  "Haiti|Scotland":          { slug: "haiti-scotland/VTbsEUc",                   id: 15186853 },
+  "USA|Paraguay":            { slug: "paraguay-usa/zUbsOVb",                     id: 15186873 },
+  "Australia|Türkiye":       { slug: "australia-turkiye/aUbsQUb",                id: 15186874 },
+  "Sweden|Tunisia":          { slug: "tunisia-sweden/NTbsEUb",                   id: 15186951 },
+  "Belgium|Egypt":           { slug: "egypt-belgium/rUbsiVb",                    id: 15186837 },
+  "Iran|New Zealand":        { slug: "new-zealand-iran/qVbsJVb",                 id: 15186832 },
+  "Spain|Cabo Verde":        { slug: "cabo-verde-spain/YTbsdVb",                 id: 15186783 },
+  "Saudi Arabia|Uruguay":    { slug: "saudi-arabia-uruguay/AUbsJWb",             id: 15186811 },
+  "France|Senegal":          { slug: "senegal-france/GObsOUb",                   id: 15186501 },
+  "Iraq|Norway":             { slug: "iraq-norway/AObsrVb",                      id: 15186773 },
+};
 
-  // Fetch the SofaScore URL when component mounts
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    fetch(`/api/lineup?home=${encodeURIComponent(homeTeam)}&away=${encodeURIComponent(awayTeam)}`)
-      .then(r => r.ok ? r.json() : null)
-      .then(data => {
-        if (!cancelled) {
-          setUrl(data?.url || fallback);
-          setLoading(false);
-        }
-      })
-      .catch(() => { if (!cancelled) { setUrl(fallback); setLoading(false); } });
-    return () => { cancelled = true; };
-  }, [homeTeam, awayTeam]);
+const SOFA_BASE = "https://www.sofascore.com/football/tournament/world/world-championship/16#id:58210";
 
+function getSofaUrl(home, away) {
+  const e = SOFA_EVENTS[`${home}|${away}`] || SOFA_EVENTS[`${away}|${home}`];
+  if (!e) return SOFA_BASE;
+  return `https://www.sofascore.com/football/match/${e.slug}#id:${e.id},tab:lineups`;
+}
+
+function LineupButton({ homeTeam, awayTeam }) {
+  const url = getSofaUrl(homeTeam, awayTeam);
   return (
     <a
-      href={url || fallback}
+      href={url}
       target="_blank"
       rel="noopener noreferrer"
       onClick={e => e.stopPropagation()}
@@ -10602,16 +10610,13 @@ function LineupButton({ homeTeam, awayTeam, homeFlag, awayFlag }) {
         width:"100%",padding:"6px 10px",
         background:"rgba(34,197,94,0.08)",
         border:"1px solid rgba(34,197,94,0.25)",
-        borderRadius:8,color: loading ? "#64748b" : "#4ade80",
-        fontSize:11,fontWeight:700,
+        borderRadius:8,color:"#4ade80",
+        fontSize:11,fontWeight:700,cursor:"pointer",
         fontFamily:"inherit",letterSpacing:0.5,
         textDecoration:"none",boxSizing:"border-box",
-        cursor: loading ? "wait" : "pointer",
-        opacity: loading ? 0.6 : 1,
-        transition:"opacity 0.2s",
       }}
     >
-      {loading ? "⏳ טוען הרכב..." : "👕 הרכב משוער ↗"}
+      👕 הרכב משוער ↗
     </a>
   );
 }
@@ -11660,10 +11665,7 @@ function TodayScreen({ picks, actuals, onPick, onBack, onGoToBracket, leagueMemb
           />
           {!isFinishedSection && (
             <div style={{marginBottom:12}}>
-              <LineupButton
-                homeTeam={f.home} awayTeam={f.away}
-                homeFlag={findTeam(f.home)?.f} awayFlag={findTeam(f.away)?.f}
-              />
+              <LineupButton homeTeam={f.home} awayTeam={f.away} />
             </div>
           )}
         </div>
