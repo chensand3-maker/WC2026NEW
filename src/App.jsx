@@ -10,7 +10,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.40.9";
+const APP_VERSION = "3.41.0";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -11670,10 +11670,12 @@ function TodayScreen({ picks, actuals, onPick, onBack, onGoToBracket, leagueMemb
             apiFixtureId={getApiFixtureId(liveData, f)}
           />
           {!isFinishedSection && (
-            <LineupButton
-              homeTeam={f.home} awayTeam={f.away}
-              homeFlag={findTeam(f.home)?.f} awayFlag={findTeam(f.away)?.f}
-            />
+            <div style={{marginBottom:12}}>
+              <LineupButton
+                homeTeam={f.home} awayTeam={f.away}
+                homeFlag={findTeam(f.home)?.f} awayFlag={findTeam(f.away)?.f}
+              />
+            </div>
           )}
         </div>
       );
