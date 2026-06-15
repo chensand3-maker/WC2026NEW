@@ -10,7 +10,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.40.1";
+const APP_VERSION = "3.40.2";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -10551,42 +10551,54 @@ function LineupModal({ homeTeam, awayTeam, homeFlag, awayFlag, apiFixtureId, onC
         }
       }
       if (cancelled) return;
-      // 2) Fallback: build estimated lineup from CARDS data
+      // 2) Fallback: build estimated lineup from CARDS + TOP_SCORER_CANDIDATES
       const buildSquad = (teamName) => {
-        const teamCards = CARDS.filter(c => c.team === teamName);
+        // Collect all named players for this team
+        const named = new Set();
         const byPos = { GK: [], D: [], M: [], F: [] };
-        for (const c of teamCards) {
+
+        // From CARDS (has position info)
+        for (const c of CARDS) {
+          if (c.team !== teamName) continue;
           const p = c.pos === "GK" ? "GK" : c.pos === "D" ? "D" : c.pos === "M" ? "M" : "F";
-          byPos[p].push(c.name);
+          if (!named.has(c.name)) { named.add(c.name); byPos[p].push(c.name); }
         }
-        // Build 4-3-3 if enough players, else 4-4-2
-        const gk = byPos.GK.slice(0, 1);
-        const def = byPos.D.slice(0, 4);
-        const mid = byPos.M.slice(0, 3);
-        const fwd = byPos.F.slice(0, 3);
-        if (gk.length + def.length + mid.length + fwd.length >= 11) {
-          return { formation: "4-3-3", players: [...gk, ...def, ...mid, ...fwd] };
+        // From TOP_SCORER_CANDIDATES (forwards/midfielders mostly)
+        for (const c of TOP_SCORER_CANDIDATES) {
+          if (c.team !== teamName || named.has(c.name)) continue;
+          named.add(c.name);
+          byPos.F.push(c.name); // assume forward if unknown
         }
-        // fallback 4-4-2
-        const mid2 = byPos.M.slice(0, 4);
-        const fwd2 = byPos.F.slice(0, 2);
-        return { formation: "4-4-2", players: [...gk, ...def, ...mid2, ...fwd2] };
+
+        // Fill missing slots with generic placeholders
+        const positions = [
+          { key: "GK", need: 1, label: "Goalkeeper" },
+          { key: "D",  need: 4, label: "Defender" },
+          { key: "M",  need: 3, label: "Midfielder" },
+          { key: "F",  need: 3, label: "Forward" },
+        ];
+        const players = [];
+        for (const { key, need, label } of positions) {
+          const pool = byPos[key].slice(0, need);
+          players.push(...pool);
+          // Fill remaining with placeholder
+          for (let i = pool.length; i < need; i++) {
+            players.push(`${label} ${i + 1}`);
+          }
+        }
+        return { formation: "4-3-3", players };
       };
+
       const homeSquad = buildSquad(homeTeam);
       const awaySquad = buildSquad(awayTeam);
-      if (homeSquad.players.length >= 11 && awaySquad.players.length >= 11) {
-        setData({
-          formation_home: homeSquad.formation,
-          players_home: homeSquad.players,
-          formation_away: awaySquad.formation,
-          players_away: awaySquad.players,
-        });
-        setSource("ai");
-        setLoading(false);
-      } else {
-        setError("הרכב לא זמין עדיין");
-        setLoading(false);
-      }
+      setData({
+        formation_home: homeSquad.formation,
+        players_home: homeSquad.players,
+        formation_away: awaySquad.formation,
+        players_away: awaySquad.players,
+      });
+      setSource("ai");
+      setLoading(false);
     };
     load();
     return () => { cancelled = true; };
