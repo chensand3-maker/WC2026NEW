@@ -10,7 +10,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.40.2";
+const APP_VERSION = "3.40.3";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -10513,6 +10513,58 @@ function Welcome({ onStart, onImport }) {
   );
 }
 
+// ─── Estimated WC2026 squads (hardcoded) ─────────────────────────────────────
+const WC2026_SQUADS = {
+  "Mexico": { formation: "4-3-3", players: ["Guillermo Ochoa", "Jorge Sánchez", "Edson Álvarez", "César Montes", "Jesús Gallardo", "Héctor Herrera", "Andrés Guardado", "Orbelín Pineda", "Hirving Lozano", "Raúl Jiménez", "Santiago Giménez"] },
+  "South Africa": { formation: "4-4-2", players: ["Ronwen Williams", "Siyanda Xulu", "Rushine de Reuck", "Thibang Phete", "Innocent Maela", "Ethan Ntsontso", "Teboho Mokoena", "Sipho Mbule", "Percy Tau", "Lyle Foster", "Evidence Makgopa"] },
+  "South Korea": { formation: "4-2-3-1", players: ["Kim Seung-gyu", "Kim Moon-hwan", "Kim Min-jae", "Jung Seung-hyun", "Kim Jin-su", "Jung Woo-young", "Hwang In-beom", "Lee Jae-sung", "Lee Kang-in", "Son Heung-min", "Hwang Hee-chan"] },
+  "Czechia": { formation: "4-2-3-1", players: ["Jiří Staněk", "Vladimír Coufal", "Tomáš Holeš", "Robin Hranáč", "Jan Bořil", "Lukáš Provod", "Tomáš Souček", "Ondřej Lingr", "Antonín Barák", "Adam Hložek", "Patrik Schick"] },
+  "Canada": { formation: "4-3-3", players: ["Maxime Crépeau", "Richie Laryea", "Steven Vitória", "Kamal Miller", "Alphonso Davies", "Stephen Eustáquio", "Ismaël Koné", "Jonathan Osorio", "Tajon Buchanan", "Jonathan David", "Cyle Larin"] },
+  "Bosnia": { formation: "4-2-3-1", players: ["Nikola Vasilj", "Sead Kolašinac", "Ermin Bičakčić", "Amadou Doumbia", "Anel Ahmedhodžić", "Armin Hodžić", "Miralem Pjanić", "Gojko Cimirot", "Edin Višća", "Ermedin Demirović", "Edin Džeko"] },
+  "Qatar": { formation: "4-3-3", players: ["Meshaal Barsham", "Pedro Miguel", "Tarek Salman", "Bassam Al-Rawi", "Homam Ahmed", "Karim Boudiaf", "Abdulaziz Hatem", "Hassan Al-Haydos", "Akram Afif", "Almoez Ali", "Mohammed Muntari"] },
+  "Switzerland": { formation: "4-2-3-1", players: ["Yann Sommer", "Silvan Widmer", "Nico Elvedi", "Manuel Akanji", "Ricardo Rodríguez", "Granit Xhaka", "Remo Freuler", "Ruben Vargas", "Xherdan Shaqiri", "Breel Embolo", "Zeki Amdouni"] },
+  "Brazil": { formation: "4-3-3", players: ["Alisson", "Danilo", "Marquinhos", "Éder Militão", "Guilherme Arana", "Casemiro", "Bruno Guimarães", "Lucas Paquetá", "Raphinha", "Vinícius Júnior", "Rodrygo"] },
+  "Morocco": { formation: "4-3-3", players: ["Yassine Bounou", "Achraf Hakimi", "Romain Saïss", "Nayef Aguerd", "Noussair Mazraoui", "Selim Amrabat", "Azzedine Ounahi", "Sofyan Amrabat", "Hakim Ziyech", "Youssef En-Nesyri", "Brahim Díaz"] },
+  "Haiti": { formation: "4-4-2", players: ["Johny Placide", "Jems Geffrard", "Mechack Jérôme", "Andrew Wooten", "Derrick Étienne", "Jeff Louis", "Duckens Nazon", "Frantzdy Pierrot", "Wilde-Donald Guerrier", "Orlege Mombé", "Kervens Belfort"] },
+  "Scotland": { formation: "4-3-3", players: ["Angus Gunn", "Aaron Hickey", "Grant Hanley", "Liam Cooper", "Andrew Robertson", "Billy Gilmour", "John McGinn", "Stuart Armstrong", "James Forrest", "Scott McTominay", "Che Adams"] },
+  "USA": { formation: "4-3-3", players: ["Matt Turner", "Sergino Dest", "Walker Zimmerman", "Miles Robinson", "Antonee Robinson", "Weston McKennie", "Tyler Adams", "Yunus Musah", "Christian Pulisic", "Folarin Balogun", "Tim Weah"] },
+  "Paraguay": { formation: "4-4-2", players: ["Antony Silva", "Robert Rojas", "Gustavo Gómez", "Fabián Balbuena", "Júnior Alonso", "Mathías Villasanti", "Richard Sánchez", "Ángel Romero", "Miguel Almirón", "Óscar Romero", "Antonio Sanabria"] },
+  "Australia": { formation: "4-3-3", players: ["Mathew Ryan", "Nathaniel Atkinson", "Harry Souttar", "Kye Rowles", "Aziz Behich", "Jackson Irvine", "Aaron Mooy", "Riley McGree", "Mat Leckie", "Mitchell Duke", "Craig Goodwin"] },
+  "Türkiye": { formation: "4-2-3-1", players: ["Mert Günok", "Zeki Çelik", "Merih Demiral", "Kaan Ayhan", "Ferdi Kadıoğlu", "Salih Özcan", "Hakan Çalhanoğlu", "Kerem Aktürkoğlu", "Arda Güler", "Kenan Yıldız", "Baris Alper Yilmaz"] },
+  "Germany": { formation: "4-2-3-1", players: ["Manuel Neuer", "Joshua Kimmich", "Antonio Rüdiger", "Jonathan Tah", "David Raum", "Robert Andrich", "Florian Wirtz", "Jamal Musiala", "Thomas Müller", "Leroy Sané", "Kai Havertz"] },
+  "Curaçao": { formation: "4-4-2", players: ["Eloy Room", "Cuco Martina", "Rangelo Janga", "Shaquill Sno", "Leandro Bacuna", "Jürgen Locadia", "Darryl Lachman", "Gevaro Nepomuceno", "Glenson Engelen", "Quentin Bakker", "Tahith Chong"] },
+  "Côte d'Ivoire": { formation: "4-3-3", players: ["Yahia Fofana", "Serge Aurier", "Wilfried Singo", "Odilon Kossounou", "Ghislain Konan", "Franck Kessié", "Jean-Michaël Seri", "Ibrahim Sangaré", "Simon Adingra", "Sébastien Haller", "Nicolas Pépé"] },
+  "Ecuador": { formation: "4-3-3", players: ["Hernán Galíndez", "Angelo Preciado", "Piero Hincapié", "William Pacho", "Pervis Estupiñán", "Moisés Caicedo", "Carlos Gruezo", "Ángel Mena", "Jeremy Sarmiento", "Enner Valencia", "Michael Estrada"] },
+  "Netherlands": { formation: "4-3-3", players: ["Bart Verbruggen", "Denzel Dumfries", "Stefan de Vrij", "Virgil van Dijk", "Nathan Aké", "Frenkie de Jong", "Ryan Gravenberch", "Tijjani Reijnders", "Cody Gakpo", "Memphis Depay", "Xavi Simons"] },
+  "Japan": { formation: "4-2-3-1", players: ["Shuichi Gonda", "Hiroki Sakai", "Ko Itakura", "Shogo Taniguchi", "Yuto Nagatomo", "Wataru Endo", "Hidemasa Morita", "Takefusa Kubo", "Daichi Kamada", "Kaoru Mitoma", "Ayase Ueda"] },
+  "Sweden": { formation: "4-2-3-1", players: ["Robin Olsen", "Emil Krafth", "Isak Hien", "Marcus Danielson", "Ludwig Augustinsson", "Albin Ekdal", "Mattias Svanberg", "Dejan Kulusevski", "Viktor Claesson", "Alexander Isak", "Viktor Gyökeres"] },
+  "Tunisia": { formation: "4-3-3", players: ["Aymen Dahmen", "Montassar Talbi", "Yassine Meriah", "Hamza Mathlouthi", "Ali Maâloul", "Ellyes Skhiri", "Aïssa Laïdouni", "Hannibal Mejbri", "Wahbi Khazri", "Seifeddine Jaziri", "Naim Sliti"] },
+  "Belgium": { formation: "4-3-3", players: ["Koen Casteels", "Timothy Castagne", "Wout Faes", "Jan Vertonghen", "Arthur Theate", "Kevin De Bruyne", "Axel Witsel", "Youri Tielemans", "Lois Openda", "Romelu Lukaku", "Jérémy Doku"] },
+  "Egypt": { formation: "4-2-3-1", players: ["Mohamed El-Shenawy", "Ahmed Hegazi", "Omar Kamal", "Ahmed Fatouh", "Mohamed Hany", "Tarek Hamed", "Ahmed Sayed Zizou", "Amr El-Sulaya", "Mahmoud Trezeguet", "Mohamed Salah", "Mostafa Mohamed"] },
+  "Iran": { formation: "4-2-3-1", players: ["Alireza Beiranvand", "Sadegh Moharrami", "Majid Hosseini", "Rouzbeh Cheshmi", "Ehsan Hajsafi", "Saeid Ezatolahi", "Ahmad Noorollahi", "Ali Gholizadeh", "Mehdi Taremi", "Sardar Azmoun", "Alireza Jahanbakhsh"] },
+  "New Zealand": { formation: "4-4-2", players: ["Oliver Sail", "Liberato Cacace", "Winston Reid", "Michael Boxall", "Nando Pijnaker", "Elijah Just", "Clayton Lewis", "Alex Rufer", "Ryan Thomas", "Chris Wood", "Matthew Garbett"] },
+  "Spain": { formation: "4-3-3", players: ["Unai Simón", "Dani Carvajal", "Aymeric Laporte", "Robin Le Normand", "Marc Cucurella", "Rodri", "Pedri", "Dani Olmo", "Lamine Yamal", "Álvaro Morata", "Nico Williams"] },
+  "Cabo Verde": { formation: "4-4-2", players: ["Vozinha", "Lionn", "Steven Fortes", "Diney", "Júlio Tavares", "Marco Soares", "Jamiro Monteiro", "Ryan Mendes", "Gilson Benchimol", "Garry Rodrigues", "Deroy Duarte"] },
+  "Saudi Arabia": { formation: "4-3-3", players: ["Mohammed Al-Owais", "Saud Abdulhamid", "Ali Al-Bulaihi", "Hassan Tambakti", "Yasser Al-Shahrani", "Mohamed Kanno", "Ali Al-Hassan", "Nasser Al-Dawsari", "Salem Al-Dawsari", "Firas Al-Buraikan", "Abdullah Al-Hamdan"] },
+  "Uruguay": { formation: "4-3-3", players: ["Sergio Rochet", "Nahitan Nández", "José María Giménez", "Ronald Araújo", "Mathías Olivera", "Federico Valverde", "Rodrigo Bentancur", "Manuel Ugarte", "Darwin Núñez", "Luis Suárez", "Facundo Pellistri"] },
+  "France": { formation: "4-3-3", players: ["Mike Maignan", "Jules Koundé", "Dayot Upamecano", "William Saliba", "Théo Hernández", "Aurélien Tchouaméni", "Adrien Rabiot", "Antoine Griezmann", "Ousmane Dembélé", "Kylian Mbappé", "Marcus Thuram"] },
+  "Senegal": { formation: "4-3-3", players: ["Édouard Mendy", "Youssouf Sabaly", "Abdou Diallo", "Kalidou Koulibaly", "Ismail Jakobs", "Idrissa Gueye", "Nampalys Mendy", "Pape Matar Sarr", "Ismaïla Sarr", "Sadio Mané", "Nicolas Jackson"] },
+  "Iraq": { formation: "4-4-2", players: ["Jalal Hassan", "Ali Adnan", "Mustafa Nadhim", "Hussein Ali", "Riad Hamid", "Amjed Attwan", "Saad Natiq", "Bashar Resan", "Aymen Hussein", "Ali Al-Hamadi", "Mohanad Ali"] },
+  "Norway": { formation: "4-3-3", players: ["Ørjan Nyland", "Omar Elabdellaoui", "Leo Skiri Østigård", "Andreas Hanche-Olsen", "Birger Meling", "Sander Berge", "Martin Ødegaard", "Fredrik Aursnes", "Antonio Nusa", "Erling Haaland", "Alexander Sørloth"] },
+  "Argentina": { formation: "4-3-3", players: ["Emiliano Martínez", "Gonzalo Montiel", "Cristian Romero", "Lisandro Martínez", "Nicolás Tagliafico", "Rodrigo De Paul", "Enzo Fernández", "Alexis Mac Allister", "Julián Álvarez", "Lionel Messi", "Lautaro Martínez"] },
+  "Algeria": { formation: "4-3-3", players: ["Raïs M'Bolhi", "Aissa Mandi", "Djamel Benlamri", "Ramy Bensebaini", "Youcef Atal", "Ismaël Bennacer", "Sofiane Feghouli", "Nabil Bentaleb", "Yacine Brahimi", "Islam Slimani", "Riyad Mahrez"] },
+  "Austria": { formation: "4-2-3-1", players: ["Patrick Pentz", "Stefan Lainer", "Kevin Danso", "David Alaba", "Philipp Mwene", "Nicolas Seiwald", "Konrad Laimer", "Marcel Sabitzer", "Christoph Baumgartner", "Florian Kainz", "Marko Arnautović"] },
+  "Jordan": { formation: "4-4-2", players: ["Yazeed Abulaila", "Khaled Al-Saheb", "Yazan Alnaimat", "Anas Bani-Yaseen", "Malek Khatatbeh", "Aws Khasan", "Mohammad Abu-Zema", "Ahmad Al-Sarabi", "Musa Al-Tamari", "Yaser Al-Naimat", "Baha Faisal"] },
+  "Portugal": { formation: "4-3-3", players: ["Diogo Costa", "João Cancelo", "Rúben Dias", "Pepe", "Nuno Mendes", "Bernardo Silva", "Vitinha", "Bruno Fernandes", "Bernardo Fernandes", "Cristiano Ronaldo", "Rafael Leão"] },
+  "DR Congo": { formation: "4-4-2", players: ["Joël Kiassumbua", "Yoane Wissa", "Chancel Mbemba", "Théo Bongonda", "Gaël Kakuta", "Paul-José Mpoku", "Arthur Masuaku", "Marcel Tisserand", "Cédric Bakambu", "Michy Batshuayi", "Jonathan Bolingi"] },
+  "Uzbekistan": { formation: "4-3-3", players: ["Ulugbek Nishonov", "Sherzod Nishonov", "Sanjar Tursunov", "Abbosbek Fayzullayev", "Dilshod Narzullayev", "Jamshid Iskanderov", "Odil Ahmedov", "Jasur Yakhshiboev", "Otabek Shukurov", "Eldor Shomurodov", "Igor Sergeyev"] },
+  "Colombia": { formation: "4-3-3", players: ["Camilo Vargas", "Daniel Muñoz", "Davinson Sánchez", "Yerry Mina", "Jhon Lucumí", "Matheus Uribe", "Jefferson Lerma", "Richard Ríos", "Juan Cuadrado", "Luis Díaz", "Jhon Arias"] },
+  "England": { formation: "4-3-3", players: ["Jordan Pickford", "Kyle Walker", "John Stones", "Harry Maguire", "Luke Shaw", "Declan Rice", "Jude Bellingham", "Phil Foden", "Bukayo Saka", "Harry Kane", "Marcus Rashford"] },
+  "Croatia": { formation: "4-3-3", players: ["Dominik Livaković", "Josip Stanišić", "Joško Gvardiol", "Duje Ćaleta-Car", "Borna Sosa", "Marcelo Brozović", "Luka Modrić", "Mateo Kovačić", "Ivan Perišić", "Andrej Kramarić", "Bruno Petković"] },
+  "Ghana": { formation: "4-2-3-1", players: ["Lawrence Ati-Zigi", "Tariq Lamptey", "Alexander Djiku", "Daniel Amartey", "Baba Rahman", "Thomas Partey", "Daniel-Kofi Kyereh", "Jordan Ayew", "André Ayew", "Iñaki Williams", "Mohammed Kudus"] },
+  "Panama": { formation: "4-4-2", players: ["Luis Mejía", "Michael Murillo", "Harold Cummings", "Fidel Escobar", "Eric Davis", "Adalberto Carrasquilla", "Édgar Bárcenas", "Rolando Blackburn", "Cecilio Waterman", "José Fajardo", "Ismael Díaz"] },
+};
+
 // ═══════════════════════════════════════════════════════
 // 👕 LINEUP — real API-Football + Claude AI fallback
 // ═══════════════════════════════════════════════════════
@@ -10551,54 +10603,22 @@ function LineupModal({ homeTeam, awayTeam, homeFlag, awayFlag, apiFixtureId, onC
         }
       }
       if (cancelled) return;
-      // 2) Fallback: build estimated lineup from CARDS + TOP_SCORER_CANDIDATES
-      const buildSquad = (teamName) => {
-        // Collect all named players for this team
-        const named = new Set();
-        const byPos = { GK: [], D: [], M: [], F: [] };
-
-        // From CARDS (has position info)
-        for (const c of CARDS) {
-          if (c.team !== teamName) continue;
-          const p = c.pos === "GK" ? "GK" : c.pos === "D" ? "D" : c.pos === "M" ? "M" : "F";
-          if (!named.has(c.name)) { named.add(c.name); byPos[p].push(c.name); }
-        }
-        // From TOP_SCORER_CANDIDATES (forwards/midfielders mostly)
-        for (const c of TOP_SCORER_CANDIDATES) {
-          if (c.team !== teamName || named.has(c.name)) continue;
-          named.add(c.name);
-          byPos.F.push(c.name); // assume forward if unknown
-        }
-
-        // Fill missing slots with generic placeholders
-        const positions = [
-          { key: "GK", need: 1, label: "Goalkeeper" },
-          { key: "D",  need: 4, label: "Defender" },
-          { key: "M",  need: 3, label: "Midfielder" },
-          { key: "F",  need: 3, label: "Forward" },
-        ];
-        const players = [];
-        for (const { key, need, label } of positions) {
-          const pool = byPos[key].slice(0, need);
-          players.push(...pool);
-          // Fill remaining with placeholder
-          for (let i = pool.length; i < need; i++) {
-            players.push(`${label} ${i + 1}`);
-          }
-        }
-        return { formation: "4-3-3", players };
-      };
-
-      const homeSquad = buildSquad(homeTeam);
-      const awaySquad = buildSquad(awayTeam);
-      setData({
-        formation_home: homeSquad.formation,
-        players_home: homeSquad.players,
-        formation_away: awaySquad.formation,
-        players_away: awaySquad.players,
-      });
-      setSource("ai");
-      setLoading(false);
+      // 2) Fallback: use hardcoded WC2026 squads
+      const homeSquad = WC2026_SQUADS[homeTeam];
+      const awaySquad = WC2026_SQUADS[awayTeam];
+      if (homeSquad && awaySquad) {
+        setData({
+          formation_home: homeSquad.formation,
+          players_home: homeSquad.players,
+          formation_away: awaySquad.formation,
+          players_away: awaySquad.players,
+        });
+        setSource("ai");
+        setLoading(false);
+      } else {
+        setError("הרכב לא זמין");
+        setLoading(false);
+      }
     };
     load();
     return () => { cancelled = true; };
