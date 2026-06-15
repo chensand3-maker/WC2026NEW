@@ -1,124 +1,82 @@
-// api/lineup.js — Vercel Serverless Function
-// Returns SofaScore match URL for WC2026 matches
+// api/lineup.js — fetches all WC2026 events once and returns the SofaScore URL
 
-const SOFA_HEADERS = {
+const HEADERS = {
   "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-  "Accept": "application/json, text/plain, */*",
-  "Accept-Language": "en-US,en;q=0.9",
+  "Accept": "application/json",
   "Referer": "https://www.sofascore.com/",
   "Origin": "https://www.sofascore.com",
-  "Cache-Control": "no-cache",
 };
 
 function norm(s) {
-  return (s || "").toLowerCase()
-    .replace(/[áàä]/g, "a").replace(/[éèê]/g, "e").replace(/[íì]/g, "i")
-    .replace(/[óòö]/g, "o").replace(/[úùü]/g, "u").replace(/[ñ]/g, "n")
-    .replace(/[ç]/g, "c").replace(/[žź]/g, "z").replace(/[šś]/g, "s")
-    .replace(/[ćč]/g, "c").replace(/[đ]/g, "d").replace(/[ø]/g, "o")
-    .replace(/[å]/g, "a").replace(/[æ]/g, "ae").replace(/[ő]/g, "o")
-    .replace(/\s+/g, " ").trim();
+  return (s||"").toLowerCase()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g,"")
+    .replace(/[^a-z0-9 ]/g," ").replace(/\s+/g," ").trim();
 }
 
-function teamsMatch(a, b) {
+function match(a, b) {
   const na = norm(a), nb = norm(b);
-  if (na === nb) return true;
-  if (na.includes(nb) || nb.includes(na)) return true;
-  const aliases = {
-    "usa": ["united states", "us"],
-    "south korea": ["korea republic"],
-    "cape verde": ["cabo verde"],
-    "turkey": ["turkiye", "turkiye"],
-    "ivory coast": ["cote d'ivoire", "côte d'ivoire"],
-    "curacao": ["curacao"],
-    "dr congo": ["congo dr", "democratic republic of congo"],
-    "bosnia": ["bosnia and herzegovina", "bosnia & herzegovina"],
-  };
-  for (const [key, vals] of Object.entries(aliases)) {
-    const all = [key, ...vals];
-    if (all.some(v => norm(v) === na) && all.some(v => norm(v) === nb)) return true;
-  }
-  return false;
+  if (na === nb || na.includes(nb) || nb.includes(na)) return true;
+  const map = { "usa":"united states","turkey":"turkiye","ivory coast":"cote d ivoire",
+    "cape verde":"cabo verde","dr congo":"congo dr","bosnia":"bosnia and herzegovina" };
+  const ra = map[na]||na, rb = map[nb]||nb;
+  return ra===rb || ra.includes(rb) || rb.includes(ra);
 }
 
-async function findEvent(home, away) {
-  // Try tournament schedule pages (last + next)
-  for (const page of ["last/0", "next/0", "next/1"]) {
+// Cache results in memory (Vercel keeps functions warm for a while)
+let cache = null;
+let cacheTime = 0;
+
+async function getAllEvents() {
+  if (cache && Date.now() - cacheTime < 5 * 60 * 1000) return cache;
+
+  const all = [];
+  for (const page of ["last/0","last/1","next/0","next/1","next/2","next/3"]) {
     try {
-      const res = await fetch(
+      const r = await fetch(
         `https://api.sofascore.com/api/v1/unique-tournament/16/season/58210/events/${page}`,
-        { headers: SOFA_HEADERS }
+        { headers: HEADERS }
       );
-      if (!res.ok) continue;
-      const data = await res.json();
-      for (const e of (data?.events || [])) {
-        const h = e?.homeTeam?.name || "";
-        const a = e?.awayTeam?.name || "";
-        const slug = e?.slug || "";
-        if ((teamsMatch(h, home) && teamsMatch(a, away)) ||
-            (teamsMatch(h, away) && teamsMatch(a, home))) {
-          return { id: e.id, slug };
-        }
-      }
+      if (!r.ok) continue;
+      const d = await r.json();
+      all.push(...(d.events||[]));
     } catch {}
   }
 
-  // Try scheduled events by date
-  for (let d = 0; d <= 3; d++) {
-    try {
-      const date = new Date();
-      date.setDate(date.getDate() + d);
-      const dateStr = date.toISOString().slice(0, 10);
-      const res = await fetch(
-        `https://api.sofascore.com/api/v1/sport/football/scheduled-events/${dateStr}`,
-        { headers: SOFA_HEADERS }
-      );
-      if (!res.ok) continue;
-      const data = await res.json();
-      for (const e of (data?.events || [])) {
-        const isWC = e?.tournament?.uniqueTournament?.id === 16;
-        if (!isWC) continue;
-        const h = e?.homeTeam?.name || "";
-        const a = e?.awayTeam?.name || "";
-        const slug = e?.slug || "";
-        if ((teamsMatch(h, home) && teamsMatch(a, away)) ||
-            (teamsMatch(h, away) && teamsMatch(a, home))) {
-          return { id: e.id, slug };
-        }
-      }
-    } catch {}
-  }
-
-  return null;
+  cache = all;
+  cacheTime = Date.now();
+  return all;
 }
 
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "GET,OPTIONS");
   if (req.method === "OPTIONS") return res.status(200).end();
 
   const { home, away } = req.query;
   if (!home || !away) return res.status(400).json({ error: "Missing home/away" });
 
-  try {
-    const event = await findEvent(home, away);
+  const fallback = "https://www.sofascore.com/football/tournament/world/world-championship/16#id:58210";
 
-    if (!event) {
-      // Fallback: WC2026 tournament page
-      return res.status(200).json({
-        url: "https://www.sofascore.com/football/tournament/world/world-championship/16#id:58210",
-        found: false,
-      });
+  try {
+    const events = await getAllEvents();
+    let found = null;
+
+    for (const e of events) {
+      const h = e?.homeTeam?.name||"", a = e?.awayTeam?.name||"";
+      if ((match(h,home) && match(a,away)) || (match(h,away) && match(a,home))) {
+        found = e; break;
+      }
     }
 
-    const url = `https://www.sofascore.com/football/match/${event.slug}#id:${event.id},tab:lineups`;
-    return res.status(200).json({ url, id: event.id, found: true });
+    if (!found) return res.status(200).json({ url: fallback, found: false });
 
+    const slug = found.slug || "";
+    const id = found.id;
+    const url = slug
+      ? `https://www.sofascore.com/football/match/${slug}#id:${id},tab:lineups`
+      : fallback;
+
+    return res.status(200).json({ url, id, found: true });
   } catch (err) {
-    return res.status(200).json({
-      url: "https://www.sofascore.com/football/tournament/world/world-championship/16#id:58210",
-      found: false,
-      error: err.message,
-    });
+    return res.status(200).json({ url: fallback, found: false, error: err.message });
   }
 }

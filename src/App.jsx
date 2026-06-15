@@ -10,7 +10,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.41.2";
+const APP_VERSION = "3.41.5";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -10570,38 +10570,35 @@ const WC2026_SQUADS = {
 // ═══════════════════════════════════════════════════════
 
 
-// Confirmed SofaScore event IDs for WC2026 matches
-const SOFA_EVENTS = {
-  "Mexico|South Africa":     { slug: "mexico-south-africa/LUbsGVb",              id: 15186710 },
-  "South Korea|Czechia":     { slug: "south-korea-czechia/oUbsKUb",              id: 15186720 },
-  "Canada|Bosnia":           { slug: "canada-bosnia-and-herzegovina/EObscVb",    id: 15186836 },
-  "Qatar|Switzerland":       { slug: "qatar-switzerland/ZTbsRVb",                id: 15186526 },
-  "Brazil|Morocco":          { slug: "morocco-brazil/YUbsDVb",                   id: 15186850 },
-  "Haiti|Scotland":          { slug: "haiti-scotland/VTbsEUc",                   id: 15186853 },
-  "USA|Paraguay":            { slug: "paraguay-usa/zUbsOVb",                     id: 15186873 },
-  "Australia|Türkiye":       { slug: "australia-turkiye/aUbsQUb",                id: 15186874 },
-  "Sweden|Tunisia":          { slug: "tunisia-sweden/NTbsEUb",                   id: 15186951 },
-  "Belgium|Egypt":           { slug: "egypt-belgium/rUbsiVb",                    id: 15186837 },
-  "Iran|New Zealand":        { slug: "new-zealand-iran/qVbsJVb",                 id: 15186832 },
-  "Spain|Cabo Verde":        { slug: "cabo-verde-spain/YTbsdVb",                 id: 15186783 },
-  "Saudi Arabia|Uruguay":    { slug: "saudi-arabia-uruguay/AUbsJWb",             id: 15186811 },
-  "France|Senegal":          { slug: "senegal-france/GObsOUb",                   id: 15186501 },
-  "Iraq|Norway":             { slug: "iraq-norway/AObsrVb",                      id: 15186773 },
-};
 
-const SOFA_BASE = "https://www.sofascore.com/football/tournament/world/world-championship/16#id:58210";
 
-function getSofaUrl(home, away) {
-  const e = SOFA_EVENTS[`${home}|${away}`] || SOFA_EVENTS[`${away}|${home}`];
-  if (!e) return SOFA_BASE;
-  return `https://www.sofascore.com/football/match/${e.slug}#id:${e.id},tab:lineups`;
-}
+const _sofaCache = {};
 
 function LineupButton({ homeTeam, awayTeam }) {
-  const url = getSofaUrl(homeTeam, awayTeam);
+  const cacheKey = `${homeTeam}|${awayTeam}`;
+  const fallback = "https://www.sofascore.com/football/tournament/world/world-championship/16#id:58210";
+  const [url, setUrl] = useState(_sofaCache[cacheKey] || null);
+
+  useEffect(() => {
+    if (_sofaCache[cacheKey]) { setUrl(_sofaCache[cacheKey]); return; }
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 4000);
+    fetch(`/api/lineup?home=${encodeURIComponent(homeTeam)}&away=${encodeURIComponent(awayTeam)}`,
+      { signal: ctrl.signal })
+      .then(r => r.ok ? r.json() : null)
+      .then(d => {
+        const u = d?.url || fallback;
+        _sofaCache[cacheKey] = u;
+        setUrl(u);
+      })
+      .catch(() => { _sofaCache[cacheKey] = fallback; setUrl(fallback); })
+      .finally(() => clearTimeout(timer));
+    return () => { ctrl.abort(); clearTimeout(timer); };
+  }, [homeTeam, awayTeam]);
+
   return (
     <a
-      href={url}
+      href={url || fallback}
       target="_blank"
       rel="noopener noreferrer"
       onClick={e => e.stopPropagation()}
@@ -10610,13 +10607,14 @@ function LineupButton({ homeTeam, awayTeam }) {
         width:"100%",padding:"6px 10px",
         background:"rgba(34,197,94,0.08)",
         border:"1px solid rgba(34,197,94,0.25)",
-        borderRadius:8,color:"#4ade80",
+        borderRadius:8,color: url ? "#4ade80" : "#64748b",
         fontSize:11,fontWeight:700,cursor:"pointer",
         fontFamily:"inherit",letterSpacing:0.5,
         textDecoration:"none",boxSizing:"border-box",
+        transition:"color 0.2s",
       }}
     >
-      👕 הרכב משוער ↗
+      {url ? "👕 הרכב משוער ↗" : "👕 ..."}
     </a>
   );
 }
