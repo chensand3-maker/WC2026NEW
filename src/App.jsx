@@ -10,7 +10,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.44.1";
+const APP_VERSION = "3.44.2";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -8580,13 +8580,13 @@ const DAILY_Q = {
             displayList.sort((a,b)=>b.score-a.score);
           }
           return (
-            <div style={{background:"rgba(15,23,42,0.6)",border:"1px solid rgba(168,85,247,0.25)",borderRadius:14,overflow:"hidden"}}>
-              <div style={{padding:"8px 14px",background:"rgba(168,85,247,0.1)",fontSize:10,color:"#c4b5fd",fontWeight:800,letterSpacing:1.5}}>🌍 שיאי דגלים — הליגה</div>
+            <div style={{borderRadius:12,overflow:"hidden",border:"1px solid rgba(168,85,247,0.2)"}}>
+              <div style={{padding:"6px 12px",background:"rgba(168,85,247,0.12)",fontSize:9,color:"#c4b5fd",fontWeight:800,letterSpacing:1.5}}>📊 שיאי דגלים — הליגה</div>
               {displayList.map((m,i)=>(
-                <div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"9px 14px",borderTop:i>0?"1px solid rgba(71,85,105,0.2)":"none",background:m.isMe?"rgba(251,191,36,0.06)":"transparent"}}>
-                  <span style={{fontSize:16,width:24,textAlign:"center",flexShrink:0}}>{medals[i]||`${i+1}`}</span>
-                  <span style={{flex:1,fontSize:13,fontWeight:m.isMe?900:700,color:m.isMe?"#fbbf24":"#cbd5e1"}}>{m.name}{m.isMe?" (אני)":""}</span>
-                  <span style={{fontSize:16,fontWeight:900,color:i===0?"#c4b5fd":"#94a3b8"}}>{m.score||0}</span>
+                <div key={i} style={{display:"flex",alignItems:"center",gap:8,padding:"7px 12px",borderTop:i>0?"1px solid rgba(71,85,105,0.15)":"none",background:m.isMe?"rgba(251,191,36,0.06)":"transparent"}}>
+                  <span style={{fontSize:13,width:20,textAlign:"center",flexShrink:0}}>{medals[i]||`${i+1}`}</span>
+                  <span style={{flex:1,fontSize:12,fontWeight:m.isMe?900:700,color:m.isMe?"#fbbf24":"#cbd5e1"}}>{m.name}{m.isMe?" (אני)":""}</span>
+                  <span style={{fontSize:13,fontWeight:900,color:i===0?"#c4b5fd":"#94a3b8"}}>{m.score||0}</span>
                 </div>
               ))}
             </div>
@@ -8600,25 +8600,23 @@ const DAILY_Q = {
           const board = Object.entries(leagueMembers)
             .map(([uid, m]) => ({
               name: m.name || "—",
-              score: uid === userId
-                ? Math.max(dailyQuizScore || 0, m.dailyQuizDate === today ? (m.dailyQuizScore || 0) : 0)
-                : (m.dailyQuizDate === today ? (m.dailyQuizScore || 0) : 0),
+              score: uid === userId ? Math.max(dailyQuizScore || 0, m.dailyQuizDate === today ? (m.dailyQuizScore || 0) : 0) : (m.dailyQuizDate === today ? (m.dailyQuizScore || 0) : null),
               isMe: uid === userId,
               played: uid === userId ? true : m.dailyQuizDate === today,
             }))
-            .sort((a,b) => b.score - a.score);
+            .sort((a,b) => (b.score??-1) - (a.score??-1));
           if (!board.find(m=>m.isMe)) board.push({name:userName||"אני", score:dailyQuizScore||0, isMe:true, played:true});
-          board.sort((a,b) => b.score - a.score);
+          board.sort((a,b) => (b.score??-1) - (a.score??-1));
           return (
-            <div style={{background:"rgba(15,23,42,0.6)",border:"1px solid rgba(251,191,36,0.3)",borderRadius:14,overflow:"hidden"}}>
-              <div style={{padding:"8px 14px",background:"rgba(217,119,6,0.15)",fontSize:10,color:"#fbbf24",fontWeight:800,letterSpacing:1.5}}>📅 חידון יומי — היום</div>
+            <div style={{borderRadius:12,overflow:"hidden",border:"1px solid rgba(251,191,36,0.2)"}}>
+              <div style={{padding:"6px 12px",background:"rgba(217,119,6,0.12)",fontSize:9,color:"#fbbf24",fontWeight:800,letterSpacing:1.5}}>📊 חידון יומי — היום</div>
               {board.map((m,i) => (
-                <div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"9px 14px",borderTop:i>0?"1px solid rgba(71,85,105,0.2)":"none",background:m.isMe?"rgba(251,191,36,0.06)":"transparent"}}>
-                  <span style={{fontSize:16,width:24,textAlign:"center",flexShrink:0}}>{medals[i]||`${i+1}`}</span>
-                  <span style={{flex:1,fontSize:13,fontWeight:m.isMe?900:700,color:m.isMe?"#fbbf24":"#cbd5e1"}}>{m.name}{m.isMe?" (אני)":""}</span>
+                <div key={i} style={{display:"flex",alignItems:"center",gap:8,padding:"7px 12px",borderTop:i>0?"1px solid rgba(71,85,105,0.15)":"none",background:m.isMe?"rgba(251,191,36,0.06)":"transparent"}}>
+                  <span style={{fontSize:13,width:20,textAlign:"center",flexShrink:0}}>{medals[i]||`${i+1}`}</span>
+                  <span style={{flex:1,fontSize:12,fontWeight:m.isMe?900:700,color:m.isMe?"#fbbf24":"#cbd5e1"}}>{m.name}{m.isMe?" (אני)":""}</span>
                   {m.played
-                    ? <span style={{fontSize:16,fontWeight:900,color:i===0?"#fbbf24":"#94a3b8"}}>{m.score}</span>
-                    : <span style={{fontSize:11,color:"#475569"}}>עוד לא שיחק</span>
+                    ? <span style={{fontSize:13,fontWeight:900,color:i===0?"#fbbf24":"#94a3b8"}}>{m.score}</span>
+                    : <span style={{fontSize:10,color:"#475569"}}>עוד לא</span>
                   }
                 </div>
               ))}
@@ -8635,13 +8633,13 @@ const DAILY_Q = {
             displayList.sort((a,b)=>b.score-a.score);
           }
           return (
-            <div style={{background:"rgba(15,23,42,0.6)",border:"1px solid rgba(99,102,241,0.25)",borderRadius:14,overflow:"hidden"}}>
-              <div style={{padding:"8px 14px",background:"rgba(99,102,241,0.1)",fontSize:10,color:"#818cf8",fontWeight:800,letterSpacing:1.5}}>⚽ שיאי כלליות — הליגה</div>
+            <div style={{borderRadius:12,overflow:"hidden",border:"1px solid rgba(99,102,241,0.2)"}}>
+              <div style={{padding:"6px 12px",background:"rgba(99,102,241,0.12)",fontSize:9,color:"#818cf8",fontWeight:800,letterSpacing:1.5}}>📊 שיאי כלליות — הליגה</div>
               {displayList.map((m,i)=>(
-                <div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"9px 14px",borderTop:i>0?"1px solid rgba(71,85,105,0.2)":"none",background:m.isMe?"rgba(251,191,36,0.06)":"transparent"}}>
-                  <span style={{fontSize:16,width:24,textAlign:"center",flexShrink:0}}>{medals[i]||`${i+1}`}</span>
-                  <span style={{flex:1,fontSize:13,fontWeight:m.isMe?900:700,color:m.isMe?"#fbbf24":"#cbd5e1"}}>{m.name}{m.isMe?" (אני)":""}</span>
-                  <span style={{fontSize:16,fontWeight:900,color:i===0?"#818cf8":"#94a3b8"}}>{m.score||0}<span style={{fontSize:10,color:"#64748b"}}>/50</span></span>
+                <div key={i} style={{display:"flex",alignItems:"center",gap:8,padding:"7px 12px",borderTop:i>0?"1px solid rgba(71,85,105,0.15)":"none",background:m.isMe?"rgba(251,191,36,0.06)":"transparent"}}>
+                  <span style={{fontSize:13,width:20,textAlign:"center",flexShrink:0}}>{medals[i]||`${i+1}`}</span>
+                  <span style={{flex:1,fontSize:12,fontWeight:m.isMe?900:700,color:m.isMe?"#fbbf24":"#cbd5e1"}}>{m.name}{m.isMe?" (אני)":""}</span>
+                  <span style={{fontSize:13,fontWeight:900,color:i===0?"#818cf8":"#94a3b8"}}>{m.score||0}<span style={{fontSize:9,color:"#64748b"}}>/50</span></span>
                 </div>
               ))}
             </div>
