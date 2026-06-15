@@ -10,7 +10,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.40.8";
+const APP_VERSION = "3.40.9";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -10948,10 +10948,6 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
         </div>
       </div>
       )}
-      {/* 👕 Lineup button */}
-      {!collapsed && (
-        <LineupButton homeTeam={fixture.home} awayTeam={fixture.away} homeFlag={home?.f} awayFlag={away?.f} />
-      )}
       {/* 💡 Editable hint — only when not locked + has pick */}
       {!collapsed && !isLocked && hasResult && (
         <div style={{
@@ -11657,22 +11653,29 @@ function TodayScreen({ picks, actuals, onPick, onBack, onGoToBracket, leagueMemb
       const kf = formatKickoff(f.kickoff);
 
       return (
-        <MatchCard
-          key={f.id}
-          fixture={f}
-          pick={p}
-          actual={a}
-          onPick={p => onPick(f.id, p)}
-          showResults={hasResult}
-          homeInputId={`today-h-${f.id}`}
-          awayInputId={`today-a-${f.id}`}
-          nextInputId={null}
-          lockable={true}
-          leagueMembers={leagueMembers}
-          onShowDetails={hasResult ? onShowDetails : null}
-          defaultCollapsed={isFinishedSection}
-          apiFixtureId={getApiFixtureId(liveData, f)}
-        />
+        <div key={f.id}>
+          <MatchCard
+            fixture={f}
+            pick={p}
+            actual={a}
+            onPick={p => onPick(f.id, p)}
+            showResults={hasResult}
+            homeInputId={`today-h-${f.id}`}
+            awayInputId={`today-a-${f.id}`}
+            nextInputId={null}
+            lockable={true}
+            leagueMembers={leagueMembers}
+            onShowDetails={hasResult ? onShowDetails : null}
+            defaultCollapsed={isFinishedSection}
+            apiFixtureId={getApiFixtureId(liveData, f)}
+          />
+          {!isFinishedSection && (
+            <LineupButton
+              homeTeam={f.home} awayTeam={f.away}
+              homeFlag={findTeam(f.home)?.f} awayFlag={findTeam(f.away)?.f}
+            />
+          )}
+        </div>
       );
     }
     // KO match — read-only summary card (can't easily predict score here without slot context)
