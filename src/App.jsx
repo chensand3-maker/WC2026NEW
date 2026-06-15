@@ -10,7 +10,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.41.0";
+const APP_VERSION = "3.41.1";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -10569,60 +10569,49 @@ const WC2026_SQUADS = {
 // 👕 LINEUP — opens SofaScore lineup page
 // ═══════════════════════════════════════════════════════
 
-// SofaScore event IDs — confirmed from sofascore.com
-// Format: "Home|Away": { id, slug }  (only verified IDs included)
-const SOFA_EVENTS = {
-  // Day 1 (Jun 11–12)
-  "Mexico|South Africa":     { id: 15186710, slug: "mexico-south-africa/LUbsGVb" },
-  "South Korea|Czechia":     { id: 15186720, slug: "south-korea-czechia/oUbsKUb" },
-  "Sweden|Tunisia":          { id: 15186951, slug: "tunisia-sweden/NTbsEUb" },
-  // Day 2 (Jun 12–13)
-  "Canada|Bosnia":           { id: 15186836, slug: "canada-bosnia-and-herzegovina/EObscVb" },
-  "Qatar|Switzerland":       { id: 15186526, slug: "qatar-switzerland/ZTbsRVb" },
-  // Day 3 (Jun 13–14)
-  "Brazil|Morocco":          { id: 15186850, slug: "morocco-brazil/YUbsDVb" },
-  "Haiti|Scotland":          { id: 15186853, slug: "haiti-scotland/VTbsEUc" },
-  "USA|Paraguay":            { id: 15186873, slug: "paraguay-usa/zUbsOVb" },
-  "Australia|Türkiye":       { id: 15186874, slug: "australia-turkiye/aUbsQUb" },
-  // Day 4 (Jun 14–15)
-  "Iran|New Zealand":        { id: 15186832, slug: "new-zealand-iran/qVbsJVb" },
-  // Day 5 (Jun 15)
-  "Spain|Cabo Verde":        { id: 15186783, slug: "cabo-verde-spain/YTbsdVb" },
-  "Belgium|Egypt":           { id: 15186837, slug: "egypt-belgium/rUbsiVb" },
-  "Saudi Arabia|Uruguay":    { id: 15186811, slug: "saudi-arabia-uruguay/AUbsJWb" },
-  // Day 6 (Jun 16)
-  "France|Senegal":          { id: 15186501, slug: "senegal-france/GObsOUb" },
-  "Iraq|Norway":             { id: 15186773, slug: "iraq-norway/AObsrVb" },
-};
-
-function getSofaEvent(home, away) {
-  return SOFA_EVENTS[`${home}|${away}`] || SOFA_EVENTS[`${away}|${home}`] || null;
-}
 
 function LineupButton({ homeTeam, awayTeam, homeFlag, awayFlag }) {
-  const event = getSofaEvent(homeTeam, awayTeam);
-  const sofaUrl = event
-    ? `https://www.sofascore.com/football/match/${event.slug}#id:${event.id},tab:lineups`
-    : `https://www.sofascore.com/football/tournament/world/world-championship/16`;
+  const [url, setUrl] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const fallback = "https://www.sofascore.com/football/tournament/world/world-championship/16#id:58210";
+
+  // Fetch the SofaScore URL when component mounts
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    fetch(`/api/lineup?home=${encodeURIComponent(homeTeam)}&away=${encodeURIComponent(awayTeam)}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (!cancelled) {
+          setUrl(data?.url || fallback);
+          setLoading(false);
+        }
+      })
+      .catch(() => { if (!cancelled) { setUrl(fallback); setLoading(false); } });
+    return () => { cancelled = true; };
+  }, [homeTeam, awayTeam]);
 
   return (
     <a
-      href={sofaUrl}
+      href={url || fallback}
       target="_blank"
       rel="noopener noreferrer"
       onClick={e => e.stopPropagation()}
       style={{
         display:"flex",alignItems:"center",justifyContent:"center",gap:5,
-        width:"100%",marginTop:8,padding:"6px 10px",
+        width:"100%",padding:"6px 10px",
         background:"rgba(34,197,94,0.08)",
         border:"1px solid rgba(34,197,94,0.25)",
-        borderRadius:8,color:"#4ade80",
-        fontSize:11,fontWeight:700,cursor:"pointer",
+        borderRadius:8,color: loading ? "#64748b" : "#4ade80",
+        fontSize:11,fontWeight:700,
         fontFamily:"inherit",letterSpacing:0.5,
         textDecoration:"none",boxSizing:"border-box",
+        cursor: loading ? "wait" : "pointer",
+        opacity: loading ? 0.6 : 1,
+        transition:"opacity 0.2s",
       }}
     >
-      👕 הרכב משוער ↗
+      {loading ? "⏳ טוען הרכב..." : "👕 הרכב משוער ↗"}
     </a>
   );
 }
