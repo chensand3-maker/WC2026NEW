@@ -10,7 +10,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.42.9";
+const APP_VERSION = "3.43.0";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -9429,6 +9429,25 @@ function GlobalAdminModal({ onClose, galaxyTestMode, setGalaxyTestMode, onGiveCo
                   <div style={{fontSize:14,fontWeight:900,color:"#86efac",marginBottom:4}}>🧠 בדיקת חידון דגלים</div>
                   <div style={{fontSize:11,color:"#94a3b8"}}>רק מנהל רואה את זה — לבדיקה לפני פרסום</div>
                 </div>
+
+                {/* 📅 Daily quiz reset */}
+                <div style={{background:"rgba(217,119,6,0.08)",border:"1px solid rgba(251,191,36,0.3)",borderRadius:12,padding:"14px",marginBottom:14}}>
+                  <div style={{fontSize:12,fontWeight:900,color:"#fbbf24",marginBottom:8}}>📅 חידון יומי — איפוס</div>
+                  <div style={{fontSize:11,color:"#94a3b8",marginBottom:10}}>
+                    מפתח: {`dailyQuiz_${new Date().toISOString().slice(0,10)}`}
+                  </div>
+                  <button
+                    onClick={() => {
+                      const key = `dailyQuiz_${new Date().toISOString().slice(0,10)}`;
+                      localStorage.removeItem(key);
+                      alert("✅ החידון היומי אופס — אפשר לשחק שוב!");
+                    }}
+                    style={{width:"100%",padding:"10px",borderRadius:10,background:"linear-gradient(135deg,#b45309,#d97706)",border:"none",color:"#fff",fontSize:13,fontWeight:900,fontFamily:"inherit",cursor:"pointer"}}
+                  >
+                    🔄 אפס חידון יומי
+                  </button>
+                </div>
+
                 <QuizScreen
                   onClose={() => {}}
                   onCoinsEarned={() => {}}
