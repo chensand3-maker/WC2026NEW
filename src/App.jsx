@@ -10,7 +10,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.40.4";
+const APP_VERSION = "3.40.5";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -10626,22 +10626,9 @@ function LineupModal({ homeTeam, awayTeam, homeFlag, awayFlag, apiFixtureId, onC
 
       if (cancelled) return;
 
-      // 3) Fallback: hardcoded WC2026 squads
-      const homeSquad = WC2026_SQUADS[homeTeam];
-      const awaySquad = WC2026_SQUADS[awayTeam];
-      if (homeSquad && awaySquad) {
-        setData({
-          formation_home: homeSquad.formation,
-          players_home: homeSquad.players,
-          formation_away: awaySquad.formation,
-          players_away: awaySquad.players,
-        });
-        setSource("hardcode");
-        setLoading(false);
-      } else {
-        setError("הרכב לא זמין");
-        setLoading(false);
-      }
+      // No lineup available yet
+      setError("ההרכב טרם פורסם — נסה שוב קרוב למשחק");
+      setLoading(false);
     };
     load();
     return () => { cancelled = true; };
