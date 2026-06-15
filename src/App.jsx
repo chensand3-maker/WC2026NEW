@@ -10,7 +10,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.43.5";
+const APP_VERSION = "3.43.6";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -8235,12 +8235,13 @@ const DAILY_Q = {
       if (quizType === "daily" && newCorrect % 5 === 0) {
         const milestone = newCorrect / 5;
         const rarity =
-          milestone >= 6 ? "B" :
-          milestone >= 5 ? "X" :
-          milestone >= 4 ? "L" :
-          milestone >= 3 ? "E" :
-          milestone >= 2 ? "R" :
-                           "C";
+          milestone >= 8 ? "B" :  // 40 נכון → Ballon d'Or
+          milestone >= 6 ? "X" :  // 30 נכון → Galaxy
+          milestone >= 5 ? "L" :  // 25 נכון → אגדי
+          milestone >= 4 ? "E" :  // 20 נכון → אפי
+          milestone >= 3 ? "R" :  // 15 נכון → נדיר
+          milestone >= 2 ? "U" :  // 10 נכון → Uncommon
+                           "C";   // 5 נכון → נפוץ
         const pool = CARDS_BY_RARITY[rarity] || CARDS_BY_RARITY["C"];
         const card = pool[Math.floor(Math.random() * pool.length)];
         if (card) {
@@ -8608,9 +8609,9 @@ const DAILY_Q = {
             {(() => {
               const next = 5 - (correct % 5);
               const milestone = Math.floor(correct/5) + 1;
-              const rarity = milestone>=6?"B":milestone>=5?"X":milestone>=4?"L":milestone>=3?"E":milestone>=2?"R":"C";
-              const emoji = rarity==="B"?"🏅":rarity==="X"?"🌌":rarity==="L"?"👑":rarity==="E"?"⚡":rarity==="R"?"💎":"🃏";
-              const label = rarity==="B"?"Ballon":rarity==="X"?"Galaxy":rarity==="L"?"אגדי":rarity==="E"?"אפי":rarity==="R"?"נדיר":"נפוץ";
+              const rarity = milestone>=8?"B":milestone>=6?"X":milestone>=5?"L":milestone>=4?"E":milestone>=3?"R":milestone>=2?"U":"C";
+              const emoji = rarity==="B"?"🏅":rarity==="X"?"🌌":rarity==="L"?"👑":rarity==="E"?"⚡":rarity==="R"?"💎":rarity==="U"?"🔵":"🃏";
+              const label = rarity==="B"?"Ballon":rarity==="X"?"Galaxy":rarity==="L"?"אגדי":rarity==="E"?"אפי":rarity==="R"?"נדיר":rarity==="U"?"Uncommon":"נפוץ";
               return (<>
                 <div style={{fontSize:16}}>{emoji}</div>
                 <div style={{fontSize:9,color:"#94a3b8"}}>{next} עד {label}</div>
