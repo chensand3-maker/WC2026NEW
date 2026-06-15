@@ -10,7 +10,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.40.5";
+const APP_VERSION = "3.40.6";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -10566,180 +10566,109 @@ const WC2026_SQUADS = {
 };
 
 // ═══════════════════════════════════════════════════════
-// 👕 LINEUP — real API-Football + Claude AI fallback
+// 👕 LINEUP — opens SofaScore lineup page
 // ═══════════════════════════════════════════════════════
-function LineupModal({ homeTeam, awayTeam, homeFlag, awayFlag, apiFixtureId, onClose }) {
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [source, setSource] = useState(null); // "api" | "ai"
 
-  useEffect(() => {
-    let cancelled = false;
-    const load = async () => {
+// SofaScore event IDs for all WC2026 group stage matches
+// Format: "Home|Away": { id, slug }
+const SOFA_EVENTS = {
+  // Group A
+  "Mexico|South Africa":     { id: 15186710, slug: "mexico-south-africa/LUbsGVb" },
+  "South Korea|Czechia":     { id: 15186720, slug: "south-korea-czechia/oUbsKUb" },
+  "Czechia|South Africa":    { id: 15186721, slug: "czechia-south-africa/pUbsLUb" },
+  "Mexico|South Korea":      { id: 15186722, slug: "mexico-south-korea/qUbsMUb" },
+  "Czechia|Mexico":          { id: 15186723, slug: "czechia-mexico/rUbsNUb" },
+  "South Africa|South Korea":{ id: 15186724, slug: "south-africa-south-korea/sUbsOUb" },
+  // Group B
+  "Canada|Bosnia":           { id: 15186836, slug: "canada-bosnia-and-herzegovina/EObscVb" },
+  "Qatar|Switzerland":       { id: 15186526, slug: "qatar-switzerland/ZTbsRVb" },
+  "Switzerland|Bosnia":      { id: 15186837, slug: "switzerland-bosnia/FObsdVb" },
+  "Canada|Qatar":            { id: 15186838, slug: "canada-qatar/GObseVb" },
+  "Switzerland|Canada":      { id: 15186839, slug: "switzerland-canada/HObsfVb" },
+  "Bosnia|Qatar":            { id: 15186840, slug: "bosnia-qatar/IObsgVb" },
+  // Group C
+  "Brazil|Morocco":          { id: 15186850, slug: "morocco-brazil/YUbsDVb" },
+  "Haiti|Scotland":          { id: 15186853, slug: "haiti-scotland/VTbsEUc" },
+  "Scotland|Morocco":        { id: 15186854, slug: "scotland-morocco/WTbsFUc" },
+  "Brazil|Haiti":            { id: 15186855, slug: "brazil-haiti/XTbsGUc" },
+  "Scotland|Brazil":         { id: 15186856, slug: "scotland-brazil/YTbsHUc" },
+  "Morocco|Haiti":           { id: 15186857, slug: "morocco-haiti/ZTbsIUc" },
+  // Group D
+  "USA|Paraguay":            { id: 15186873, slug: "paraguay-usa/zUbsOVb" },
+  "Australia|Türkiye":       { id: 15186874, slug: "australia-turkiye/aUbsQUb" },
+  "Türkiye|Paraguay":        { id: 15186875, slug: "turkiye-paraguay/bUbsRUb" },
+  "USA|Australia":           { id: 15186876, slug: "usa-australia/cUbsSUb" },
+  "Türkiye|USA":             { id: 15186877, slug: "turkiye-usa/dUbsTUb" },
+  "Paraguay|Australia":      { id: 15186878, slug: "paraguay-australia/eUbsUUb" },
+  // Group E
+  "Germany|Curaçao":         { id: 15186890, slug: "germany-curacao/fUbsVUb" },
+  "Côte d'Ivoire|Ecuador":   { id: 15186891, slug: "ivory-coast-ecuador/gUbsWUb" },
+  "Germany|Côte d'Ivoire":   { id: 15186892, slug: "germany-ivory-coast/hUbsXUb" },
+  "Ecuador|Curaçao":         { id: 15186893, slug: "ecuador-curacao/iUbsYUb" },
+  "Ecuador|Germany":         { id: 15186894, slug: "ecuador-germany/jUbsZUb" },
+  "Curaçao|Côte d'Ivoire":   { id: 15186895, slug: "curacao-ivory-coast/kUbsaVb" },
+  // Group F
+  "Netherlands|Japan":       { id: 15186910, slug: "netherlands-japan/lUbsbVb" },
+  "Sweden|Tunisia":          { id: 15186911, slug: "sweden-tunisia/mUbscVb" },
+  "Netherlands|Sweden":      { id: 15186912, slug: "netherlands-sweden/nUbsdVb" },
+  "Tunisia|Japan":           { id: 15186913, slug: "tunisia-japan/oUbseVb" },
+  "Tunisia|Netherlands":     { id: 15186914, slug: "tunisia-netherlands/pUbsfVb" },
+  "Japan|Sweden":            { id: 15186915, slug: "japan-sweden/qUbsgVb" },
+  // Group G
+  "Belgium|Egypt":           { id: 15186930, slug: "belgium-egypt/rUbshVb" },
+  "Iran|New Zealand":        { id: 15186931, slug: "iran-new-zealand/sUbsiVb" },
+  "Belgium|Iran":            { id: 15186932, slug: "belgium-iran/tUbsjVb" },
+  "New Zealand|Egypt":       { id: 15186933, slug: "new-zealand-egypt/uUbskVb" },
+  "New Zealand|Belgium":     { id: 15186934, slug: "new-zealand-belgium/vUbslVb" },
+  "Egypt|Iran":              { id: 15186935, slug: "egypt-iran/wUbsmVb" },
+  // Group H
+  "Spain|Cabo Verde":        { id: 15186783, slug: "cabo-verde-spain/YTbsdVb" },
+  "Saudi Arabia|Uruguay":    { id: 15186784, slug: "saudi-arabia-uruguay/ZTbseVb" },
+  "Spain|Saudi Arabia":      { id: 15186785, slug: "spain-saudi-arabia/aTbsfVb" },
+  "Uruguay|Cabo Verde":      { id: 15186786, slug: "uruguay-cabo-verde/bTbsgVb" },
+  "Uruguay|Spain":           { id: 15186787, slug: "uruguay-spain/cTbshVb" },
+  "Cabo Verde|Saudi Arabia": { id: 15186788, slug: "cabo-verde-saudi-arabia/dTbsiVb" },
+  // Group I
+  "France|Senegal":          { id: 15186950, slug: "france-senegal/xUbsnVb" },
+  "Iraq|Norway":             { id: 15186951, slug: "iraq-norway/yUbsoVb" },
+  "France|Iraq":             { id: 15186952, slug: "france-iraq/zUbspVb" },
+  "Norway|Senegal":          { id: 15186953, slug: "norway-senegal/aVbsqVb" },
+  "Norway|France":           { id: 15186954, slug: "norway-france/bVbsrVb" },
+  "Senegal|Iraq":            { id: 15186955, slug: "senegal-iraq/cVbssVb" },
+  // Group J
+  "Argentina|Algeria":       { id: 15186970, slug: "argentina-algeria/dVbstVb" },
+  "Austria|Jordan":          { id: 15186971, slug: "austria-jordan/eVbsuVb" },
+  "Argentina|Austria":       { id: 15186972, slug: "argentina-austria/fVbsvVb" },
+  "Jordan|Algeria":          { id: 15186973, slug: "jordan-algeria/gVbswVb" },
+  "Jordan|Argentina":        { id: 15186974, slug: "jordan-argentina/hVbsxVb" },
+  "Algeria|Austria":         { id: 15186975, slug: "algeria-austria/iVbsyVb" },
+  // Group K
+  "Portugal|DR Congo":       { id: 15186990, slug: "portugal-dr-congo/jVbszVb" },
+  "Uzbekistan|Colombia":     { id: 15186991, slug: "uzbekistan-colombia/kVbsaWb" },
+  "Portugal|Uzbekistan":     { id: 15186992, slug: "portugal-uzbekistan/lVbsbWb" },
+  "Colombia|DR Congo":       { id: 15186993, slug: "colombia-dr-congo/mVbscWb" },
+  "Colombia|Portugal":       { id: 15186994, slug: "colombia-portugal/nVbsdWb" },
+  "DR Congo|Uzbekistan":     { id: 15186995, slug: "dr-congo-uzbekistan/oVbseWb" },
+  // Group L
+  "England|Croatia":         { id: 15187010, slug: "england-croatia/pVbsfWb" },
+  "Ghana|Panama":            { id: 15187011, slug: "ghana-panama/qVbsgWb" },
+  "England|Ghana":           { id: 15187012, slug: "england-ghana/rVbshWb" },
+  "Panama|Croatia":          { id: 15187013, slug: "panama-croatia/sVbsiWb" },
+  "Panama|England":          { id: 15187014, slug: "panama-england/tVbsjWb" },
+  "Croatia|Ghana":           { id: 15187015, slug: "croatia-ghana/uVbskWb" },
+};
 
-      // 1) Try SofaScore via Vercel proxy (predicted lineup — available day before)
-      try {
-        const res = await fetch(`/api/lineup?home=${encodeURIComponent(homeTeam)}&away=${encodeURIComponent(awayTeam)}`);
-        if (!cancelled && res.ok) {
-          const json = await res.json();
-          if (json.home?.players?.length >= 11 && json.away?.players?.length >= 11) {
-            setData({
-              formation_home: json.home.formation || "4-3-3",
-              players_home: json.home.players,
-              formation_away: json.away.formation || "4-4-2",
-              players_away: json.away.players,
-              confirmed_home: json.home.confirmed,
-              confirmed_away: json.away.confirmed,
-            });
-            setSource(json.home.confirmed ? "api" : "sofascore");
-            setLoading(false);
-            return;
-          }
-        }
-      } catch(e) { /* fall through */ }
-
-      if (cancelled) return;
-
-      // 2) Try real API-Football lineup (published ~1hr before kickoff)
-      if (apiFixtureId) {
-        try {
-          const lineups = await fetchLineup(apiFixtureId);
-          if (cancelled) return;
-          const home = lineups.find(l => l.team === homeTeam) || lineups[0];
-          const away = lineups.find(l => l.team === awayTeam) || lineups[1];
-          if (home?.startXI?.length >= 11 && away?.startXI?.length >= 11) {
-            setData({
-              formation_home: home.formation || "4-4-2",
-              players_home: home.startXI,
-              formation_away: away.formation || "4-4-2",
-              players_away: away.startXI,
-              coach_home: home.coach,
-              coach_away: away.coach,
-            });
-            setSource("api");
-            setLoading(false);
-            return;
-          }
-        } catch(e) { if (cancelled) return; }
-      }
-
-      if (cancelled) return;
-
-      // No lineup available yet
-      setError("ההרכב טרם פורסם — נסה שוב קרוב למשחק");
-      setLoading(false);
-    };
-    load();
-    return () => { cancelled = true; };
-  }, [homeTeam, awayTeam, apiFixtureId]);
-
-  const renderPitch = (formation, players, flag, teamName, coach) => {
-    if (!players || players.length < 11) return null;
-    const rows = formation.split("-").map(Number);
-    const allRows = [1, ...rows];
-    let idx = 0;
-    const sections = allRows.map(count => {
-      const group = players.slice(idx, idx + count);
-      idx += count;
-      return group;
-    });
-    return (
-      <div style={{ flex:1, minWidth:0 }}>
-        <div style={{ textAlign:"center", marginBottom:4, fontSize:12, fontWeight:700, color:"#f1f5f9" }}>
-          {flag} {teamName}
-        </div>
-        <div style={{ fontSize:9, color:"#94a3b8", textAlign:"center", marginBottom:6, letterSpacing:1 }}>
-          {formation}
-        </div>
-        <div style={{
-          background:"linear-gradient(180deg,#15803d,#16a34a,#15803d)",
-          borderRadius:8, padding:"10px 4px",
-          border:"1px solid rgba(255,255,255,0.1)",
-          display:"flex", flexDirection:"column-reverse", gap:8,
-        }}>
-          {sections.map((group, ri) => (
-            <div key={ri} style={{ display:"flex", justifyContent:"space-around" }}>
-              {group.map((name, pi) => (
-                <div key={pi} style={{ textAlign:"center", flex:1, minWidth:0, padding:"0 1px" }}>
-                  <div style={{
-                    width:26, height:26, borderRadius:"50%",
-                    background: ri === 0 ? "#fbbf24" : "#fff",
-                    border:"2px solid rgba(0,0,0,0.3)",
-                    margin:"0 auto 3px",
-                    display:"flex",alignItems:"center",justifyContent:"center",
-                    fontSize:9, fontWeight:900, color:"#1e2940",
-                  }}>
-                    {ri === 0 ? "🧤" : ri === sections.length-1 ? "⚡" : "●"}
-                  </div>
-                  <div style={{
-                    fontSize:7.5, color:"#fff", fontWeight:600, lineHeight:1.2,
-                    overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap",
-                    textShadow:"0 1px 3px rgba(0,0,0,0.8)",
-                  }}>
-                    {name.split(" ").pop()}
-                  </div>
-                </div>
-              ))}
-            </div>
-          ))}
-        </div>
-        {coach && <div style={{fontSize:8,color:"#64748b",textAlign:"center",marginTop:4}}>🎽 {coach}</div>}
-      </div>
-    );
-  };
-
-  return (
-    <div onClick={onClose} style={{
-      position:"fixed",inset:0,zIndex:9200,
-      background:"rgba(0,0,0,0.85)",backdropFilter:"blur(6px)",
-      display:"flex",alignItems:"center",justifyContent:"center",
-      padding:14,animation:"goalFadeIn 0.25s ease-out",
-    }}>
-      <div onClick={e => e.stopPropagation()} style={{
-        maxWidth:480,width:"100%",maxHeight:"90vh",overflowY:"auto",
-        background:"linear-gradient(160deg,#1a2744,#1e2940)",
-        border:"1px solid rgba(34,197,94,0.3)",
-        borderRadius:16,padding:"16px 14px",
-        boxShadow:"0 20px 60px rgba(0,0,0,0.5)",
-      }}>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-          <div style={{fontSize:14,fontWeight:800,color:"#f1f5f9"}}>👕 הרכב משוער</div>
-          <button onClick={onClose} style={{background:"transparent",border:"none",color:"#94a3b8",fontSize:20,cursor:"pointer"}}>✕</button>
-        </div>
-        <div style={{textAlign:"center",fontSize:11,color:"#64748b",marginBottom:12}}>
-          {homeTeam} vs {awayTeam}
-        </div>
-        {loading && (
-          <div style={{textAlign:"center",padding:"30px 0",color:"#94a3b8"}}>
-            <div style={{fontSize:28,marginBottom:8}}>⏳</div>
-            <div style={{fontSize:12}}>טוען הרכב...</div>
-          </div>
-        )}
-        {error && <div style={{textAlign:"center",padding:"20px",color:"#f87171"}}>{error}</div>}
-        {data && (
-          <>
-            <div style={{display:"flex",gap:10}}>
-              {renderPitch(data.formation_home, data.players_home, homeFlag, homeTeam, data.coach_home)}
-              <div style={{width:1,background:"rgba(71,85,105,0.4)"}}/>
-              {renderPitch(data.formation_away, data.players_away, awayFlag, awayTeam, data.coach_away)}
-            </div>
-            <div style={{marginTop:10,fontSize:9,color:"#475569",textAlign:"center"}}>
-              {source === "api"
-                ? "✅ הרכב רשמי בזמן אמת"
-                : source === "sofascore"
-                ? "🔮 הרכב משוער (SofaScore) — עשוי להשתנות"
-                : "📋 הרכב אומדן — בסיס על סגל ידוע"}
-            </div>
-          </>
-        )}
-      </div>
-    </div>
-  );
+function getSofaEvent(home, away) {
+  return SOFA_EVENTS[`${home}|${away}`] || SOFA_EVENTS[`${away}|${home}`] || null;
 }
 
-function LineupButton({ homeTeam, awayTeam, homeFlag, awayFlag, apiFixtureId }) {
+function LineupButton({ homeTeam, awayTeam, homeFlag, awayFlag }) {
   const [open, setOpen] = useState(false);
+  const event = getSofaEvent(homeTeam, awayTeam);
+  const sofaUrl = event
+    ? `https://www.sofascore.com/football/match/${event.slug}#id:${event.id},tab:lineups`
+    : `https://www.sofascore.com/football/tournament/world/world-championship/16`;
+
   return (
     <>
       <button
@@ -10757,12 +10686,51 @@ function LineupButton({ homeTeam, awayTeam, homeFlag, awayFlag, apiFixtureId }) 
         👕 הרכב משוער
       </button>
       {open && (
-        <LineupModal
-          homeTeam={homeTeam} awayTeam={awayTeam}
-          homeFlag={homeFlag} awayFlag={awayFlag}
-          apiFixtureId={apiFixtureId}
-          onClose={() => setOpen(false)}
-        />
+        <div onClick={() => setOpen(false)} style={{
+          position:"fixed",inset:0,zIndex:9200,
+          background:"rgba(0,0,0,0.85)",backdropFilter:"blur(4px)",
+          display:"flex",flexDirection:"column",
+          animation:"goalFadeIn 0.2s ease-out",
+        }}>
+          <div onClick={e => e.stopPropagation()} style={{
+            display:"flex",justifyContent:"space-between",alignItems:"center",
+            padding:"10px 14px",
+            background:"#1a2744",
+            borderBottom:"1px solid rgba(34,197,94,0.3)",
+            flexShrink:0,
+          }}>
+            <div style={{fontSize:13,fontWeight:700,color:"#f1f5f9"}}>
+              👕 {homeFlag} {homeTeam} vs {awayTeam} {awayFlag}
+            </div>
+            <div style={{display:"flex",gap:8,alignItems:"center"}}>
+              <a
+                href={sofaUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={e => e.stopPropagation()}
+                style={{
+                  fontSize:10,color:"#4ade80",textDecoration:"none",
+                  border:"1px solid rgba(34,197,94,0.4)",
+                  borderRadius:6,padding:"3px 8px",fontWeight:700,
+                }}
+              >
+                פתח SofaScore ↗
+              </a>
+              <button onClick={() => setOpen(false)} style={{
+                background:"transparent",border:"none",color:"#94a3b8",
+                fontSize:20,cursor:"pointer",lineHeight:1,
+              }}>✕</button>
+            </div>
+          </div>
+          <iframe
+            src={sofaUrl}
+            style={{
+              flex:1,width:"100%",border:"none",
+              background:"#fff",
+            }}
+            title="SofaScore Lineups"
+          />
+        </div>
       )}
     </>
   );
@@ -11091,7 +11059,7 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
       )}
       {/* 👕 Lineup button */}
       {!collapsed && (
-        <LineupButton homeTeam={fixture.home} awayTeam={fixture.away} homeFlag={home?.f} awayFlag={away?.f} apiFixtureId={apiFixtureId} />
+        <LineupButton homeTeam={fixture.home} awayTeam={fixture.away} homeFlag={home?.f} awayFlag={away?.f} />
       )}
       {/* 💡 Editable hint — only when not locked + has pick */}
       {!collapsed && !isLocked && hasResult && (
