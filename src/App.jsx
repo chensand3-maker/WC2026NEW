@@ -10,7 +10,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.43.4";
+const APP_VERSION = "3.43.5";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -8430,12 +8430,11 @@ const DAILY_Q = {
           const startDaily = () => {
             let qs = [];
             todayTeams.forEach(t => { if (DAILY_Q[t]) qs.push(...DAILY_Q[t]); });
-            qs = shuffleArr(qs).slice(0, 40);
-            const general = shuffleArr(GENERAL_Q).slice(0, 10);
-            const all = [...qs, ...general];
+            qs = shuffleArr(qs);
             setQuizType("daily");
-            setQuestions(all);
+            setQuestions(qs);
             setCurrent(0);setCorrect(0);setLives(3);setAnswered(false);
+            setWonCards([]);setRevealQueue([]);
             setChosenIdx(null);setHiddenOpts([]);setAudiencePcts(null);
             setLifelines({skip:true,fifty:true,audience:true});
             setTimeLeft(20);setPhase("general");
