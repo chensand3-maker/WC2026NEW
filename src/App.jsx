@@ -10,7 +10,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.39.3";
+const APP_VERSION = "3.39.4";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -9752,7 +9752,9 @@ function CollectionModal({ collection, onClose }) {
         <div style={{
           flex:1,overflowY:"auto",
           display:"grid",
-          gridTemplateColumns:"repeat(auto-fill, minmax(95px, 1fr))",
+          gridTemplateColumns: section === "ballon"
+            ? "repeat(auto-fill, minmax(128px, 1fr))"
+            : "repeat(auto-fill, minmax(95px, 1fr))",
           gap:8,padding:"4px",
         }}>
           {filteredCards.map(card => {
@@ -9785,7 +9787,7 @@ function CollectionModal({ collection, onClose }) {
                     <div style={{fontSize:18}}>🔒</div>
                   </div>
                 ) : (
-                  <PlayerCard card={card} size="S" animated={owned} />
+                  <PlayerCard card={card} size={isBallon ? "M" : "S"} animated={owned} />
                 )}
                 {!owned && !isBallon && (
                   <div style={{
