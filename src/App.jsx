@@ -10,7 +10,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.41.5";
+const APP_VERSION = "3.41.6";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -10572,33 +10572,60 @@ const WC2026_SQUADS = {
 
 
 
-const _sofaCache = {};
+// Confirmed SofaScore event IDs — from sofascore.com URLs
+const SOFA_EVENTS = {
+  "Mexico|South Africa":     { slug: "mexico-south-africa/LUbsGVb",           id: 15186710 },
+  "South Korea|Czechia":     { slug: "south-korea-czechia/oUbsKUb",           id: 15186720 },
+  "Canada|Bosnia":           { slug: "canada-bosnia-and-herzegovina/EObscVb", id: 15186836 },
+  "Qatar|Switzerland":       { slug: "qatar-switzerland/ZTbsRVb",             id: 15186526 },
+  "Brazil|Morocco":          { slug: "morocco-brazil/YUbsDVb",                id: 15186850 },
+  "Haiti|Scotland":          { slug: "haiti-scotland/VTbsEUc",                id: 15186853 },
+  "USA|Paraguay":            { slug: "paraguay-usa/zUbsOVb",                  id: 15186873 },
+  "Australia|Türkiye":       { slug: "australia-turkiye/aUbsQUb",             id: 15186874 },
+  "Sweden|Tunisia":          { slug: "tunisia-sweden/NTbsEUb",                id: 15186951 },
+  "Netherlands|Japan":       { slug: "netherlands-japan/sUbsFVb",             id: 15186952 },
+  "Germany|Curaçao":         { slug: "curacao-germany/lUbsCqx",               id: 15186838 },
+  "Côte d'Ivoire|Ecuador":   { slug: "cote-divoire-ecuador/hVbstVb",          id: 15186839 },
+  "Belgium|Egypt":           { slug: "egypt-belgium/rUbsiVb",                 id: 15186837 },
+  "Iran|New Zealand":        { slug: "new-zealand-iran/qVbsJVb",              id: 15186832 },
+  "Spain|Cabo Verde":        { slug: "cabo-verde-spain/YTbsdVb",              id: 15186783 },
+  "Saudi Arabia|Uruguay":    { slug: "saudi-arabia-uruguay/AUbsJWb",          id: 15186811 },
+  "France|Senegal":          { slug: "senegal-france/GObsOUb",                id: 15186501 },
+  "Iraq|Norway":             { slug: "iraq-norway/AObsrVb",                   id: 15186773 },
+};
+
+// SofaScore team IDs — fallback to team page for unconfirmed matches
+const SOFA_TEAMS = {
+  "Mexico":4781,"South Africa":4736,"South Korea":4735,"Czechia":4714,
+  "Canada":4752,"Bosnia":4479,"Qatar":4792,"Switzerland":4699,
+  "Brazil":4748,"Morocco":4778,"Haiti":7229,"Scotland":4695,
+  "USA":4724,"Paraguay":4789,"Australia":4741,"Türkiye":4700,
+  "Germany":4711,"Curaçao":55827,"Côte d'Ivoire":4768,"Ecuador":4757,
+  "Netherlands":4705,"Japan":4770,"Sweden":4688,"Tunisia":4729,
+  "Belgium":4717,"Egypt":4758,"Iran":4766,"New Zealand":4784,
+  "Spain":4698,"Cabo Verde":4753,"Saudi Arabia":4834,"Uruguay":4725,
+  "France":4481,"Senegal":4739,"Iraq":4767,"Norway":4475,
+  "Argentina":4819,"Algeria":4691,"Austria":4718,"Jordan":4771,
+  "Portugal":4704,"DR Congo":4823,"Uzbekistan":4723,"Colombia":4820,
+  "England":4713,"Croatia":4715,"Ghana":4764,"Panama":5164,
+};
+
+function getSofaUrl(home, away) {
+  const e = SOFA_EVENTS[`${home}|${away}`] || SOFA_EVENTS[`${away}|${home}`];
+  if (e) return `https://www.sofascore.com/football/match/${e.slug}#id:${e.id},tab:lineups`;
+  const tid = SOFA_TEAMS[home];
+  if (tid) {
+    const slug = home.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g,"-");
+    return `https://www.sofascore.com/football/team/${slug}/${tid}#tab:matches`;
+  }
+  return "https://www.sofascore.com/football/tournament/world/world-championship/16#id:58210";
+}
 
 function LineupButton({ homeTeam, awayTeam }) {
-  const cacheKey = `${homeTeam}|${awayTeam}`;
-  const fallback = "https://www.sofascore.com/football/tournament/world/world-championship/16#id:58210";
-  const [url, setUrl] = useState(_sofaCache[cacheKey] || null);
-
-  useEffect(() => {
-    if (_sofaCache[cacheKey]) { setUrl(_sofaCache[cacheKey]); return; }
-    const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), 4000);
-    fetch(`/api/lineup?home=${encodeURIComponent(homeTeam)}&away=${encodeURIComponent(awayTeam)}`,
-      { signal: ctrl.signal })
-      .then(r => r.ok ? r.json() : null)
-      .then(d => {
-        const u = d?.url || fallback;
-        _sofaCache[cacheKey] = u;
-        setUrl(u);
-      })
-      .catch(() => { _sofaCache[cacheKey] = fallback; setUrl(fallback); })
-      .finally(() => clearTimeout(timer));
-    return () => { ctrl.abort(); clearTimeout(timer); };
-  }, [homeTeam, awayTeam]);
-
+  const url = getSofaUrl(homeTeam, awayTeam);
   return (
     <a
-      href={url || fallback}
+      href={url}
       target="_blank"
       rel="noopener noreferrer"
       onClick={e => e.stopPropagation()}
@@ -10607,14 +10634,13 @@ function LineupButton({ homeTeam, awayTeam }) {
         width:"100%",padding:"6px 10px",
         background:"rgba(34,197,94,0.08)",
         border:"1px solid rgba(34,197,94,0.25)",
-        borderRadius:8,color: url ? "#4ade80" : "#64748b",
+        borderRadius:8,color:"#4ade80",
         fontSize:11,fontWeight:700,cursor:"pointer",
         fontFamily:"inherit",letterSpacing:0.5,
         textDecoration:"none",boxSizing:"border-box",
-        transition:"color 0.2s",
       }}
     >
-      {url ? "👕 הרכב משוער ↗" : "👕 ..."}
+      👕 הרכב משוער ↗
     </a>
   );
 }
