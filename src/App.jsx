@@ -10,7 +10,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.43.3";
+const APP_VERSION = "3.43.4";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -7424,8 +7424,10 @@ function QuizScreen({ onClose, onCoinsEarned, leagueMembers = {}, userId, userNa
   const [tokens, setTokens] = useState(() => parseInt(localStorage.getItem("wc2026_quiz_tokens_v1")||"0",10));
   const [personalBest] = useState(() => parseInt(localStorage.getItem("wc2026_quiz_best_v1")||"0",10));
   const effectiveBest = personalBestOverride ?? personalBest;
-  const [prizeCard, setPrizeCard] = useState(null); // card to reveal after quiz
+  const [prizeCard, setPrizeCard] = useState(null);
   const [revealingCard, setRevealingCard] = useState(false);
+  const [wonCards, setWonCards] = useState([]); // daily quiz accumulated cards
+  const [revealQueue, setRevealQueue] = useState([]); // cards to reveal one by one
 
 // ─── DAILY_Q — team questions for daily quiz ─────────────────────────────────
 const DAILY_Q = {
@@ -8229,29 +8231,21 @@ const DAILY_Q = {
     if (isCorrect) {
       const newCorrect = correct + 1;
       setCorrect(newCorrect);
-      // 🎁 Daily quiz prize: every 5 correct answers → card, rarity escalates
+      // 🎁 Daily quiz prize: every 5 correct answers → accumulate card
       if (quizType === "daily" && newCorrect % 5 === 0) {
-        const milestone = newCorrect / 5; // 1,2,3,4,5,6...
+        const milestone = newCorrect / 5;
         const rarity =
-          milestone >= 6 ? "B" :  // 30+ נכון → Ballon d'Or
-          milestone >= 5 ? "X" :  // 25 נכון → Galaxy
-          milestone >= 4 ? "L" :  // 20 נכון → אגדי
-          milestone >= 3 ? "E" :  // 15 נכון → אפי
-          milestone >= 2 ? "R" :  // 10 נכון → נדיר
-                           "C";   // 5 נכון → נפוץ
+          milestone >= 6 ? "B" :
+          milestone >= 5 ? "X" :
+          milestone >= 4 ? "L" :
+          milestone >= 3 ? "E" :
+          milestone >= 2 ? "R" :
+                           "C";
         const pool = CARDS_BY_RARITY[rarity] || CARDS_BY_RARITY["C"];
         const card = pool[Math.floor(Math.random() * pool.length)];
-        if (card && onCardWon) {
-          setTimeout(() => {
-            setPrizeCard(card);
-            setRevealingCard(true);
-            onCardWon(card);
-          }, 1000);
-          setTimeout(() => {
-            setAnswered(false); setChosenIdx(null); setHiddenOpts([]); setAudiencePcts(null);
-            setCurrent(p=>p+1); setTimeLeft(20);
-          }, 100);
-          return;
+        if (card) {
+          setWonCards(prev => [...prev, card]);
+          if (onCardWon) onCardWon(card);
         }
       }
     } else {
@@ -8311,12 +8305,19 @@ const DAILY_Q = {
       else if (finalCorrect >= 10) { prize="💰 500 מטבעות"; coins=500; }
       else prize="אין פרס הפעם 😅";
     } else if (quizType==="daily") {
-      // Daily quiz: prize per milestone (cards given during game, coins at end)
+      // Daily quiz: coins at end, cards revealed one by one via revealQueue
       if (finalCorrect >= 40)     { prize="💰 3,000 מטבעות + קלפים!"; coins=3000; }
       else if (finalCorrect >= 30) { prize="💰 2,000 מטבעות + קלפים!"; coins=2000; }
       else if (finalCorrect >= 20) { prize="💰 1,000 מטבעות + קלפים!"; coins=1000; }
       else if (finalCorrect >= 10) { prize="💰 500 מטבעות"; coins=500; }
       else prize="כל 5 נכון = קלף! נסה שוב מחר 😊";
+      // Trigger card reveal queue after result screen
+      if (wonCards.length > 0) {
+        setTimeout(() => {
+          setRevealQueue([...wonCards]);
+          setWonCards([]);
+        }, 1500);
+      }
     } else {
       if (finalCorrect>=100) { prize="🏅 Ballon d'Or × 2 + 10,000 🪙"; cardRarity="B"; coins=10000; }
       else if (finalCorrect>=75)  { prize="🏅 Ballon d'Or + 5,000 🪙"; cardRarity="B"; coins=5000; }
@@ -8366,6 +8367,22 @@ const DAILY_Q = {
   const pct = timeLeft / totalTime;
   const circumference = 2 * Math.PI * 18;
   const timerColor = pct > 0.5 ? "#22c55e" : pct > 0.25 ? "#f59e0b" : "#ef4444";
+
+  // ── CARD REVEAL QUEUE (daily quiz) ── show cards one by one
+  if (revealQueue.length > 0) {
+    const nextCard = revealQueue[0];
+    return (
+      <div style={{position:"fixed",inset:0,zIndex:9200}}>
+        <CardRevealModal
+          result={{card: nextCard, isDuplicate: false, refund: 0}}
+          freshSpin={true}
+          onClose={() => {
+            setRevealQueue(prev => prev.slice(1));
+          }}
+        />
+      </div>
+    );
+  }
 
   // ── CARD REVEAL ── show roulette-style reveal when card is won
   if (revealingCard && prizeCard) return (
