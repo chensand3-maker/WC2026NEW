@@ -10,7 +10,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.43.7";
+const APP_VERSION = "3.43.8";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -8306,6 +8306,8 @@ const DAILY_Q = {
       else if (finalCorrect >= 10) { prize="💰 500 מטבעות"; coins=500; }
       else prize="אין פרס הפעם 😅";
     } else if (quizType==="daily") {
+      // Save daily score to cloud via onUpdateQuizBest
+      onUpdateQuizBest && onUpdateQuizBest(finalCorrect, "daily");
       // Daily quiz: coins at end, cards revealed one by one via revealQueue
       if (finalCorrect >= 40)     { prize="💰 3,000 מטבעות + קלפים!"; coins=3000; }
       else if (finalCorrect >= 30) { prize="💰 2,000 מטבעות + קלפים!"; coins=2000; }
@@ -8529,7 +8531,7 @@ const DAILY_Q = {
         </div>
 
         {/* Flags leaderboard */}
-        {(() => {
+        {quizType !== "daily" && (() => {
           const medals = ["🥇","🥈","🥉","4️⃣","5️⃣"];
           const displayList = [...leaderboardFlags.slice(0,5)];
           if (!displayList.some(m=>m.isMe)) {
@@ -8544,6 +8546,39 @@ const DAILY_Q = {
                   <span style={{fontSize:16,width:24,textAlign:"center",flexShrink:0}}>{medals[i]||`${i+1}`}</span>
                   <span style={{flex:1,fontSize:13,fontWeight:m.isMe?900:700,color:m.isMe?"#fbbf24":"#cbd5e1"}}>{m.name}{m.isMe?" (אני)":""}</span>
                   <span style={{fontSize:16,fontWeight:900,color:i===0?"#c4b5fd":"#94a3b8"}}>{m.score||0}</span>
+                </div>
+              ))}
+            </div>
+          );
+        })()}
+
+        {/* Daily quiz leaderboard */}
+        {quizType === "daily" && (() => {
+          const medals = ["🥇","🥈","🥉","4️⃣","5️⃣"];
+          const today = new Date().toISOString().slice(0,10);
+          const board = Object.entries(leagueMembers)
+            .map(([uid, m]) => ({
+              name: m.name || "—",
+              score: uid === userId
+                ? Math.max(dailyQuizScore || 0, m.dailyQuizDate === today ? (m.dailyQuizScore || 0) : 0)
+                : (m.dailyQuizDate === today ? (m.dailyQuizScore || 0) : 0),
+              isMe: uid === userId,
+              played: uid === userId ? true : m.dailyQuizDate === today,
+            }))
+            .sort((a,b) => b.score - a.score);
+          if (!board.find(m=>m.isMe)) board.push({name:userName||"אני", score:dailyQuizScore||0, isMe:true, played:true});
+          board.sort((a,b) => b.score - a.score);
+          return (
+            <div style={{background:"rgba(15,23,42,0.6)",border:"1px solid rgba(251,191,36,0.3)",borderRadius:14,overflow:"hidden"}}>
+              <div style={{padding:"8px 14px",background:"rgba(217,119,6,0.15)",fontSize:10,color:"#fbbf24",fontWeight:800,letterSpacing:1.5}}>📅 חידון יומי — היום</div>
+              {board.map((m,i) => (
+                <div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"9px 14px",borderTop:i>0?"1px solid rgba(71,85,105,0.2)":"none",background:m.isMe?"rgba(251,191,36,0.06)":"transparent"}}>
+                  <span style={{fontSize:16,width:24,textAlign:"center",flexShrink:0}}>{medals[i]||`${i+1}`}</span>
+                  <span style={{flex:1,fontSize:13,fontWeight:m.isMe?900:700,color:m.isMe?"#fbbf24":"#cbd5e1"}}>{m.name}{m.isMe?" (אני)":""}</span>
+                  {m.played
+                    ? <span style={{fontSize:16,fontWeight:900,color:i===0?"#fbbf24":"#94a3b8"}}>{m.score}</span>
+                    : <span style={{fontSize:11,color:"#475569"}}>עוד לא שיחק</span>
+                  }
                 </div>
               ))}
             </div>
@@ -15798,6 +15833,13 @@ export default function App() {
     try { return parseInt(localStorage.getItem("wc2026_quiz_best_general_v1") || "0", 10) || 0; }
     catch { return 0; }
   });
+  const [dailyQuizScore, setDailyQuizScore] = useState(() => {
+    try {
+      const d = JSON.parse(localStorage.getItem("wc2026_daily_quiz_score_v1") || "{}");
+      const today = new Date().toISOString().slice(0,10);
+      return d.date === today ? (d.score || 0) : 0;
+    } catch { return 0; }
+  });
   const [quizTokens, setQuizTokens] = useState(() => {
     try { return parseInt(localStorage.getItem("wc2026_quiz_tokens_v1") || "0", 10) || 0; }
     catch { return 0; }
@@ -16503,12 +16545,14 @@ export default function App() {
           hlBestStreak: hlBestStreak || 0,
           quizBestFlags: quizBestFlags || 0,
           quizBestGeneral: quizBestGeneral || 0,
+          dailyQuizDate: new Date().toISOString().slice(0,10),
+          dailyQuizScore: dailyQuizScore || 0,
         })
           .catch(err => console.error(`Failed to push picks to ${code}:`, err));
       });
     }, 800);
     return () => clearTimeout(handle);
-  }, [leagueCodes.join("|"), userId, name, picks, koWinners, winnerPick, topScorerPick, cardCollection, coins?.balance, unlockedAchievements, pickedAtHours, hlBestStreak, quizBestFlags]);
+  }, [leagueCodes.join("|"), userId, name, picks, koWinners, winnerPick, topScorerPick, cardCollection, coins?.balance, unlockedAchievements, pickedAtHours, hlBestStreak, quizBestFlags, dailyQuizScore]);
 
   // ─── GLOBAL PROFILE: push to the worldwide leaderboard (every user) ──────
   // Independent of league membership — everyone is on the global board.
@@ -17907,7 +17951,11 @@ export default function App() {
             try { localStorage.setItem("wc2026_cards_v2", JSON.stringify(newCollection)); } catch {}
           }}
           onUpdateQuizBest={(score, type) => {
-            if (type === "general") {
+            if (type === "daily") {
+              const today = new Date().toISOString().slice(0,10);
+              localStorage.setItem("wc2026_daily_quiz_score_v1", JSON.stringify({date:today, score}));
+              setDailyQuizScore(score);
+            } else if (type === "general") {
               const key = "wc2026_quiz_best_general_v1";
               const prev = parseInt(localStorage.getItem(key) || "0", 10);
               if (score > prev) {
