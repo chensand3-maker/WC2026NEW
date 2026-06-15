@@ -10,7 +10,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.42.0";
+const APP_VERSION = "3.42.2";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -7732,8 +7732,17 @@ function QuizScreen({ onClose, onCoinsEarned, leagueMembers = {}, userId, userNa
         else setCurrent(p=>p+1);
         setTimeLeft(10);
       } else {
-        if (current + 1 >= questions.length) { finishQuiz(correct+(isCorrect?1:0)); return; }
-        setCurrent(p=>p+1); setTimeLeft(20);
+        const nextIdx = current + 1;
+        if (nextIdx >= questions.length) {
+          const easy=shuffleArr(GENERAL_Q.filter(q=>q.diff==="קל"));
+          const mid=shuffleArr(GENERAL_Q.filter(q=>q.diff==="בינוני"));
+          const hard=shuffleArr(GENERAL_Q.filter(q=>q.diff==="קשה"));
+          setQuestions([...easy,...mid,...hard]);
+          setCurrent(0);
+        } else {
+          setCurrent(p=>p+1);
+        }
+        setTimeLeft(20);
       }
       setAnswered(false); setChosenIdx(null); setHiddenOpts([]); setAudiencePcts(null);
     }, 900);
@@ -7756,10 +7765,12 @@ function QuizScreen({ onClose, onCoinsEarned, leagueMembers = {}, userId, userNa
       else if (finalCorrect >= 10) { prize="💰 500 מטבעות"; coins=500; }
       else prize="אין פרס הפעם 😅";
     } else {
-      if (finalCorrect>=50) { prize="🏅 Ballon d'Or נדיר!"; cardRarity="B"; }
-      else if (finalCorrect>=40) { prize="🏅 קלף Ballon d'Or"; cardRarity="B"; }
-      else if (finalCorrect>=30) { prize="🌌 קלף GALAXY"; cardRarity="X"; }
-      else if (finalCorrect>=10) { prize="💰 2,000 מטבעות"; coins=2000; }
+      if (finalCorrect>=100) { prize="🏅 Ballon d'Or × 2 + 10,000 🪙"; cardRarity="B"; coins=10000; }
+      else if (finalCorrect>=75)  { prize="🏅 Ballon d'Or + 5,000 🪙"; cardRarity="B"; coins=5000; }
+      else if (finalCorrect>=50)  { prize="🏅 Ballon d'Or!"; cardRarity="B"; }
+      else if (finalCorrect>=40)  { prize="🌌 קלף GALAXY"; cardRarity="X"; }
+      else if (finalCorrect>=30)  { prize="🌌 קלף GALAXY"; cardRarity="X"; }
+      else if (finalCorrect>=10)  { prize="💰 2,000 מטבעות"; coins=2000; }
       else prize="אין פרס הפעם 😅";
     }
     if (coins>0 && onCoinsEarned) onCoinsEarned(coins);
@@ -7960,7 +7971,7 @@ function QuizScreen({ onClose, onCoinsEarned, leagueMembers = {}, userId, userNa
     <div style={{position:"fixed",inset:0,zIndex:9200,background:"linear-gradient(180deg,#050912,#0f172a)",display:"flex",flexDirection:"column",padding:"10px 16px 12px",gap:8}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexShrink:0}}>
         <div>
-          <div style={{fontSize:11,fontWeight:700,color:"#64748b"}}>שאלה <span style={{color:"#f1f5f9",fontWeight:900}}>{current+1}</span>{!isFlags&&` / ${questions.length}`}</div>
+          <div style={{fontSize:11,fontWeight:700,color:"#64748b"}}>שאלה <span style={{color:"#f1f5f9",fontWeight:900}}>{isFlags ? current+1 : correct+1}</span>{!isFlags&&` / ${questions.length}`}</div>
           <div style={{fontSize:16,letterSpacing:1}}>{"❤️".repeat(lives)}{"🖤".repeat(3-lives)}</div>
         </div>
         <div style={{textAlign:"center"}}>
