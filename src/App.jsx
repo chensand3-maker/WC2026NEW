@@ -10,7 +10,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.43.2";
+const APP_VERSION = "3.43.3";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -8255,18 +8255,31 @@ const DAILY_Q = {
         }
       }
     } else {
-      const nl = lives - 1; setLives(nl);
-      if (nl <= 0) { setTimeout(() => finishQuiz(correct+(isCorrect?1:0)), 1200); return; }
+      if (quizType === "daily") {
+        // Daily quiz: no lives — just continue to next question
+      } else {
+        const nl = lives - 1; setLives(nl);
+        if (nl <= 0) { setTimeout(() => finishQuiz(correct+(isCorrect?1:0)), 1200); return; }
+      }
     }
     setTimeout(() => {
       if (quizType === "flags") {
         if (current + 1 >= questions.length) { setQuestions(shuffleArr([...QUIZ_FLAGS])); setCurrent(0); }
         else setCurrent(p=>p+1);
         setTimeLeft(10);
+      } else if (quizType === "daily") {
+        const nextIdx = current + 1;
+        if (nextIdx >= questions.length) {
+          // Daily quiz finished — show results
+          finishQuiz(correct + (isCorrect ? 1 : 0));
+          return;
+        } else {
+          setCurrent(p=>p+1);
+        }
+        setTimeLeft(20);
       } else {
         const nextIdx = current + 1;
         if (nextIdx >= questions.length) {
-          // Fallback to GENERAL_Q when daily/general questions run out
           const easy=shuffleArr(GENERAL_Q.filter(q=>q.diff==="קל"));
           const mid=shuffleArr(GENERAL_Q.filter(q=>q.diff==="בינוני"));
           const hard=shuffleArr(GENERAL_Q.filter(q=>q.diff==="קשה"));
@@ -8567,8 +8580,8 @@ const DAILY_Q = {
     <div style={{position:"fixed",inset:0,zIndex:9200,background:"linear-gradient(180deg,#050912,#0f172a)",display:"flex",flexDirection:"column",padding:"10px 16px 12px",gap:8}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexShrink:0}}>
         <div>
-          <div style={{fontSize:11,fontWeight:700,color:"#64748b"}}>שאלה <span style={{color:"#f1f5f9",fontWeight:900}}>{isFlags ? current+1 : correct+1}</span>{!isFlags&&` / ${questions.length}`}</div>
-          <div style={{fontSize:16,letterSpacing:1}}>{"❤️".repeat(lives)}{"🖤".repeat(3-lives)}</div>
+          <div style={{fontSize:11,fontWeight:700,color:"#64748b"}}>שאלה <span style={{color:"#f1f5f9",fontWeight:900}}>{isFlags ? current+1 : quizType==="daily" ? current+1 : correct+1}</span>{` / ${questions.length}`}</div>
+          <div style={{fontSize:16,letterSpacing:1}}>{quizType==="daily" ? null : <>{"❤️".repeat(lives)}{"🖤".repeat(3-lives)}</>}</div>
         </div>
         <div style={{textAlign:"center"}}>
           <div style={{fontSize:20,fontWeight:900,color:"#22c55e"}}>{correct}</div>
