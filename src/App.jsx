@@ -10,7 +10,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.43.8";
+const APP_VERSION = "3.43.9";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -8612,7 +8612,7 @@ const DAILY_Q = {
 
   // ── RESULT ──
   if (phase === "result") return (
-    <div style={{position:"fixed",inset:0,zIndex:9200,background:"linear-gradient(180deg,#050912,#0f172a)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:28,gap:14,textAlign:"center"}}>
+    <div style={{position:"fixed",inset:0,zIndex:9200,background:"linear-gradient(180deg,#050912,#0f172a)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:28,gap:14,textAlign:"center",overflowY:"auto"}}>
       <div style={{fontSize:64}}>{correct>=(isFlags?20:35)?"🏅":correct>=(isFlags?10:10)?"⭐":"😅"}</div>
       <div style={{fontSize:22,fontWeight:900,color:"#f1f5f9"}}>{correct>=(isFlags?20:35)?"מושלם!":correct>=10?"כל הכבוד!":"נסה שוב"}</div>
       <div style={{background:"rgba(30,41,59,0.8)",border:"1.5px solid rgba(99,102,241,0.3)",borderRadius:18,padding:"18px 28px",width:"100%"}}>
@@ -8624,6 +8624,39 @@ const DAILY_Q = {
         <div style={{fontSize:16,fontWeight:900,color:"#f1f5f9"}}>{prizeText}</div>
       </div>
       {tokens > 0 && <div style={{fontSize:12,color:"#fbbf24",fontWeight:700}}>🎫 יש לך {tokens} טוקן</div>}
+
+      {/* 📅 Daily leaderboard */}
+      {quizType === "daily" && (() => {
+        const medals = ["🥇","🥈","🥉","4️⃣","5️⃣","6️⃣","7️⃣","8️⃣"];
+        const today = new Date().toISOString().slice(0,10);
+        const myScore = correct;
+        const board = Object.entries(leagueMembers)
+          .map(([uid, m]) => ({
+            name: m.name || "—",
+            score: uid === userId ? myScore : (m.dailyQuizDate === today ? (m.dailyQuizScore || 0) : null),
+            isMe: uid === userId,
+            played: uid === userId || m.dailyQuizDate === today,
+          }))
+          .sort((a,b) => (b.score||0) - (a.score||0));
+        if (!board.find(m=>m.isMe)) board.push({name:userName||"אני",score:myScore,isMe:true,played:true});
+        board.sort((a,b)=>(b.score||0)-(a.score||0));
+        return (
+          <div style={{background:"rgba(15,23,42,0.7)",border:"1.5px solid rgba(251,191,36,0.3)",borderRadius:14,overflow:"hidden",width:"100%"}}>
+            <div style={{padding:"8px 14px",background:"rgba(217,119,6,0.15)",fontSize:10,color:"#fbbf24",fontWeight:800,letterSpacing:1.5}}>📅 חידון יומי — הליגה היום</div>
+            {board.map((m,i) => (
+              <div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"9px 14px",borderTop:i>0?"1px solid rgba(71,85,105,0.2)":"none",background:m.isMe?"rgba(251,191,36,0.08)":"transparent"}}>
+                <span style={{fontSize:16,width:24,textAlign:"center",flexShrink:0}}>{medals[i]||`${i+1}`}</span>
+                <span style={{flex:1,fontSize:13,fontWeight:m.isMe?900:700,color:m.isMe?"#fbbf24":"#cbd5e1",textAlign:"right"}}>{m.name}{m.isMe?" (אני)":""}</span>
+                {m.played
+                  ? <span style={{fontSize:16,fontWeight:900,color:i===0?"#fbbf24":"#94a3b8"}}>{m.score}</span>
+                  : <span style={{fontSize:11,color:"#475569"}}>עוד לא</span>
+                }
+              </div>
+            ))}
+          </div>
+        );
+      })()}
+
       <div style={{display:"flex",flexDirection:"column",gap:8,width:"100%"}}>
         <button onClick={()=>setPhase("home")} style={{padding:"13px",borderRadius:13,background:"linear-gradient(135deg,#4f46e5,#7c3aed)",border:"none",color:"#fff",fontSize:15,fontWeight:900,fontFamily:"inherit",cursor:"pointer"}}>🏠 תפריט</button>
       </div>
