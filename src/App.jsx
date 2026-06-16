@@ -10,7 +10,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.44.2";
+const APP_VERSION = "3.44.3";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -8700,7 +8700,7 @@ const DAILY_Q = {
       })()}
 
       <div style={{display:"flex",flexDirection:"column",gap:8,width:"100%"}}>
-        <button onClick={()=>setPhase("home")} style={{padding:"13px",borderRadius:13,background:"linear-gradient(135deg,#4f46e5,#7c3aed)",border:"none",color:"#fff",fontSize:15,fontWeight:900,fontFamily:"inherit",cursor:"pointer"}}>🏠 תפריט</button>
+        <button onClick={()=>{ setPhase("home"); setRevealQueue([]); setWonCards([]); onClose(); }} style={{padding:"13px",borderRadius:13,background:"linear-gradient(135deg,#4f46e5,#7c3aed)",border:"none",color:"#fff",fontSize:15,fontWeight:900,fontFamily:"inherit",cursor:"pointer"}}>🏠 תפריט</button>
       </div>
     </div>
   );
@@ -16479,6 +16479,14 @@ export default function App() {
   const [showBackup, setShowBackup] = useState(false);
   const [showSidebar, setShowSidebar] = useState(false);
   const [showQuiz, setShowQuiz] = useState(false);
+  const [showDailyPopup, setShowDailyPopup] = useState(() => {
+    try {
+      const today = new Date().toISOString().slice(0,10);
+      const done = !!localStorage.getItem(`dailyQuiz_${today}`);
+      const seen = localStorage.getItem(`dailyQuizPopup_${today}`);
+      return !done && !seen;
+    } catch { return false; }
+  });
   const [confirmAction, setConfirmAction] = useState(null);
   const [showIntro, setShowIntro] = useState(!saved?.name);
   // Onboarding: shown once after first welcome
@@ -18004,6 +18012,51 @@ export default function App() {
           </div>
         </div>
       )}
+      {/* 📅 Daily quiz available popup */}
+      {showDailyPopup && (
+        <div style={{position:"fixed",inset:0,zIndex:9500,display:"flex",alignItems:"flex-end",justifyContent:"center",padding:"0 16px 40px",pointerEvents:"none"}}>
+          <div style={{
+            background:"linear-gradient(135deg,#1a2744,#0f172a)",
+            border:"1.5px solid rgba(251,191,36,0.5)",
+            borderRadius:18,padding:"18px 20px",
+            width:"100%",maxWidth:380,
+            boxShadow:"0 8px 40px rgba(0,0,0,0.6), 0 0 30px rgba(251,191,36,0.15)",
+            pointerEvents:"all",
+            animation:"slideUp 0.4s cubic-bezier(0.34,1.56,0.64,1)",
+          }}>
+            <style>{`@keyframes slideUp{from{transform:translateY(100px);opacity:0}to{transform:translateY(0);opacity:1}}`}</style>
+            <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:12}}>
+              <div style={{fontSize:36}}>📅</div>
+              <div>
+                <div style={{fontSize:15,fontWeight:900,color:"#f1f5f9",marginBottom:2}}>החידון היומי זמין!</div>
+                <div style={{fontSize:11,color:"#94a3b8"}}>שאלות על הנבחרות שמשחקות היום · כל 5 נכון = קלף</div>
+              </div>
+            </div>
+            <div style={{display:"flex",gap:8}}>
+              <button
+                onClick={() => {
+                  const today = new Date().toISOString().slice(0,10);
+                  localStorage.setItem(`dailyQuizPopup_${today}`, "1");
+                  setShowDailyPopup(false);
+                  setShowQuiz(true);
+                }}
+                style={{flex:2,padding:"11px",borderRadius:12,background:"linear-gradient(135deg,#b45309,#d97706)",border:"none",color:"#fff",fontSize:14,fontWeight:900,fontFamily:"inherit",cursor:"pointer"}}>
+                📅 שחק עכשיו
+              </button>
+              <button
+                onClick={() => {
+                  const today = new Date().toISOString().slice(0,10);
+                  localStorage.setItem(`dailyQuizPopup_${today}`, "1");
+                  setShowDailyPopup(false);
+                }}
+                style={{flex:1,padding:"11px",borderRadius:12,background:"rgba(30,41,59,0.8)",border:"1px solid rgba(71,85,105,0.4)",color:"#94a3b8",fontSize:13,fontWeight:700,fontFamily:"inherit",cursor:"pointer"}}>
+                אחר כך
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {showQuiz && (
         <QuizScreen
           onClose={() => setShowQuiz(false)}
