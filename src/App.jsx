@@ -10,7 +10,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.44.4";
+const APP_VERSION = "3.44.7";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -8846,12 +8846,21 @@ function LuckyWheelModal({ onClose, onWin, onUpdateBestStreak, personalBest, lea
   // Pick a card from the "regular" mundial pool only (no friends/legends/Israelis)
   // Only cards with rating 60-90 (wider range = more challenging guesses)
   const pickRandomCard = () => {
-    const pool = CARDS.filter(c => {
-      const r = getPlayerRating(c);
-      return r >= 60 && r <= 95;
-    });
+    if (!pickRandomCard._pool) {
+      // Build pool once: 10 cards from each rarity — shuffled
+      const rarities = ["C","U","R","E","L","X"];
+      const pool = [];
+      rarities.forEach(rarity => {
+        const group = CARDS.filter(c => c.rarity === rarity && c.rarity !== "F" && c.rarity !== "B" && c.rarity !== "T");
+        const shuffled = [...group].sort(() => Math.random() - 0.5).slice(0, 12);
+        pool.push(...shuffled);
+      });
+      pickRandomCard._pool = pool;
+    }
+    const pool = pickRandomCard._pool;
     return pool[Math.floor(Math.random() * pool.length)];
   };
+  pickRandomCard._pool = null; // reset on each game start
 
   const startGame = (isFree) => {
     if (!isFree) {
@@ -8860,6 +8869,7 @@ function LuckyWheelModal({ onClose, onWin, onUpdateBestStreak, personalBest, lea
     } else {
       onUseFree();
     }
+    pickRandomCard._pool = null; // reset pool each game
     const first = pickRandomCard();
     setCurrentCard(first);
     setNextCard(null);
@@ -8892,11 +8902,11 @@ function LuckyWheelModal({ onClose, onWin, onUpdateBestStreak, personalBest, lea
     clearTimeout(timerRef.current);
     setLastChoice(choice);
     setRevealing(true);
-    // Pick next card — re-roll if rating diff < 3 (too close = unfair)
+    // Pick next card — re-roll if rating diff < 5 (too close = unfair)
     const curRating = getPlayerRating(currentCard);
     let next = pickRandomCard();
     let tries = 0;
-    while (Math.abs(getPlayerRating(next) - curRating) < 3 && tries < 30) {
+    while (Math.abs(getPlayerRating(next) - curRating) < 2 && tries < 50) {
       next = pickRandomCard();
       tries++;
     }
