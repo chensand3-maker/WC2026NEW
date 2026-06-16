@@ -10,7 +10,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.44.7";
+const APP_VERSION = "3.44.8";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -8846,21 +8846,13 @@ function LuckyWheelModal({ onClose, onWin, onUpdateBestStreak, personalBest, lea
   // Pick a card from the "regular" mundial pool only (no friends/legends/Israelis)
   // Only cards with rating 60-90 (wider range = more challenging guesses)
   const pickRandomCard = () => {
-    if (!pickRandomCard._pool) {
-      // Build pool once: 10 cards from each rarity — shuffled
-      const rarities = ["C","U","R","E","L","X"];
-      const pool = [];
-      rarities.forEach(rarity => {
-        const group = CARDS.filter(c => c.rarity === rarity && c.rarity !== "F" && c.rarity !== "B" && c.rarity !== "T");
-        const shuffled = [...group].sort(() => Math.random() - 0.5).slice(0, 12);
-        pool.push(...shuffled);
-      });
-      pickRandomCard._pool = pool;
-    }
-    const pool = pickRandomCard._pool;
+    const pool = CARDS.filter(c => {
+      if (c.rarity === "F" || c.rarity === "B" || c.rarity === "T") return false;
+      const r = getPlayerRating(c);
+      return r >= 60 && r <= 95;
+    });
     return pool[Math.floor(Math.random() * pool.length)];
   };
-  pickRandomCard._pool = null; // reset on each game start
 
   const startGame = (isFree) => {
     if (!isFree) {
@@ -8869,7 +8861,6 @@ function LuckyWheelModal({ onClose, onWin, onUpdateBestStreak, personalBest, lea
     } else {
       onUseFree();
     }
-    pickRandomCard._pool = null; // reset pool each game
     const first = pickRandomCard();
     setCurrentCard(first);
     setNextCard(null);
