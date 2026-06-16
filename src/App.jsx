@@ -10,7 +10,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.45.0";
+const APP_VERSION = "3.45.1";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -8578,8 +8578,6 @@ const DAILY_Q = {
             </button>
           ) : (
           <button onClick={()=>{
-            const bal = parseInt(localStorage.getItem("wc2026_coins_v1")||"0",10);
-            if (bal < 1000) { alert("אין מספיק מטבעות! צריך 1,000 🪙"); return; }
             if(onCoinsEarned)onCoinsEarned(-1000);
             setQuizType("general");
             const easy=shuffleArr(GENERAL_Q.filter(q=>q.diff==="קל")).slice(0,20);
