@@ -10,7 +10,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.45.1";
+const APP_VERSION = "3.45.3";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -8279,7 +8279,7 @@ const DAILY_Q = {
           const easy=shuffleArr(GENERAL_Q.filter(q=>q.diff==="קל"));
           const mid=shuffleArr(GENERAL_Q.filter(q=>q.diff==="בינוני"));
           const hard=shuffleArr(GENERAL_Q.filter(q=>q.diff==="קשה"));
-          setQuestions([...easy,...mid,...hard]);
+          setQuestions([...easy.slice(0,40),...mid.slice(0,30),...hard.slice(0,30)]);
           setCurrent(0);
         } else {
           setCurrent(p=>p+1);
@@ -8573,16 +8573,17 @@ const DAILY_Q = {
             </div>
           </div>
           {tokens > 0 ? (
-            <button onClick={()=>{useToken();setQuizType("general");const easy=shuffleArr(GENERAL_Q.filter(q=>q.diff==="קל")).slice(0,20);const mid=shuffleArr(GENERAL_Q.filter(q=>q.diff==="בינוני")).slice(0,19);const hard=shuffleArr(GENERAL_Q.filter(q=>q.diff==="קשה")).slice(0,11);setQuestions([...easy,...mid,...hard]);setCurrent(0);setCorrect(0);setLives(3);setAnswered(false);setChosenIdx(null);setHiddenOpts([]);setAudiencePcts(null);setLifelines({skip:true,fifty:true,audience:true});setTimeLeft(20);setPhase("general");}} style={{width:"100%",padding:"14px",borderRadius:13,background:"linear-gradient(135deg,#4f46e5,#7c3aed)",border:"none",color:"#fff",fontSize:15,fontWeight:900,fontFamily:"inherit",cursor:"pointer",boxShadow:"0 6px 20px rgba(99,102,241,0.4)"}}>
+            <button onClick={()=>{useToken();setQuizType("general");const easy=shuffleArr(GENERAL_Q.filter(q=>q.diff==="קל"));const mid=shuffleArr(GENERAL_Q.filter(q=>q.diff==="בינוני"));const hard=shuffleArr(GENERAL_Q.filter(q=>q.diff==="קשה"));setQuestions([...easy.slice(0,40),...mid.slice(0,30),...hard.slice(0,30)]);setCurrent(0);setCorrect(0);setLives(3);setAnswered(false);setChosenIdx(null);setHiddenOpts([]);setAudiencePcts(null);setLifelines({skip:true,fifty:true,audience:true});setTimeLeft(20);setPhase("general");}} style={{width:"100%",padding:"14px",borderRadius:13,background:"linear-gradient(135deg,#4f46e5,#7c3aed)",border:"none",color:"#fff",fontSize:15,fontWeight:900,fontFamily:"inherit",cursor:"pointer",boxShadow:"0 6px 20px rgba(99,102,241,0.4)"}}>
               🎫 התחל עם טוקן — חינם
             </button>
           ) : (
           <button onClick={()=>{
             if(onCoinsEarned)onCoinsEarned(-1000);
             setQuizType("general");
-            const easy=shuffleArr(GENERAL_Q.filter(q=>q.diff==="קל")).slice(0,20);
-            const mid=shuffleArr(GENERAL_Q.filter(q=>q.diff==="בינוני")).slice(0,19);
-            const hard=shuffleArr(GENERAL_Q.filter(q=>q.diff==="קשה")).slice(0,11);
+            const easy=shuffleArr(GENERAL_Q.filter(q=>q.diff==="קל"));
+            const mid=shuffleArr(GENERAL_Q.filter(q=>q.diff==="בינוני"));
+            const hard=shuffleArr(GENERAL_Q.filter(q=>q.diff==="קשה"));
+            setQuestions([...easy.slice(0,40),...mid.slice(0,30),...hard.slice(0,30)]);
             setQuestions([...easy,...mid,...hard]);
             setCurrent(0);setCorrect(0);setLives(3);setAnswered(false);
             setChosenIdx(null);setHiddenOpts([]);setAudiencePcts(null);
@@ -18130,4 +18131,4 @@ export default function App() {
     </ToastProvider>
     </LangContext.Provider>
   );
-}
+}  
