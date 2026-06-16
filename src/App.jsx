@@ -10,7 +10,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.44.3";
+const APP_VERSION = "3.44.4";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -8848,7 +8848,7 @@ function LuckyWheelModal({ onClose, onWin, onUpdateBestStreak, personalBest, lea
   const pickRandomCard = () => {
     const pool = CARDS.filter(c => {
       const r = getPlayerRating(c);
-      return r >= 60 && r <= 90;
+      return r >= 60 && r <= 95;
     });
     return pool[Math.floor(Math.random() * pool.length)];
   };
@@ -8892,11 +8892,11 @@ function LuckyWheelModal({ onClose, onWin, onUpdateBestStreak, personalBest, lea
     clearTimeout(timerRef.current);
     setLastChoice(choice);
     setRevealing(true);
-    // Pick the next card — re-roll if it's exactly the same rating (tie = redo)
+    // Pick next card — re-roll if rating diff < 3 (too close = unfair)
     const curRating = getPlayerRating(currentCard);
     let next = pickRandomCard();
     let tries = 0;
-    while (getPlayerRating(next) === curRating && tries < 20) {
+    while (Math.abs(getPlayerRating(next) - curRating) < 3 && tries < 30) {
       next = pickRandomCard();
       tries++;
     }
