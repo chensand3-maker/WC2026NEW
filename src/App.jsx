@@ -10,7 +10,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.45.4";
+const APP_VERSION = "3.45.5";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -13963,19 +13963,23 @@ function LeagueHub({
         if (aw && mw && aw === mw) bonusPoints += POINTS.WINNER_BET;
       }
       // Top scorer: +2 per goal for each member's pick
-      if (m.topScorerPick && topScorers.length > 0) {
-        const lastName = (m.topScorerPick.name || "").split(" ").slice(-1)[0].toLowerCase();
-        const foundInScorers = topScorers.find(s =>
-          s.name === m.topScorerPick.name ||
-          s.name.toLowerCase().includes(lastName) ||
-          (m.topScorerPick.name || "").toLowerCase().includes(s.name.split(" ").slice(-1)[0].toLowerCase())
-        );
-        if (foundInScorers) {
-          bonusPoints += (foundInScorers.goals || 0) * POINTS.TOP_SCORER_GOAL;
-        }
-      } else if (actualTopScorer && m.topScorerPick) {
-        // Fallback: use actualTopScorer if topScorers not loaded
-        if (actualTopScorer.name === m.topScorerPick.name) {
+      if (m.topScorerPick) {
+        if (topScorers.length > 0) {
+          // Use live API data
+          const lastName = (m.topScorerPick.name || "").split(" ").slice(-1)[0].toLowerCase();
+          const foundInScorers = topScorers.find(s =>
+            s.name === m.topScorerPick.name ||
+            s.name.toLowerCase().includes(lastName) ||
+            (m.topScorerPick.name || "").toLowerCase().includes(s.name.split(" ").slice(-1)[0].toLowerCase())
+          );
+          if (foundInScorers) {
+            bonusPoints += (foundInScorers.goals || 0) * POINTS.TOP_SCORER_GOAL;
+          }
+        } else if (m.topScorerGoals && m.topScorerName === m.topScorerPick.name) {
+          // Fallback: use goals cached in Firebase by each member
+          bonusPoints += m.topScorerGoals * POINTS.TOP_SCORER_GOAL;
+        } else if (actualTopScorer && actualTopScorer.name === m.topScorerPick.name) {
+          // Last resort: current user's actualTopScorer
           bonusPoints += (actualTopScorer.goals || 0) * POINTS.TOP_SCORER_GOAL;
         }
       }
@@ -16667,6 +16671,8 @@ export default function App() {
           quizBestGeneral: quizBestGeneral || 0,
           dailyQuizDate: new Date().toISOString().slice(0,10),
           dailyQuizScore: dailyQuizScore || 0,
+          topScorerGoals: actualTopScorer?.goals || 0,
+          topScorerName: actualTopScorer?.name || "",
         })
           .catch(err => console.error(`Failed to push picks to ${code}:`, err));
       });
@@ -16830,10 +16836,7 @@ export default function App() {
 
   // Fetch top scorers (separate API call, same 5-min cache)
   const fetchAndApplyTopScorers = async (force = false) => {
-    if (!force && !shouldFetchLive()) {
-      console.log("[API] Skipped top scorers — no active matches");
-      return;
-    }
+    // Always fetch top scorers (not dependent on live match window)
     try {
       const scorers = await fetchTopScorers();
       setTopScorers(scorers);
@@ -16882,6 +16885,7 @@ export default function App() {
     const interval = setInterval(() => {
       clearLiveCache();
       fetchAndApplyLive(true);
+      fetchAndApplyTopScorers(true);
     }, 5 * 60 * 1000);
     return () => clearInterval(interval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
