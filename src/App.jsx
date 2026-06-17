@@ -10,7 +10,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.45.7";
+const APP_VERSION = "3.45.8";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -16860,14 +16860,7 @@ export default function App() {
 
       // 📊 Push top scorers to Firebase so ALL members get updated scores
       if (leagueCode && scorers.length > 0) {
-        // Save top 30 scorers to league doc so everyone can calculate scores
-        const { doc, updateDoc } = await import("firebase/firestore");
-        const { db } = await import("./firebase");
-        const ref = doc(db, "leagues", leagueCode);
-        updateDoc(ref, {
-          topScorers: scorers.slice(0, 30),
-          topScorersUpdatedAt: Date.now(),
-        }).catch(() => {});
+        updateActualResults(leagueCode, actuals, actualKo, { topScorers: scorers.slice(0, 30) }).catch(() => {});
       }
 
       // If user has a top-scorer pick, sync actualTopScorer to their match
