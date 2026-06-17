@@ -10,7 +10,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.46.7";
+const APP_VERSION = "3.46.8";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -11245,7 +11245,8 @@ function BonusPicks({
                 : topScorersFetchedAt
                   ? "המונדיאל עדיין לא התחיל — אין גולים"
                   : "טוען..."
-              }</div>
+              }
+            </div>
           ) : (
             <>
               {/* Top 10 */}
@@ -17511,6 +17512,7 @@ export default function App() {
 
       {screen === "bonus" && (
         <BonusPicks
+          key={`bonus-${topScorers.length}`}
           winnerPick={winnerPick} setWinnerPick={setWinnerPick}
           topScorerPick={topScorerPick} setTopScorerPick={setTopScorerPick}
           actualWinner={actualWinner} actualTopScorer={actualTopScorer}
