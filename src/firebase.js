@@ -93,14 +93,20 @@ export function subscribeLeague(code, onUpdate, onError) {
 
 // ─── Actual results (shared league-wide) ──────────────────────────────────────
 
-export async function updateActualResults(code, actuals, actualKo, extras = {}) {
+export async function updateActualResults(code, actuals, actualKo) {
   const ref = doc(db, "leagues", code);
   await updateDoc(ref, {
     actuals,
     actualKo,
     resultsUpdatedAt: Date.now(),
-    ...extras,
   });
+}
+
+export async function updateTopScorers(code, topScorers) {
+  try {
+    const ref = doc(db, "leagues", code);
+    await updateDoc(ref, { topScorers, topScorersUpdatedAt: Date.now() });
+  } catch(e) { console.warn("updateTopScorers failed:", e); }
 }
 
 // ─── GLOBAL LEADERBOARD: every user across the whole world ─────────────────

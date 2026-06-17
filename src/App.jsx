@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, useRef, createContext, useContext } from "react";
 import {
   generateLeagueCode, createLeague, joinLeague,
-  updateMyPicks, leaveLeague, subscribeLeague, updateActualResults,
+  updateMyPicks, leaveLeague, subscribeLeague, updateActualResults, updateTopScorers,
   updateMyGlobalProfile, deleteMyGlobalProfile, fetchGlobalLeaderboard, renameLeague,
   sendGiftToLeague,
   fetchAllGlobalUsers, deleteGlobalUser,
@@ -10,7 +10,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.45.9";
+const APP_VERSION = "3.46.0";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -16858,17 +16858,9 @@ export default function App() {
       setTopScorersFetchedAt(Date.now());
       setTopScorersError(null);
 
-      // 📊 Push top scorers to Firebase via existing saveState mechanism
-      // topScorers will be available via state and shared to all members
+      // 📊 Push top scorers to Firebase so ALL members get live data
       if (leagueCode && scorers.length > 0) {
-        // Just update actuals without extras - topScorers flows via subscribeLeague
-        try {
-          const { getFirestore, doc, updateDoc } = await import("firebase/firestore");
-          const { getApp } = await import("firebase/app");
-          const db = getFirestore(getApp());
-          const ref = doc(db, "leagues", leagueCode);
-          await updateDoc(ref, { topScorers: scorers.slice(0, 30), topScorersUpdatedAt: Date.now() });
-        } catch(e) { console.warn("topScorers push failed:", e); }
+        updateTopScorers(leagueCode, scorers.slice(0, 30));
       }
 
       // If user has a top-scorer pick, sync actualTopScorer to their match
