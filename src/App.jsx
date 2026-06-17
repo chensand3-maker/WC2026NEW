@@ -10,7 +10,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.47.7";
+const APP_VERSION = "3.47.8";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -16333,28 +16333,8 @@ export default function App() {
   const [topScorersFetchedAt, setTopScorersFetchedAt] = useState(null);
   const [topScorersError, setTopScorersError] = useState(null);
 
-  // ─── TOP SCORER CELEBRATION: detect when your pick scores another goal ──
-  useEffect(() => {
-    if (!name) return;
-    if (!topScorerPick || !actualTopScorer) return;
-    if (actualTopScorer.name !== topScorerPick.name) return; // wrong player
-    if (pendingTopScorerCeleb) return; // already showing
-    const currentGoals = actualTopScorer.goals || 0;
-    if (currentGoals > lastSeenGoals) {
-      const delta = currentGoals - lastSeenGoals;
-      setPendingTopScorerCeleb({
-        player: { name: actualTopScorer.name, team: actualTopScorer.team || topScorerPick.team },
-        newTotalGoals: currentGoals,
-        goalDelta: delta,
-      });
-      setLastSeenGoals(currentGoals);
-      try { localStorage.setItem("wc2026_lastseen_goals_v1", String(currentGoals)); } catch {}
-    } else if (currentGoals < lastSeenGoals) {
-      // Reset (shouldn't happen normally, but safeguard)
-      setLastSeenGoals(currentGoals);
-      try { localStorage.setItem("wc2026_lastseen_goals_v1", String(currentGoals)); } catch {}
-    }
-  }, [actualTopScorer, topScorerPick, name, pendingTopScorerCeleb, lastSeenGoals]);
+  // ─── TOP SCORER CELEBRATION: disabled — celebrations removed per user request ──
+  useEffect(() => {}, [actualTopScorer, topScorerPick, name, pendingTopScorerCeleb, lastSeenGoals]);
 
   const [leagueName, setLeagueName] = useState(saved?.leagueName || "");
   // ─── MULTI-LEAGUE SUPPORT ─────────────────────────────────────────────────
@@ -16872,7 +16852,6 @@ export default function App() {
       setTopScorers(scorers);
       setTopScorersFetchedAt(Date.now());
       setTopScorersError(null);
-      if (force && scorers.length > 0) alert(`כובש 1: "${scorers[0].name}" (${scorers[0].goals} גולים)`);
 
       // 📊 Push top scorers to Firebase so ALL members get live data
       if (leagueCode && scorers.length > 0) {
