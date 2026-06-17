@@ -10,7 +10,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.46.3";
+const APP_VERSION = "3.46.4";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -16849,6 +16849,9 @@ export default function App() {
   // Fetch top scorers (separate API call, same 5-min cache)
   const fetchAndApplyTopScorers = async (force = false) => {
     // Always fetch top scorers (not dependent on live match window)
+    if (force) {
+      try { localStorage.removeItem("wc2026_topscorers_v1"); } catch {}
+    }
     try {
       const scorers = await fetchTopScorers();
       setTopScorers(scorers);
