@@ -370,8 +370,8 @@ export async function fetchMatchDetails(apiFixtureId) {
   return result;
 }
 
-const TOP_SCORERS_CACHE_KEY = "wc2026_topscorers_v2";
-const TOP_SCORERS_TTL_MS = 10 * 60 * 1000; // 10 min
+const TOP_SCORERS_CACHE_KEY = "wc2026_topscorers_v3";
+const TOP_SCORERS_TTL_MS = 30 * 60 * 1000; // 30 min
 
 function getTopScorersCache() {
   try {
@@ -424,6 +424,7 @@ export async function fetchTopScorers() {
     const rawTeam = stat?.team?.name;
     const team = TEAM_NAME_MAP[rawTeam] || rawTeam || "";
     if (!name) continue;
+    if (goals <= 0) continue; // רק שחקנים שהבקיעו
     out.push({ name, team, goals });
   }
 

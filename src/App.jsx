@@ -10,7 +10,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.47.3";
+const APP_VERSION = "3.47.4";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -16854,6 +16854,7 @@ export default function App() {
       try { 
         localStorage.removeItem("wc2026_topscorers_v1");
         localStorage.removeItem("wc2026_topscorers_v2");
+        localStorage.removeItem("wc2026_topscorers_v3");
       } catch {}
     }
     try {
