@@ -387,6 +387,86 @@ function setTopScorersCache(data) {
   try { localStorage.setItem(TOP_SCORERS_CACHE_KEY, JSON.stringify({ fetchedAt: Date.now(), data })); } catch {}
 }
 
+// ─── BUILD TOP SCORERS FROM MATCH EVENTS ──────────────────────────────────────
+// Instead of relying on the slow topscorers API endpoint,
+// we aggregate goals from each match's events.
+
+const SCORERS_FROM_EVENTS_KEY = "wc2026_scorers_events_v1";
+const SCORERS_FROM_EVENTS_TTL = 15 * 60 * 1000; // 15 min
+
+export async function buildTopScorersFromEvents(liveData) {
+  // Check cache
+  try {
+    const raw = localStorage.getItem(SCORERS_FROM_EVENTS_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Date.now() - parsed.fetchedAt < SCORERS_FROM_EVENTS_TTL) {
+        return parsed.data;
+      }
+    }
+  } catch {}
+
+  if (!liveData) return [];
+
+  // Collect all finished fixture IDs
+  const allFixtures = [
+    ...Object.values(liveData.byTeamPair || {}),
+    ...Object.values(liveData.knockout || {}),
+  ];
+
+  const finishedIds = allFixtures
+    .filter(f => f.isFinished && f.fixtureId)
+    .map(f => f.fixtureId);
+
+  if (finishedIds.length === 0) return [];
+
+  // Fetch events for each finished fixture
+  const goalTally = {}; // name → { goals, team }
+
+  for (const fixtureId of finishedIds) {
+    try {
+      const res = await fetch(`${API_URL}/fixtures/events?fixture=${fixtureId}`, {
+        headers: { "x-apisports-key": API_FOOTBALL_KEY },
+      });
+      if (!res.ok) continue;
+      const json = await res.json();
+      for (const e of (json.response || [])) {
+        if (e.type !== "Goal") continue;
+        if (e.detail === "Own Goal") continue; // לא סופרים גול עצמי
+        const name = e.player?.name;
+        const team = normalizeTeam(e.team?.name || "");
+        if (!name) continue;
+        if (!goalTally[name]) goalTally[name] = { goals: 0, team };
+        goalTally[name].goals++;
+      }
+    } catch {}
+  }
+
+  // Build sorted array
+  const out = Object.entries(goalTally)
+    .map(([name, v]) => ({ name, team: v.team, goals: v.goals }))
+    .filter(s => s.goals > 0)
+    .sort((a, b) => b.goals - a.goals || a.name.localeCompare(b.name));
+
+  // Add ranks
+  let prevGoals = -1, prevRank = 0;
+  for (let i = 0; i < out.length; i++) {
+    if (out[i].goals !== prevGoals) { prevRank = i + 1; prevGoals = out[i].goals; }
+    out[i].rank = prevRank;
+  }
+
+  // Cache result
+  try {
+    localStorage.setItem(SCORERS_FROM_EVENTS_KEY, JSON.stringify({ fetchedAt: Date.now(), data: out }));
+  } catch {}
+
+  return out;
+}
+
+export function clearTopScorersFromEventsCache() {
+  try { localStorage.removeItem(SCORERS_FROM_EVENTS_KEY); } catch {}
+}
+
 export async function fetchTopScorers() {
   const cached = getTopScorersCache();
   if (cached) return cached.data;

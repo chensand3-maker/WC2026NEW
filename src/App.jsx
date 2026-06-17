@@ -6,11 +6,11 @@ import {
   sendGiftToLeague,
   fetchAllGlobalUsers, deleteGlobalUser,
 } from "./firebase";
-import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWinners, mapKnockoutToBracket, fetchTopScorers, fetchMatchDetails, getApiFixtureId, fetchLineup } from "./liveResults";
+import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWinners, mapKnockoutToBracket, fetchTopScorers, buildTopScorersFromEvents, clearTopScorersFromEventsCache, fetchMatchDetails, getApiFixtureId, fetchLineup } from "./liveResults";
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.47.4";
+const APP_VERSION = "3.47.5";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -16849,16 +16849,21 @@ export default function App() {
 
   // Fetch top scorers (separate API call, same 5-min cache)
   const fetchAndApplyTopScorers = async (force = false) => {
-    // Always fetch top scorers (not dependent on live match window)
     if (force) {
-      try { 
+      try {
         localStorage.removeItem("wc2026_topscorers_v1");
         localStorage.removeItem("wc2026_topscorers_v2");
         localStorage.removeItem("wc2026_topscorers_v3");
+        clearTopScorersFromEventsCache();
       } catch {}
     }
     try {
-      const scorers = await fetchTopScorers();
+      // Build top scorers from match events — always accurate and up to date
+      let scorers = await buildTopScorersFromEvents(liveData);
+      if (scorers.length === 0) {
+        // Fallback to API if no events yet
+        scorers = await fetchTopScorers();
+      }
       setTopScorers(scorers);
       setTopScorersFetchedAt(Date.now());
       setTopScorersError(null);
