@@ -10,7 +10,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.47.2";
+const APP_VERSION = "3.47.3";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -16858,7 +16858,6 @@ export default function App() {
     }
     try {
       const scorers = await fetchTopScorers();
-      if (force) alert(`✅ נטענו ${scorers.length} שחקנים\n` + scorers.slice(0,5).map(s=>`${s.name}: ${s.goals} גולים`).join('\n'));
       setTopScorers(scorers);
       setTopScorersFetchedAt(Date.now());
       setTopScorersError(null);
@@ -16889,7 +16888,6 @@ export default function App() {
     } catch (err) {
       console.error("Top scorers fetch failed:", err);
       setTopScorersError(err.message || "Couldn't fetch top scorers");
-      if (force) alert(`❌ שגיאה: ${err.message}`);
     }
   };
 
@@ -17515,7 +17513,7 @@ export default function App() {
 
       {screen === "bonus" && (
         <BonusPicks
-          key={`bonus-${topScorers.length}`}
+          key={topScorersFetchedAt || "bonus"}
           winnerPick={winnerPick} setWinnerPick={setWinnerPick}
           topScorerPick={topScorerPick} setTopScorerPick={setTopScorerPick}
           actualWinner={actualWinner} actualTopScorer={actualTopScorer}
