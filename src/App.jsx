@@ -10,7 +10,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.46.8";
+const APP_VERSION = "3.47.0";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -16851,11 +16851,14 @@ export default function App() {
   const fetchAndApplyTopScorers = async (force = false) => {
     // Always fetch top scorers (not dependent on live match window)
     if (force) {
-      try { localStorage.removeItem("wc2026_topscorers_v1"); } catch {}
+      try { 
+        localStorage.removeItem("wc2026_topscorers_v1");
+        localStorage.removeItem("wc2026_topscorers_v2");
+      } catch {}
     }
     try {
       const scorers = await fetchTopScorers();
-      if (force) alert(`✅ נטענו ${scorers.length} שחקנים`);
+      if (force) alert(`✅ נטענו ${scorers.length} שחקנים\nראשון: ${scorers[0]?.name} - ${scorers[0]?.goals} גולים`);
       setTopScorers(scorers);
       setTopScorersFetchedAt(Date.now());
       setTopScorersError(null);

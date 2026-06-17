@@ -370,8 +370,8 @@ export async function fetchMatchDetails(apiFixtureId) {
   return result;
 }
 
-const TOP_SCORERS_CACHE_KEY = "wc2026_topscorers_v1";
-const TOP_SCORERS_TTL_MS = 5 * 60 * 1000;
+const TOP_SCORERS_CACHE_KEY = "wc2026_topscorers_v2";
+const TOP_SCORERS_TTL_MS = 10 * 60 * 1000; // 10 min
 
 function getTopScorersCache() {
   try {
