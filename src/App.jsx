@@ -10,7 +10,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.45.5";
+const APP_VERSION = "3.45.7";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -11031,6 +11031,7 @@ function BonusPicks({
   actualWinner, actualTopScorer,
   isLocked, onBack,
   topScorers = [], topScorersFetchedAt, topScorersError,
+  onFetchTopScorers,
 }) {
   const t = useT();
   const [scorerMode, setScorerMode] = useState("list"); // "list" | "custom"
@@ -11224,16 +11225,26 @@ function BonusPicks({
       }}>
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
             <div style={{fontSize:11,color:"#a855f7",letterSpacing:2,fontWeight:700}}>📊 {t("bonus.topScorersLive")}</div>
-            <div style={{fontSize:9,color:"#64748b"}}>
-              {topScorersError ? `⚠️ ${topScorersError}` :
-                topScorersFetchedAt ? `${t("bonus.updated")} ${Math.max(0,Math.round((Date.now()-topScorersFetchedAt)/60000))}m ${t("bonus.minAgo")}` :
-                t("bonus.loadingScorers")}
+            <div style={{display:"flex",alignItems:"center",gap:6}}>
+              <div style={{fontSize:9,color:"#64748b"}}>
+                {topScorersError ? `⚠️ ${topScorersError}` :
+                  topScorersFetchedAt ? `עודכן לפני ${Math.max(0,Math.round((Date.now()-topScorersFetchedAt)/60000))} דק'` :
+                  "טוען..."}
+              </div>
+              <button
+                onClick={()=>onFetchTopScorers?.()}
+                style={{fontSize:10,padding:"2px 8px",borderRadius:6,background:"rgba(168,85,247,0.15)",border:"1px solid rgba(168,85,247,0.3)",color:"#a855f7",cursor:"pointer",fontFamily:"inherit"}}
+              >🔄</button>
             </div>
           </div>
 
           {topScorers.length === 0 ? (
-            <div style={{fontSize:11,color:"#64748b",textAlign:"center",padding:"16px 0",fontStyle:"italic"}}>
-              {t("bonus.noScorersYet")}
+            <div style={{fontSize:11,color:"#64748b",textAlign:"center",padding:"16px 0"}}>
+              {topScorersError
+                ? `שגיאה: ${topScorersError}`
+                : topScorersFetchedAt
+                  ? "המונדיאל עדיין לא התחיל — אין גולים עדיין"
+                  : "טוען נתונים..."}
             </div>
           ) : (
             <>
@@ -16597,6 +16608,10 @@ export default function App() {
           // Pull shared actuals from the ACTIVE league only (so commissioner can broadcast)
           if (code === activeLeagueCode && data.actuals) setActuals(data.actuals);
           if (code === activeLeagueCode && data.actualKo) setActualKo(data.actualKo);
+          // Pull top scorers from Firebase (pushed by whoever fetches the API)
+          if (code === activeLeagueCode && data.topScorers && data.topScorers.length > 0) {
+            setTopScorers(data.topScorers);
+          }
 
           // 🛡️ RESTORE BACKUP — only ONCE per league per session
           if (code === activeLeagueCode && data.members && userId && !restoredFromCloudRef.current.has(code)) {
@@ -16842,9 +16857,21 @@ export default function App() {
       setTopScorers(scorers);
       setTopScorersFetchedAt(Date.now());
       setTopScorersError(null);
+
+      // 📊 Push top scorers to Firebase so ALL members get updated scores
+      if (leagueCode && scorers.length > 0) {
+        // Save top 30 scorers to league doc so everyone can calculate scores
+        const { doc, updateDoc } = await import("firebase/firestore");
+        const { db } = await import("./firebase");
+        const ref = doc(db, "leagues", leagueCode);
+        updateDoc(ref, {
+          topScorers: scorers.slice(0, 30),
+          topScorersUpdatedAt: Date.now(),
+        }).catch(() => {});
+      }
+
       // If user has a top-scorer pick, sync actualTopScorer to their match
       if (topScorerPick && scorers.length > 0) {
-        // Try exact match first, then last-name match (API returns "K. Mbappé" vs "Kylian Mbappé")
         const lastName = topScorerPick.name.split(" ").slice(-1)[0].toLowerCase();
         const found = scorers.find(s =>
           s.name === topScorerPick.name ||
@@ -17497,6 +17524,7 @@ export default function App() {
           topScorers={topScorers}
           topScorersFetchedAt={topScorersFetchedAt}
           topScorersError={topScorersError}
+          onFetchTopScorers={()=>fetchAndApplyTopScorers(true)}
         />
       )}
 
