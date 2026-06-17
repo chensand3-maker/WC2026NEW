@@ -10,7 +10,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.46.6";
+const APP_VERSION = "3.46.7";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -16854,6 +16854,7 @@ export default function App() {
     }
     try {
       const scorers = await fetchTopScorers();
+      if (force) alert(`✅ נטענו ${scorers.length} שחקנים`);
       setTopScorers(scorers);
       setTopScorersFetchedAt(Date.now());
       setTopScorersError(null);
@@ -16884,6 +16885,7 @@ export default function App() {
     } catch (err) {
       console.error("Top scorers fetch failed:", err);
       setTopScorersError(err.message || "Couldn't fetch top scorers");
+      if (force) alert(`❌ שגיאה: ${err.message}`);
     }
   };
 
