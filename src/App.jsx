@@ -10,7 +10,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.47.1";
+const APP_VERSION = "3.47.2";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -16858,7 +16858,7 @@ export default function App() {
     }
     try {
       const scorers = await fetchTopScorers();
-      if (force) alert(`✅ נטענו ${scorers.length} שחקנים\nראשון: ${scorers[0]?.name} - ${scorers[0]?.goals} גולים`);
+      if (force) alert(`✅ נטענו ${scorers.length} שחקנים\n` + scorers.slice(0,5).map(s=>`${s.name}: ${s.goals} גולים`).join('\n'));
       setTopScorers(scorers);
       setTopScorersFetchedAt(Date.now());
       setTopScorersError(null);
