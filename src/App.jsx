@@ -10,7 +10,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.47.5";
+const APP_VERSION = "3.47.6";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -16858,8 +16858,13 @@ export default function App() {
       } catch {}
     }
     try {
+      // Get live data first (needed for events)
+      let currentLiveData = liveData;
+      if (!currentLiveData || force) {
+        try { currentLiveData = await fetchLiveResults(force); } catch {}
+      }
       // Build top scorers from match events — always accurate and up to date
-      let scorers = await buildTopScorersFromEvents(liveData);
+      let scorers = await buildTopScorersFromEvents(currentLiveData);
       if (scorers.length === 0) {
         // Fallback to API if no events yet
         scorers = await fetchTopScorers();
