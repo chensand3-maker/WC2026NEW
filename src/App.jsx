@@ -10,7 +10,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.47.6";
+const APP_VERSION = "3.47.7";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -16872,6 +16872,7 @@ export default function App() {
       setTopScorers(scorers);
       setTopScorersFetchedAt(Date.now());
       setTopScorersError(null);
+      if (force && scorers.length > 0) alert(`כובש 1: "${scorers[0].name}" (${scorers[0].goals} גולים)`);
 
       // 📊 Push top scorers to Firebase so ALL members get live data
       if (leagueCode && scorers.length > 0) {
