@@ -10,7 +10,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.46.4";
+const APP_VERSION = "3.46.6";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -11226,15 +11226,15 @@ function BonusPicks({
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
             <div style={{fontSize:11,color:"#a855f7",letterSpacing:2,fontWeight:700}}>📊 {t("bonus.topScorersLive")}</div>
             <div style={{display:"flex",alignItems:"center",gap:6}}>
-              <div style={{fontSize:9,color:"#64748b"}}>
+              <div style={{fontSize:9,color:topScorersError?"#fca5a5":"#64748b"}}>
                 {topScorersError ? `⚠️ ${topScorersError}` :
                   topScorersFetchedAt ? `עודכן לפני ${Math.max(0,Math.round((Date.now()-topScorersFetchedAt)/60000))} דק'` :
-                  "טוען..."}
+                  "לא נטען"}
               </div>
               <button
                 onClick={()=>onFetchTopScorers?.()}
                 style={{fontSize:10,padding:"2px 8px",borderRadius:6,background:"rgba(168,85,247,0.15)",border:"1px solid rgba(168,85,247,0.3)",color:"#a855f7",cursor:"pointer",fontFamily:"inherit"}}
-              >🔄</button>
+              >↻</button>
             </div>
           </div>
 
