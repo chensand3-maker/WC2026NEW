@@ -10,7 +10,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.45.3";
+const APP_VERSION = "3.45.4";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -13548,6 +13548,7 @@ function LeagueHub({
   liveStandings, liveBestThirds,
   liveFetchAt, liveError, onFetchLive,
   actualWinner, actualTopScorer,
+  topScorers = [],
   leagueCodes, activeLeagueCode, setActiveLeagueCode, allLeagueData, maxLeagues,
   onShowWorld,
   cardCollection,
@@ -13961,8 +13962,19 @@ function LeagueHub({
         const mw = m.winnerPick.name || m.winnerPick.n;
         if (aw && mw && aw === mw) bonusPoints += POINTS.WINNER_BET;
       }
-      // Top scorer: +2 per goal that player has scored
-      if (actualTopScorer && m.topScorerPick) {
+      // Top scorer: +2 per goal for each member's pick
+      if (m.topScorerPick && topScorers.length > 0) {
+        const lastName = (m.topScorerPick.name || "").split(" ").slice(-1)[0].toLowerCase();
+        const foundInScorers = topScorers.find(s =>
+          s.name === m.topScorerPick.name ||
+          s.name.toLowerCase().includes(lastName) ||
+          (m.topScorerPick.name || "").toLowerCase().includes(s.name.split(" ").slice(-1)[0].toLowerCase())
+        );
+        if (foundInScorers) {
+          bonusPoints += (foundInScorers.goals || 0) * POINTS.TOP_SCORER_GOAL;
+        }
+      } else if (actualTopScorer && m.topScorerPick) {
+        // Fallback: use actualTopScorer if topScorers not loaded
         if (actualTopScorer.name === m.topScorerPick.name) {
           bonusPoints += (actualTopScorer.goals || 0) * POINTS.TOP_SCORER_GOAL;
         }
@@ -16829,9 +16841,15 @@ export default function App() {
       setTopScorersError(null);
       // If user has a top-scorer pick, sync actualTopScorer to their match
       if (topScorerPick && scorers.length > 0) {
-        const found = scorers.find(s => s.name === topScorerPick.name);
+        // Try exact match first, then last-name match (API returns "K. Mbappé" vs "Kylian Mbappé")
+        const lastName = topScorerPick.name.split(" ").slice(-1)[0].toLowerCase();
+        const found = scorers.find(s =>
+          s.name === topScorerPick.name ||
+          s.name.toLowerCase().includes(lastName) ||
+          topScorerPick.name.toLowerCase().includes(s.name.split(" ").slice(-1)[0].toLowerCase())
+        );
         if (found) {
-          setActualTopScorer({ name: found.name, team: found.team, goals: found.goals });
+          setActualTopScorer({ name: topScorerPick.name, team: found.team, goals: found.goals });
         }
       }
       // Track overall top scorer (rank 1) for winner-bet bonus
@@ -17489,6 +17507,7 @@ export default function App() {
           liveFetchAt={liveFetchAt} liveError={liveError}
           onFetchLive={fetchAndApplyLive}
           actualWinner={actualWinner} actualTopScorer={actualTopScorer}
+          topScorers={topScorers}
           leagueCodes={leagueCodes}
           activeLeagueCode={activeLeagueCode}
           setActiveLeagueCode={setActiveLeagueCode}
