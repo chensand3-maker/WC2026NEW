@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, useRef, createContext, useContext } from "react";
 import {
   generateLeagueCode, createLeague, joinLeague,
-  updateMyPicks, leaveLeague, subscribeLeague, updateActualResults,
+  updateMyPicks, leaveLeague, subscribeLeague, updateActualResults, updateTopScorers,
   updateMyGlobalProfile, deleteMyGlobalProfile, fetchGlobalLeaderboard, renameLeague,
   sendGiftToLeague,
   fetchAllGlobalUsers, deleteGlobalUser,
@@ -10,7 +10,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.46.1";
+const APP_VERSION = "3.46.2";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -16608,6 +16608,7 @@ export default function App() {
           // Pull shared actuals from the ACTIVE league only (so commissioner can broadcast)
           if (code === activeLeagueCode && data.actuals) setActuals(data.actuals);
           if (code === activeLeagueCode && data.actualKo) setActualKo(data.actualKo);
+          if (code === activeLeagueCode && data.topScorers?.length > 0) setTopScorers(data.topScorers);
 
           // 🛡️ RESTORE BACKUP — only ONCE per league per session
           if (code === activeLeagueCode && data.members && userId && !restoredFromCloudRef.current.has(code)) {
@@ -16856,22 +16857,7 @@ export default function App() {
 
       // 📊 Push top scorers to Firebase so ALL members get live data
       if (leagueCode && scorers.length > 0) {
-        updateActualResults(leagueCode, actuals, actualKo).catch(() => {});
-        // Also push topScorers separately via updateMyPicks mechanism
-        leagueCodes.forEach(code => {
-          updateMyPicks(code, userId, name, picks, koWinners, {
-            topScorerGoals: (() => {
-              if (!topScorerPick) return 0;
-              const lastName = topScorerPick.name.split(" ").slice(-1)[0].toLowerCase();
-              const found = scorers.find(s =>
-                s.name === topScorerPick.name ||
-                s.name.toLowerCase().includes(lastName)
-              );
-              return found?.goals || 0;
-            })(),
-            topScorerName: topScorerPick?.name || "",
-          }).catch(() => {});
-        });
+        updateTopScorers(leagueCode, scorers.slice(0, 30));
       }
 
       // If user has a top-scorer pick, sync actualTopScorer to their match
