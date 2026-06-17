@@ -411,13 +411,10 @@ export async function fetchTopScorers() {
   const res = await fetch(`${API_URL}/players/topscorers?league=1&season=2026`, {
     headers: { "x-apisports-key": API_FOOTBALL_KEY },
   });
-  if (!res.ok) throw new Error(`API request failed: ${res.status}`);
+  if (!res.ok) throw new Error(`API ${res.status}`);
   const json = await res.json();
-  console.log("[TopScorers] API response:", json.errors, "results:", json.response?.length);
-  if (!json.response) throw new Error("Unexpected API response");
-  if (json.errors && Object.keys(json.errors).length > 0) {
-    throw new Error(`API error: ${JSON.stringify(json.errors)}`);
-  }
+  if (!json.response) throw new Error(`אין response מה-API: ${JSON.stringify(json.errors || {})}`);
+  if (json.response.length === 0) throw new Error(`API החזיר 0 שחקנים (league=1, season=2026)`);
 
   const out = [];
   for (const item of json.response) {

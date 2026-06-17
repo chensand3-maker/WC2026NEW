@@ -10,7 +10,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.46.2";
+const APP_VERSION = "3.46.3";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -11241,11 +11241,11 @@ function BonusPicks({
           {topScorers.length === 0 ? (
             <div style={{fontSize:11,color:"#64748b",textAlign:"center",padding:"16px 0"}}>
               {topScorersError
-                ? `שגיאה: ${topScorersError}`
+                ? <span style={{color:"#ef4444"}}>שגיאה: {topScorersError}</span>
                 : topScorersFetchedAt
-                  ? "המונדיאל עדיין לא התחיל — אין גולים עדיין"
-                  : "טוען נתונים..."}
-            </div>
+                  ? "המונדיאל עדיין לא התחיל — אין גולים"
+                  : "טוען..."
+              }</div>
           ) : (
             <>
               {/* Top 10 */}
