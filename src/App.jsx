@@ -10,7 +10,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.47.9";
+const APP_VERSION = "3.48.0";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -1431,7 +1431,7 @@ const ACHIEVEMENTS = [
     } },
   { id: "scorer_king", icon: "👟", color: "#a855f7",
     check: ({ topScorerPick, actualTopScorer }) => {
-      return topScorerPick && actualTopScorer && topScorerPick.name === actualTopScorer.name;
+      return topScorerPick && actualTopScorer && nameMatch(topScorerPick.name, actualTopScorer.name);
     } },
 
   // Completion
@@ -7405,7 +7405,19 @@ const QUIZ_FLAGS = [
 
 const LETTERS = ["א","ב","ג","ד"];
 
-function shuffleArr(arr) { return [...arr].sort(()=>Math.random()-0.5); }
+// ─── NAME NORMALIZATION — removes accents, lowercases, handles "K. Mbappe" vs "Kylian Mbappé" ──
+function normName(s) {
+  if (!s) return "";
+  return s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+}
+function nameLast(s) { return normName(s).split(" ").slice(-1)[0]; }
+function nameMatch(a, b) {
+  if (!a || !b) return false;
+  const na = normName(a), nb = normName(b);
+  if (na === nb) return true;
+  const la = nameLast(a), lb = nameLast(b);
+  return la === lb && la.length > 2;
+}
 
 const GENERAL_Q = [
     {q:"איזה מונדיאל היה ב-2018?",a:"רוסיה",options:["רוסיה", "קטאר", "גרמניה", "ברזיל"],cat:"היסטוריה",diff:"קל"},
@@ -11141,9 +11153,9 @@ function BonusPicks({
             {actualTopScorer && (
               <div style={{textAlign:"center",fontSize:10}}>
                 <div style={{fontWeight:900,fontSize:13}}>
-                  {actualTopScorer.name === topScorerPick.name ? `+${actualTopScorer.goals * 2}` : "❌"}
+                  {nameMatch(actualTopScorer.name, topScorerPick.name) ? `+${actualTopScorer.goals * 2}` : "❌"}
                 </div>
-                {actualTopScorer.name === topScorerPick.name && <div style={{opacity:0.85}}>{actualTopScorer.goals} {t("bonus.goals")}</div>}
+                {nameMatch(actualTopScorer.name, topScorerPick.name) && <div style={{opacity:0.85}}>{actualTopScorer.goals} {t("bonus.goals")}</div>}
               </div>
             )}
           </div>
@@ -11252,7 +11264,7 @@ function BonusPicks({
               {/* Top 10 */}
               <div>
                 {topScorers.slice(0, 10).map((s, i) => {
-                  const isMine = topScorerPick && s.name === topScorerPick.name;
+                  const isMine = topScorerPick && nameMatch(s.name, topScorerPick.name);
                   return (
                     <div key={s.name+i} style={{
                       display:"flex",alignItems:"center",gap:8,
@@ -11284,7 +11296,7 @@ function BonusPicks({
 
               {/* If user's pick is OUTSIDE top 10, show their rank separately */}
               {topScorerPick && (() => {
-                const myPick = topScorers.find(s => s.name === topScorerPick.name);
+                const myPick = topScorers.find(s => nameMatch(s.name, topScorerPick.name));
                 if (!myPick || myPick.rank <= 10) return null;
                 return (
                   <>
@@ -11312,7 +11324,7 @@ function BonusPicks({
               })()}
 
               {/* If user's pick hasn't scored at all (not in API list) */}
-              {topScorerPick && !topScorers.find(s => s.name === topScorerPick.name) && (
+              {topScorerPick && !topScorers.find(s => nameMatch(s.name, topScorerPick.name)) && (
                 <>
                   <div style={{height:1,background:"rgba(71,85,105,0.3)",margin:"8px 0",borderTop:"1px dashed rgba(71,85,105,0.4)"}}/>
                   <div style={{
@@ -13745,14 +13757,10 @@ function LeagueHub({
             if (aw && mw && aw === mw) total += POINTS.WINNER_BET;
           }
           if (m.topScorerPick) {
-            const pickLast = (m.topScorerPick.name || "").toLowerCase().split(" ").slice(-1)[0];
-            const found = topScorers.find(s => {
-              const sLast = (s.name || "").toLowerCase().split(" ").slice(-1)[0];
-              return sLast === pickLast || (s.name||"").toLowerCase() === (m.topScorerPick.name||"").toLowerCase();
-            });
+            const found = topScorers.find(s => nameMatch(s.name, m.topScorerPick.name));
             if (found) {
               total += (found.goals || 0) * POINTS.TOP_SCORER_GOAL;
-            } else if (actualTopScorer && actualTopScorer.name === m.topScorerPick.name) {
+            } else if (actualTopScorer && nameMatch(actualTopScorer.name, m.topScorerPick.name)) {
               total += (actualTopScorer.goals || 0) * POINTS.TOP_SCORER_GOAL;
             }
           }
@@ -13987,24 +13995,13 @@ function LeagueHub({
       if (m.topScorerPick) {
         if (topScorers.length > 0) {
           // Match by full name or last name (events return "L. Messi", picks store "Lionel Messi")
-          const pickName = (m.topScorerPick.name || "").toLowerCase();
-          const pickLastName = pickName.split(" ").slice(-1)[0];
-          const foundInScorers = topScorers.find(s => {
-            const sName = (s.name || "").toLowerCase();
-            const sLastName = sName.split(" ").slice(-1)[0];
-            return sName === pickName ||
-              sLastName === pickLastName ||
-              pickName.includes(sLastName) ||
-              sName.includes(pickLastName);
-          });
+          const foundInScorers = topScorers.find(s => nameMatch(s.name, m.topScorerPick.name));
           if (foundInScorers) {
             bonusPoints += (foundInScorers.goals || 0) * POINTS.TOP_SCORER_GOAL;
           }
-        } else if (m.topScorerGoals && m.topScorerName === m.topScorerPick.name) {
-          // Fallback: use goals cached in Firebase by each member
+        } else if (m.topScorerGoals && nameMatch(m.topScorerName, m.topScorerPick.name)) {
           bonusPoints += m.topScorerGoals * POINTS.TOP_SCORER_GOAL;
-        } else if (actualTopScorer && actualTopScorer.name === m.topScorerPick.name) {
-          // Last resort: current user's actualTopScorer
+        } else if (actualTopScorer && nameMatch(actualTopScorer.name, m.topScorerPick.name)) {
           bonusPoints += (actualTopScorer.goals || 0) * POINTS.TOP_SCORER_GOAL;
         }
       }
