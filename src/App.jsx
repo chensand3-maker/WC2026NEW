@@ -10,7 +10,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.48.1";
+const APP_VERSION = "3.48.2";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -16704,15 +16704,17 @@ export default function App() {
         const mw = winnerPick.name || winnerPick.n;
         if (aw && mw && aw === mw) total += POINTS.WINNER_BET;
       }
-      if (actualTopScorer && topScorerPick && actualTopScorer.name === topScorerPick.name) {
-        total += (actualTopScorer.goals || 0) * POINTS.TOP_SCORER_GOAL;
+      if (topScorerPick) {
+        const found = topScorers.find(s => nameMatch(s.name, topScorerPick.name));
+        if (found) total += (found.goals || 0) * POINTS.TOP_SCORER_GOAL;
+        else if (actualTopScorer && nameMatch(actualTopScorer.name, topScorerPick.name)) total += (actualTopScorer.goals || 0) * POINTS.TOP_SCORER_GOAL;
       }
       updateMyGlobalProfile(userId, name, picks, koWinners, {
         winnerPick, topScorerPick, koPicks, totalPoints: total, cardCollection, hlBestStreak, quizBestFlags, quizBestGeneral,
       }).catch(err => console.error("Failed to push global profile:", err));
     }, 1200);
     return () => clearTimeout(handle);
-  }, [userId, name, picks, koWinners, koPicks, winnerPick, topScorerPick, actuals, actualKoScores, actualWinner, actualTopScorer, cardCollection, hlBestStreak, quizBestFlags, quizBestGeneral]);
+  }, [userId, name, picks, koWinners, koPicks, winnerPick, topScorerPick, actuals, actualKoScores, actualWinner, actualTopScorer, cardCollection, hlBestStreak, quizBestFlags, quizBestGeneral, topScorers]);
 
   // ─── LIVE RESULTS AUTO-FETCH ───────────────────────────────────────────────
   // Poll API-Football every 5 min for new match results
