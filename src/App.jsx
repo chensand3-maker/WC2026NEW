@@ -10,7 +10,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.48.0";
+const APP_VERSION = "3.48.1";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -16940,11 +16940,13 @@ export default function App() {
       const mw = winnerPick.name || winnerPick.n;
       if (aw && mw && aw === mw) total += POINTS.WINNER_BET;
     }
-    if (actualTopScorer && topScorerPick && actualTopScorer.name === topScorerPick.name) {
-      total += (actualTopScorer.goals || 0) * POINTS.TOP_SCORER_GOAL;
+    if (topScorerPick) {
+      const found = topScorers.find(s => nameMatch(s.name, topScorerPick.name));
+      if (found) total += (found.goals || 0) * POINTS.TOP_SCORER_GOAL;
+      else if (actualTopScorer && nameMatch(actualTopScorer.name, topScorerPick.name)) total += (actualTopScorer.goals || 0) * POINTS.TOP_SCORER_GOAL;
     }
     return total;
-  }, [picks, actuals, koPicks, actualKoScores, winnerPick, topScorerPick, actualWinner, actualTopScorer]);
+  }, [picks, actuals, koPicks, actualKoScores, winnerPick, topScorerPick, actualWinner, actualTopScorer, topScorers]);
 
   // ─── ACHIEVEMENTS CHECK ──────────────────────────────────────────────────
   // Whenever relevant state changes, recompute which badges should be unlocked.
@@ -16962,8 +16964,10 @@ export default function App() {
           const mw = m.winnerPick.name || m.winnerPick.n;
           if (aw && mw && aw === mw) total += POINTS.WINNER_BET;
         }
-        if (actualTopScorer && m.topScorerPick && actualTopScorer.name === m.topScorerPick.name) {
-          total += (actualTopScorer.goals || 0) * POINTS.TOP_SCORER_GOAL;
+        if (m.topScorerPick) {
+          const found = topScorers.find(s => nameMatch(s.name, m.topScorerPick.name));
+          if (found) total += (found.goals || 0) * POINTS.TOP_SCORER_GOAL;
+          else if (actualTopScorer && nameMatch(actualTopScorer.name, m.topScorerPick.name)) total += (actualTopScorer.goals || 0) * POINTS.TOP_SCORER_GOAL;
         }
         return { uid: m.uid, name: m.name, total };
       }).sort((a, b) => {
