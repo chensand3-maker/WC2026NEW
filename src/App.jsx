@@ -10,7 +10,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.47.8";
+const APP_VERSION = "3.47.9";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -13744,8 +13744,17 @@ function LeagueHub({
             const mw = m.winnerPick.name || m.winnerPick.n;
             if (aw && mw && aw === mw) total += POINTS.WINNER_BET;
           }
-          if (actualTopScorer && m.topScorerPick && actualTopScorer.name === m.topScorerPick.name) {
-            total += (actualTopScorer.goals || 0) * POINTS.TOP_SCORER_GOAL;
+          if (m.topScorerPick) {
+            const pickLast = (m.topScorerPick.name || "").toLowerCase().split(" ").slice(-1)[0];
+            const found = topScorers.find(s => {
+              const sLast = (s.name || "").toLowerCase().split(" ").slice(-1)[0];
+              return sLast === pickLast || (s.name||"").toLowerCase() === (m.topScorerPick.name||"").toLowerCase();
+            });
+            if (found) {
+              total += (found.goals || 0) * POINTS.TOP_SCORER_GOAL;
+            } else if (actualTopScorer && actualTopScorer.name === m.topScorerPick.name) {
+              total += (actualTopScorer.goals || 0) * POINTS.TOP_SCORER_GOAL;
+            }
           }
           return { uid: m.uid, name: m.name, total };
         }).sort((a, b) => {
@@ -13977,13 +13986,17 @@ function LeagueHub({
       // Top scorer: +2 per goal for each member's pick
       if (m.topScorerPick) {
         if (topScorers.length > 0) {
-          // Use live API data
-          const lastName = (m.topScorerPick.name || "").split(" ").slice(-1)[0].toLowerCase();
-          const foundInScorers = topScorers.find(s =>
-            s.name === m.topScorerPick.name ||
-            s.name.toLowerCase().includes(lastName) ||
-            (m.topScorerPick.name || "").toLowerCase().includes(s.name.split(" ").slice(-1)[0].toLowerCase())
-          );
+          // Match by full name or last name (events return "L. Messi", picks store "Lionel Messi")
+          const pickName = (m.topScorerPick.name || "").toLowerCase();
+          const pickLastName = pickName.split(" ").slice(-1)[0];
+          const foundInScorers = topScorers.find(s => {
+            const sName = (s.name || "").toLowerCase();
+            const sLastName = sName.split(" ").slice(-1)[0];
+            return sName === pickName ||
+              sLastName === pickLastName ||
+              pickName.includes(sLastName) ||
+              sName.includes(pickLastName);
+          });
           if (foundInScorers) {
             bonusPoints += (foundInScorers.goals || 0) * POINTS.TOP_SCORER_GOAL;
           }
