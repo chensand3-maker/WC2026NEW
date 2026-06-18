@@ -10,7 +10,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.49.3";
+const APP_VERSION = "3.49.4";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -1307,8 +1307,8 @@ function formatKickoff(iso) {
   if (!iso) return null;
   try {
     const d = new Date(iso);
-    const day = d.toLocaleDateString(undefined, { month: "short", day: "numeric", weekday: "short" });
-    const time = d.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+    const day = d.toLocaleDateString("he-IL", { timeZone: "Asia/Jerusalem", month: "short", day: "numeric", weekday: "short" });
+    const time = d.toLocaleTimeString("he-IL", { timeZone: "Asia/Jerusalem", hour: "numeric", minute: "2-digit" });
     return { day, time, dateObj: d };
   } catch { return null; }
 }
