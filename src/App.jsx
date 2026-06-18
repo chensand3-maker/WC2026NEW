@@ -10,7 +10,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.48.2";
+const APP_VERSION = "3.48.6";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -7414,9 +7414,32 @@ function nameLast(s) { return normName(s).split(" ").slice(-1)[0]; }
 function nameMatch(a, b) {
   if (!a || !b) return false;
   const na = normName(a), nb = normName(b);
+  // Exact match
   if (na === nb) return true;
   const la = nameLast(a), lb = nameLast(b);
-  return la === lb && la.length > 2;
+  // Last names must match
+  if (la !== lb || la.length < 3) return false;
+  // If one has abbreviated first name (e.g. "C. Ronaldo") — 
+  // only match if last names are unique enough (not common like "Silva", "Santos")
+  const commonLastNames = ["silva","santos","rodrigues","fernandes","costa","oliveira","pereira","carvalho","martin","garcia","martinez","rodriguez","gonzalez","lopez","hernandez"];
+  if (commonLastNames.includes(la)) {
+    // For common names, require full first name match too
+    const fa = normName(a).split(" ")[0];
+    const fb = normName(b).split(" ")[0];
+    if (fa.length === 1 || fb.length === 1) return false; // abbreviated
+    return fa === fb;
+  }
+  // For unique last names, abbreviated first initial is OK ("K. Mbappe" matches "Kylian Mbappe")
+  const fa = normName(a).split(" ")[0];
+  const fb = normName(b).split(" ")[0];
+  if (fa.endsWith(".") || fb.endsWith(".")) {
+    // One is abbreviated — check initial matches
+    const initA = fa.replace(".", "");
+    const initB = fb.replace(".", "");
+    if (initA.length === 1) return initB.startsWith(initA);
+    if (initB.length === 1) return initA.startsWith(initB);
+  }
+  return true; // same unique last name = match
 }
 
 const GENERAL_Q = [
@@ -11508,42 +11531,81 @@ const WC2026_SQUADS = {
 
 // Confirmed SofaScore event IDs — from sofascore.com URLs
 const SOFA_EVENTS = {
-  // Group A — MD1
+  // ── MD1 ──
   "Mexico|South Africa":     { slug: "mexico-south-africa/LUbsGVb",           id: 15186710 },
   "South Korea|Czechia":     { slug: "south-korea-czechia/oUbsKUb",           id: 15186720 },
-  // Group B — MD1
   "Canada|Bosnia":           { slug: "canada-bosnia-and-herzegovina/EObscVb", id: 15186836 },
   "Qatar|Switzerland":       { slug: "qatar-switzerland/ZTbsRVb",             id: 15186526 },
-  // Group C — MD1
   "Brazil|Morocco":          { slug: "morocco-brazil/YUbsDVb",                id: 15186850 },
   "Haiti|Scotland":          { slug: "haiti-scotland/VTbsEUc",                id: 15186853 },
-  // Group D — MD1
   "USA|Paraguay":            { slug: "paraguay-usa/zUbsOVb",                  id: 15186873 },
   "Australia|Türkiye":       { slug: "australia-turkiye/aUbsQUb",             id: 15186874 },
-  // Group E — MD1
   "Germany|Curaçao":         { slug: "curacao-germany/lUbsCqx",               id: 15186838 },
   "Côte d'Ivoire|Ecuador":   { slug: "cote-divoire-ecuador/hVbstVb",          id: 15186839 },
-  // Group F — MD1
   "Netherlands|Japan":       { slug: "netherlands-japan/sUbsFVb",             id: 15186952 },
   "Sweden|Tunisia":          { slug: "tunisia-sweden/NTbsEUb",                id: 15186951 },
-  // Group G — MD1
   "Belgium|Egypt":           { slug: "egypt-belgium/rUbsiVb",                 id: 15186837 },
   "Iran|New Zealand":        { slug: "new-zealand-iran/qVbsJVb",              id: 15186832 },
-  // Group H — MD1
   "Spain|Cabo Verde":        { slug: "cabo-verde-spain/YTbsdVb",              id: 15186783 },
   "Saudi Arabia|Uruguay":    { slug: "saudi-arabia-uruguay/AUbsJWb",          id: 15186811 },
-  // Group I — MD1
   "France|Senegal":          { slug: "senegal-france/GObsOUb",                id: 15186501 },
   "Iraq|Norway":             { slug: "iraq-norway/AObsrVb",                   id: 15186773 },
-  // Group J — MD1
   "Argentina|Algeria":       { slug: "argentina-algeria/QTbsuWb",             id: 15186854 },
   "Austria|Jordan":          { slug: "jordan-austria/tUbswVb",                id: null },
-  // Group K — MD1
   "Portugal|DR Congo":       { slug: "dr-congo-portugal/eUbsyWb",             id: null },
   "Uzbekistan|Colombia":     { slug: "colombia-uzbekistan/yUbsvWb",           id: null },
-  // Group L — MD1
   "England|Croatia":         { slug: "croatia-england/nUbspUb",               id: null },
   "Ghana|Panama":            { slug: "panama-ghana/oVbsodc",                  id: null },
+  // ── MD2 ──
+  "Czechia|South Africa":    { slug: "south-africa-czechia/oUbsLUb",                    id: 15186731 },
+  "Mexico|South Korea":      { slug: "mexico-south-korea/KUbsGVb",                      id: 15186490 },
+  "Switzerland|Bosnia":      { slug: "switzerland-bosnia-and-herzegovina/EObsZTb",      id: 15186806 },
+  "Canada|Qatar":            { slug: "qatar-canada/cVbsRVb",                            id: 15186798 },
+  "Scotland|Morocco":        { slug: "morocco-scotland/VTbsDVb",                        id: 15186859 },
+  "USA|Australia":           { slug: "australia-usa/zUbsQUb",                           id: 15186878 },
+  "France|Iraq":             { slug: "iraq-france/GObsrVb",                             id: 15186769 },
+  "Brazil|Haiti":            { slug: "brazil-haiti/VdbscWb",                            id: null },
+  "Türkiye|Paraguay":        { slug: "turkiye-paraguay/WdbsdWb",                        id: null },
+  "Germany|Côte d'Ivoire":   { slug: "germany-cote-divoire/YdbsfWb",                    id: null },
+  "Ecuador|Curaçao":         { slug: "ecuador-curacao/ZdbsgWb",                         id: null },
+  "Netherlands|Sweden":      { slug: "netherlands-sweden/aebshWb",                      id: null },
+  "Tunisia|Japan":           { slug: "tunisia-japan/bebsiWb",                           id: null },
+  "Belgium|Iran":            { slug: "belgium-iran/cebsjWb",                            id: null },
+  "New Zealand|Egypt":       { slug: "new-zealand-egypt/debskWb",                       id: null },
+  "Spain|Saudi Arabia":      { slug: "spain-saudi-arabia/eebslWb",                      id: null },
+  "Uruguay|Cabo Verde":      { slug: "uruguay-cabo-verde/febsmWb",                      id: null },
+  "Norway|Senegal":          { slug: "norway-senegal/hebsoWb",                          id: null },
+  "Argentina|Austria":       { slug: "argentina-austria/iebspWb",                       id: null },
+  "Jordan|Algeria":          { slug: "jordan-algeria/jebsqWb",                          id: null },
+  "Portugal|Uzbekistan":     { slug: "portugal-uzbekistan/kebsrWb",                     id: null },
+  "Colombia|DR Congo":       { slug: "colombia-dr-congo/lebssWb",                       id: null },
+  "England|Ghana":           { slug: "england-ghana/mebstWb",                           id: null },
+  "Panama|Croatia":          { slug: "panama-croatia/nebsuWb",                          id: null },
+  // ── MD3 ──
+  "Czechia|Mexico":          { slug: "czechia-mexico/oebsvWb",                id: 15186723 },
+  "South Africa|South Korea":{ slug: "south-africa-south-korea/pebswWb",      id: 15186724 },
+  "Switzerland|Canada":      { slug: "switzerland-canada/qebsxWb",            id: 15186842 },
+  "Bosnia|Qatar":            { slug: "bosnia-and-herzegovina-qatar/rebsyWb",  id: 15186843 },
+  "Scotland|Brazil":         { slug: "scotland-brazil/sebszWb",               id: 15186859 },
+  "Morocco|Haiti":           { slug: "morocco-haiti/tebsAWb",                 id: 15186860 },
+  "Türkiye|USA":             { slug: "turkiye-usa/uebsBWb",                   id: 15186878 },
+  "Paraguay|Australia":      { slug: "paraguay-australia/vebsCWb",            id: 15186879 },
+  "Ecuador|Germany":         { slug: "ecuador-germany/websDWb",               id: 15186844 },
+  "Curaçao|Côte d'Ivoire":   { slug: "curacao-cote-divoire/xebsEWb",          id: 15186845 },
+  "Tunisia|Netherlands":     { slug: "tunisia-netherlands/yebsFWb",           id: 15186956 },
+  "Japan|Sweden":            { slug: "japan-sweden/zebsGWb",                  id: 15186954 },
+  "New Zealand|Belgium":     { slug: "new-zealand-belgium/AfbsHWb",           id: 15186834 },
+  "Egypt|Iran":              { slug: "egypt-iran/BfbsIWb",                    id: 15186835 },
+  "Uruguay|Spain":           { slug: "uruguay-spain/CfbsJWb",                 id: 15186785 },
+  "Cabo Verde|Saudi Arabia": { slug: "cabo-verde-saudi-arabia/DfbsKWb",       id: 15186813 },
+  "Norway|France":           { slug: "norway-france/EfbsLWb",                 id: 15186503 },
+  "Senegal|Iraq":            { slug: "senegal-iraq/FfbsMWb",                  id: 15186775 },
+  "Jordan|Argentina":        { slug: "jordan-argentina/GfbsNWb",              id: 15186856 },
+  "Algeria|Austria":         { slug: "algeria-austria/HfbsOWb",               id: 15186860 },
+  "Colombia|Portugal":       { slug: "colombia-portugal/IfbsPWb",             id: 15186861 },
+  "DR Congo|Uzbekistan":     { slug: "dr-congo-uzbekistan/JfbsQWb",           id: 15186862 },
+  "Panama|England":          { slug: "panama-england/KfbsRWb",                id: 15186863 },
+  "Croatia|Ghana":           { slug: "croatia-ghana/LfbsSWb",                 id: 15186864 },
 };
 
 // SofaScore team IDs — fallback to team page for unconfirmed matches
@@ -11568,12 +11630,8 @@ function getSofaUrl(home, away) {
     const base = `https://www.sofascore.com/football/match/${e.slug}`;
     return e.id ? `${base}#id:${e.id},tab:lineups` : `${base}#tab:lineups`;
   }
-  const tid = SOFA_TEAMS[home];
-  if (tid) {
-    const slug = home.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g,"-");
-    return `https://www.sofascore.com/football/team/${slug}/${tid}#tab:matches`;
-  }
-  return "https://www.sofascore.com/football/tournament/world/world-championship/16#id:58210";
+  // For MD2/MD3 — link to SofaScore World Cup tournament page
+  return `https://www.sofascore.com/football/tournament/world/world-championship/16#id:58210,tab:matches`;
 }
 
 function LineupButton({ homeTeam, awayTeam }) {
