@@ -10,7 +10,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.48.7";
+const APP_VERSION = "3.48.8";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -7404,6 +7404,8 @@ const QUIZ_FLAGS = [
 
 
 const LETTERS = ["א","ב","ג","ד"];
+
+function shuffleArr(arr) { return [...arr].sort(()=>Math.random()-0.5); }
 
 // ─── NAME NORMALIZATION — removes accents, lowercases, handles "K. Mbappe" vs "Kylian Mbappé" ──
 function normName(s) {
