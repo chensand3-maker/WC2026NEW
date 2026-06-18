@@ -10,7 +10,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.49.0";
+const APP_VERSION = "3.49.2";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -1261,22 +1261,22 @@ FIXTURES.forEach(f => {
 // Source: FIFA official fixture list.
 const KO_SCHEDULE = {
   // Round of 32 (16 matches, Jun 28 – Jul 3)
-  "R32-1":  { kickoff: _utc(2026,6,28,19, 0), venue: "SoFi Stadium, Los Angeles" },          // Jun 28 3 PM EDT
-  "R32-2":  { kickoff: _utc(2026,6,29,17, 0), venue: "Gillette Stadium, Boston" },           // Jun 29 1 PM EDT
-  "R32-3":  { kickoff: _utc(2026,6,29,20, 0), venue: "Gillette Stadium, Boston" },           // Jun 29 4 PM EDT
-  "R32-4":  { kickoff: _utc(2026,6,30, 1, 0), venue: "Estadio BBVA, Monterrey" },            // Jun 29 9 PM EDT
-  "R32-5":  { kickoff: _utc(2026,6,30,17, 0), venue: "AT&T Stadium, Dallas" },               // Jun 30 1 PM EDT
-  "R32-6":  { kickoff: _utc(2026,6,30,21, 0), venue: "MetLife Stadium, East Rutherford" },   // Jun 30 5 PM EDT
-  "R32-7":  { kickoff: _utc(2026,7, 1, 1, 0), venue: "Estadio Azteca, Mexico City" },        // Jun 30 9 PM EDT
-  "R32-8":  { kickoff: _utc(2026,7, 1,16, 0), venue: "Mercedes-Benz Stadium, Atlanta" },     // Jul 1 12 PM EDT
-  "R32-9":  { kickoff: _utc(2026,7, 1,20, 0), venue: "Lumen Field, Seattle" },               // Jul 1 4 PM EDT
-  "R32-10": { kickoff: _utc(2026,7, 2, 0, 0), venue: "Levi's Stadium, Santa Clara" },        // Jul 1 8 PM EDT
-  "R32-11": { kickoff: _utc(2026,7, 2,19, 0), venue: "SoFi Stadium, Los Angeles" },          // Jul 2 3 PM EDT
-  "R32-12": { kickoff: _utc(2026,7, 2,23, 0), venue: "BMO Field, Toronto" },                 // Jul 2 7 PM EDT
-  "R32-13": { kickoff: _utc(2026,7, 3, 1, 0), venue: "BC Place, Vancouver" },                // Jul 2 9 PM EDT
-  "R32-14": { kickoff: _utc(2026,7, 3,18, 0), venue: "AT&T Stadium, Dallas" },               // Jul 3 2 PM EDT
-  "R32-15": { kickoff: _utc(2026,7, 3,22, 0), venue: "Hard Rock Stadium, Miami Gardens" },   // Jul 3 6 PM EDT
-  "R32-16": { kickoff: _utc(2026,7, 4, 1,30), venue: "Arrowhead Stadium, Kansas City" },     // Jul 3 9:30 PM EDT
+  "R32-1":  { kickoff: _utc(2026,6,28,19, 0), venue: "משחק 73 | SoFi Stadium, Los Angeles" },
+  "R32-2":  { kickoff: _utc(2026,6,28,20,30), venue: "משחק 74 | Gillette Stadium, Boston" },
+  "R32-3":  { kickoff: _utc(2026,6,28,23, 0), venue: "משחק 75 | Estadio BBVA, Monterrey" },
+  "R32-4":  { kickoff: _utc(2026,6,29,17, 0), venue: "משחק 76 | NRG Stadium, Houston" },
+  "R32-5":  { kickoff: _utc(2026,6,29,19, 0), venue: "משחק 77 | AT&T Stadium, Dallas" },
+  "R32-6":  { kickoff: _utc(2026,6,29,21, 0), venue: "משחק 78 | MetLife Stadium, East Rutherford" },
+  "R32-7":  { kickoff: _utc(2026,6,30, 1, 0), venue: "משחק 79 | Estadio Azteca, Mexico City" },
+  "R32-8":  { kickoff: _utc(2026,6,30,16, 0), venue: "משחק 80 | Mercedes-Benz Stadium, Atlanta" },
+  "R32-9":  { kickoff: _utc(2026,6,30,20, 0), venue: "משחק 81 | Lumen Field, Seattle" },
+  "R32-10": { kickoff: _utc(2026,7, 1, 0, 0), venue: "משחק 82 | Levi's Stadium, Santa Clara" },
+  "R32-11": { kickoff: _utc(2026,7, 1,19, 0), venue: "משחק 83 | BMO Field, Toronto" },
+  "R32-12": { kickoff: _utc(2026,7, 1,23, 0), venue: "משחק 84 | SoFi Stadium, Los Angeles" },
+  "R32-13": { kickoff: _utc(2026,7, 2, 1, 0), venue: "משחק 85 | BC Place, Vancouver" },
+  "R32-14": { kickoff: _utc(2026,7, 2,18, 0), venue: "משחק 86 | AT&T Stadium, Dallas" },
+  "R32-15": { kickoff: _utc(2026,7, 2,22, 0), venue: "משחק 87 | Hard Rock Stadium, Miami Gardens" },
+  "R32-16": { kickoff: _utc(2026,7, 3, 1,30), venue: "משחק 88 | Arrowhead Stadium, Kansas City" },
 
   // Round of 16 (8 matches, Jul 4–7)
   "R16-0": { kickoff: _utc(2026,7, 4,17, 0), venue: "NRG Stadium, Houston" },                // Jul 4 1 PM EDT
