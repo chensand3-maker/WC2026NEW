@@ -10,7 +10,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.49.2";
+const APP_VERSION = "3.49.3";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -13245,8 +13245,15 @@ function KnockoutBracket({ standings, bestThirds, liveStandings, liveBestThirds,
         </div>
 
         {sched?.venue && (
-          <div style={{fontSize:8,color:"#475569",marginTop:5,textAlign:"center",letterSpacing:0.5,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
-            📍 {sched.venue}
+          <div style={{fontSize:8,color:"#475569",marginTop:5,textAlign:"center",letterSpacing:0.5}}>
+            {sched.venue.includes("|") ? (
+              <>
+                <div style={{color:"#94a3b8",fontWeight:700}}>{sched.venue.split("|")[0].trim()}</div>
+                <div style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>📍 {sched.venue.split("|")[1].trim()}</div>
+              </>
+            ) : (
+              <div style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>📍 {sched.venue}</div>
+            )}
           </div>
         )}
       </div>
