@@ -10,7 +10,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.48.8";
+const APP_VERSION = "3.49.0";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -1779,29 +1779,29 @@ const allGroupsComplete = (picks) => GROUP_KEYS.every(g => groupComplete(g, pick
 
 function buildR32(standings, bestThirds) {
   if (!standings) return null;
-  // Only return a team if they've actually played at least one match.
-  // Otherwise the alphabetical tiebreaker would put random teams in winner slots.
-  const w = g => {
-    const t = standings[g]?.[0];
-    return (t && t.p > 0) ? t : null;
-  };
-  const r = g => {
-    const t = standings[g]?.[1];
-    return (t && t.p > 0) ? t : null;
-  };
-  const get3 = (i) => {
-    const t = bestThirds?.[i];
-    return (t && t.p > 0) ? { ...t, isThird: true } : null;
-  };
+  const w = g => { const t = standings[g]?.[0]; return (t && t.p > 0) ? t : null; };
+  const r = g => { const t = standings[g]?.[1]; return (t && t.p > 0) ? t : null; };
+  // bestThirds is sorted array of best 8 third-place teams
+  const get3 = (i) => { const t = bestThirds?.[i]; return (t && t.p > 0) ? { ...t, isThird: true } : null; };
+
+  // Official FIFA 2026 Round of 32 bracket (matches 73-88)
   return [
-    { id:"R32-1", a:w("A"), b:get3(7) }, { id:"R32-2", a:w("C"), b:get3(5) },
-    { id:"R32-3", a:w("E"), b:get3(3) }, { id:"R32-4", a:w("B"), b:get3(6) },
-    { id:"R32-5", a:w("G"), b:get3(2) }, { id:"R32-6", a:w("D"), b:get3(4) },
-    { id:"R32-7", a:w("F"), b:r("C") }, { id:"R32-8", a:w("H"), b:r("J") },
-    { id:"R32-9", a:w("I"), b:r("L") }, { id:"R32-10", a:w("J"), b:r("H") },
-    { id:"R32-11", a:w("L"), b:r("I") }, { id:"R32-12", a:w("K"), b:get3(0) },
-    { id:"R32-13", a:r("A"), b:r("E") }, { id:"R32-14", a:r("F"), b:r("G") },
-    { id:"R32-15", a:r("B"), b:r("D") }, { id:"R32-16", a:r("K"), b:get3(1) },
+    { id:"R32-1",  a:r("A"),  b:r("B")  },  // M73: 2A vs 2B
+    { id:"R32-2",  a:w("E"),  b:get3(0) },  // M74: 1E vs best 3rd
+    { id:"R32-3",  a:w("F"),  b:r("C")  },  // M75: 1F vs 2C
+    { id:"R32-4",  a:w("C"),  b:r("F")  },  // M76: 1C vs 2F
+    { id:"R32-5",  a:w("I"),  b:get3(1) },  // M77: 1I vs best 3rd
+    { id:"R32-6",  a:r("E"),  b:r("I")  },  // M78: 2E vs 2I
+    { id:"R32-7",  a:w("A"),  b:get3(2) },  // M79: 1A vs best 3rd
+    { id:"R32-8",  a:w("L"),  b:get3(3) },  // M80: 1L vs best 3rd
+    { id:"R32-9",  a:w("D"),  b:get3(4) },  // M81: 1D vs best 3rd
+    { id:"R32-10", a:w("G"),  b:get3(5) },  // M82: 1G vs best 3rd
+    { id:"R32-11", a:r("K"),  b:r("L")  },  // M83: 2K vs 2L
+    { id:"R32-12", a:w("H"),  b:r("J")  },  // M84: 1H vs 2J
+    { id:"R32-13", a:w("B"),  b:get3(6) },  // M85: 1B vs best 3rd
+    { id:"R32-14", a:w("J"),  b:r("H")  },  // M86: 1J vs 2H
+    { id:"R32-15", a:w("K"),  b:get3(7) },  // M87: 1K vs best 3rd
+    { id:"R32-16", a:r("D"),  b:r("G")  },  // M88: 2D vs 2G
   ];
 }
 
