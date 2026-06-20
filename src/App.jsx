@@ -11,7 +11,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.56.2";
+const APP_VERSION = "3.56.5";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -1833,11 +1833,13 @@ function encodePicks(name, picks, koWinners) {
 function decodePicks(code) {
   try {
     const c = code.trim();
-    // 👑 Admin-sent JSON backup format — also accepted on the welcome screen
-    if (c.startsWith("{") && c.includes("wc2026-backup-v1")) {
+    // 👑 JSON backup format — accepted on the welcome screen.
+    // Be lenient: accept any JSON object that looks like a backup (has picks/userId/name).
+    if (c.startsWith("{")) {
       try {
         const obj = JSON.parse(c);
-        if (obj && obj.version === "wc2026-backup-v1") {
+        const looksLikeBackup = obj && (obj.version === "wc2026-backup-v1" || obj.picks || obj.userId || obj.koPicks);
+        if (looksLikeBackup) {
           return {
             name: obj.name || "Friend",
             userId: obj.userId || null,
@@ -1846,9 +1848,9 @@ function decodePicks(code) {
             koPicks: obj.koPicks || {},
             winnerPick: obj.winnerPick || null,
             topScorerPick: obj.topScorerPick || null,
-            leagueCode: obj.leagueCode || "",
-            leagueCodes: obj.leagueCode ? [obj.leagueCode] : [],
-            activeLeagueCode: obj.leagueCode || "",
+            leagueCode: obj.leagueCode || (obj.leagueCodes && obj.leagueCodes[0]) || "",
+            leagueCodes: Array.isArray(obj.leagueCodes) ? obj.leagueCodes : (obj.leagueCode ? [obj.leagueCode] : []),
+            activeLeagueCode: obj.activeLeagueCode || obj.leagueCode || (obj.leagueCodes && obj.leagueCodes[0]) || "",
             cardCollection: obj.cardCollection || {},
             coinBalance: obj.coinBalance,
             unlockedAchievements: obj.unlockedAchievements || [],
@@ -1862,11 +1864,14 @@ function decodePicks(code) {
     const parts = c.split("|");
     if (parts.length < 3) return null;
     const [, name, scoreStr, ko] = parts;
-    if (scoreStr.length !== FIXTURES.length * 2) return null;
+    // Decode as many fixtures as the code contains. Older codes may have a different
+    // length than the current FIXTURES list — decode the overlap rather than rejecting.
     const picks = {};
+    const pairs = Math.floor((scoreStr || "").length / 2);
     FIXTURES.forEach((f, i) => {
+      if (i >= pairs) return;
       const seg = scoreStr.substr(i*2, 2);
-      if (seg !== "XX") picks[f.id] = { h: parseInt(seg[0]), a: parseInt(seg[1]) };
+      if (seg !== "XX" && /^\d\d$/.test(seg)) picks[f.id] = { h: parseInt(seg[0]), a: parseInt(seg[1]) };
     });
     let koWinners = {};
     try { koWinners = JSON.parse(atob(ko || "")); } catch {}
@@ -6468,6 +6473,11 @@ function LeagueAdminModal({ leagueData, leagueCode, onClose }) {
       coinBalance: m.coinBalance || 0,
       cardCount,
       achievements: (m.unlockedAchievements || []).length,
+      updatedAt: m.updatedAt || null,
+      samplePicks: ["H-0","B-1","E-1","C-2"].map(id => {
+        const p = picks[id];
+        return p && p.h !== "" && p.h != null ? `${id}:${p.h}-${p.a}` : `${id}:—`;
+      }).join("  "),
       raw: m,
     };
   }).sort((a, b) => b.totalPicks - a.totalPicks);
@@ -6614,6 +6624,12 @@ function LeagueAdminModal({ leagueData, leagueCode, onClose }) {
                   <div style={{fontSize:13,fontWeight:900,color:"#a855f7"}}>{m.achievements}</div>
                   <div style={{fontSize:8,color:"#64748b"}}>{t("admin.badges")}</div>
                 </div>
+              </div>
+              {/* 🔍 Diagnostic info — last update time + sample picks */}
+              <div style={{fontSize:9,color:"#64748b",marginBottom:8,direction:"ltr",textAlign:"left",
+                background:"rgba(0,0,0,0.2)",padding:"5px 8px",borderRadius:6,lineHeight:1.6}}>
+                <div>🕐 {m.updatedAt ? new Date(m.updatedAt).toLocaleString("he-IL") : "לא ידוע"}</div>
+                <div style={{fontFamily:"monospace",color:"#94a3b8"}}>{m.samplePicks}</div>
               </div>
               <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
                 <button onClick={() => handleShareBackup(m)} style={{
