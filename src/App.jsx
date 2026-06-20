@@ -10,7 +10,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.53.0";
+const APP_VERSION = "3.54.1";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -4076,6 +4076,44 @@ function ProfileStats({ name, picks, koWinners, koPicks = {}, actuals, actualKo,
     const bonusPoints = winnerPoints + scorerPoints;
     const grandTotal = groupPoints + koPoints + bonusPoints;
 
+    // ─── PER-MATCH HISTORY (group + knockout, finished only) ───
+    const history = [];
+    FIXTURES.forEach(f => {
+      const p = picks[f.id];
+      const a = actuals[f.id];
+      if (!a || a.h === undefined || a.h === "") return; // not finished
+      const s = (p && p.h !== "" && p.h !== undefined) ? scoreMatch(p, a) : null;
+      history.push({
+        id: f.id, stage: "group",
+        home: f.home, away: f.away,
+        hf: f.homeFlag, af: f.awayFlag,
+        pick: p && p.h !== "" ? `${p.h}–${p.a}` : null,
+        actual: `${a.h}–${a.a}`,
+        points: s ? s.points : 0,
+        type: s ? s.type : "none",
+        kickoff: f.kickoff,
+      });
+    });
+    // Knockout matches
+    Object.keys(actualKoScores || {}).forEach(koId => {
+      const a = actualKoScores[koId];
+      if (!a || a.h === undefined || a.h === "") return;
+      const p = koPicks[koId];
+      const s = (p && p.h !== "" && p.h !== undefined) ? scoreKoMatch(p, a) : null;
+      const sched = KO_SCHEDULE[koId];
+      history.push({
+        id: koId, stage: "ko",
+        koLabel: sched?.venue?.includes("|") ? sched.venue.split("|")[0].trim() : koId,
+        pick: p && p.h !== "" ? `${p.h}–${p.a}` : null,
+        actual: `${a.h}–${a.a}`,
+        points: s ? s.points : 0,
+        type: s ? s.type : "none",
+        kickoff: sched?.kickoff,
+      });
+    });
+    // Most recent first
+    history.sort((x, y) => new Date(y.kickoff || 0) - new Date(x.kickoff || 0));
+
     return {
       ...ms,
       predicted, koPredictedCount,
@@ -4085,6 +4123,7 @@ function ProfileStats({ name, picks, koWinners, koPicks = {}, actuals, actualKo,
       // breakdown
       groupPoints, koPoints, koExact: ko.exact, koResult: ko.result, koPlayed: ko.played,
       winnerPoints, scorerPoints, scorerGoals, bonusPoints, grandTotal,
+      history,
     };
   }, [picks, koWinners, koPicks, actuals, actualKoScores, winnerPick, topScorerPick, actualWinner, actualTopScorer, topScorers]);
 
@@ -4103,10 +4142,22 @@ function ProfileStats({ name, picks, koWinners, koPicks = {}, actuals, actualKo,
         borderRadius:18,padding:"22px 20px",
         maxWidth:480,width:"100%",maxHeight:"90vh",overflowY:"auto",
         boxShadow:"0 20px 60px rgba(0,0,0,0.6)",
+        position:"relative",
       }}>
         <style>{`
           @keyframes goalFadeIn { from { opacity: 0; } to { opacity: 1; } }
         `}</style>
+
+        {/* Sticky X close button */}
+        <button onClick={onClose} aria-label="סגור" style={{
+          position:"sticky",top:0,float:"left",zIndex:5,
+          width:34,height:34,borderRadius:"50%",
+          background:"rgba(13,20,36,0.9)",border:"1px solid rgba(255,255,255,0.15)",
+          color:"#cbd5e1",fontSize:18,fontWeight:700,cursor:"pointer",
+          display:"flex",alignItems:"center",justifyContent:"center",
+          fontFamily:"inherit",lineHeight:1,marginBottom:-34,
+          boxShadow:"0 2px 8px rgba(0,0,0,0.4)",
+        }}>✕</button>
 
         {/* Header */}
         <div style={{textAlign:"center",marginBottom:18}}>
@@ -4192,6 +4243,50 @@ function ProfileStats({ name, picks, koWinners, koPicks = {}, actuals, actualKo,
             <span style={{fontFamily:"inherit",fontSize:22,fontWeight:900,color:"#fbbf24"}}>{stats.grandTotal}</span>
           </div>
         </div>
+
+        {/* 📜 PER-MATCH HISTORY — like a bank statement */}
+        {stats.history.length > 0 && (
+          <div style={{
+            background:"rgba(30,41,59,0.5)",border:"1px solid rgba(71,85,105,0.4)",
+            borderRadius:12,padding:"12px 14px",marginBottom:14,
+          }}>
+            <div style={{fontSize:10,color:"#94a3b8",letterSpacing:2,marginBottom:10,fontWeight:700}}>
+              היסטוריית נקודות · {stats.history.length} משחקים
+            </div>
+            <div style={{maxHeight:260,overflowY:"auto",margin:"0 -4px",padding:"0 4px"}}>
+              {stats.history.map(h => {
+                const c = h.type === "exact" ? "#fbbf24" : h.type === "result" ? "#22c55e" : h.points === 0 && h.pick ? "#ef4444" : "#475569";
+                return (
+                  <div key={h.id} style={{
+                    display:"flex",alignItems:"center",gap:8,padding:"7px 0",
+                    borderBottom:"1px solid rgba(71,85,105,0.2)",
+                  }}>
+                    {/* stage tag */}
+                    <span style={{fontSize:8,fontWeight:800,color:h.stage==="ko"?"#fbbf24":"#64748b",
+                      background:h.stage==="ko"?"rgba(251,191,36,0.12)":"rgba(255,255,255,0.04)",
+                      padding:"2px 5px",borderRadius:4,minWidth:30,textAlign:"center",flexShrink:0}}>
+                      {h.stage === "ko" ? (h.koLabel||"KO").replace("משחק ","M") : "בית"}
+                    </span>
+                    {/* teams */}
+                    <div style={{flex:1,minWidth:0,fontSize:11,color:"#cbd5e1",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                      {h.stage === "group" ? `${h.home} – ${h.away}` : "נוקאאוט"}
+                    </div>
+                    {/* pick vs actual */}
+                    <div style={{fontSize:10,color:"#64748b",textAlign:"center",direction:"ltr",flexShrink:0}}>
+                      {h.pick ? <span>ניחשת <b style={{color:"#94a3b8"}}>{h.pick}</b></span> : <span style={{fontStyle:"italic"}}>לא ניחשת</span>}
+                      <span style={{margin:"0 4px"}}>·</span>
+                      <b style={{color:"#cbd5e1"}}>{h.actual}</b>
+                    </div>
+                    {/* points */}
+                    <div style={{fontFamily:"inherit",fontSize:13,fontWeight:900,color:c,minWidth:32,textAlign:"left",flexShrink:0}}>
+                      {h.pick ? (h.points > 0 ? `+${h.points}` : "0") : "—"}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Accuracy block */}
         {stats.played > 0 && (
