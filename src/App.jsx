@@ -10,7 +10,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.55.0";
+const APP_VERSION = "3.55.1";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -11589,12 +11589,15 @@ function BonusPicks({
   );
 }
 
-function Welcome({ onStart, onImport }) {
+function Welcome({ onStart, onImport, onRecoverUserId }) {
   const t = useT();
   const [name, setName] = useState("");
   const [showImport, setShowImport] = useState(false);
   const [code, setCode] = useState("");
   const [err, setErr] = useState("");
+  const [showRecover, setShowRecover] = useState(false);
+  const [recoverUid, setRecoverUid] = useState("");
+  const [recoverName, setRecoverName] = useState("");
 
   // Cycle through fun taglines (English only — Hebrew uses a static one)
   const taglines = [
@@ -11661,6 +11664,29 @@ function Welcome({ onStart, onImport }) {
             </button>
             <div style={{textAlign:"center",margin:"14px 0 8px",color:"#475569",fontSize:11,letterSpacing:2}}>{t("welcome.or")}</div>
             <button onClick={()=>setShowImport(true)} style={ghostBtn}>{t("welcome.importCode")}</button>
+            <button onClick={()=>setShowRecover(true)} style={{...ghostBtn,marginTop:8,fontSize:11,opacity:0.8}}>🔑 שחזור עם מזהה (userId)</button>
+          </div>
+        ) : showRecover ? (
+          <div>
+            <label style={lbl}>שחזור חשבון עם מזהה</label>
+            <div style={{fontSize:11,color:"#94a3b8",marginBottom:10,lineHeight:1.5}}>
+              הדבק את ה-userId הישן שלך והשם, ואז הצטרף לאותה ליגה — כל הניחושים יחזרו מהענן.
+            </div>
+            <input autoFocus placeholder="u_1234567890_abc123" value={recoverUid}
+              onChange={e=>{setRecoverUid(e.target.value);setErr("");}}
+              style={{...inputStyle,fontFamily:"monospace",fontSize:12,marginBottom:8}}/>
+            <input placeholder="השם שלך (למשל Chen)" value={recoverName}
+              onChange={e=>{setRecoverName(e.target.value);setErr("");}}
+              maxLength={20} style={inputStyle}/>
+            {err && <div style={errStyle}>⚠️ {err}</div>}
+            <button onClick={()=>{
+              const uid = recoverUid.trim();
+              const nm = recoverName.trim();
+              if (!uid || !uid.startsWith("u_")) { setErr("מזהה לא תקין — צריך להתחיל ב-u_"); return; }
+              if (!nm) { setErr("נא להזין שם"); return; }
+              onRecoverUserId(uid, nm);
+            }} style={primaryBtn}>🔑 שחזר חשבון</button>
+            <button onClick={()=>{setShowRecover(false);setErr("");}} style={{...ghostBtn,marginTop:10}}>{t("welcome.back")}</button>
           </div>
         ) : (
           <div>
@@ -17195,8 +17221,16 @@ function AppInner() {
             let matchedByName = false;
             if (!myEntry && name) {
               const entries = Object.entries(data.members);
-              const found = entries.find(([uid, m]) => m && m.name && m.name.trim().toLowerCase() === name.trim().toLowerCase());
-              if (found) {
+              // Find ALL entries matching this name, then pick the one with the most
+              // picks (in case a clear-data created an empty duplicate record).
+              const matches = entries.filter(([uid, m]) => m && m.name && m.name.trim().toLowerCase() === name.trim().toLowerCase());
+              if (matches.length > 0) {
+                matches.sort((a, b) => {
+                  const ap = Object.keys(a[1]?.picks || {}).length + Object.keys(a[1]?.koPicks || {}).length;
+                  const bp = Object.keys(b[1]?.picks || {}).length + Object.keys(b[1]?.koPicks || {}).length;
+                  return bp - ap; // most picks first
+                });
+                const found = matches[0];
                 myEntry = found[1];
                 matchedByName = true;
                 // Adopt the OLD userId so future syncs map to the same cloud record
@@ -17686,6 +17720,26 @@ function AppInner() {
   })();
 
   const handleStart = (n) => { setName(n); setScreen("today"); };
+  // 🔑 Recover an account using just the old userId + name. Saves both to localStorage
+  // and reloads so the app boots with the old identity. Then joining the same league
+  // pulls all picks from the cloud (matched by userId).
+  const handleRecoverUserId = (oldUid, recoveredName) => {
+    try {
+      const existing = loadState() || {};
+      saveState({
+        ...existing,
+        userId: oldUid,
+        name: recoveredName,
+      });
+      // Reload so the restored userId is used from the very first render
+      window.location.reload();
+    } catch (e) {
+      // Fallback: set in-memory if storage fails
+      setUserId(oldUid);
+      setName(recoveredName);
+      setScreen("today");
+    }
+  };
   const handleImport = (d) => {
     // If the user pasted their own full JSON backup, restore everything (no "'s copy")
     if (d.coinBalance != null || (d.cardCollection && Object.keys(d.cardCollection).length > 0)) {
@@ -18069,7 +18123,7 @@ function AppInner() {
 
       {screen === "welcome" && showIntro && <SoccerIntro onDone={()=>setShowIntro(false)} />}
       {name && showOnboarding && <OnboardingTutorial onDone={completeOnboarding} />}
-      {screen === "welcome" && !showIntro && <Welcome onStart={handleStart} onImport={handleImport} />}
+      {screen === "welcome" && !showIntro && <Welcome onStart={handleStart} onImport={handleImport} onRecoverUserId={handleRecoverUserId} />}
 
       {/* Main screens — wrapped so each one slides in on screen change */}
       <div key={screen + (screen==="group"?String(groupIdx):"")} className="screen-enter">
