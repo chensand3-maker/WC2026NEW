@@ -11,7 +11,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.59.1";
+const APP_VERSION = "3.59.4";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -11824,7 +11824,7 @@ const SOFA_EVENTS = {
   "Brazil|Haiti":            { slug: "brazil-haiti/VdbscWb",                            id: null },
   "Türkiye|Paraguay":        { slug: "turkiye-paraguay/WdbsdWb",                        id: null },
   "Germany|Côte d'Ivoire":   { slug: "germany-cote-divoire/YdbsfWb",                    id: null },
-  "Ecuador|Curaçao":         { slug: "ecuador-curacao/ZdbsgWb",                         id: null },
+  "Ecuador|Curaçao":         { slug: "curacao-ecuador/hVbsCqx",               id: 15186906 },
   "Netherlands|Sweden":      { slug: "netherlands-sweden/aebshWb",                      id: null },
   "Tunisia|Japan":           { slug: "tunisia-japan/bebsiWb",                           id: null },
   "Belgium|Iran":            { slug: "belgium-iran/cebsjWb",                            id: null },
@@ -11883,11 +11883,13 @@ const SOFA_TEAMS = {
 
 function getSofaUrl(home, away) {
   const e = SOFA_EVENTS[`${home}|${away}`] || SOFA_EVENTS[`${away}|${home}`];
-  if (e) {
-    const base = `https://www.sofascore.com/football/match/${e.slug}`;
-    return e.id ? `${base}#id:${e.id},tab:lineups` : `${base}#tab:lineups`;
+  // Only use a direct match link when we have a VERIFIED event id. Many future
+  // matches were pre-filled with guessed slugs that 404 on SofaScore, so when the
+  // id is missing we send the user to the tournament page instead of a broken link.
+  if (e && e.id) {
+    return `https://www.sofascore.com/football/match/${e.slug}#id:${e.id},tab:lineups`;
   }
-  // For MD2/MD3 — link to SofaScore World Cup tournament page
+  // No verified id — link to the SofaScore World Cup matches page (always valid)
   return `https://www.sofascore.com/football/tournament/world/world-championship/16#id:58210,tab:matches`;
 }
 
