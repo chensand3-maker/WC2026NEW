@@ -10,7 +10,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.51.0";
+const APP_VERSION = "3.52.0";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -1303,13 +1303,18 @@ const KO_SCHEDULE = {
   "FINAL": { kickoff: _utc(2026,7,19,19, 0), venue: "MetLife Stadium, East Rutherford" },    // Jul 19 3 PM EDT
 };
 
+// Group stage ends after the last group match (DR Congo-Uzbekistan, Jun 27 23:30 UTC).
+// Knockout betting unlocks ~2h after, once final group results are in.
+const GROUP_STAGE_END = Date.parse(_utc(2026, 6, 28, 2, 0)); // Jun 28 02:00 UTC
+
 // Format a kickoff time in the user's local time zone
 function formatKickoff(iso) {
   if (!iso) return null;
   try {
     const d = new Date(iso);
-    const day = d.toLocaleDateString("he-IL", { timeZone: "Asia/Jerusalem", month: "short", day: "numeric", weekday: "short" });
-    const time = d.toLocaleTimeString("he-IL", { timeZone: "Asia/Jerusalem", hour: "numeric", minute: "2-digit" });
+    // Use the device's own local timezone — no forced zone.
+    const day = d.toLocaleDateString("he-IL", { month: "short", day: "numeric", weekday: "short" });
+    const time = d.toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" });
     return { day, time, dateObj: d };
   } catch { return null; }
 }
@@ -13311,7 +13316,10 @@ function KnockoutBracket({ standings, bestThirds, liveStandings, liveBestThirds,
     const sched = KO_SCHEDULE[m.id];
     const k = sched ? formatKickoff(sched.kickoff) : null;
     const kickMs = sched ? new Date(sched.kickoff).getTime() : null;
-    const isLocked = kickMs != null && (kickMs - nowTs) < LOCK_MS;
+    // Lock if: group stage not over yet, OR match-specific kickoff lock, OR teams not known
+    const groupStageOver = nowTs >= GROUP_STAGE_END;
+    const kickoffLock = kickMs != null && (kickMs - nowTs) < LOCK_MS;
+    const isLocked = !groupStageOver || kickoffLock;
     const kp = koPicks[m.id] || { h: "", a: "" };
     const hasPick = kp.h !== "" && kp.a !== "";
     // Real result for scoring
@@ -13328,6 +13336,7 @@ function KnockoutBracket({ standings, bestThirds, liveStandings, liveBestThirds,
       if (rh > ra) advA = true; else if (ra > rh) advB = true;
     }
     const matchNum = sched?.venue?.includes("|") ? sched.venue.split("|")[0].trim() : m.id;
+    const stadium = sched?.venue?.includes("|") ? sched.venue.split("|")[1].trim() : sched?.venue;
 
     const handleChange = (side, val) => {
       const cleaned = val.replace(/\D/g, "").slice(0, 1);
@@ -13344,59 +13353,68 @@ function KnockoutBracket({ standings, bestThirds, liveStandings, liveBestThirds,
 
     return (
       <div key={m.id} style={{
-        display:"grid", gridTemplateColumns:"auto 1fr auto auto", alignItems:"center", gap:8,
-        padding:"9px 10px", marginBottom:6, borderRadius:12,
+        padding:"8px 10px", marginBottom:6, borderRadius:12,
         background:"linear-gradient(160deg,rgba(30,41,64,0.6),rgba(18,26,44,0.4))",
         border:`1px solid ${borderColor}`,
         opacity: ready ? 1 : 0.55,
       }}>
-        {/* match number */}
-        <div style={{fontFamily:"inherit",fontSize:10,fontWeight:800,color:"#7c8db0",
-          background:"rgba(255,255,255,0.05)",padding:"3px 6px",borderRadius:5,minWidth:34,textAlign:"center"}}>
-          {matchNum.replace("משחק ","M")}
-        </div>
-        {/* teams stacked */}
-        <div style={{display:"flex",flexDirection:"column",gap:3,minWidth:0,direction:"ltr"}}>
-          <div style={{display:"flex",alignItems:"center",gap:7,opacity: hasReal && !advA ? 0.4 : 1}}>
-            <span style={{fontSize:16,flexShrink:0}}>{m.a?.flag||m.a?.f||"❓"}</span>
-            <span style={{fontSize:12,fontWeight:advA?800:600,color:advA?"#fff":"#cbd5e1",
-              overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",
-              textDecoration: hasReal && !advA ? "line-through" : "none"}}>{m.a?.name||m.a?.n||"TBD"}</span>
-          </div>
-          <div style={{display:"flex",alignItems:"center",gap:7,opacity: hasReal && !advB ? 0.4 : 1}}>
-            <span style={{fontSize:16,flexShrink:0}}>{m.b?.flag||m.b?.f||"❓"}</span>
-            <span style={{fontSize:12,fontWeight:advB?800:600,color:advB?"#fff":"#cbd5e1",
-              overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",
-              textDecoration: hasReal && !advB ? "line-through" : "none"}}>{m.b?.name||m.b?.n||"TBD"}</span>
-          </div>
-        </div>
-        {/* score inputs */}
-        {ready && !isLocked ? (
-          <div style={{display:"flex",alignItems:"center",gap:3,direction:"ltr"}}>
-            <input value={kp.h} onChange={e=>handleChange("h",e.target.value)} inputMode="numeric"
-              placeholder="–" style={{width:32,height:34,borderRadius:8,background:"rgba(13,20,36,0.8)",
-              border:"1.5px solid rgba(255,255,255,0.1)",color:"#f1f5f9",fontFamily:"inherit",fontSize:16,
-              fontWeight:800,textAlign:"center",outline:"none"}}/>
-            <span style={{color:"#3e4a64",fontWeight:800}}>–</span>
-            <input value={kp.a} onChange={e=>handleChange("a",e.target.value)} inputMode="numeric"
-              placeholder="–" style={{width:32,height:34,borderRadius:8,background:"rgba(13,20,36,0.8)",
-              border:"1.5px solid rgba(255,255,255,0.1)",color:"#f1f5f9",fontFamily:"inherit",fontSize:16,
-              fontWeight:800,textAlign:"center",outline:"none"}}/>
-          </div>
-        ) : (
-          <div style={{display:"flex",alignItems:"center",gap:3,fontFamily:"inherit",fontSize:15,fontWeight:800,
-            color: hasPick ? "#f1f5f9" : "#3e4a64",background:"rgba(13,20,36,0.7)",padding:"5px 9px",borderRadius:8}}>
-            {isLocked && hasPick ? "🔒" : hasPick ? `${kp.h}–${kp.a}` : "—"}
+        {/* date/time/venue header */}
+        {k && (
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",
+            fontSize:9,color: isLocked && !groupStageOver ? "#5b6b8c" : "#7c8db0",marginBottom:6,gap:6}}>
+            <span style={{fontFamily:"inherit",fontWeight:800,color:"#7c8db0",
+              background:"rgba(255,255,255,0.05)",padding:"2px 6px",borderRadius:5,flexShrink:0}}>
+              {matchNum.replace("משחק ","M")}
+            </span>
+            <span style={{flex:1,textAlign:"center",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+              📅 {k.day} · {k.time}{stadium ? ` · 📍 ${stadium}` : ""}
+            </span>
           </div>
         )}
-        {/* points badge */}
-        <div style={{fontSize:10,fontWeight:800,padding:"3px 7px",borderRadius:7,minWidth:36,textAlign:"center",
-          background: koScore?.type==="exact" ? "rgba(251,191,36,0.18)" : koScore?.type==="result" ? "rgba(34,197,94,0.18)" : "rgba(255,255,255,0.04)",
-          color: koScore?.type==="exact" ? "#fbbf24" : koScore?.type==="result" ? "#22c55e" : "#3e4a64"}}>
-          {koScore ? `+${koScore.points}` : hasReal ? "0" : hasPick ? "⏳" : "—"}
+        {/* teams + score */}
+        <div style={{display:"grid",gridTemplateColumns:"1fr auto auto",alignItems:"center",gap:8}}>
+          <div style={{display:"flex",flexDirection:"column",gap:3,minWidth:0,direction:"ltr"}}>
+            <div style={{display:"flex",alignItems:"center",gap:7,opacity: hasReal && !advA ? 0.4 : 1}}>
+              <span style={{fontSize:16,flexShrink:0}}>{m.a?.flag||m.a?.f||"❓"}</span>
+              <span style={{fontSize:12,fontWeight:advA?800:600,color:advA?"#fff":"#cbd5e1",
+                overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",
+                textDecoration: hasReal && !advA ? "line-through" : "none"}}>{m.a?.name||m.a?.n||"TBD"}</span>
+            </div>
+            <div style={{display:"flex",alignItems:"center",gap:7,opacity: hasReal && !advB ? 0.4 : 1}}>
+              <span style={{fontSize:16,flexShrink:0}}>{m.b?.flag||m.b?.f||"❓"}</span>
+              <span style={{fontSize:12,fontWeight:advB?800:600,color:advB?"#fff":"#cbd5e1",
+                overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",
+                textDecoration: hasReal && !advB ? "line-through" : "none"}}>{m.b?.name||m.b?.n||"TBD"}</span>
+            </div>
+          </div>
+          {/* score inputs or lock */}
+          {ready && !isLocked ? (
+            <div style={{display:"flex",alignItems:"center",gap:3,direction:"ltr"}}>
+              <input value={kp.h} onChange={e=>handleChange("h",e.target.value)} inputMode="numeric"
+                placeholder="–" style={{width:32,height:34,borderRadius:8,background:"rgba(13,20,36,0.8)",
+                border:"1.5px solid rgba(255,255,255,0.1)",color:"#f1f5f9",fontFamily:"inherit",fontSize:16,
+                fontWeight:800,textAlign:"center",outline:"none"}}/>
+              <span style={{color:"#3e4a64",fontWeight:800}}>–</span>
+              <input value={kp.a} onChange={e=>handleChange("a",e.target.value)} inputMode="numeric"
+                placeholder="–" style={{width:32,height:34,borderRadius:8,background:"rgba(13,20,36,0.8)",
+                border:"1.5px solid rgba(255,255,255,0.1)",color:"#f1f5f9",fontFamily:"inherit",fontSize:16,
+                fontWeight:800,textAlign:"center",outline:"none"}}/>
+            </div>
+          ) : (
+            <div style={{display:"flex",alignItems:"center",gap:3,fontFamily:"inherit",fontSize:15,fontWeight:800,
+              color: hasPick ? "#f1f5f9" : "#3e4a64",background:"rgba(13,20,36,0.7)",padding:"5px 9px",borderRadius:8}}>
+              {!groupStageOver ? "🔒" : kickoffLock && hasPick ? "🔒" : hasPick ? `${kp.h}–${kp.a}` : "—"}
+            </div>
+          )}
+          {/* points badge */}
+          <div style={{fontSize:10,fontWeight:800,padding:"3px 7px",borderRadius:7,minWidth:36,textAlign:"center",
+            background: koScore?.type==="exact" ? "rgba(251,191,36,0.18)" : koScore?.type==="result" ? "rgba(34,197,94,0.18)" : "rgba(255,255,255,0.04)",
+            color: koScore?.type==="exact" ? "#fbbf24" : koScore?.type==="result" ? "#22c55e" : "#3e4a64"}}>
+            {koScore ? `+${koScore.points}` : hasReal ? "0" : hasPick ? "⏳" : "—"}
+          </div>
         </div>
         {hasReal && (
-          <div style={{gridColumn:"1/-1",fontSize:9,color:"#5b6b8c",textAlign:"center",paddingTop:2}}>
+          <div style={{fontSize:9,color:"#5b6b8c",textAlign:"center",paddingTop:5}}>
             תוצאה: <b style={{color:"#c3d0e8"}}>{realResult.h}–{realResult.a}</b>
           </div>
         )}
@@ -13533,6 +13551,19 @@ function KnockoutBracket({ standings, bestThirds, liveStandings, liveBestThirds,
       {isNarrow ? (
         // ─── MOBILE LAYOUT: collapsible accordion rounds ───
         <div>
+          {/* Lock notice until group stage ends */}
+          {nowTs < GROUP_STAGE_END && (
+            <div style={{
+              background:"linear-gradient(135deg,rgba(99,102,241,0.12),rgba(59,130,246,0.05))",
+              border:"1px solid rgba(99,102,241,0.35)",borderRadius:14,padding:"12px 14px",marginBottom:16,
+              display:"flex",gap:10,alignItems:"center",fontSize:11,color:"#aebbd6",lineHeight:1.5}}>
+              <span style={{fontSize:20}}>🔒</span>
+              <div>
+                <b style={{color:"#a5b4fc"}}>הנוקאאוט נפתח בסיום שלב הבתים.</b> ברגע שכל משחקי הבתים יסתיימו (28 ביוני) תוכלו להמר על המשחקים — והקבוצות האמיתיות יופיעו אוטומטית.
+              </div>
+            </div>
+          )}
+
           {/* Progress dots */}
           <div style={{display:"flex",alignItems:"center",justifyContent:"center",margin:"4px 0 18px"}}>
             {[
