@@ -10,7 +10,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.54.2";
+const APP_VERSION = "3.54.3";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -4273,7 +4273,7 @@ function ProfileStats({ name, picks, koWinners, koPicks = {}, actuals, actualKo,
                       {h.stage === "ko" ? (h.koLabel||"KO").replace("משחק ","M") : "בית"}
                     </span>
                     {/* teams as flags */}
-                    <div style={{flex:1,minWidth:0,display:"flex",alignItems:"center",gap:6,direction:"ltr"}}>
+                    <div style={{flex:1,minWidth:0,display:"flex",alignItems:"center",gap:6,direction:"ltr",unicodeBidi:"isolate"}}>
                       {h.stage === "group" ? (
                         <>
                           <span style={{fontSize:18}}>{h.hf}</span>
@@ -4285,10 +4285,10 @@ function ProfileStats({ name, picks, koWinners, koPicks = {}, actuals, actualKo,
                       )}
                     </div>
                     {/* pick vs actual */}
-                    <div style={{fontSize:10,color:"#64748b",textAlign:"center",direction:"ltr",flexShrink:0}}>
-                      {h.pick ? <span>ניחשת <b style={{color:"#94a3b8"}}>{h.pick}</b></span> : <span style={{fontStyle:"italic"}}>לא ניחשת</span>}
+                    <div style={{fontSize:10,color:"#64748b",textAlign:"center",flexShrink:0}}>
+                      {h.pick ? <span>ניחשת <b style={{color:"#94a3b8",direction:"ltr",display:"inline-block",unicodeBidi:"isolate"}}>{h.pick}</b></span> : <span style={{fontStyle:"italic"}}>לא ניחשת</span>}
                       <span style={{margin:"0 4px"}}>·</span>
-                      <b style={{color:"#cbd5e1"}}>{h.actual}</b>
+                      <b style={{color:"#cbd5e1",direction:"ltr",display:"inline-block",unicodeBidi:"isolate"}}>{h.actual}</b>
                     </div>
                     {/* points */}
                     <div style={{fontFamily:"inherit",fontSize:13,fontWeight:900,color:c,minWidth:32,textAlign:"left",flexShrink:0}}>
