@@ -11,7 +11,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.58.0";
+const APP_VERSION = "3.58.1";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -6455,64 +6455,10 @@ function WrappedModal({ stats, onClose }) {
 
 
 // 👑 LEAGUE ADMIN — view members + share backup with them
-// A single editable pick row for the admin "fix my picks" tool
-function FixPickRow({ fixture, actual, pick, pts, ptsColor, onSave }) {
-  const [h, setH] = useState(pick?.h ?? "");
-  const [a, setA] = useState(pick?.a ?? "");
-  const [saved, setSaved] = useState(false);
-  const homeFlag = flagFor(fixture.home);
-  const awayFlag = flagFor(fixture.away);
-  const dirty = String(h) !== String(pick?.h ?? "") || String(a) !== String(pick?.a ?? "");
-  return (
-    <div style={{display:"flex",alignItems:"center",gap:8,padding:"8px 6px",
-      borderBottom:"1px solid rgba(71,85,105,0.2)"}}>
-      {/* teams */}
-      <div style={{flex:1,minWidth:0,display:"flex",alignItems:"center",gap:6,direction:"ltr",unicodeBidi:"isolate"}}>
-        <span style={{fontSize:16}}>{homeFlag}</span>
-        <span style={{fontSize:10,color:"#475569"}}>vs</span>
-        <span style={{fontSize:16}}>{awayFlag}</span>
-      </div>
-      {/* actual result */}
-      <div style={{fontSize:10,color:"#94a3b8",direction:"ltr",unicodeBidi:"isolate",minWidth:38,textAlign:"center"}}>
-        <div style={{fontSize:8,color:"#64748b"}}>תוצאה</div>
-        <b style={{color:"#cbd5e1"}}>{actual.h}-{actual.a}</b>
-      </div>
-      {/* my pick inputs */}
-      <div style={{display:"flex",alignItems:"center",gap:2,direction:"ltr"}}>
-        <input value={h} onChange={e=>{setH(e.target.value.replace(/\D/g,"").slice(0,1));setSaved(false);}}
-          inputMode="numeric" placeholder="–" style={{width:26,height:30,borderRadius:6,
-          background:"rgba(13,20,36,0.8)",border:"1px solid rgba(255,255,255,0.1)",color:"#f1f5f9",
-          fontFamily:"inherit",fontSize:14,fontWeight:800,textAlign:"center",outline:"none"}}/>
-        <span style={{color:"#3e4a64"}}>-</span>
-        <input value={a} onChange={e=>{setA(e.target.value.replace(/\D/g,"").slice(0,1));setSaved(false);}}
-          inputMode="numeric" placeholder="–" style={{width:26,height:30,borderRadius:6,
-          background:"rgba(13,20,36,0.8)",border:"1px solid rgba(255,255,255,0.1)",color:"#f1f5f9",
-          fontFamily:"inherit",fontSize:14,fontWeight:800,textAlign:"center",outline:"none"}}/>
-      </div>
-      {/* points / save */}
-      {dirty ? (
-        <button onClick={()=>{
-          if (h==="" || a==="") return;
-          onSave(parseInt(h), parseInt(a));
-          setSaved(true);
-        }} style={{fontSize:10,fontWeight:800,padding:"5px 8px",borderRadius:6,
-          background:"#22c55e",color:"#0d1424",border:"none",cursor:"pointer",fontFamily:"inherit",minWidth:42}}>
-          שמור
-        </button>
-      ) : (
-        <div style={{fontSize:11,fontWeight:800,color:ptsColor,minWidth:42,textAlign:"center"}}>
-          {saved ? "✓" : (pick && pick.h!=="" && pick.h!=null ? `+${pts}` : "—")}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function LeagueAdminModal({ leagueData, leagueCode, actuals = {}, myUserId, onFixMyPick, onClose }) {
+function LeagueAdminModal({ leagueData, leagueCode, onClose }) {
   const t = useT();
   const { lang } = useContext(LangContext);
   const [selectedMember, setSelectedMember] = useState(null);
-  const [showFixer, setShowFixer] = useState(false);
 
   const members = leagueData?.members ? Object.entries(leagueData.members) : [];
   // Compute simple stats per member
@@ -6641,51 +6587,6 @@ function LeagueAdminModal({ leagueData, leagueCode, actuals = {}, myUserId, onFi
         }}>
           💡 {t("admin.info")}
         </div>
-
-        {/* 🔧 Fix my own picks (recover lost points) */}
-        {onFixMyPick && (
-          <div style={{marginBottom:14}}>
-            <button onClick={()=>setShowFixer(s=>!s)} style={{
-              width:"100%",padding:"10px 12px",
-              background:"linear-gradient(135deg,rgba(34,197,94,0.18),rgba(34,197,94,0.08))",
-              border:"1px solid rgba(34,197,94,0.4)",borderRadius:10,
-              color:"#4ade80",fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"inherit",
-            }}>
-              🔧 תקן את הניחושים שלי {showFixer ? "▲" : "▼"}
-            </button>
-            {showFixer && (() => {
-              const myEntry = leagueData?.members?.[myUserId];
-              const myPicks = myEntry?.picks || {};
-              // Show only matches that have already finished (have an actual result)
-              const finished = FIXTURES.filter(f => {
-                const a = actuals[f.id];
-                return a && a.h !== undefined && a.h !== "";
-              });
-              if (finished.length === 0) {
-                return <div style={{fontSize:11,color:"#94a3b8",padding:"10px",textAlign:"center"}}>אין עדיין משחקים שנגמרו.</div>;
-              }
-              return (
-                <div style={{marginTop:8,maxHeight:340,overflowY:"auto"}}>
-                  <div style={{fontSize:10,color:"#94a3b8",marginBottom:8,lineHeight:1.5}}>
-                    משחקים שנגמרו · הניחוש שלך מול התוצאה. אם ניחוש שגוי — תקן אותו וקבל את הנקודות.
-                  </div>
-                  {finished.map(f => {
-                    const a = actuals[f.id];
-                    const p = myPicks[f.id];
-                    const score = (p && p.h!=="" && p.h!=null) ? scoreMatch(p, a) : null;
-                    const pts = score ? score.points : 0;
-                    const ptsColor = score?.type==="exact" ? "#fbbf24" : score?.type==="result" ? "#22c55e" : "#64748b";
-                    return (
-                      <FixPickRow key={f.id}
-                        fixture={f} actual={a} pick={p} pts={pts} ptsColor={ptsColor}
-                        onSave={(h,aa)=>onFixMyPick(f.id, h, aa)} />
-                    );
-                  })}
-                </div>
-              );
-            })()}
-          </div>
-        )}
 
         {/* Member list */}
         <div style={{display:"flex",flexDirection:"column",gap:10}}>
@@ -18535,19 +18436,6 @@ function AppInner() {
         <LeagueAdminModal
           leagueData={leagueData}
           leagueCode={activeLeagueCode}
-          actuals={actuals}
-          myUserId={userId}
-          onFixMyPick={async (fixtureId, h, a) => {
-            // Update my own pick in the league cloud record + locally
-            const newPicks = { ...picks, [fixtureId]: { h, a } };
-            setPicks(newPicks);
-            try {
-              await updateMyPicks(activeLeagueCode, userId, name, newPicks, koWinners, {
-                winnerPick, topScorerPick, koPicks,
-                coinBalance: coins?.balance || 0,
-              });
-            } catch (e) { console.error("Fix pick failed:", e); }
-          }}
           onClose={()=>setShowAdmin(false)}
         />
       )}
