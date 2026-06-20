@@ -10,7 +10,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.54.4";
+const APP_VERSION = "3.54.5";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -13981,7 +13981,7 @@ function ActualResults({ actuals, setActuals, actualKo, setActualKo, onClose }) 
 
 // ─── LEADERBOARD ──────────────────────────────────────────────────────────────
 
-function Leaderboard({ name, picks, koWinners, friends, actuals, actualKo, hasActuals }) {
+function Leaderboard({ name, picks, koWinners, koPicks = {}, friends, actuals, actualKo, actualKoScores = {}, hasActuals }) {
   const actualStandings = useMemo(() => allStandings(actuals), [actuals]);
   const actualBestThirds = useMemo(() => getBestThirds(actualStandings), [actualStandings]);
   const actualKnockout = useMemo(() => getKnockoutTeams(actualStandings, actualBestThirds, actualKo), [actualStandings, actualBestThirds, actualKo]);
@@ -14053,11 +14053,8 @@ function Leaderboard({ name, picks, koWinners, friends, actuals, actualKo, hasAc
               {p.matchScore.exact > 0 && <Badge color="#fbbf24">🎯 {p.matchScore.exact} exact</Badge>}
               {p.matchScore.result > 0 && <Badge color="#22c55e">✅ {p.matchScore.result} winner</Badge>}
               {p.matchScore.wrong > 0 && <Badge color="#f87171">❌ {p.matchScore.wrong} miss</Badge>}
-              {p.koScore.breakdown.r16 > 0 && <Badge color="#a855f7">R16 ×{p.koScore.breakdown.r16}</Badge>}
-              {p.koScore.breakdown.qf > 0 && <Badge color="#ec4899">QF ×{p.koScore.breakdown.qf}</Badge>}
-              {p.koScore.breakdown.sf > 0 && <Badge color="#f97316">SF ×{p.koScore.breakdown.sf}</Badge>}
-              {p.koScore.breakdown.finalist > 0 && <Badge color="#fbbf24">🏟️ Finalist ×{p.koScore.breakdown.finalist}</Badge>}
-              {p.koScore.breakdown.champion > 0 && <Badge color="#fbbf24">👑 CHAMPION!</Badge>}
+              {p.koScore.exact > 0 && <Badge color="#a855f7">🏆 {p.koScore.exact} בול</Badge>}
+              {p.koScore.result > 0 && <Badge color="#ec4899">✓ {p.koScore.result} מנצח</Badge>}
             </div>
           </div>
         );
@@ -15395,7 +15392,7 @@ function LeagueHub({
                   {p.predictedCount}/{FIXTURES.length} {t("league.predicted")}
                   {showPoints && p.matchScore.exact>0 && ` · 🎯${p.matchScore.exact} ${t("league.exact")}`}
                   {showPoints && p.matchScore.result>0 && ` · ✅${p.matchScore.result}`}
-                  {showPoints && p.koScore.breakdown.champion>0 && " · 👑"}
+                  {showPoints && p.koScore?.exact>0 && ` · 🏆${p.koScore.exact}`}
                 </div>
               </div>
               {/* Points */}
@@ -15810,7 +15807,7 @@ function LeagueView({ name, picks, koWinners, friends, setFriends, leagueName, s
                       <div style={{fontSize:10,color:"#64748b",marginTop:1}}>
                         {p.matchScore.exact>0 && `🎯${p.matchScore.exact} `}
                         {p.matchScore.result>0 && `✅${p.matchScore.result} `}
-                        {p.koScore.breakdown.champion>0 && "👑"}
+                        {p.koScore?.exact>0 && `🏆${p.koScore.exact}`}
                       </div>
                     </div>
                     <div style={{textAlign:"right"}}>
