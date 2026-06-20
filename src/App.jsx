@@ -11,7 +11,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.56.0";
+const APP_VERSION = "3.56.1";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -14528,6 +14528,10 @@ function LeagueHub({
     const members = Object.entries(leagueData.members || {}).map(([uid, m]) => {
       const ms = totalScore(m.picks || {}, actuals);
       const ks = totalKoScore(m.koPicks, actualKoScores);
+      // Standings / knockout teams for this member (used in drill-in view)
+      const st = allStandings(m.picks || {});
+      const bt = getBestThirds(st);
+      const kt = getKnockoutTeams(st, bt, deriveKoWinners(m.koWinners || {}, m.koPicks || {}));
       const predictedCount = Object.keys(m.picks || {}).filter(k => m.picks[k]?.h !== undefined && m.picks[k]?.h !== "").length;
       // ─── Bonus picks scoring (Tournament Winner + Top Scorer) ──
       let bonusPoints = 0;
@@ -15738,7 +15742,7 @@ function LeagueView({ name, picks, koWinners, friends, setFriends, leagueName, s
   if (viewing) {
     const member = everyone.find(p => p.name === viewing);
     if (!member) { setViewing(null); return null; }
-    const champ = member.knockout.champion;
+    const champ = member.knockout?.champion;
     return (
       <div style={{padding:"16px 14px 40px",maxWidth:600,margin:"0 auto"}}>
         <button onClick={()=>setViewing(null)} style={{...ghostBtn,marginBottom:14,padding:"7px 14px",width:"auto"}}>← Back to league</button>
@@ -16328,23 +16332,20 @@ class AppErrorBoundary extends React.Component {
   }
   render() {
     if (this.state.error) {
-      const err = this.state.error;
-      const stack = (this.state.info && this.state.info.componentStack) || err.stack || "";
       return React.createElement("div", {
         style: {
           minHeight: "100vh", background: "#0d1424", color: "#f1f5f9",
-          padding: "24px 16px", fontFamily: "monospace", fontSize: 12,
-          overflowY: "auto", direction: "ltr", textAlign: "left",
+          padding: "40px 24px", display: "flex", flexDirection: "column",
+          alignItems: "center", justifyContent: "center", textAlign: "center",
+          fontFamily: "inherit",
         }
       },
-        React.createElement("div", { style: { fontSize: 18, color: "#ef4444", fontWeight: 900, marginBottom: 12 } }, "⚠️ שגיאה באפליקציה"),
-        React.createElement("div", { style: { color: "#fbbf24", fontWeight: 700, marginBottom: 8, wordBreak: "break-word" } }, String(err && err.message || err)),
-        React.createElement("pre", {
-          style: { whiteSpace: "pre-wrap", wordBreak: "break-word", color: "#94a3b8", fontSize: 10, lineHeight: 1.5, background: "rgba(0,0,0,0.3)", padding: 12, borderRadius: 8, maxHeight: "50vh", overflow: "auto" }
-        }, String(stack).slice(0, 1500)),
+        React.createElement("div", { style: { fontSize: 48, marginBottom: 16 } }, "⚽"),
+        React.createElement("div", { style: { fontSize: 18, color: "#fbbf24", fontWeight: 900, marginBottom: 8 } }, "רגע, טוענים מחדש..."),
+        React.createElement("div", { style: { fontSize: 13, color: "#94a3b8", marginBottom: 24, maxWidth: 280, lineHeight: 1.5 } }, "משהו קטן השתבש. לחץ רענון והכל יחזור לעבוד."),
         React.createElement("button", {
           onClick: () => { try { window.location.reload(); } catch {} },
-          style: { marginTop: 16, padding: "10px 20px", background: "#fbbf24", color: "#1a1206", border: "none", borderRadius: 8, fontWeight: 800, fontSize: 14, cursor: "pointer", fontFamily: "inherit" }
+          style: { padding: "12px 28px", background: "linear-gradient(135deg,#fbbf24,#d97706)", color: "#1a1206", border: "none", borderRadius: 10, fontWeight: 800, fontSize: 15, cursor: "pointer", fontFamily: "inherit" }
         }, "🔄 רענן")
       );
     }
