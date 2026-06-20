@@ -10,7 +10,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.54.1";
+const APP_VERSION = "3.54.2";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -1147,6 +1147,11 @@ GROUP_KEYS.forEach(g => {
     });
   });
 });
+
+// Lookup: team name → flag emoji (built from GROUPS)
+const TEAM_FLAGS = {};
+GROUP_KEYS.forEach(g => GROUPS[g].forEach(tm => { TEAM_FLAGS[tm.n] = tm.f; }));
+const flagFor = (teamName) => TEAM_FLAGS[teamName] || "🏳️";
 
 // ─── SCHEDULE: kickoff times (UTC) and venues for every group match ──────────
 // Times are given in ET in the published schedule; June 2026 is EDT (UTC−4),
@@ -4086,7 +4091,7 @@ function ProfileStats({ name, picks, koWinners, koPicks = {}, actuals, actualKo,
       history.push({
         id: f.id, stage: "group",
         home: f.home, away: f.away,
-        hf: f.homeFlag, af: f.awayFlag,
+        hf: flagFor(f.home), af: flagFor(f.away),
         pick: p && p.h !== "" ? `${p.h}–${p.a}` : null,
         actual: `${a.h}–${a.a}`,
         points: s ? s.points : 0,
@@ -4267,9 +4272,17 @@ function ProfileStats({ name, picks, koWinners, koPicks = {}, actuals, actualKo,
                       padding:"2px 5px",borderRadius:4,minWidth:30,textAlign:"center",flexShrink:0}}>
                       {h.stage === "ko" ? (h.koLabel||"KO").replace("משחק ","M") : "בית"}
                     </span>
-                    {/* teams */}
-                    <div style={{flex:1,minWidth:0,fontSize:11,color:"#cbd5e1",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
-                      {h.stage === "group" ? `${h.home} – ${h.away}` : "נוקאאוט"}
+                    {/* teams as flags */}
+                    <div style={{flex:1,minWidth:0,display:"flex",alignItems:"center",gap:6,direction:"ltr"}}>
+                      {h.stage === "group" ? (
+                        <>
+                          <span style={{fontSize:18}}>{h.hf}</span>
+                          <span style={{fontSize:10,color:"#475569"}}>vs</span>
+                          <span style={{fontSize:18}}>{h.af}</span>
+                        </>
+                      ) : (
+                        <span style={{fontSize:11,color:"#94a3b8"}}>🏆 נוקאאוט</span>
+                      )}
                     </div>
                     {/* pick vs actual */}
                     <div style={{fontSize:10,color:"#64748b",textAlign:"center",direction:"ltr",flexShrink:0}}>
