@@ -10,7 +10,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.50.0";
+const APP_VERSION = "3.51.0";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -13112,7 +13112,7 @@ function GroupView({ group, picks, actuals, standings, bestThirds, liveStandings
 
 // ─── KNOCKOUT BRACKET ─────────────────────────────────────────────────────────
 
-function KnockoutBracket({ standings, bestThirds, liveStandings, liveBestThirds, hasActuals, actualKo = {}, koWinners, setKoWinners, koPicks = {}, setKoPicks = ()=>{}, onBack, onShare, complete, onChampionPicked }) {
+function KnockoutBracket({ standings, bestThirds, liveStandings, liveBestThirds, hasActuals, actualKo = {}, actualKoScores = {}, koWinners, setKoWinners, koPicks = {}, setKoPicks = ()=>{}, onBack, onShare, complete, onChampionPicked }) {
   const t = useT();
   // The bracket is now built from REAL results, not predictions.
   // R32 teams come from the actual group standings (liveStandings).
@@ -13125,6 +13125,10 @@ function KnockoutBracket({ standings, bestThirds, liveStandings, liveBestThirds,
     [actualStandings, actualThirds]
   );
   const [confettiKey, setConfettiKey] = useState(0);
+
+  // Accordion: which round is expanded. Default to R32 (the first active round).
+  const [openRound, setOpenRound] = useState("R32");
+  const toggleRound = (r) => setOpenRound(prev => prev === r ? null : r);
 
   // Responsive: stack vertically on narrow phones
   const [isNarrow, setIsNarrow] = useState(() => typeof window !== "undefined" && window.innerWidth < 720);
@@ -13301,6 +13305,133 @@ function KnockoutBracket({ standings, bestThirds, liveStandings, liveBestThirds,
     );
   };
 
+  // ─── COMPACT MATCH CARD (for accordion rounds) ───
+  const renderCompactMatch = (m) => {
+    const ready = m.a && m.b;
+    const sched = KO_SCHEDULE[m.id];
+    const k = sched ? formatKickoff(sched.kickoff) : null;
+    const kickMs = sched ? new Date(sched.kickoff).getTime() : null;
+    const isLocked = kickMs != null && (kickMs - nowTs) < LOCK_MS;
+    const kp = koPicks[m.id] || { h: "", a: "" };
+    const hasPick = kp.h !== "" && kp.a !== "";
+    // Real result for scoring
+    const realResult = actualKoScores?.[m.id];
+    const hasReal = realResult && realResult.h !== "" && realResult.h !== undefined;
+    const koScore = (hasPick && hasReal) ? scoreKoMatch(kp, realResult) : null;
+    const borderColor = koScore?.type === "exact" ? "#fbbf24"
+                      : koScore?.type === "result" ? "#22c55e"
+                      : hasPick ? "rgba(251,191,36,0.35)" : "rgba(255,255,255,0.05)";
+    // Who advanced (by real result)
+    let advA = false, advB = false;
+    if (hasReal) {
+      const rh = parseInt(realResult.h), ra = parseInt(realResult.a);
+      if (rh > ra) advA = true; else if (ra > rh) advB = true;
+    }
+    const matchNum = sched?.venue?.includes("|") ? sched.venue.split("|")[0].trim() : m.id;
+
+    const handleChange = (side, val) => {
+      const cleaned = val.replace(/\D/g, "").slice(0, 1);
+      setKoPicks(prev => {
+        const updated = { ...(prev[m.id] || { h:"", a:"" }), [side]: cleaned };
+        const next = { ...prev, [m.id]: updated };
+        const h = parseInt(updated.h), a = parseInt(updated.a);
+        if (!isNaN(h) && !isNaN(a) && h !== a) {
+          setKoWinners(w => ({ ...w, [m.id]: h > a ? "a" : "b" }));
+        }
+        return next;
+      });
+    };
+
+    return (
+      <div key={m.id} style={{
+        display:"grid", gridTemplateColumns:"auto 1fr auto auto", alignItems:"center", gap:8,
+        padding:"9px 10px", marginBottom:6, borderRadius:12,
+        background:"linear-gradient(160deg,rgba(30,41,64,0.6),rgba(18,26,44,0.4))",
+        border:`1px solid ${borderColor}`,
+        opacity: ready ? 1 : 0.55,
+      }}>
+        {/* match number */}
+        <div style={{fontFamily:"inherit",fontSize:10,fontWeight:800,color:"#7c8db0",
+          background:"rgba(255,255,255,0.05)",padding:"3px 6px",borderRadius:5,minWidth:34,textAlign:"center"}}>
+          {matchNum.replace("משחק ","M")}
+        </div>
+        {/* teams stacked */}
+        <div style={{display:"flex",flexDirection:"column",gap:3,minWidth:0,direction:"ltr"}}>
+          <div style={{display:"flex",alignItems:"center",gap:7,opacity: hasReal && !advA ? 0.4 : 1}}>
+            <span style={{fontSize:16,flexShrink:0}}>{m.a?.flag||m.a?.f||"❓"}</span>
+            <span style={{fontSize:12,fontWeight:advA?800:600,color:advA?"#fff":"#cbd5e1",
+              overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",
+              textDecoration: hasReal && !advA ? "line-through" : "none"}}>{m.a?.name||m.a?.n||"TBD"}</span>
+          </div>
+          <div style={{display:"flex",alignItems:"center",gap:7,opacity: hasReal && !advB ? 0.4 : 1}}>
+            <span style={{fontSize:16,flexShrink:0}}>{m.b?.flag||m.b?.f||"❓"}</span>
+            <span style={{fontSize:12,fontWeight:advB?800:600,color:advB?"#fff":"#cbd5e1",
+              overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",
+              textDecoration: hasReal && !advB ? "line-through" : "none"}}>{m.b?.name||m.b?.n||"TBD"}</span>
+          </div>
+        </div>
+        {/* score inputs */}
+        {ready && !isLocked ? (
+          <div style={{display:"flex",alignItems:"center",gap:3,direction:"ltr"}}>
+            <input value={kp.h} onChange={e=>handleChange("h",e.target.value)} inputMode="numeric"
+              placeholder="–" style={{width:32,height:34,borderRadius:8,background:"rgba(13,20,36,0.8)",
+              border:"1.5px solid rgba(255,255,255,0.1)",color:"#f1f5f9",fontFamily:"inherit",fontSize:16,
+              fontWeight:800,textAlign:"center",outline:"none"}}/>
+            <span style={{color:"#3e4a64",fontWeight:800}}>–</span>
+            <input value={kp.a} onChange={e=>handleChange("a",e.target.value)} inputMode="numeric"
+              placeholder="–" style={{width:32,height:34,borderRadius:8,background:"rgba(13,20,36,0.8)",
+              border:"1.5px solid rgba(255,255,255,0.1)",color:"#f1f5f9",fontFamily:"inherit",fontSize:16,
+              fontWeight:800,textAlign:"center",outline:"none"}}/>
+          </div>
+        ) : (
+          <div style={{display:"flex",alignItems:"center",gap:3,fontFamily:"inherit",fontSize:15,fontWeight:800,
+            color: hasPick ? "#f1f5f9" : "#3e4a64",background:"rgba(13,20,36,0.7)",padding:"5px 9px",borderRadius:8}}>
+            {isLocked && hasPick ? "🔒" : hasPick ? `${kp.h}–${kp.a}` : "—"}
+          </div>
+        )}
+        {/* points badge */}
+        <div style={{fontSize:10,fontWeight:800,padding:"3px 7px",borderRadius:7,minWidth:36,textAlign:"center",
+          background: koScore?.type==="exact" ? "rgba(251,191,36,0.18)" : koScore?.type==="result" ? "rgba(34,197,94,0.18)" : "rgba(255,255,255,0.04)",
+          color: koScore?.type==="exact" ? "#fbbf24" : koScore?.type==="result" ? "#22c55e" : "#3e4a64"}}>
+          {koScore ? `+${koScore.points}` : hasReal ? "0" : hasPick ? "⏳" : "—"}
+        </div>
+        {hasReal && (
+          <div style={{gridColumn:"1/-1",fontSize:9,color:"#5b6b8c",textAlign:"center",paddingTop:2}}>
+            תוצאה: <b style={{color:"#c3d0e8"}}>{realResult.h}–{realResult.a}</b>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // ─── ACCORDION ROUND ───
+  const renderRound = (key, label, badge, matches) => {
+    const isOpen = openRound === key;
+    const predicted = matches.filter(m => { const p = koPicks[m.id]; return p && p.h !== "" && p.h !== undefined; }).length;
+    const total = matches.length;
+    return (
+      <div key={key} style={{marginBottom:12,borderRadius:16,overflow:"hidden",
+        border:"1px solid rgba(255,255,255,0.06)",background:"rgba(18,26,44,0.4)"}}>
+        <div onClick={()=>toggleRound(key)} style={{display:"flex",alignItems:"center",gap:10,padding:"14px",
+          cursor:"pointer",userSelect:"none",background:"linear-gradient(160deg,rgba(30,41,64,0.6),transparent)"}}>
+          <div style={{fontFamily:"inherit",fontSize:13,fontWeight:900,color:"#0d1424",width:32,height:32,
+            borderRadius:9,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,
+            background: isOpen ? "linear-gradient(135deg,#fbbf24,#d97706)" : "linear-gradient(135deg,#8295b5,#5b6b8c)"}}>{badge}</div>
+          <div style={{fontSize:14,fontWeight:800,letterSpacing:2,color:"#c3d0e8"}}>{label}</div>
+          <div style={{marginRight:"auto",fontSize:10,fontWeight:700,
+            background: predicted>0 ? "rgba(251,191,36,0.15)" : "rgba(255,255,255,0.05)",
+            color: predicted>0 ? "#fbbf24" : "#5b6b8c",padding:"2px 9px",borderRadius:20}}>{predicted}/{total}</div>
+          <div style={{fontSize:13,color:"#5b6b8c",transition:"transform .25s",transform: isOpen?"rotate(180deg)":"none"}}>▼</div>
+        </div>
+        {isOpen && (
+          <div style={{padding:"6px 10px 12px"}}>
+            {matches.map(m => renderCompactMatch(m))}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div style={{padding:"16px 14px 100px",maxWidth:920,margin:"0 auto"}}>
       <div style={{textAlign:"center",marginBottom:18}}>
@@ -13400,49 +13531,30 @@ function KnockoutBracket({ standings, bestThirds, liveStandings, liveBestThirds,
 
       {/* Two-sided tournament bracket */}
       {isNarrow ? (
-        // ─── MOBILE LAYOUT: vertical with section headers ───
-        <div style={{display:"flex",flexDirection:"column",gap:14}}>
-          {/* Final at top with trophy */}
-          <div style={{
-            background:"linear-gradient(135deg, rgba(251,191,36,0.08), rgba(217,119,6,0.04))",
-            border:"1px solid rgba(251,191,36,0.4)",
-            borderRadius:14,padding:"12px 14px",
-          }}>
-            <div style={{textAlign:"center",marginBottom:8}}>
-              <div style={{fontSize:28,filter:"drop-shadow(0 0 8px rgba(251,191,36,0.7))",marginBottom:2}}>🏆</div>
-              <div style={{fontSize:11,color:"#fbbf24",letterSpacing:3,fontWeight:800}}>FINAL</div>
-            </div>
-            {renderMatch(final)}
+        // ─── MOBILE LAYOUT: collapsible accordion rounds ───
+        <div>
+          {/* Progress dots */}
+          <div style={{display:"flex",alignItems:"center",justifyContent:"center",margin:"4px 0 18px"}}>
+            {[
+              {k:"R32",lbl:"32"},{k:"R16",lbl:"16"},{k:"QF",lbl:"8"},{k:"SF",lbl:"4"},{k:"FINAL",lbl:"🏆"},
+            ].map((seg,i,arr) => (
+              <div key={seg.k} style={{display:"flex",alignItems:"center"}}>
+                <div onClick={()=>setOpenRound(seg.k)} style={{width:30,height:30,borderRadius:9,
+                  display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"inherit",
+                  fontSize:12,fontWeight:900,cursor:"pointer",
+                  background: openRound===seg.k ? "linear-gradient(135deg,#fbbf24,#d97706)" : "rgba(255,255,255,0.05)",
+                  color: openRound===seg.k ? "#1a1206" : "#5b6b8c",
+                  border: openRound===seg.k ? "none" : "1px solid rgba(255,255,255,0.08)"}}>{seg.lbl}</div>
+                {i < arr.length-1 && <div style={{width:12,height:2,background:"rgba(255,255,255,0.1)"}}/>}
+              </div>
+            ))}
           </div>
-          {/* Semis */}
-          <div>
-            <div style={{fontSize:10,color:"#94a3b8",letterSpacing:3,fontWeight:700,textAlign:"center",marginBottom:6}}>SEMI-FINALS</div>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
-              {renderMatch(sf[0])}
-              {renderMatch(sf[1])}
-            </div>
-          </div>
-          {/* Quarters */}
-          <div>
-            <div style={{fontSize:10,color:"#94a3b8",letterSpacing:3,fontWeight:700,textAlign:"center",marginBottom:6}}>QUARTER-FINALS</div>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
-              {qf.map(m => renderMatch(m))}
-            </div>
-          </div>
-          {/* R16 */}
-          <div>
-            <div style={{fontSize:10,color:"#94a3b8",letterSpacing:3,fontWeight:700,textAlign:"center",marginBottom:6}}>ROUND OF 16</div>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
-              {r16.map(m => renderMatch(m))}
-            </div>
-          </div>
-          {/* R32 */}
-          <div>
-            <div style={{fontSize:10,color:"#94a3b8",letterSpacing:3,fontWeight:700,textAlign:"center",marginBottom:6}}>ROUND OF 32</div>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
-              {r32.map(m => renderMatch(m))}
-            </div>
-          </div>
+
+          {renderRound("R32", "שמינית גמר", "32", r32)}
+          {renderRound("R16", "שמינית", "16", r16)}
+          {renderRound("QF", "רבע גמר", "8", qf)}
+          {renderRound("SF", "חצי גמר", "4", sf)}
+          {renderRound("FINAL", "גמר", "🏆", [final])}
         </div>
       ) : (
         // ─── DESKTOP LAYOUT: two-sided 9-column bracket ───
@@ -17649,6 +17761,7 @@ export default function App() {
           liveBestThirds={liveBestThirds}
           hasActuals={hasActuals}
           actualKo={actualKo}
+          actualKoScores={actualKoScores}
           koWinners={koWinners}
           setKoWinners={setKoWinners}
           koPicks={koPicks}
