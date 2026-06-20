@@ -3,6 +3,7 @@ import {
   generateLeagueCode, createLeague, joinLeague,
   updateMyPicks, leaveLeague, subscribeLeague, updateActualResults, updateTopScorers,
   updateMyGlobalProfile, deleteMyGlobalProfile, fetchGlobalLeaderboard, renameLeague,
+  fetchMyGlobalProfile,
   sendGiftToLeague,
   fetchAllGlobalUsers, deleteGlobalUser,
 } from "./firebase";
@@ -10,7 +11,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.55.2";
+const APP_VERSION = "3.55.4";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -17208,9 +17209,10 @@ function AppInner() {
           if (code === activeLeagueCode && data.actualKo) setActualKo(data.actualKo);
           if (code === activeLeagueCode && data.topScorers?.length > 0) setTopScorers(data.topScorers);
 
-          // 🛡️ RESTORE BACKUP — only ONCE per league per session
+          // 🛡️ RESTORE BACKUP — only ONCE per league per session, and only mark
+          // it done once we actually find our member entry (avoids "burning" the
+          // one-shot restore on an early snapshot before our data has loaded).
           if (code === activeLeagueCode && data.members && userId && !restoredFromCloudRef.current.has(code)) {
-            restoredFromCloudRef.current.add(code);
             // Try to find my entry by userId first; if not found (e.g. data was cleared
             // and a new userId was generated), fall back to matching by name.
             let myEntry = data.members[userId];
@@ -17240,6 +17242,7 @@ function AppInner() {
               }
             }
             if (myEntry) {
+              restoredFromCloudRef.current.add(code);
               // Restore coins if local balance is 0 and remote has more
               if (myEntry.coinBalance != null && myEntry.coinBalance > 0) {
                 setCoins(prev => {
@@ -17254,17 +17257,30 @@ function AppInner() {
                 const migrated = migrateCardCollection(myEntry.cardCollection);
                 setCardCollection(prev => Object.keys(prev || {}).length === 0 ? migrated : prev);
               }
-              // Restore picks
+              // Restore picks — take cloud version if it has MORE picks than local
+              // (covers: empty local, or local has fewer than the cloud backup).
               if (myEntry.picks && Object.keys(myEntry.picks).length > 0) {
-                setPicks(prev => (matchedByName || Object.keys(prev || {}).length === 0) ? myEntry.picks : prev);
+                setPicks(prev => {
+                  const localCount = Object.keys(prev || {}).length;
+                  const cloudCount = Object.keys(myEntry.picks).length;
+                  return (matchedByName || cloudCount > localCount) ? myEntry.picks : prev;
+                });
               }
               // Restore koPicks
               if (myEntry.koPicks && Object.keys(myEntry.koPicks).length > 0) {
-                setKoPicks(prev => (matchedByName || Object.keys(prev || {}).length === 0) ? myEntry.koPicks : prev);
+                setKoPicks(prev => {
+                  const localCount = Object.keys(prev || {}).length;
+                  const cloudCount = Object.keys(myEntry.koPicks).length;
+                  return (matchedByName || cloudCount > localCount) ? myEntry.koPicks : prev;
+                });
               }
               // Restore koWinners
               if (myEntry.koWinners && Object.keys(myEntry.koWinners).length > 0) {
-                setKoWinners(prev => (matchedByName || Object.keys(prev || {}).length === 0) ? myEntry.koWinners : prev);
+                setKoWinners(prev => {
+                  const localCount = Object.keys(prev || {}).length;
+                  const cloudCount = Object.keys(myEntry.koWinners).length;
+                  return (matchedByName || cloudCount > localCount) ? myEntry.koWinners : prev;
+                });
               }
               // Restore bonus picks
               if (myEntry.winnerPick) setWinnerPick(prev => prev || myEntry.winnerPick);
@@ -17345,6 +17361,7 @@ function AppInner() {
       }
       updateMyGlobalProfile(userId, name, picks, koWinners, {
         winnerPick, topScorerPick, koPicks, totalPoints: total, cardCollection, hlBestStreak, quizBestFlags, quizBestGeneral,
+        leagueCodes, activeLeagueCode,
       }).catch(err => console.error("Failed to push global profile:", err));
     }, 1200);
     return () => clearTimeout(handle);
@@ -17716,24 +17733,43 @@ function AppInner() {
   })();
 
   const handleStart = (n) => { setName(n); setScreen("today"); };
-  // 🔑 Recover an account using just the old userId + name. Saves both to localStorage
-  // and reloads so the app boots with the old identity. Then joining the same league
-  // pulls all picks from the cloud (matched by userId).
-  const handleRecoverUserId = (oldUid, recoveredName) => {
+  // 🔑 Recover an account using just the old userId. Fetches the global profile
+  // (saved per-userId in Firestore) and restores picks immediately — no league needed.
+  const handleRecoverUserId = async (oldUid, recoveredName) => {
     try {
+      const profile = await fetchMyGlobalProfile(oldUid);
       const existing = loadState() || {};
-      saveState({
+      const restored = {
         ...existing,
         userId: oldUid,
-        name: recoveredName,
-      });
-      // Reload so the restored userId is used from the very first render
+        name: recoveredName || profile?.name || existing.name || "",
+      };
+      // If a global profile exists, pull all its data in
+      if (profile) {
+        if (profile.picks && Object.keys(profile.picks).length > 0) restored.picks = profile.picks;
+        if (profile.koPicks && Object.keys(profile.koPicks).length > 0) restored.koPicks = profile.koPicks;
+        if (profile.koWinners && Object.keys(profile.koWinners).length > 0) restored.koWinners = profile.koWinners;
+        if (profile.winnerPick) restored.winnerPick = profile.winnerPick;
+        if (profile.topScorerPick) restored.topScorerPick = profile.topScorerPick;
+        if (profile.leagueCodes && profile.leagueCodes.length > 0) {
+          restored.leagueCodes = profile.leagueCodes;
+          restored.activeLeagueCode = profile.activeLeagueCode || profile.leagueCodes[0];
+        }
+      }
+      saveState(restored);
+      // Reload so the restored identity is used from the very first render
       window.location.reload();
     } catch (e) {
-      // Fallback: set in-memory if storage fails
-      setUserId(oldUid);
-      setName(recoveredName);
-      setScreen("today");
+      // Fallback: at least set the userId + name so league-join restore works
+      try {
+        const existing = loadState() || {};
+        saveState({ ...existing, userId: oldUid, name: recoveredName });
+        window.location.reload();
+      } catch {
+        setUserId(oldUid);
+        setName(recoveredName);
+        setScreen("today");
+      }
     }
   };
   const handleImport = (d) => {

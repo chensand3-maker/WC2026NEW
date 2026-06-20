@@ -140,6 +140,21 @@ export async function updateMyGlobalProfile(userId, name, picks, koWinners, extr
   }, { merge: true });
 }
 
+// Fetch a user's global profile by userId — used for account recovery.
+// Returns the saved data (picks, koPicks, koWinners, bonuses, etc.) or null.
+export async function fetchMyGlobalProfile(userId) {
+  if (!userId) return null;
+  try {
+    const ref = doc(db, "users", userId);
+    const snap = await getDoc(ref);
+    if (snap.exists()) return { uid: snap.id, ...snap.data() };
+    return null;
+  } catch (e) {
+    console.warn("Couldn't fetch global profile:", e);
+    return null;
+  }
+}
+
 export async function deleteMyGlobalProfile(userId) {
   if (!userId) return;
   const ref = doc(db, "users", userId);
