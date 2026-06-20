@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef, createContext, useContext } from "react";
+import React, { useState, useMemo, useEffect, useRef, createContext, useContext } from "react";
 import {
   generateLeagueCode, createLeague, joinLeague,
   updateMyPicks, leaveLeague, subscribeLeague, updateActualResults, updateTopScorers,
@@ -10,7 +10,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.54.7";
+const APP_VERSION = "3.54.8";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -16274,7 +16274,54 @@ function BackupPanel({ state, onRestore, onClose }) {
 
 // ─── APP ──────────────────────────────────────────────────────────────────────
 
+// Error boundary — shows the actual error on screen instead of a black screen.
+// Critical for mobile debugging where the console isn't accessible.
+class AppErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { error: null, info: null };
+  }
+  static getDerivedStateFromError(error) {
+    return { error };
+  }
+  componentDidCatch(error, info) {
+    this.setState({ error, info });
+  }
+  render() {
+    if (this.state.error) {
+      const err = this.state.error;
+      const stack = (this.state.info && this.state.info.componentStack) || err.stack || "";
+      return React.createElement("div", {
+        style: {
+          minHeight: "100vh", background: "#0d1424", color: "#f1f5f9",
+          padding: "24px 16px", fontFamily: "monospace", fontSize: 12,
+          overflowY: "auto", direction: "ltr", textAlign: "left",
+        }
+      },
+        React.createElement("div", { style: { fontSize: 18, color: "#ef4444", fontWeight: 900, marginBottom: 12 } }, "⚠️ שגיאה באפליקציה"),
+        React.createElement("div", { style: { color: "#fbbf24", fontWeight: 700, marginBottom: 8, wordBreak: "break-word" } }, String(err && err.message || err)),
+        React.createElement("pre", {
+          style: { whiteSpace: "pre-wrap", wordBreak: "break-word", color: "#94a3b8", fontSize: 10, lineHeight: 1.5, background: "rgba(0,0,0,0.3)", padding: 12, borderRadius: 8, maxHeight: "50vh", overflow: "auto" }
+        }, String(stack).slice(0, 1500)),
+        React.createElement("button", {
+          onClick: () => { try { window.location.reload(); } catch {} },
+          style: { marginTop: 16, padding: "10px 20px", background: "#fbbf24", color: "#1a1206", border: "none", borderRadius: 8, fontWeight: 800, fontSize: 14, cursor: "pointer", fontFamily: "inherit" }
+        }, "🔄 רענן"),
+        React.createElement("button", {
+          onClick: () => { try { localStorage.clear(); window.location.reload(); } catch {} },
+          style: { marginTop: 10, marginLeft: 10, padding: "10px 20px", background: "rgba(239,68,68,0.2)", color: "#fca5a5", border: "1px solid #ef4444", borderRadius: 8, fontWeight: 800, fontSize: 14, cursor: "pointer", fontFamily: "inherit" }
+        }, "🗑️ אפס נתונים")
+      );
+    }
+    return this.props.children;
+  }
+}
+
 export default function App() {
+  return React.createElement(AppErrorBoundary, null, React.createElement(AppInner, null));
+}
+
+function AppInner() {
   const saved = useMemo(() => loadState(), []);
   
   const [screen, setScreen] = useState(saved?.name ? "today" : "welcome");
