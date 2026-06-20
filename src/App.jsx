@@ -10,7 +10,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.54.3";
+const APP_VERSION = "3.54.7";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -11485,14 +11485,15 @@ function BonusPicks({
           </div>
 
           {topScorers.length === 0 ? (
-            <div style={{fontSize:11,color:"#64748b",textAlign:"center",padding:"16px 0"}}>
-              {topScorersError
-                ? <span style={{color:"#ef4444"}}>שגיאה: {topScorersError}</span>
-                : topScorersFetchedAt
-                  ? "המונדיאל עדיין לא התחיל — אין גולים"
-                  : "טוען..."
-              }
-            </div>
+            topScorersError ? (
+              <div style={{fontSize:11,color:"#ef4444",textAlign:"center",padding:"16px 0"}}>שגיאה: {topScorersError}</div>
+            ) : topScorersFetchedAt ? (
+              <div style={{fontSize:11,color:"#64748b",textAlign:"center",padding:"16px 0"}}>המונדיאל עדיין לא התחיל — אין גולים</div>
+            ) : (
+              <div style={{padding:"4px 0"}}>
+                {[0,1,2,3,4].map(i => <SkeletonScorerRow key={i}/>)}
+              </div>
+            )
           ) : (
             <>
               {/* Top 10 */}
@@ -12816,8 +12817,68 @@ function NextMatchCountdown({ allMatches }) {
   );
 }
 
+// ─── SKELETON LOADERS ─────────────────────────────────────────────────────────
+function SkeletonMatchRow() {
+  return (
+    <div style={{background:"rgba(30,41,59,0.4)",border:"1px solid rgba(71,85,105,0.2)",
+      borderRadius:12,padding:"12px",marginBottom:8,display:"flex",alignItems:"center",gap:12}}>
+      <div className="skeleton" style={{width:90,height:14}}/>
+      <div style={{flex:1}}/>
+      <div className="skeleton" style={{width:36,height:36,borderRadius:8}}/>
+      <div className="skeleton" style={{width:36,height:36,borderRadius:8}}/>
+      <div style={{flex:1}}/>
+      <div className="skeleton" style={{width:90,height:14}}/>
+    </div>
+  );
+}
+function SkeletonScorerRow() {
+  return (
+    <div style={{display:"flex",alignItems:"center",gap:10,padding:"8px 0",borderBottom:"1px solid rgba(71,85,105,0.15)"}}>
+      <div className="skeleton" style={{width:20,height:20,borderRadius:"50%"}}/>
+      <div className="skeleton" style={{width:"45%",height:13}}/>
+      <div style={{flex:1}}/>
+      <div className="skeleton" style={{width:24,height:18}}/>
+    </div>
+  );
+}
+
 function TodayScreen({ picks, actuals, onPick, onBack, onGoToBracket, leagueMembers = null, onRefresh, lastFetchAt, onShowDetails = null, liveData = null }) {
   const t = useT();
+
+  // ─── Pull-to-refresh ───
+  const [ptrDist, setPtrDist] = useState(0);
+  const [ptrRefreshing, setPtrRefreshing] = useState(false);
+  const ptrStart = useRef(null);
+  const PTR_THRESHOLD = 70;
+  useEffect(() => {
+    const onTouchStart = (e) => {
+      ptrStart.current = window.scrollY <= 0 ? e.touches[0].clientY : null;
+    };
+    const onTouchMove = (e) => {
+      if (ptrStart.current == null || ptrRefreshing) return;
+      const dist = e.touches[0].clientY - ptrStart.current;
+      if (dist > 0 && window.scrollY <= 0) setPtrDist(Math.min(dist * 0.5, 90));
+    };
+    const onTouchEnd = async () => {
+      if (ptrDist >= PTR_THRESHOLD && onRefresh && !ptrRefreshing) {
+        setPtrRefreshing(true);
+        setPtrDist(50);
+        try { await onRefresh(); } catch {}
+        setTimeout(() => { setPtrRefreshing(false); setPtrDist(0); }, 600);
+      } else {
+        setPtrDist(0);
+      }
+      ptrStart.current = null;
+    };
+    window.addEventListener("touchstart", onTouchStart, { passive: true });
+    window.addEventListener("touchmove", onTouchMove, { passive: true });
+    window.addEventListener("touchend", onTouchEnd, { passive: true });
+    return () => {
+      window.removeEventListener("touchstart", onTouchStart);
+      window.removeEventListener("touchmove", onTouchMove);
+      window.removeEventListener("touchend", onTouchEnd);
+    };
+  }, [ptrDist, ptrRefreshing, onRefresh]);
 
   // Group all fixtures (group + knockout) by date
   // For group matches we already have kickoff. For KO we use KO_SCHEDULE.
@@ -12962,6 +13023,23 @@ function TodayScreen({ picks, actuals, onPick, onBack, onGoToBracket, leagueMemb
 
   return (
     <div style={{padding:"16px 14px 60px",maxWidth:560,margin:"0 auto"}}>
+      {/* Pull-to-refresh indicator */}
+      {ptrDist > 0 && (
+        <div style={{
+          height: ptrDist, display:"flex",alignItems:"center",justifyContent:"center",
+          marginTop:-ptrDist+8, marginBottom:8, overflow:"hidden",
+          transition: ptrRefreshing ? "none" : "height 0.2s",
+        }}>
+          <div style={{display:"flex",alignItems:"center",gap:8,color:"#fbbf24",fontSize:12,fontWeight:700}}>
+            <span style={{
+              display:"inline-block",fontSize:18,
+              animation: ptrRefreshing ? "ptrSpin 0.7s linear infinite" : "none",
+              transform: ptrRefreshing ? "none" : `rotate(${ptrDist*3}deg)`,
+            }}>{ptrRefreshing ? "⏳" : "↻"}</span>
+            {ptrRefreshing ? "מרענן..." : ptrDist >= 70 ? "שחרר לרענון" : "משוך לרענון"}
+          </div>
+        </div>
+      )}
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14,gap:8}}>
         <button onClick={onBack} style={{...ghostBtn,padding:"7px 14px",width:"auto"}}>{t("welcome.back")}</button>
         <div style={{display:"flex",gap:6}}>
@@ -13903,7 +13981,7 @@ function ActualResults({ actuals, setActuals, actualKo, setActualKo, onClose }) 
 
 // ─── LEADERBOARD ──────────────────────────────────────────────────────────────
 
-function Leaderboard({ name, picks, koWinners, friends, actuals, actualKo, hasActuals }) {
+function Leaderboard({ name, picks, koWinners, koPicks = {}, friends, actuals, actualKo, actualKoScores = {}, hasActuals }) {
   const actualStandings = useMemo(() => allStandings(actuals), [actuals]);
   const actualBestThirds = useMemo(() => getBestThirds(actualStandings), [actualStandings]);
   const actualKnockout = useMemo(() => getKnockoutTeams(actualStandings, actualBestThirds, actualKo), [actualStandings, actualBestThirds, actualKo]);
@@ -13975,11 +14053,8 @@ function Leaderboard({ name, picks, koWinners, friends, actuals, actualKo, hasAc
               {p.matchScore.exact > 0 && <Badge color="#fbbf24">🎯 {p.matchScore.exact} exact</Badge>}
               {p.matchScore.result > 0 && <Badge color="#22c55e">✅ {p.matchScore.result} winner</Badge>}
               {p.matchScore.wrong > 0 && <Badge color="#f87171">❌ {p.matchScore.wrong} miss</Badge>}
-              {p.koScore.breakdown.r16 > 0 && <Badge color="#a855f7">R16 ×{p.koScore.breakdown.r16}</Badge>}
-              {p.koScore.breakdown.qf > 0 && <Badge color="#ec4899">QF ×{p.koScore.breakdown.qf}</Badge>}
-              {p.koScore.breakdown.sf > 0 && <Badge color="#f97316">SF ×{p.koScore.breakdown.sf}</Badge>}
-              {p.koScore.breakdown.finalist > 0 && <Badge color="#fbbf24">🏟️ Finalist ×{p.koScore.breakdown.finalist}</Badge>}
-              {p.koScore.breakdown.champion > 0 && <Badge color="#fbbf24">👑 CHAMPION!</Badge>}
+              {p.koScore.exact > 0 && <Badge color="#a855f7">🏆 {p.koScore.exact} בול</Badge>}
+              {p.koScore.result > 0 && <Badge color="#ec4899">✓ {p.koScore.result} מנצח</Badge>}
             </div>
           </div>
         );
@@ -15317,7 +15392,7 @@ function LeagueHub({
                   {p.predictedCount}/{FIXTURES.length} {t("league.predicted")}
                   {showPoints && p.matchScore.exact>0 && ` · 🎯${p.matchScore.exact} ${t("league.exact")}`}
                   {showPoints && p.matchScore.result>0 && ` · ✅${p.matchScore.result}`}
-                  {showPoints && p.koScore.breakdown.champion>0 && " · 👑"}
+                  {showPoints && p.koScore?.exact>0 && ` · 🏆${p.koScore.exact}`}
                 </div>
               </div>
               {/* Points */}
@@ -15732,7 +15807,7 @@ function LeagueView({ name, picks, koWinners, friends, setFriends, leagueName, s
                       <div style={{fontSize:10,color:"#64748b",marginTop:1}}>
                         {p.matchScore.exact>0 && `🎯${p.matchScore.exact} `}
                         {p.matchScore.result>0 && `✅${p.matchScore.result} `}
-                        {p.koScore.breakdown.champion>0 && "👑"}
+                        {p.koScore?.exact>0 && `🏆${p.koScore.exact}`}
                       </div>
                     </div>
                     <div style={{textAlign:"right"}}>
@@ -17831,7 +17906,25 @@ export default function App() {
           0% { transform: translateY(-20px) rotate(0deg); opacity: 1; }
           100% { transform: translateY(110vh) rotate(720deg); opacity: 0.6; }
         }
+        @keyframes skeletonShimmer {
+          0% { background-position: -200% 0; }
+          100% { background-position: 200% 0; }
+        }
+        .skeleton {
+          background: linear-gradient(90deg, rgba(71,85,105,0.15) 25%, rgba(100,116,139,0.3) 50%, rgba(71,85,105,0.15) 75%);
+          background-size: 200% 100%;
+          animation: skeletonShimmer 1.4s ease-in-out infinite;
+          border-radius: 8px;
+        }
+        @keyframes screenIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        .screen-enter { animation: screenIn 0.18s ease-out; }
+        @keyframes ptrSpin { to { transform: rotate(360deg); } }
       `}</style>
+
+      {/* Skeleton list helper styles injected once via class .skeleton above */}
 
       {/* Top bar — minimalist */}
       {screen !== "welcome" && screen !== "results" && (
@@ -17952,11 +18045,13 @@ export default function App() {
           onGoToBracket={()=>setScreen("bracket")}
           leagueMembers={leagueData ? Object.values(leagueData.members || {}) : null}
           liveData={liveData}
-          onRefresh={() => {
+          onRefresh={async () => {
             showToast(t("toast.refreshing"), "info");
             clearLiveCache();
-            fetchAndApplyLive(true);
-            fetchAndApplyTopScorers(true);
+            await Promise.all([
+              fetchAndApplyLive(true),
+              fetchAndApplyTopScorers(true),
+            ]);
           }}
           onShowDetails={(fix) => setMatchDetailsFor(fix)}
         />
