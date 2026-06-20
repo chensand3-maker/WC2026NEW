@@ -11,7 +11,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.55.5";
+const APP_VERSION = "3.56.0";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -11599,6 +11599,8 @@ function Welcome({ onStart, onImport, onRecoverUserId }) {
   const [showRecover, setShowRecover] = useState(false);
   const [recoverUid, setRecoverUid] = useState("");
   const [recoverName, setRecoverName] = useState("");
+  const [diagResult, setDiagResult] = useState(null);
+  const [diagBusy, setDiagBusy] = useState(false);
 
   // Cycle through fun taglines (English only — Hebrew uses a static one)
   const taglines = [
@@ -13491,6 +13493,7 @@ function KnockoutBracket({ standings, bestThirds, liveStandings, liveBestThirds,
   }, []);
 
   const renderMatch = (m) => {
+    if (!m || !m.id) return null;
     const ready = m.a && m.b;
     const sched = KO_SCHEDULE[m.id];
     const k = sched ? formatKickoff(sched.kickoff) : null;
@@ -13845,43 +13848,48 @@ function KnockoutBracket({ standings, bestThirds, liveStandings, liveBestThirds,
 
       {/* Two-sided tournament bracket */}
       {isNarrow ? (
-        // ─── MOBILE LAYOUT: collapsible accordion rounds ───
-        <div>
-          {/* Lock notice until group stage ends */}
-          {nowTs < GROUP_STAGE_END && (
-            <div style={{
-              background:"linear-gradient(135deg,rgba(99,102,241,0.12),rgba(59,130,246,0.05))",
-              border:"1px solid rgba(99,102,241,0.35)",borderRadius:14,padding:"12px 14px",marginBottom:16,
-              display:"flex",gap:10,alignItems:"center",fontSize:11,color:"#aebbd6",lineHeight:1.5}}>
-              <span style={{fontSize:20}}>🔒</span>
-              <div>
-                <b style={{color:"#a5b4fc"}}>הנוקאאוט נפתח בסיום שלב הבתים.</b> ברגע שכל משחקי הבתים יסתיימו (28 ביוני) תוכלו להמר על המשחקים — והקבוצות האמיתיות יופיעו אוטומטית.
-              </div>
+        // ─── MOBILE LAYOUT: vertical with section headers (stable) ───
+        <div style={{display:"flex",flexDirection:"column",gap:14}}>
+          {/* Final at top with trophy */}
+          <div style={{
+            background:"linear-gradient(135deg, rgba(251,191,36,0.08), rgba(217,119,6,0.04))",
+            border:"1px solid rgba(251,191,36,0.4)",
+            borderRadius:14,padding:"12px 14px",
+          }}>
+            <div style={{textAlign:"center",marginBottom:8}}>
+              <div style={{fontSize:28,filter:"drop-shadow(0 0 8px rgba(251,191,36,0.7))",marginBottom:2}}>🏆</div>
+              <div style={{fontSize:11,color:"#fbbf24",letterSpacing:3,fontWeight:800}}>FINAL</div>
             </div>
-          )}
-
-          {/* Progress dots */}
-          <div style={{display:"flex",alignItems:"center",justifyContent:"center",margin:"4px 0 18px"}}>
-            {[
-              {k:"R32",lbl:"32"},{k:"R16",lbl:"16"},{k:"QF",lbl:"8"},{k:"SF",lbl:"4"},{k:"FINAL",lbl:"🏆"},
-            ].map((seg,i,arr) => (
-              <div key={seg.k} style={{display:"flex",alignItems:"center"}}>
-                <div onClick={()=>setOpenRound(seg.k)} style={{width:30,height:30,borderRadius:9,
-                  display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"inherit",
-                  fontSize:12,fontWeight:900,cursor:"pointer",
-                  background: openRound===seg.k ? "linear-gradient(135deg,#fbbf24,#d97706)" : "rgba(255,255,255,0.05)",
-                  color: openRound===seg.k ? "#1a1206" : "#5b6b8c",
-                  border: openRound===seg.k ? "none" : "1px solid rgba(255,255,255,0.08)"}}>{seg.lbl}</div>
-                {i < arr.length-1 && <div style={{width:12,height:2,background:"rgba(255,255,255,0.1)"}}/>}
-              </div>
-            ))}
+            {renderMatch(final)}
           </div>
-
-          {renderRound("R32", "שמינית גמר", "32", r32)}
-          {renderRound("R16", "שמינית", "16", r16)}
-          {renderRound("QF", "רבע גמר", "8", qf)}
-          {renderRound("SF", "חצי גמר", "4", sf)}
-          {renderRound("FINAL", "גמר", "🏆", [final])}
+          {/* Semis */}
+          <div>
+            <div style={{fontSize:10,color:"#94a3b8",letterSpacing:3,fontWeight:700,textAlign:"center",marginBottom:6}}>SEMI-FINALS</div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
+              {sf.map(m => renderMatch(m))}
+            </div>
+          </div>
+          {/* Quarters */}
+          <div>
+            <div style={{fontSize:10,color:"#94a3b8",letterSpacing:3,fontWeight:700,textAlign:"center",marginBottom:6}}>QUARTER-FINALS</div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
+              {qf.map(m => renderMatch(m))}
+            </div>
+          </div>
+          {/* R16 */}
+          <div>
+            <div style={{fontSize:10,color:"#94a3b8",letterSpacing:3,fontWeight:700,textAlign:"center",marginBottom:6}}>ROUND OF 16</div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
+              {r16.map(m => renderMatch(m))}
+            </div>
+          </div>
+          {/* R32 */}
+          <div>
+            <div style={{fontSize:10,color:"#94a3b8",letterSpacing:3,fontWeight:700,textAlign:"center",marginBottom:6}}>ROUND OF 32</div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
+              {(r32||[]).map(m => renderMatch(m))}
+            </div>
+          </div>
         </div>
       ) : (
         // ─── DESKTOP LAYOUT: two-sided 9-column bracket ───
