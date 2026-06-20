@@ -10,7 +10,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.55.1";
+const APP_VERSION = "3.55.2";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -16336,11 +16336,7 @@ class AppErrorBoundary extends React.Component {
         React.createElement("button", {
           onClick: () => { try { window.location.reload(); } catch {} },
           style: { marginTop: 16, padding: "10px 20px", background: "#fbbf24", color: "#1a1206", border: "none", borderRadius: 8, fontWeight: 800, fontSize: 14, cursor: "pointer", fontFamily: "inherit" }
-        }, "🔄 רענן"),
-        React.createElement("button", {
-          onClick: () => { try { localStorage.clear(); window.location.reload(); } catch {} },
-          style: { marginTop: 10, marginLeft: 10, padding: "10px 20px", background: "rgba(239,68,68,0.2)", color: "#fca5a5", border: "1px solid #ef4444", borderRadius: 8, fontWeight: 800, fontSize: 14, cursor: "pointer", fontFamily: "inherit" }
-        }, "🗑️ אפס נתונים")
+        }, "🔄 רענן")
       );
     }
     return this.props.children;
@@ -17808,21 +17804,15 @@ function AppInner() {
   };
   const handleReset = () => {
     setConfirmAction({
-      title: "Delete everything?",
-      message: "This wipes all your predictions, friends, and results from this device. There's no undo. Copy your backup code first if you want to keep your progress.",
-      confirmLabel: "🗑️ Yes, delete everything",
+      title: "להתנתק מהמכשיר?",
+      message: "הפעולה מנקה את הנתונים מהמכשיר הזה בלבד. הניחושים שלך נשמרים בענן — תוכל לשחזר אותם בכל רגע ע\"י כניסה עם אותו שם והצטרפות לאותה ליגה.",
+      confirmLabel: "כן, נקה מהמכשיר",
       danger: true,
       requireType: name || "DELETE",
-      typePrompt: name ? `Type your name ("${name}") to confirm:` : `Type "DELETE" to confirm:`,
+      typePrompt: name ? `הקלד את השם שלך ("${name}") לאישור:` : `הקלד "DELETE" לאישור:`,
       onConfirm: () => {
-        // Wipe everything from Firebase first (global profile + all leagues),
-        // then clear local state.
-        const codesToLeave = [...leagueCodes];
-        const myUid = userId;
-        Promise.all([
-          deleteMyGlobalProfile(myUid).catch(() => {}),
-          ...codesToLeave.map(c => leaveLeague(c, myUid).catch(() => {})),
-        ]).catch(() => {});
+        // 🛡️ Do NOT delete from Firebase — keep the cloud backup so the user can
+        // always restore by rejoining with the same name. Only clear local state.
         clearState();
         setName(""); setPicks({}); setKoWinners({}); setKoPicks({}); setCoins({ balance: COINS.STARTING_BONUS, earnedFromIds: {}, gotStartingBonus: true }); setCardCollection({}); setGroupIdx(0);
         setFriends([]); setActuals({}); setActualKo({}); setActualKoScores({}); setLeagueName(""); setLeagueCode(""); setLeagueCodes([]); setActiveLeagueCode(""); setAllLeagueData({}); setWinnerPick(null); setTopScorerPick(null); setCelebratedIds(new Set()); setLastSeenGoals(0); setSeenActualIds(new Set()); setShowOnboarding(true); try { localStorage.removeItem("wc2026_celebrated_v1"); localStorage.removeItem("wc2026_lastseen_goals_v1"); localStorage.removeItem("wc2026_seen_actuals_v1"); localStorage.removeItem("wc2026_onboarded_v1"); localStorage.removeItem("wc2026_world_v2"); localStorage.removeItem("wc2026_achv_v1"); localStorage.removeItem("wc2026_pickhours_v1"); localStorage.removeItem("wc2026_coins_v7"); localStorage.removeItem("wc2026_cards_v2"); } catch {}
