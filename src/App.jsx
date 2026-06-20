@@ -11,7 +11,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.59.0";
+const APP_VERSION = "3.59.1";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -12192,7 +12192,7 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
               <span style={{fontSize:9,color:"#64748b",letterSpacing:0.5,marginTop:1}}>#{fifaRank(home.n)}</span>
             )}
           </div>
-          <span className="flag-wave" style={{fontSize:22}}>{home.f}</span>
+          <span className="flag-wave" style={{fontSize:26}}>{home.f}</span>
         </div>
         <div style={{display:"flex",alignItems:"center",gap:4}}>
           <input id={homeInputId} type="text" inputMode="numeric" value={h}
@@ -12201,32 +12201,32 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
             onFocus={e=>e.target.select()}
             readOnly={isLocked}
             placeholder={isLocked?"·":"—"}
-            style={{width:36,height:36,textAlign:"center",
-              background: isLocked?"rgba(71,85,105,0.2)":"#1e2940",
-              border:`1px solid ${isLocked?"rgba(71,85,105,0.4)":((result==="home" && showHighlight)?"#22c55e":"rgba(71,85,105,0.5)")}`,
-              borderRadius:8,
+            style={{width:36,height:38,textAlign:"center",
+              background: isLocked?"rgba(71,85,105,0.2)":"rgba(0,0,0,0.55)",
+              border:`1px solid ${isLocked?"rgba(71,85,105,0.4)":((result==="home" && showHighlight)?"#22c55e":"rgba(34,197,94,0.3)")}`,
+              borderRadius:9,
               color: isLocked?"#64748b":((result==="home" && showHighlight)?"#22c55e":"#f1f5f9"),
               fontSize:18,fontWeight:800,fontFamily:"inherit",outline:"none",
               cursor: isLocked?"not-allowed":"text",
             }}/>
-          <span style={{color:"#475569",fontSize:11}}>:</span>
+          <span style={{color:"#15803d",fontSize:11}}>:</span>
           <input id={awayInputId} type="text" inputMode="numeric" value={a}
             onChange={e=>handleInput("a", e)}
             onKeyDown={e=>handleKeyDown("a", e)}
             onFocus={e=>e.target.select()}
             readOnly={isLocked}
             placeholder={isLocked?"·":"—"}
-            style={{width:36,height:36,textAlign:"center",
-              background: isLocked?"rgba(71,85,105,0.2)":"#1e2940",
-              border:`1px solid ${isLocked?"rgba(71,85,105,0.4)":((result==="away" && showHighlight)?"#22c55e":"rgba(71,85,105,0.5)")}`,
-              borderRadius:8,
+            style={{width:36,height:38,textAlign:"center",
+              background: isLocked?"rgba(71,85,105,0.2)":"rgba(0,0,0,0.55)",
+              border:`1px solid ${isLocked?"rgba(71,85,105,0.4)":((result==="away" && showHighlight)?"#22c55e":"rgba(34,197,94,0.3)")}`,
+              borderRadius:9,
               color: isLocked?"#64748b":((result==="away" && showHighlight)?"#22c55e":"#f1f5f9"),
               fontSize:18,fontWeight:800,fontFamily:"inherit",outline:"none",
               cursor: isLocked?"not-allowed":"text",
             }}/>
         </div>
         <div style={{display:"flex",alignItems:"center",gap:8,opacity:(result==="home" && showHighlight)?0.5:1}}>
-          <span className="flag-wave" style={{fontSize:22, animationDelay:"1.5s"}}>{away.f}</span>
+          <span className="flag-wave" style={{fontSize:26, animationDelay:"1.5s"}}>{away.f}</span>
           <div style={{display:"flex",flexDirection:"column",alignItems:"flex-start",minWidth:0}}>
             <span style={{fontSize:13,fontWeight:result==="away"?800:500,color:"#f1f5f9",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{away.n}</span>
             {fifaRank(away.n) && (
@@ -13082,24 +13082,10 @@ function TodayScreen({ picks, actuals, onPick, onBack, onGoToBracket, leagueMemb
 
   return (
     <div style={{
-      position:"relative",
-      background:"linear-gradient(180deg,#020617 0%, #041a0e 55%, #052e16 100%)",
+      background:"linear-gradient(180deg,#020617 0%, #06210f 60%, #052e16 100%)",
       minHeight:"100vh",
     }}>
-      {/* 🏟️ Stadium grass field glow at the bottom */}
-      <div style={{
-        position:"fixed",bottom:0,left:0,right:0,height:"36%",maxWidth:560,margin:"0 auto",
-        background:"repeating-linear-gradient(90deg, rgba(34,197,94,0.045) 0px, rgba(34,197,94,0.045) 22px, transparent 22px, transparent 44px), linear-gradient(180deg, transparent, rgba(34,197,94,0.09))",
-        pointerEvents:"none",zIndex:0,
-      }}/>
-      {/* 🏟️ Stadium light flare at the top */}
-      <div style={{
-        position:"fixed",top:-60,left:"50%",transform:"translateX(-50%)",
-        width:300,height:160,
-        background:"radial-gradient(ellipse, rgba(134,239,172,0.09), transparent 70%)",
-        pointerEvents:"none",zIndex:0,
-      }}/>
-    <div style={{padding:"16px 14px 60px",maxWidth:560,margin:"0 auto",position:"relative",zIndex:1}}>
+    <div style={{padding:"16px 14px 60px",maxWidth:560,margin:"0 auto"}}>
       {/* Pull-to-refresh indicator */}
       {ptrDist > 0 && (
         <div style={{
@@ -17988,7 +17974,6 @@ function AppInner() {
       }
       .flag-wave {
         display: inline-block;
-        animation: flagWave 3s ease-in-out infinite;
         transform-origin: center bottom;
       }
       .card-tilt {
