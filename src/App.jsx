@@ -11,7 +11,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.56.1";
+const APP_VERSION = "3.56.2";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -17266,13 +17266,14 @@ function AppInner() {
                 const migrated = migrateCardCollection(myEntry.cardCollection);
                 setCardCollection(prev => Object.keys(prev || {}).length === 0 ? migrated : prev);
               }
-              // Restore picks — take cloud version if it has MORE picks than local
-              // (covers: empty local, or local has fewer than the cloud backup).
+              // Restore picks — after an import/restore we prefer the cloud copy
+              // (it's the freshest), otherwise take cloud only if it has MORE picks.
+              const forceCloud = (() => { try { return localStorage.getItem("wc2026_force_cloud_restore_v1") === "1"; } catch { return false; } })();
               if (myEntry.picks && Object.keys(myEntry.picks).length > 0) {
                 setPicks(prev => {
                   const localCount = Object.keys(prev || {}).length;
                   const cloudCount = Object.keys(myEntry.picks).length;
-                  return (matchedByName || cloudCount > localCount) ? myEntry.picks : prev;
+                  return (matchedByName || forceCloud || cloudCount > localCount) ? myEntry.picks : prev;
                 });
               }
               // Restore koPicks
@@ -17280,7 +17281,7 @@ function AppInner() {
                 setKoPicks(prev => {
                   const localCount = Object.keys(prev || {}).length;
                   const cloudCount = Object.keys(myEntry.koPicks).length;
-                  return (matchedByName || cloudCount > localCount) ? myEntry.koPicks : prev;
+                  return (matchedByName || forceCloud || cloudCount > localCount) ? myEntry.koPicks : prev;
                 });
               }
               // Restore koWinners
@@ -17288,16 +17289,18 @@ function AppInner() {
                 setKoWinners(prev => {
                   const localCount = Object.keys(prev || {}).length;
                   const cloudCount = Object.keys(myEntry.koWinners).length;
-                  return (matchedByName || cloudCount > localCount) ? myEntry.koWinners : prev;
+                  return (matchedByName || forceCloud || cloudCount > localCount) ? myEntry.koWinners : prev;
                 });
               }
-              // Restore bonus picks
-              if (myEntry.winnerPick) setWinnerPick(prev => prev || myEntry.winnerPick);
-              if (myEntry.topScorerPick) setTopScorerPick(prev => prev || myEntry.topScorerPick);
+              // Restore bonus picks (force from cloud after a restore)
+              if (myEntry.winnerPick) setWinnerPick(prev => (forceCloud ? myEntry.winnerPick : (prev || myEntry.winnerPick)));
+              if (myEntry.topScorerPick) setTopScorerPick(prev => (forceCloud ? myEntry.topScorerPick : (prev || myEntry.topScorerPick)));
               // Restore achievements
               if (Array.isArray(myEntry.unlockedAchievements) && myEntry.unlockedAchievements.length > 0) {
                 setUnlockedAchievements(prev => prev.size === 0 ? new Set(myEntry.unlockedAchievements) : prev);
               }
+              // Clear the force-cloud flag — it's a one-time thing after a restore.
+              try { localStorage.removeItem("wc2026_force_cloud_restore_v1"); } catch {}
             }
           }
         },
@@ -17806,7 +17809,7 @@ function AppInner() {
   };
   const handleImport = (d) => {
     // If the user pasted their own full JSON backup, restore everything (no "'s copy")
-    if (d.coinBalance != null || (d.cardCollection && Object.keys(d.cardCollection).length > 0)) {
+    if (d.coinBalance != null || (d.cardCollection && Object.keys(d.cardCollection).length > 0) || d.userId) {
       handleRestore(d);
       return;
     }
@@ -17867,6 +17870,9 @@ function AppInner() {
     } catch (e) {
       console.error("Restore save failed:", e);
     }
+    // 🔄 After restore, the cloud (league) holds the freshest picks. Flag it so the
+    // restore-from-cloud effect prefers cloud data even if the imported code is old.
+    try { localStorage.setItem("wc2026_force_cloud_restore_v1", "1"); } catch {}
     // 🔄 Reload — boots with restored data, no duplicate Firebase record
     window.location.reload();
   };
