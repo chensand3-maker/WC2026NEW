@@ -11,7 +11,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.55.4";
+const APP_VERSION = "3.55.5";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -17308,6 +17308,13 @@ function AppInner() {
   // localStorage, they can restore by rejoining the same league with the same name.
   useEffect(() => {
     if (!leagueCodes.length || !name) return;
+    // 🛡️ SAFETY: don't push empty picks over a possibly-full cloud record.
+    // A freshly-cleared device has no local picks yet; let restore run first.
+    const hasAnyLocalData =
+      Object.keys(picks || {}).length > 0 ||
+      Object.keys(koPicks || {}).length > 0 ||
+      !!winnerPick || !!topScorerPick;
+    if (!hasAnyLocalData) return;
     const handle = setTimeout(() => {
       leagueCodes.forEach(code => {
         updateMyPicks(code, userId, name, picks, koWinners, {
@@ -17337,6 +17344,14 @@ function AppInner() {
   // Independent of league membership — everyone is on the global board.
   useEffect(() => {
     if (!name) return;
+    // 🛡️ SAFETY: never overwrite a (possibly full) cloud profile with empty data.
+    // If we have no picks at all locally, skip the push entirely — this prevents a
+    // freshly-cleared device from wiping the cloud backup before restore runs.
+    const hasAnyLocalData =
+      Object.keys(picks || {}).length > 0 ||
+      Object.keys(koPicks || {}).length > 0 ||
+      !!winnerPick || !!topScorerPick;
+    if (!hasAnyLocalData) return;
     const handle = setTimeout(() => {
       // Compute total points: group score + KO score + bonus
       let total = 0;
@@ -17738,16 +17753,26 @@ function AppInner() {
   const handleRecoverUserId = async (oldUid, recoveredName) => {
     try {
       const profile = await fetchMyGlobalProfile(oldUid);
+      const picksCount = profile?.picks ? Object.keys(profile.picks).length : 0;
+      const koCount = profile?.koPicks ? Object.keys(profile.koPicks).length : 0;
+
+      // If nothing found in the global profile, tell the user instead of silently reloading.
+      if (!profile || (picksCount === 0 && koCount === 0 && !profile.winnerPick && !profile.topScorerPick)) {
+        const msg = profile
+          ? `נמצא פרופיל בענן בשם "${profile.name || "?"}" אך ללא ניחושים שמורים.\n\nייתכן שהניחושים שמורים בתוך הליגה — נסה להצטרף לליגה SWIFT-BULL-150 לאחר השחזור.`
+          : `לא נמצא פרופיל גלובלי עבור המזהה הזה.\n\nאבל הניחושים אולי עדיין שמורים בתוך הליגה — נמשיך לשחזר וננסה למשוך מהליגה.`;
+        alert(msg);
+      }
+
       const existing = loadState() || {};
       const restored = {
         ...existing,
         userId: oldUid,
         name: recoveredName || profile?.name || existing.name || "",
       };
-      // If a global profile exists, pull all its data in
       if (profile) {
-        if (profile.picks && Object.keys(profile.picks).length > 0) restored.picks = profile.picks;
-        if (profile.koPicks && Object.keys(profile.koPicks).length > 0) restored.koPicks = profile.koPicks;
+        if (picksCount > 0) restored.picks = profile.picks;
+        if (koCount > 0) restored.koPicks = profile.koPicks;
         if (profile.koWinners && Object.keys(profile.koWinners).length > 0) restored.koWinners = profile.koWinners;
         if (profile.winnerPick) restored.winnerPick = profile.winnerPick;
         if (profile.topScorerPick) restored.topScorerPick = profile.topScorerPick;
@@ -17757,10 +17782,8 @@ function AppInner() {
         }
       }
       saveState(restored);
-      // Reload so the restored identity is used from the very first render
       window.location.reload();
     } catch (e) {
-      // Fallback: at least set the userId + name so league-join restore works
       try {
         const existing = loadState() || {};
         saveState({ ...existing, userId: oldUid, name: recoveredName });
