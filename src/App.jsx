@@ -10,7 +10,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.54.9";
+const APP_VERSION = "3.55.0";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -13423,7 +13423,7 @@ function KnockoutBracket({ standings, bestThirds, liveStandings, liveBestThirds,
   // Each round's winners come from `actualKo` (real results from the API), NOT from user picks.
   // Before a result is in, the slot stays null (TBD).
   // Official FIFA 2026 bracket pairings (NOT simple neighbor pairing!)
-  const W32 = (idx) => { const m = r32[idx]; return actualKo[m.id]==="a"?m.a:actualKo[m.id]==="b"?m.b:null; };
+  const W32 = (idx) => { const m = r32 && r32[idx]; if(!m) return null; return actualKo[m.id]==="a"?m.a:actualKo[m.id]==="b"?m.b:null; };
   const r16 = [
     { id:"R16-0", a:W32(1),  b:W32(4)  },  // M89: W74 vs W77
     { id:"R16-1", a:W32(0),  b:W32(2)  },  // M90: W73 vs W75
@@ -13577,6 +13577,7 @@ function KnockoutBracket({ standings, bestThirds, liveStandings, liveBestThirds,
 
   // ─── COMPACT MATCH CARD (for accordion rounds) ───
   const renderCompactMatch = (m) => {
+    if (!m || !m.id) return null;
     const ready = m.a && m.b;
     const sched = KO_SCHEDULE[m.id];
     const k = sched ? formatKickoff(sched.kickoff) : null;
@@ -13689,9 +13690,10 @@ function KnockoutBracket({ standings, bestThirds, liveStandings, liveBestThirds,
 
   // ─── ACCORDION ROUND ───
   const renderRound = (key, label, badge, matches) => {
+    const safeMatches = Array.isArray(matches) ? matches.filter(Boolean) : [];
     const isOpen = openRound === key;
-    const predicted = matches.filter(m => { const p = koPicks[m.id]; return p && p.h !== "" && p.h !== undefined; }).length;
-    const total = matches.length;
+    const predicted = safeMatches.filter(m => { const p = koPicks[m.id]; return p && p.h !== "" && p.h !== undefined; }).length;
+    const total = safeMatches.length;
     return (
       <div key={key} style={{marginBottom:12,borderRadius:16,overflow:"hidden",
         border:"1px solid rgba(255,255,255,0.06)",background:"rgba(18,26,44,0.4)"}}>
@@ -13708,7 +13710,9 @@ function KnockoutBracket({ standings, bestThirds, liveStandings, liveBestThirds,
         </div>
         {isOpen && (
           <div style={{padding:"6px 10px 12px"}}>
-            {matches.map(m => renderCompactMatch(m))}
+            {safeMatches.length > 0
+              ? safeMatches.map(m => renderCompactMatch(m))
+              : <div style={{textAlign:"center",color:"#5b6b8c",fontSize:11,padding:"8px"}}>יתמלא בהמשך</div>}
           </div>
         )}
       </div>
@@ -14613,7 +14617,7 @@ function LeagueHub({
         if (!memberR32) return null;
         const ako = actualKo || {};
         // Winner of each R32 match (by index 0..15 = M73..M88)
-        const W = (idx) => { const mt = memberR32[idx]; return ako[mt.id]==="a"?mt.a:ako[mt.id]==="b"?mt.b:null; };
+        const W = (idx) => { const mt = memberR32 && memberR32[idx]; if(!mt) return null; return ako[mt.id]==="a"?mt.a:ako[mt.id]==="b"?mt.b:null; };
 
         // Official FIFA 2026 R16 pairings (by R32 winner index):
         // M89=W74vsW77, M90=W73vsW75, M91=W76vsW78, M92=W79vsW80,
@@ -17185,7 +17189,26 @@ function AppInner() {
           // 🛡️ RESTORE BACKUP — only ONCE per league per session
           if (code === activeLeagueCode && data.members && userId && !restoredFromCloudRef.current.has(code)) {
             restoredFromCloudRef.current.add(code);
-            const myEntry = data.members[userId];
+            // Try to find my entry by userId first; if not found (e.g. data was cleared
+            // and a new userId was generated), fall back to matching by name.
+            let myEntry = data.members[userId];
+            let matchedByName = false;
+            if (!myEntry && name) {
+              const entries = Object.entries(data.members);
+              const found = entries.find(([uid, m]) => m && m.name && m.name.trim().toLowerCase() === name.trim().toLowerCase());
+              if (found) {
+                myEntry = found[1];
+                matchedByName = true;
+                // Adopt the OLD userId so future syncs map to the same cloud record
+                const oldUid = found[0];
+                setUserId(oldUid);
+                try {
+                  const s = loadState() || {};
+                  s.userId = oldUid;
+                  saveState(s);
+                } catch {}
+              }
+            }
             if (myEntry) {
               // Restore coins if local balance is 0 and remote has more
               if (myEntry.coinBalance != null && myEntry.coinBalance > 0) {
@@ -17203,15 +17226,15 @@ function AppInner() {
               }
               // Restore picks
               if (myEntry.picks && Object.keys(myEntry.picks).length > 0) {
-                setPicks(prev => Object.keys(prev || {}).length === 0 ? myEntry.picks : prev);
+                setPicks(prev => (matchedByName || Object.keys(prev || {}).length === 0) ? myEntry.picks : prev);
               }
               // Restore koPicks
               if (myEntry.koPicks && Object.keys(myEntry.koPicks).length > 0) {
-                setKoPicks(prev => Object.keys(prev || {}).length === 0 ? myEntry.koPicks : prev);
+                setKoPicks(prev => (matchedByName || Object.keys(prev || {}).length === 0) ? myEntry.koPicks : prev);
               }
               // Restore koWinners
               if (myEntry.koWinners && Object.keys(myEntry.koWinners).length > 0) {
-                setKoWinners(prev => Object.keys(prev || {}).length === 0 ? myEntry.koWinners : prev);
+                setKoWinners(prev => (matchedByName || Object.keys(prev || {}).length === 0) ? myEntry.koWinners : prev);
               }
               // Restore bonus picks
               if (myEntry.winnerPick) setWinnerPick(prev => prev || myEntry.winnerPick);
@@ -17367,7 +17390,7 @@ function AppInner() {
           // Build full real bracket structure (without picks yet — we're going to derive them from API)
           // For R16/QF/SF/Final, the slots get filled progressively as winners are determined
           const buildRealBracket = (currentKo) => {
-            const W32 = (idx) => { const m = realR32[idx]; return currentKo[m.id]==="a"?m.a:currentKo[m.id]==="b"?m.b:null; };
+            const W32 = (idx) => { const m = realR32 && realR32[idx]; if(!m) return null; return currentKo[m.id]==="a"?m.a:currentKo[m.id]==="b"?m.b:null; };
             const r16 = [
               { id:"R16-0", a:W32(1),  b:W32(4)  },  // M89: W74 vs W77
               { id:"R16-1", a:W32(0),  b:W32(2)  },  // M90: W73 vs W75
