@@ -10,7 +10,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.54.8";
+const APP_VERSION = "3.54.9";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -13434,14 +13434,14 @@ function KnockoutBracket({ standings, bestThirds, liveStandings, liveBestThirds,
     { id:"R16-6", a:W32(13), b:W32(15) },  // M95: W86 vs W88
     { id:"R16-7", a:W32(12), b:W32(14) },  // M96: W85 vs W87
   ];
-  const W16 = (id) => { const m = r16.find(x=>x.id===id); return actualKo[id]==="a"?m.a:actualKo[id]==="b"?m.b:null; };
+  const W16 = (id) => { const m = r16.find(x=>x.id===id); if(!m) return null; return actualKo[id]==="a"?m.a:actualKo[id]==="b"?m.b:null; };
   const qf = [
     { id:"QF-0", a:W16("R16-0"), b:W16("R16-1") },  // M97: W89 vs W90
     { id:"QF-1", a:W16("R16-4"), b:W16("R16-5") },  // M98: W93 vs W94
     { id:"QF-2", a:W16("R16-2"), b:W16("R16-3") },  // M99: W91 vs W92
     { id:"QF-3", a:W16("R16-6"), b:W16("R16-7") },  // M100: W95 vs W96
   ];
-  const WQF = (id) => { const m = qf.find(x=>x.id===id); return actualKo[id]==="a"?m.a:actualKo[id]==="b"?m.b:null; };
+  const WQF = (id) => { const m = qf.find(x=>x.id===id); if(!m) return null; return actualKo[id]==="a"?m.a:actualKo[id]==="b"?m.b:null; };
   const sf = [
     { id:"SF-0", a:WQF("QF-0"), b:WQF("QF-1") },  // M101: W97 vs W98
     { id:"SF-1", a:WQF("QF-2"), b:WQF("QF-3") },  // M102: W99 vs W100
@@ -14628,7 +14628,7 @@ function LeagueHub({
           { id:"R16-6", a:W(13), b:W(15) },  // M95: W86 vs W88
           { id:"R16-7", a:W(12), b:W(14) },  // M96: W85 vs W87
         ];
-        const RW = (id) => { const mt = r16.find(x=>x.id===id); return ako[id]==="a"?mt.a:ako[id]==="b"?mt.b:null; };
+        const RW = (id) => { const mt = r16.find(x=>x.id===id); if(!mt) return null; return ako[id]==="a"?mt.a:ako[id]==="b"?mt.b:null; };
 
         // Official QF pairings:
         // M97=W89vsW90, M98=W93vsW94, M99=W91vsW92, M100=W95vsW96
@@ -14638,7 +14638,7 @@ function LeagueHub({
           { id:"QF-2", a:RW("R16-2"), b:RW("R16-3") },  // M99: W91 vs W92
           { id:"QF-3", a:RW("R16-6"), b:RW("R16-7") },  // M100: W95 vs W96
         ];
-        const QW = (id) => { const mt = qf.find(x=>x.id===id); return ako[id]==="a"?mt.a:ako[id]==="b"?mt.b:null; };
+        const QW = (id) => { const mt = qf.find(x=>x.id===id); if(!mt) return null; return ako[id]==="a"?mt.a:ako[id]==="b"?mt.b:null; };
 
         // Official SF pairings:
         // M101=W97vsW98, M102=W99vsW100
@@ -14646,7 +14646,7 @@ function LeagueHub({
           { id:"SF-0", a:QW("QF-0"), b:QW("QF-1") },  // M101: W97 vs W98
           { id:"SF-1", a:QW("QF-2"), b:QW("QF-3") },  // M102: W99 vs W100
         ];
-        const SW = (id) => { const mt = sf.find(x=>x.id===id); return ako[id]==="a"?mt.a:ako[id]==="b"?mt.b:null; };
+        const SW = (id) => { const mt = sf.find(x=>x.id===id); if(!mt) return null; return ako[id]==="a"?mt.a:ako[id]==="b"?mt.b:null; };
 
         // Final: M104 = W101 vs W102
         const finalM = { id:"FINAL", a:SW("SF-0"), b:SW("SF-1") };
@@ -17378,14 +17378,14 @@ function AppInner() {
               { id:"R16-6", a:W32(13), b:W32(15) },  // M95: W86 vs W88
               { id:"R16-7", a:W32(12), b:W32(14) },  // M96: W85 vs W87
             ];
-            const W16 = (id) => { const m = r16.find(x=>x.id===id); return currentKo[id]==="a"?m.a:currentKo[id]==="b"?m.b:null; };
+            const W16 = (id) => { const m = r16.find(x=>x.id===id); if(!m) return null; return currentKo[id]==="a"?m.a:currentKo[id]==="b"?m.b:null; };
             const qf = [
               { id:"QF-0", a:W16("R16-0"), b:W16("R16-1") },  // M97
               { id:"QF-1", a:W16("R16-4"), b:W16("R16-5") },  // M98
               { id:"QF-2", a:W16("R16-2"), b:W16("R16-3") },  // M99
               { id:"QF-3", a:W16("R16-6"), b:W16("R16-7") },  // M100
             ];
-            const WQF = (id) => { const m = qf.find(x=>x.id===id); return currentKo[id]==="a"?m.a:currentKo[id]==="b"?m.b:null; };
+            const WQF = (id) => { const m = qf.find(x=>x.id===id); if(!m) return null; return currentKo[id]==="a"?m.a:currentKo[id]==="b"?m.b:null; };
             const sf = [
               { id:"SF-0", a:WQF("QF-0"), b:WQF("QF-1") },  // M101
               { id:"SF-1", a:WQF("QF-2"), b:WQF("QF-3") },  // M102
