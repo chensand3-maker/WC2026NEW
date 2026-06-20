@@ -10,7 +10,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.52.0";
+const APP_VERSION = "3.53.0";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -4026,20 +4026,14 @@ function ToastProvider({ children }) {
   );
 }
 
-function ProfileStats({ name, picks, koWinners, actuals, actualKo, winnerPick, topScorerPick, onClose }) {
+function ProfileStats({ name, picks, koWinners, koPicks = {}, actuals, actualKo, actualKoScores = {}, winnerPick, topScorerPick, actualWinner, actualTopScorer, topScorers = [], onClose }) {
   const t = useT();
   const stats = useMemo(() => {
     const ms = totalScore(picks, actuals);
-    // Count most-picked team in knockout
-    const teamCounts = {};
-    Object.values(koWinners || {}).forEach(s => {
-      // Skip — koWinners holds 'a'/'b' not team names; skip this metric for now
-    });
     // Count predictions made in group stage
     let predicted = 0;
     let totalGoalsPredicted = 0;
     let highestPredictedScore = { match: null, total: 0 };
-    let boldestUpset = null;
     FIXTURES.forEach(f => {
       const p = picks[f.id];
       if (!p || p.h === "" || p.h === undefined) return;
@@ -4059,14 +4053,40 @@ function ProfileStats({ name, picks, koWinners, actuals, actualKo, winnerPick, t
     const accuracy = ms.played > 0 ? Math.round(((ms.exact + ms.gd + ms.result) / ms.played) * 100) : 0;
     const exactAccuracy = ms.played > 0 ? Math.round((ms.exact / ms.played) * 100) : 0;
 
+    // ─── POINTS BREAKDOWN BY SOURCE ───
+    const groupPoints = ms.total;
+    const ko = totalKoScore(koPicks, actualKoScores);
+    const koPoints = ko.total;
+    // Bonus: champion winner bet
+    let winnerPoints = 0;
+    if (actualWinner && winnerPick) {
+      const aw = actualWinner.name || actualWinner.n;
+      const mw = winnerPick.name || winnerPick.n;
+      if (aw && mw && aw === mw) winnerPoints = POINTS.WINNER_BET;
+    }
+    // Bonus: top scorer goals
+    let scorerPoints = 0, scorerGoals = 0;
+    if (topScorerPick) {
+      const found = topScorers.find(s => nameMatch(s.name, topScorerPick.name));
+      if (found) { scorerGoals = found.goals || 0; scorerPoints = scorerGoals * POINTS.TOP_SCORER_GOAL; }
+      else if (actualTopScorer && nameMatch(actualTopScorer.name, topScorerPick.name)) {
+        scorerGoals = actualTopScorer.goals || 0; scorerPoints = scorerGoals * POINTS.TOP_SCORER_GOAL;
+      }
+    }
+    const bonusPoints = winnerPoints + scorerPoints;
+    const grandTotal = groupPoints + koPoints + bonusPoints;
+
     return {
       ...ms,
       predicted, koPredictedCount,
       accuracy, exactAccuracy,
       totalGoalsPredicted,
       highestPredictedScore,
+      // breakdown
+      groupPoints, koPoints, koExact: ko.exact, koResult: ko.result, koPlayed: ko.played,
+      winnerPoints, scorerPoints, scorerGoals, bonusPoints, grandTotal,
     };
-  }, [picks, koWinners, actuals]);
+  }, [picks, koWinners, koPicks, actuals, actualKoScores, winnerPick, topScorerPick, actualWinner, actualTopScorer, topScorers]);
 
   const lang = useLang().lang;
 
@@ -4107,11 +4127,70 @@ function ProfileStats({ name, picks, koWinners, actuals, actualKo, winnerPick, t
           textAlign:"center",
           background:"linear-gradient(135deg,rgba(251,191,36,0.15),rgba(36,49,80,0.5))",
           border:"1px solid rgba(251,191,36,0.4)",
-          borderRadius:14,padding:"14px 12px",marginBottom:14,
+          borderRadius:14,padding:"14px 12px",marginBottom:12,
         }}>
           <div style={{fontSize:11,color:"#fbbf24",letterSpacing:3,marginBottom:4}}>{t("profile.totalPoints")}</div>
-          <div style={{fontSize:48,fontWeight:900,color:"#fbbf24",lineHeight:1}}>{stats.total}</div>
+          <div style={{fontSize:48,fontWeight:900,color:"#fbbf24",lineHeight:1}}>{stats.grandTotal}</div>
           <div style={{fontSize:11,color:"#94a3b8",marginTop:4}}>{stats.played} {t("profile.fromMatches")}</div>
+        </div>
+
+        {/* 🧮 POINTS BREAKDOWN BY SOURCE */}
+        <div style={{
+          background:"rgba(30,41,59,0.5)",border:"1px solid rgba(71,85,105,0.4)",
+          borderRadius:12,padding:"12px 14px",marginBottom:14,
+        }}>
+          <div style={{fontSize:10,color:"#94a3b8",letterSpacing:2,marginBottom:10,fontWeight:700}}>מאיפה הנקודות שלך</div>
+
+          {/* Group stage row */}
+          <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:9}}>
+            <span style={{fontSize:16}}>⚽</span>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{fontSize:12,color:"#f1f5f9",fontWeight:600}}>שלב הבתים</div>
+              <div style={{fontSize:9,color:"#64748b"}}>{stats.exact} בול · {stats.result} מנצח</div>
+            </div>
+            <div style={{fontFamily:"inherit",fontSize:18,fontWeight:900,color:"#22c55e"}}>{stats.groupPoints}</div>
+          </div>
+
+          {/* Knockout row */}
+          <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:9}}>
+            <span style={{fontSize:16}}>🏆</span>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{fontSize:12,color:"#f1f5f9",fontWeight:600}}>נוקאאוט <span style={{fontSize:9,color:"#fbbf24"}}>×2</span></div>
+              <div style={{fontSize:9,color:"#64748b"}}>{stats.koExact} בול · {stats.koResult} מנצח</div>
+            </div>
+            <div style={{fontFamily:"inherit",fontSize:18,fontWeight:900,color:"#fbbf24"}}>{stats.koPoints}</div>
+          </div>
+
+          {/* Champion bet row */}
+          {winnerPick && (
+            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:9}}>
+              <span style={{fontSize:16}}>👑</span>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontSize:12,color:"#f1f5f9",fontWeight:600}}>אלופה</div>
+                <div style={{fontSize:9,color:"#64748b",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{winnerPick.flag||winnerPick.f} {winnerPick.name||winnerPick.n}</div>
+              </div>
+              <div style={{fontFamily:"inherit",fontSize:18,fontWeight:900,color: stats.winnerPoints>0?"#a855f7":"#475569"}}>{stats.winnerPoints>0?`+${stats.winnerPoints}`:"0"}</div>
+            </div>
+          )}
+
+          {/* Top scorer row */}
+          {topScorerPick && (
+            <div style={{display:"flex",alignItems:"center",gap:10}}>
+              <span style={{fontSize:16}}>👟</span>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontSize:12,color:"#f1f5f9",fontWeight:600}}>מלך שערים</div>
+                <div style={{fontSize:9,color:"#64748b",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{topScorerPick.name} · {stats.scorerGoals} גולים</div>
+              </div>
+              <div style={{fontFamily:"inherit",fontSize:18,fontWeight:900,color: stats.scorerPoints>0?"#a855f7":"#475569"}}>{stats.scorerPoints>0?`+${stats.scorerPoints}`:"0"}</div>
+            </div>
+          )}
+
+          {/* Divider + grand total */}
+          <div style={{height:1,background:"rgba(71,85,105,0.4)",margin:"11px 0 9px"}}/>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+            <span style={{fontSize:13,color:"#fbbf24",fontWeight:800,letterSpacing:1}}>סך הכל</span>
+            <span style={{fontFamily:"inherit",fontSize:22,fontWeight:900,color:"#fbbf24"}}>{stats.grandTotal}</span>
+          </div>
         </div>
 
         {/* Accuracy block */}
@@ -17895,10 +17974,15 @@ export default function App() {
           name={name}
           picks={picks}
           koWinners={koWinners}
+          koPicks={koPicks}
           actuals={actuals}
           actualKo={actualKo}
+          actualKoScores={actualKoScores}
           winnerPick={winnerPick}
           topScorerPick={topScorerPick}
+          actualWinner={actualWinner}
+          actualTopScorer={actualTopScorer}
+          topScorers={topScorers}
           onClose={()=>setShowProfile(false)}
         />
       )}
