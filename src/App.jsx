@@ -10,7 +10,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.49.6";
+const APP_VERSION = "3.50.0";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -1881,6 +1881,22 @@ function getChampion(standings, bestThirds, koWinners) {
     current = next;
   }
   return null;
+}
+
+// Backfill koWinners from koPicks (exact scores) for users who only entered scores.
+// This fixes legacy data where koWinners was never set even though koPicks has results.
+function deriveKoWinners(koWinners, koPicks) {
+  if (!koPicks) return koWinners || {};
+  const merged = { ...(koWinners || {}) };
+  Object.keys(koPicks).forEach(matchId => {
+    if (merged[matchId]) return; // already has an explicit winner
+    const p = koPicks[matchId];
+    if (!p || p.h === "" || p.a === "" || p.h === undefined) return;
+    const h = parseInt(p.h), a = parseInt(p.a);
+    if (isNaN(h) || isNaN(a) || h === a) return; // draws can't determine a KO winner
+    merged[matchId] = h > a ? "a" : "b";
+  });
+  return merged;
 }
 
 function getKnockoutTeams(standings, bestThirds, koWinners) {
@@ -13132,12 +13148,30 @@ function KnockoutBracket({ standings, bestThirds, liveStandings, liveBestThirds,
 
   // Each round's winners come from `actualKo` (real results from the API), NOT from user picks.
   // Before a result is in, the slot stays null (TBD).
-  const r32Winners = r32.map(m => actualKo[m.id] === "a" ? m.a : actualKo[m.id] === "b" ? m.b : null);
-  const r16 = []; for (let i=0;i<16;i+=2) r16.push({id:`R16-${i/2}`,a:r32Winners[i],b:r32Winners[i+1]});
-  const r16Winners = r16.map(m => actualKo[m.id] === "a" ? m.a : actualKo[m.id] === "b" ? m.b : null);
-  const qf = []; for (let i=0;i<8;i+=2) qf.push({id:`QF-${i/2}`,a:r16Winners[i],b:r16Winners[i+1]});
-  const qfWinners = qf.map(m => actualKo[m.id] === "a" ? m.a : actualKo[m.id] === "b" ? m.b : null);
-  const sf = []; for (let i=0;i<4;i+=2) sf.push({id:`SF-${i/2}`,a:qfWinners[i],b:qfWinners[i+1]});
+  // Official FIFA 2026 bracket pairings (NOT simple neighbor pairing!)
+  const W32 = (idx) => { const m = r32[idx]; return actualKo[m.id]==="a"?m.a:actualKo[m.id]==="b"?m.b:null; };
+  const r16 = [
+    { id:"R16-0", a:W32(1),  b:W32(4)  },  // M89: W74 vs W77
+    { id:"R16-1", a:W32(0),  b:W32(2)  },  // M90: W73 vs W75
+    { id:"R16-2", a:W32(3),  b:W32(5)  },  // M91: W76 vs W78
+    { id:"R16-3", a:W32(6),  b:W32(7)  },  // M92: W79 vs W80
+    { id:"R16-4", a:W32(10), b:W32(11) },  // M93: W83 vs W84
+    { id:"R16-5", a:W32(8),  b:W32(9)  },  // M94: W81 vs W82
+    { id:"R16-6", a:W32(13), b:W32(15) },  // M95: W86 vs W88
+    { id:"R16-7", a:W32(12), b:W32(14) },  // M96: W85 vs W87
+  ];
+  const W16 = (id) => { const m = r16.find(x=>x.id===id); return actualKo[id]==="a"?m.a:actualKo[id]==="b"?m.b:null; };
+  const qf = [
+    { id:"QF-0", a:W16("R16-0"), b:W16("R16-1") },  // M97: W89 vs W90
+    { id:"QF-1", a:W16("R16-4"), b:W16("R16-5") },  // M98: W93 vs W94
+    { id:"QF-2", a:W16("R16-2"), b:W16("R16-3") },  // M99: W91 vs W92
+    { id:"QF-3", a:W16("R16-6"), b:W16("R16-7") },  // M100: W95 vs W96
+  ];
+  const WQF = (id) => { const m = qf.find(x=>x.id===id); return actualKo[id]==="a"?m.a:actualKo[id]==="b"?m.b:null; };
+  const sf = [
+    { id:"SF-0", a:WQF("QF-0"), b:WQF("QF-1") },  // M101: W97 vs W98
+    { id:"SF-1", a:WQF("QF-2"), b:WQF("QF-3") },  // M102: W99 vs W100
+  ];
   const sfWinners = sf.map(m => actualKo[m.id] === "a" ? m.a : actualKo[m.id] === "b" ? m.b : null);
   const final = { id:"FINAL", a:sfWinners[0], b:sfWinners[1] };
   const champion = actualKo[final.id]==="a"?final.a:actualKo[final.id]==="b"?final.b:null;
@@ -13166,10 +13200,16 @@ function KnockoutBracket({ standings, bestThirds, liveStandings, liveBestThirds,
 
     const handleKoScoreChange = (side, val) => {
       const cleaned = val.replace(/\D/g, "").slice(0, 1);
-      setKoPicks(prev => ({
-        ...prev,
-        [m.id]: { ...(prev[m.id] || { h: "", a: "" }), [side]: cleaned },
-      }));
+      setKoPicks(prev => {
+        const updated = { ...(prev[m.id] || { h: "", a: "" }), [side]: cleaned };
+        const next = { ...prev, [m.id]: updated };
+        // Auto-derive koWinners from the score the moment both sides are filled
+        const h = parseInt(updated.h), a = parseInt(updated.a);
+        if (!isNaN(h) && !isNaN(a) && h !== a) {
+          setKoWinners(w => ({ ...w, [m.id]: h > a ? "a" : "b" }));
+        }
+        return next;
+      });
     };
 
     return (
@@ -13540,19 +13580,16 @@ function Leaderboard({ name, picks, koWinners, friends, actuals, actualKo, hasAc
   
   const myStandings = useMemo(() => allStandings(picks), [picks]);
   const myBestThirds = useMemo(() => getBestThirds(myStandings), [myStandings]);
-  const myKnockout = useMemo(() => getKnockoutTeams(myStandings, myBestThirds, koWinners), [myStandings, myBestThirds, koWinners]);
+  const myKnockout = useMemo(() => getKnockoutTeams(myStandings, myBestThirds, deriveKoWinners(koWinners, koPicks)), [myStandings, myBestThirds, koWinners, koPicks]);
   
   const myMatchScore = totalScore(picks, actuals);
-  const myKoScore = hasActuals ? scoreKnockout(myKnockout, actualKnockout) : { total:0, breakdown:{r16:0,qf:0,sf:0,finalist:0,champion:0}};
+  const myKoScore = totalKoScore(koPicks, actualKoScores);
   
   const everyone = [
     { name, isMe:true, picks, koWinners, matchScore:myMatchScore, koScore:myKoScore },
     ...friends.map(f => {
-      const fStandings = allStandings(f.picks);
-      const fBestThirds = getBestThirds(fStandings);
-      const fKnockout = getKnockoutTeams(fStandings, fBestThirds, f.koWinners);
       const ms = totalScore(f.picks, actuals);
-      const ks = hasActuals ? scoreKnockout(fKnockout, actualKnockout) : { total:0, breakdown:{r16:0,qf:0,sf:0,finalist:0,champion:0}};
+      const ks = totalKoScore(f.koPicks, actualKoScores);
       return { name:f.name, isMe:false, picks:f.picks, koWinners:f.koWinners, matchScore:ms, koScore:ks };
     })
   ];
@@ -14045,11 +14082,8 @@ function LeagueHub({
     const actualKnockout = getKnockoutTeams(actualStandings, actualBestThirds, leagueData.actualKo || {});
 
     const members = Object.entries(leagueData.members || {}).map(([uid, m]) => {
-      const st = allStandings(m.picks || {});
-      const bt = getBestThirds(st);
-      const kt = getKnockoutTeams(st, bt, m.koWinners || {});
       const ms = totalScore(m.picks || {}, actuals);
-      const ks = hasActuals ? scoreKnockout(kt, actualKnockout) : { total:0, breakdown:{r16:0,qf:0,sf:0,finalist:0,champion:0}};
+      const ks = totalKoScore(m.koPicks, actualKoScores);
       const predictedCount = Object.keys(m.picks || {}).filter(k => m.picks[k]?.h !== undefined && m.picks[k]?.h !== "").length;
       // ─── Bonus picks scoring (Tournament Winner + Top Scorer) ──
       let bonusPoints = 0;
@@ -14173,17 +14207,44 @@ function LeagueHub({
       const buildBracketRounds = () => {
         if (!memberR32) return null;
         const ako = actualKo || {};
-        const r32Winners = memberR32.map(mt => ako[mt.id] === "a" ? mt.a : ako[mt.id] === "b" ? mt.b : null);
-        const r16 = [];
-        for (let i=0;i<16;i+=2) r16.push({id:`R16-${i/2}`,a:r32Winners[i],b:r32Winners[i+1]});
-        const r16Winners = r16.map(mt => ako[mt.id]==="a"?mt.a:ako[mt.id]==="b"?mt.b:null);
-        const qf = [];
-        for (let i=0;i<8;i+=2) qf.push({id:`QF-${i/2}`,a:r16Winners[i],b:r16Winners[i+1]});
-        const qfWinners = qf.map(mt => ako[mt.id]==="a"?mt.a:ako[mt.id]==="b"?mt.b:null);
-        const sf = [];
-        for (let i=0;i<4;i+=2) sf.push({id:`SF-${i/2}`,a:qfWinners[i],b:qfWinners[i+1]});
-        const sfWinners = sf.map(mt => ako[mt.id]==="a"?mt.a:ako[mt.id]==="b"?mt.b:null);
-        const finalM = { id:"FINAL", a:sfWinners[0], b:sfWinners[1] };
+        // Winner of each R32 match (by index 0..15 = M73..M88)
+        const W = (idx) => { const mt = memberR32[idx]; return ako[mt.id]==="a"?mt.a:ako[mt.id]==="b"?mt.b:null; };
+
+        // Official FIFA 2026 R16 pairings (by R32 winner index):
+        // M89=W74vsW77, M90=W73vsW75, M91=W76vsW78, M92=W79vsW80,
+        // M93=W83vsW84, M94=W81vsW82, M95=W86vsW88, M96=W85vsW87
+        const r16 = [
+          { id:"R16-0", a:W(1),  b:W(4)  },  // M89: W74 vs W77
+          { id:"R16-1", a:W(0),  b:W(2)  },  // M90: W73 vs W75
+          { id:"R16-2", a:W(3),  b:W(5)  },  // M91: W76 vs W78
+          { id:"R16-3", a:W(6),  b:W(7)  },  // M92: W79 vs W80
+          { id:"R16-4", a:W(10), b:W(11) },  // M93: W83 vs W84
+          { id:"R16-5", a:W(8),  b:W(9)  },  // M94: W81 vs W82
+          { id:"R16-6", a:W(13), b:W(15) },  // M95: W86 vs W88
+          { id:"R16-7", a:W(12), b:W(14) },  // M96: W85 vs W87
+        ];
+        const RW = (id) => { const mt = r16.find(x=>x.id===id); return ako[id]==="a"?mt.a:ako[id]==="b"?mt.b:null; };
+
+        // Official QF pairings:
+        // M97=W89vsW90, M98=W93vsW94, M99=W91vsW92, M100=W95vsW96
+        const qf = [
+          { id:"QF-0", a:RW("R16-0"), b:RW("R16-1") },  // M97: W89 vs W90
+          { id:"QF-1", a:RW("R16-4"), b:RW("R16-5") },  // M98: W93 vs W94
+          { id:"QF-2", a:RW("R16-2"), b:RW("R16-3") },  // M99: W91 vs W92
+          { id:"QF-3", a:RW("R16-6"), b:RW("R16-7") },  // M100: W95 vs W96
+        ];
+        const QW = (id) => { const mt = qf.find(x=>x.id===id); return ako[id]==="a"?mt.a:ako[id]==="b"?mt.b:null; };
+
+        // Official SF pairings:
+        // M101=W97vsW98, M102=W99vsW100
+        const sf = [
+          { id:"SF-0", a:QW("QF-0"), b:QW("QF-1") },  // M101: W97 vs W98
+          { id:"SF-1", a:QW("QF-2"), b:QW("QF-3") },  // M102: W99 vs W100
+        ];
+        const SW = (id) => { const mt = sf.find(x=>x.id===id); return ako[id]==="a"?mt.a:ako[id]==="b"?mt.b:null; };
+
+        // Final: M104 = W101 vs W102
+        const finalM = { id:"FINAL", a:SW("SF-0"), b:SW("SF-1") };
         return { r32: memberR32, r16, qf, sf, final: finalM };
       };
       const memberBracket = buildBracketRounds();
@@ -15203,17 +15264,17 @@ function LeagueView({ name, picks, koWinners, friends, setFriends, leagueName, s
   const actualKnockout = useMemo(() => getKnockoutTeams(actualStandings, actualBestThirds, actualKo), [actualStandings, actualBestThirds, actualKo]);
 
   const everyone = useMemo(() => {
-    const buildEntry = (n, p, ko, isMe) => {
+    const buildEntry = (n, p, ko, isMe, kp) => {
       const st = allStandings(p);
       const bt = getBestThirds(st);
-      const kt = getKnockoutTeams(st, bt, ko);
+      const kt = getKnockoutTeams(st, bt, deriveKoWinners(ko, kp));
       const ms = totalScore(p, actuals);
       const ks = hasActuals ? scoreKnockout(kt, actualKnockout) : { total:0, breakdown:{r16:0,qf:0,sf:0,finalist:0,champion:0}};
       return { name:n, isMe, picks:p, koWinners:ko, standings:st, bestThirds:bt, knockout:kt, matchScore:ms, koScore:ks, totalPoints: ms.total + ks.total };
     };
     const list = [
-      buildEntry(name, picks, koWinners, true),
-      ...friends.map(f => buildEntry(f.name, f.picks, f.koWinners, false)),
+      buildEntry(name, picks, koWinners, true, koPicks),
+      ...friends.map(f => buildEntry(f.name, f.picks, f.koWinners, false, f.koPicks)),
     ];
     list.sort((a,b) => {
       if (b.totalPoints !== a.totalPoints) return b.totalPoints - a.totalPoints;
@@ -16854,12 +16915,29 @@ export default function App() {
           // Build full real bracket structure (without picks yet — we're going to derive them from API)
           // For R16/QF/SF/Final, the slots get filled progressively as winners are determined
           const buildRealBracket = (currentKo) => {
-            const r32Winners = realR32.map(m => currentKo[m.id] === "a" ? m.a : currentKo[m.id] === "b" ? m.b : null);
-            const r16 = []; for (let i=0;i<16;i+=2) r16.push({id:`R16-${i/2}`, a:r32Winners[i], b:r32Winners[i+1]});
-            const r16Winners = r16.map(m => currentKo[m.id] === "a" ? m.a : currentKo[m.id] === "b" ? m.b : null);
-            const qf = []; for (let i=0;i<8;i+=2) qf.push({id:`QF-${i/2}`, a:r16Winners[i], b:r16Winners[i+1]});
-            const qfWinners = qf.map(m => currentKo[m.id] === "a" ? m.a : currentKo[m.id] === "b" ? m.b : null);
-            const sf = []; for (let i=0;i<4;i+=2) sf.push({id:`SF-${i/2}`, a:qfWinners[i], b:qfWinners[i+1]});
+            const W32 = (idx) => { const m = realR32[idx]; return currentKo[m.id]==="a"?m.a:currentKo[m.id]==="b"?m.b:null; };
+            const r16 = [
+              { id:"R16-0", a:W32(1),  b:W32(4)  },  // M89: W74 vs W77
+              { id:"R16-1", a:W32(0),  b:W32(2)  },  // M90: W73 vs W75
+              { id:"R16-2", a:W32(3),  b:W32(5)  },  // M91: W76 vs W78
+              { id:"R16-3", a:W32(6),  b:W32(7)  },  // M92: W79 vs W80
+              { id:"R16-4", a:W32(10), b:W32(11) },  // M93: W83 vs W84
+              { id:"R16-5", a:W32(8),  b:W32(9)  },  // M94: W81 vs W82
+              { id:"R16-6", a:W32(13), b:W32(15) },  // M95: W86 vs W88
+              { id:"R16-7", a:W32(12), b:W32(14) },  // M96: W85 vs W87
+            ];
+            const W16 = (id) => { const m = r16.find(x=>x.id===id); return currentKo[id]==="a"?m.a:currentKo[id]==="b"?m.b:null; };
+            const qf = [
+              { id:"QF-0", a:W16("R16-0"), b:W16("R16-1") },  // M97
+              { id:"QF-1", a:W16("R16-4"), b:W16("R16-5") },  // M98
+              { id:"QF-2", a:W16("R16-2"), b:W16("R16-3") },  // M99
+              { id:"QF-3", a:W16("R16-6"), b:W16("R16-7") },  // M100
+            ];
+            const WQF = (id) => { const m = qf.find(x=>x.id===id); return currentKo[id]==="a"?m.a:currentKo[id]==="b"?m.b:null; };
+            const sf = [
+              { id:"SF-0", a:WQF("QF-0"), b:WQF("QF-1") },  // M101
+              { id:"SF-1", a:WQF("QF-2"), b:WQF("QF-3") },  // M102
+            ];
             const sfWinners = sf.map(m => currentKo[m.id] === "a" ? m.a : currentKo[m.id] === "b" ? m.b : null);
             const final = { id:"FINAL", a:sfWinners[0], b:sfWinners[1] };
             return { r32: realR32, r16, qf, sf, final };
@@ -16940,12 +17018,7 @@ export default function App() {
 
       // If user has a top-scorer pick, sync actualTopScorer to their match
       if (topScorerPick && scorers.length > 0) {
-        const lastName = topScorerPick.name.split(" ").slice(-1)[0].toLowerCase();
-        const found = scorers.find(s =>
-          s.name === topScorerPick.name ||
-          s.name.toLowerCase().includes(lastName) ||
-          topScorerPick.name.toLowerCase().includes(s.name.split(" ").slice(-1)[0].toLowerCase())
-        );
+        const found = scorers.find(s => nameMatch(s.name, topScorerPick.name));
         if (found) {
           setActualTopScorer({ name: topScorerPick.name, team: found.team, goals: found.goals });
         }
