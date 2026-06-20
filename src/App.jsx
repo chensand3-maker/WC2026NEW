@@ -11,7 +11,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.58.1";
+const APP_VERSION = "3.59.0";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -12084,9 +12084,9 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
 
   return (
     <div style={{
-      background: sc ? sc.bg : (hasResult ? "rgba(34,197,94,0.06)" : "rgba(30,41,59,0.5)"),
-      border:`1px solid ${sc ? sc.border : (hasResult ? "rgba(34,197,94,0.3)" : "rgba(71,85,105,0.3)")}`,
-      borderRadius:12,padding:"10px 12px",marginBottom:8,transition:"all 0.25s",
+      background: sc ? sc.bg : (hasResult ? "rgba(34,197,94,0.06)" : "linear-gradient(160deg,rgba(6,24,14,0.92),rgba(2,15,8,0.96))"),
+      border:`1px solid ${sc ? sc.border : (hasResult ? "rgba(34,197,94,0.3)" : "rgba(34,197,94,0.22)")}`,
+      borderRadius:14,padding:"12px 14px",marginBottom:10,transition:"all 0.25s",
       position:"relative",overflow:"visible",
       animation: reaction ? "matchFlash 0.5s ease-out" : "none",
       boxShadow: sc
@@ -12831,13 +12831,14 @@ function NextMatchCountdown({ allMatches }) {
 
   return (
     <div style={{
-      background:"linear-gradient(135deg,rgba(251,191,36,0.12),rgba(36,49,80,0.5))",
-      border:"1px solid rgba(251,191,36,0.3)",
-      borderRadius:12,padding:"12px 14px",marginBottom:14,
+      background:"linear-gradient(160deg,rgba(34,197,94,0.14),rgba(6,20,12,0.85))",
+      border:"1px solid rgba(34,197,94,0.35)",
+      borderRadius:16,padding:"12px 14px",marginBottom:14,
+      boxShadow:"0 0 30px rgba(34,197,94,0.1)",
     }}>
       <div style={{
-        fontSize:10,color:"#fbbf24",letterSpacing:2,
-        fontWeight:700,textAlign:"center",marginBottom:8,
+        fontSize:10,color:"#4ade80",letterSpacing:2,
+        fontWeight:800,textAlign:"center",marginBottom:8,
       }}>
         ⏰ {t("today.nextMatchIn")}
       </div>
@@ -13029,20 +13030,20 @@ function TodayScreen({ picks, actuals, onPick, onBack, onGoToBracket, leagueMemb
     const k = formatKickoff(m.kickoff);
     return (
       <div key={m.slotId} style={{
-        background:"rgba(168,85,247,0.05)",
-        border:"1px solid rgba(168,85,247,0.3)",
-        borderRadius:12,padding:"10px 14px",marginBottom:8,
+        background:"linear-gradient(160deg,rgba(99,102,241,0.1),rgba(6,20,12,0.85))",
+        border:"1px solid rgba(129,140,248,0.35)",
+        borderRadius:14,padding:"12px 14px",marginBottom:10,
       }}>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:4}}>
-          <span style={{fontSize:10,color:"#a855f7",letterSpacing:2,fontWeight:700}}>🏆 KNOCKOUT · {m.slotId}</span>
-          <span style={{fontSize:10,color:"#94a3b8"}}>📅 {k.day} · 🕐 {k.time}</span>
+          <span style={{fontSize:10,color:"#a5b4fc",letterSpacing:2,fontWeight:800}}>🏆 KNOCKOUT · {m.slotId}</span>
+          <span style={{fontSize:10,color:"#86efac"}}>📅 {k.day} · 🕐 {k.time}</span>
         </div>
-        {m.venue && <div style={{fontSize:10,color:"#64748b"}}>📍 {m.venue}</div>}
+        {m.venue && <div style={{fontSize:10,color:"#4d7c5a"}}>📍 {m.venue}</div>}
         <button onClick={onGoToBracket} style={{
           marginTop:8,width:"100%",
-          padding:"6px 10px",background:"rgba(168,85,247,0.15)",
-          border:"1px solid rgba(168,85,247,0.4)",borderRadius:6,
-          color:"#a855f7",fontSize:11,fontWeight:700,cursor:"pointer",
+          padding:"8px 10px",background:"rgba(99,102,241,0.18)",
+          border:"1px solid rgba(129,140,248,0.4)",borderRadius:8,
+          color:"#c7d2fe",fontSize:11,fontWeight:800,cursor:"pointer",
           fontFamily:"inherit",
         }}>{t("today.openBracket")}</button>
       </div>
@@ -13050,8 +13051,21 @@ function TodayScreen({ picks, actuals, onPick, onBack, onGoToBracket, leagueMemb
   };
 
   const renderEmptySection = (label) => (
-    <div style={{textAlign:"center",padding:"20px 12px",color:"#64748b",fontSize:12,fontStyle:"italic"}}>
+    <div style={{textAlign:"center",padding:"20px 12px",color:"#4d7c5a",fontSize:12,fontStyle:"italic"}}>
       {label}
+    </div>
+  );
+
+  // 🏟️ Stadium-style section header: colored glowing dot + label + count chip
+  const sectionHeader = (color, glow, label, count) => (
+    <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
+      <span style={{width:7,height:7,borderRadius:"50%",background:color,boxShadow:`0 0 8px ${glow}`,display:"inline-block",flexShrink:0}}/>
+      <span style={{fontSize:12,fontWeight:800,letterSpacing:1,color}}>{label}</span>
+      {count != null && (
+        <span style={{fontSize:10,color:"#4d7c5a",background:"rgba(34,197,94,0.08)",padding:"2px 9px",borderRadius:10,marginRight:"auto"}}>
+          {count} {count === 1 ? "משחק" : "משחקים"}
+        </span>
+      )}
     </div>
   );
 
@@ -13067,7 +13081,25 @@ function TodayScreen({ picks, actuals, onPick, onBack, onGoToBracket, leagueMemb
     }).length;
 
   return (
-    <div style={{padding:"16px 14px 60px",maxWidth:560,margin:"0 auto"}}>
+    <div style={{
+      position:"relative",
+      background:"linear-gradient(180deg,#020617 0%, #041a0e 55%, #052e16 100%)",
+      minHeight:"100vh",
+    }}>
+      {/* 🏟️ Stadium grass field glow at the bottom */}
+      <div style={{
+        position:"fixed",bottom:0,left:0,right:0,height:"36%",maxWidth:560,margin:"0 auto",
+        background:"repeating-linear-gradient(90deg, rgba(34,197,94,0.045) 0px, rgba(34,197,94,0.045) 22px, transparent 22px, transparent 44px), linear-gradient(180deg, transparent, rgba(34,197,94,0.09))",
+        pointerEvents:"none",zIndex:0,
+      }}/>
+      {/* 🏟️ Stadium light flare at the top */}
+      <div style={{
+        position:"fixed",top:-60,left:"50%",transform:"translateX(-50%)",
+        width:300,height:160,
+        background:"radial-gradient(ellipse, rgba(134,239,172,0.09), transparent 70%)",
+        pointerEvents:"none",zIndex:0,
+      }}/>
+    <div style={{padding:"16px 14px 60px",maxWidth:560,margin:"0 auto",position:"relative",zIndex:1}}>
       {/* Pull-to-refresh indicator */}
       {ptrDist > 0 && (
         <div style={{
@@ -13142,23 +13174,22 @@ function TodayScreen({ picks, actuals, onPick, onBack, onGoToBracket, leagueMemb
       </div>
 
       <div style={{textAlign:"center",marginBottom:18}}>
-        <div style={{fontSize:10,color:"#64748b",letterSpacing:3}}>{t("today.upcoming")}</div>
+        <div style={{fontSize:10,color:"#4d7c5a",letterSpacing:3}}>{t("today.upcoming")}</div>
         <h2 style={{
-          fontSize:24,margin:"4px 0",
-          background:"linear-gradient(180deg,#fde68a,#f59e0b)",
-          WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",
-          fontWeight:900,
-        }}>📅 {t("today.title")}</h2>
-        <p style={{fontSize:12,color:"#94a3b8",margin:0}}>{t("today.subtitle")}</p>
+          fontSize:26,margin:"4px 0",
+          color:"#fff",fontWeight:900,
+          textShadow:"0 0 24px rgba(34,197,94,0.5)",
+        }}>{t("today.title")} ⚽</h2>
+        <p style={{fontSize:12,color:"#86efac",margin:0,opacity:0.7}}>{t("today.subtitle")}</p>
       </div>
 
       {/* Missing picks warning */}
       {missingPicks > 0 && (
         <div style={{
-          background:"linear-gradient(135deg,rgba(239,68,68,0.12),rgba(36,49,80,0.5))",
+          background:"linear-gradient(135deg,rgba(239,68,68,0.16),rgba(6,20,12,0.6))",
           border:"1px solid rgba(239,68,68,0.4)",
-          borderRadius:12,padding:"10px 14px",marginBottom:14,
-          display:"flex",alignItems:"center",gap:10,
+          borderRadius:14,padding:"11px 14px",marginBottom:14,
+          display:"flex",alignItems:"center",gap:11,
         }}>
           <span style={{fontSize:22}}>🚨</span>
           <div style={{flex:1,fontSize:12,color:"#fca5a5",lineHeight:1.4}}>
@@ -13174,19 +13205,7 @@ function TodayScreen({ picks, actuals, onPick, onBack, onGoToBracket, leagueMemb
       {/* 🔴 LIVE matches only */}
       {liveOrJustEndedMatches.length > 0 && (
         <div style={{marginBottom:18}}>
-          <div style={{
-            fontSize:11,color:"#ef4444",letterSpacing:3,marginBottom:8,
-            fontWeight:700,display:"flex",alignItems:"center",gap:6,
-          }}>
-            <span style={{
-              width:8,height:8,borderRadius:"50%",
-              background:"#ef4444",
-              boxShadow:"0 0 8px #ef4444",
-              animation:"livePulse 1.2s ease-in-out infinite",
-              display:"inline-block",
-            }}/>
-            {t("today.liveNow")}
-          </div>
+          {sectionHeader("#ef4444", "#ef4444", t("today.liveNow"), null)}
           <style>{`
             @keyframes livePulse {
               0%, 100% { opacity: 1; transform: scale(1); }
@@ -13201,9 +13220,7 @@ function TodayScreen({ picks, actuals, onPick, onBack, onGoToBracket, leagueMemb
 
       {/* Today */}
       <div style={{marginBottom:18}}>
-        <div style={{fontSize:11,color:"#fbbf24",letterSpacing:3,marginBottom:8,fontWeight:700}}>
-          ⚽ {t("today.today")} ({todayMatches.length})
-        </div>
+        {sectionHeader("#fbbf24", "rgba(251,191,36,0.6)", `⚽ ${t("today.today")}`, todayMatches.length)}
         {todayMatches.length === 0
           ? renderEmptySection(t("today.noMatchesToday"))
           : todayMatches.map(renderMatchRow)}
@@ -13211,9 +13228,7 @@ function TodayScreen({ picks, actuals, onPick, onBack, onGoToBracket, leagueMemb
 
       {/* Tomorrow */}
       <div style={{marginBottom:18}}>
-        <div style={{fontSize:11,color:"#a78bfa",letterSpacing:3,marginBottom:8,fontWeight:700}}>
-          🌅 {t("today.tomorrow")} ({tomorrowMatches.length})
-        </div>
+        {sectionHeader("#4ade80", "rgba(34,197,94,0.5)", `🌅 ${t("today.tomorrow")}`, tomorrowMatches.length)}
         {tomorrowMatches.length === 0
           ? renderEmptySection(t("today.noMatchesTomorrow"))
           : tomorrowMatches.map(renderMatchRow)}
@@ -13222,12 +13237,11 @@ function TodayScreen({ picks, actuals, onPick, onBack, onGoToBracket, leagueMemb
       {/* 🏁 Just finished matches — at the bottom for less clutter */}
       {justFinishedMatches.length > 0 && (
         <div style={{marginBottom:18}}>
-          <div style={{fontSize:11,color:"#94a3b8",letterSpacing:3,marginBottom:8,fontWeight:700}}>
-            🏁 {t("today.justFinished")}
-          </div>
+          {sectionHeader("#64748b", "transparent", `🏁 ${t("today.justFinished")}`, null)}
           {justFinishedMatches.map(m => renderMatchRow(m, { isFinishedSection: true }))}
         </div>
       )}
+    </div>
     </div>
   );
 }
