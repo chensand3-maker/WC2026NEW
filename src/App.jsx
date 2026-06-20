@@ -11,7 +11,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.59.5";
+const APP_VERSION = "3.59.7";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -11826,17 +11826,17 @@ const SOFA_EVENTS = {
   "Germany|Côte d'Ivoire":   { slug: "germany-cote-divoire/YdbsfWb",                    id: null },
   "Ecuador|Curaçao":         { slug: "curacao-ecuador/hVbsCqx",               id: 15186906 },
   "Netherlands|Sweden":      { slug: "netherlands-sweden/aebshWb",                      id: null },
-  "Tunisia|Japan":           { slug: "tunisia-japan/bebsiWb",                           id: null },
-  "Belgium|Iran":            { slug: "belgium-iran/cebsjWb",                            id: null },
-  "New Zealand|Egypt":       { slug: "new-zealand-egypt/debskWb",                       id: null },
-  "Spain|Saudi Arabia":      { slug: "spain-saudi-arabia/eebslWb",                      id: null },
-  "Uruguay|Cabo Verde":      { slug: "uruguay-cabo-verde/febsmWb",                      id: null },
-  "Norway|Senegal":          { slug: "norway-senegal/hebsoWb",                          id: null },
-  "Argentina|Austria":       { slug: "argentina-austria/iebspWb",                       id: null },
-  "Jordan|Algeria":          { slug: "jordan-algeria/jebsqWb",                          id: null },
-  "Portugal|Uzbekistan":     { slug: "portugal-uzbekistan/kebsrWb",                     id: null },
+  "Tunisia|Japan":           { slug: "japan-tunisia/EUbsvVb",                           id: 15186963 },
+  "Belgium|Iran":            { slug: "iran-belgium/rUbsqVb",                            id: 15186499 },
+  "New Zealand|Egypt":       { slug: "new-zealand-egypt/iVbsJVb",                       id: 15186827 },
+  "Spain|Saudi Arabia":      { slug: "saudi-arabia-spain/YTbsJWb",                      id: 15186840 },
+  "Uruguay|Cabo Verde":      { slug: "cabo-verde-uruguay/AUbsdVb",                      id: 15186800 },
+  "Norway|Senegal":          { slug: "senegal-norway/AObsOUb",                          id: 15186770 },
+  "Argentina|Austria":       { slug: "argentina-austria/tUbsuWb",                       id: 15186502 },
+  "Jordan|Algeria":          { slug: "jordan-algeria/QTbswVb",                          id: 15186740 },
+  "Portugal|Uzbekistan":     { slug: "uzbekistan-portugal/eUbsyUb",                     id: 15186858 },
   "Colombia|DR Congo":       { slug: "colombia-dr-congo/lebssWb",                       id: null },
-  "England|Ghana":           { slug: "england-ghana/mebstWb",                           id: null },
+  "England|Ghana":           { slug: "ghana-england/nUbsoVb",                           id: 15186672 },
   "Panama|Croatia":          { slug: "panama-croatia/nebsuWb",                          id: null },
   // ── MD3 ──
   "Czechia|Mexico":          { slug: "czechia-mexico/oebsvWb",                id: 15186723 },
@@ -11883,14 +11883,20 @@ const SOFA_TEAMS = {
 
 function getSofaUrl(home, away) {
   const e = SOFA_EVENTS[`${home}|${away}`] || SOFA_EVENTS[`${away}|${home}`];
-  // Direct link to the match lineups ONLY when we have a verified event id.
-  // Future matches were pre-filled with guessed slugs that 404, so for those we
-  // fall back to the World Cup tournament page (which lists all matches) — the user
-  // can tap through to the right game from there. This never 404s.
+  // Only trust a match link when it has a VERIFIED id. Entries with id:null were
+  // pre-filled with guessed slugs that now 404, so we skip them and fall through
+  // to the team page below.
   if (e && e.id) {
     return `https://www.sofascore.com/football/match/${e.slug}#id:${e.id},tab:lineups`;
   }
-  return `https://www.sofascore.com/football/tournament/world/world-championship/16`;
+  // Fallback to the home team's SofaScore page (shows their upcoming matches),
+  // which always works and is far more useful than the generic tournament page.
+  const tid = SOFA_TEAMS[home];
+  if (tid) {
+    const slug = home.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g,"-");
+    return `https://www.sofascore.com/football/team/${slug}/${tid}#tab:matches`;
+  }
+  return "https://www.sofascore.com/football/tournament/world/world-championship/16#id:58210";
 }
 
 function LineupButton({ homeTeam, awayTeam }) {
