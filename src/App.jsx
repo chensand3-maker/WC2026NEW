@@ -11,7 +11,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.62.0";
+const APP_VERSION = "3.64.0";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -13099,10 +13099,6 @@ function TodayScreen({ picks, actuals, onPick, onBack, onGoToBracket, leagueMemb
     }).length;
 
   return (
-    <div style={{
-      background:"linear-gradient(180deg,#020617 0%, #06210f 60%, #052e16 100%)",
-      minHeight:"100vh",
-    }}>
     <div style={{padding:"16px 14px 60px",maxWidth:560,margin:"0 auto"}}>
       {/* Pull-to-refresh indicator */}
       {ptrDist > 0 && (
@@ -13245,7 +13241,6 @@ function TodayScreen({ picks, actuals, onPick, onBack, onGoToBracket, leagueMemb
           {justFinishedMatches.map(m => renderMatchRow(m, { isFinishedSection: true }))}
         </div>
       )}
-    </div>
     </div>
   );
 }
@@ -18016,7 +18011,23 @@ function AppInner() {
         transform: perspective(800px) rotateY(0deg) rotateX(0deg) scale(0.97);
       }
     `}</style>
-    <div style={{minHeight:"100vh",background:"linear-gradient(160deg,#1a2235 0%,#1f2942 50%,#243150 100%)",color:"#f1f5f9",fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif",position:"relative",overflow:"hidden",direction:lang==="he"?"rtl":"ltr"}}>
+    <div style={{minHeight:"100vh",background:"radial-gradient(ellipse 100% 80% at 50% 0%, #0f4a2a 0%, #0a3019 40%, #041a0d 100%)",color:"#f1f5f9",fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif",position:"relative",overflow:"hidden",direction:lang==="he"?"rtl":"ltr"}}>
+      {/* 🏟️ Stadium pitch lines — static layer behind all content (cheap, no scroll repaint) */}
+      <div aria-hidden style={{
+        position:"absolute",top:0,left:0,right:0,height:"100vh",pointerEvents:"none",zIndex:0,
+        opacity:0.8,
+        background:`
+          radial-gradient(circle at 50% 30%, transparent 64px, rgba(110,231,160,0.30) 65px, rgba(110,231,160,0.30) 67px, transparent 68px),
+          linear-gradient(180deg, transparent 29.7%, rgba(110,231,160,0.18) 30%, transparent 30.3%)
+        `,
+        filter:"drop-shadow(0 0 5px rgba(110,231,160,0.4))",
+      }}/>
+      {/* Soft diagonal mowed-grass stripes */}
+      <div aria-hidden style={{
+        position:"absolute",top:0,left:0,right:0,height:"100vh",pointerEvents:"none",zIndex:0,
+        opacity:0.3,
+        background:"repeating-linear-gradient(115deg, transparent 0px, transparent 55px, rgba(255,255,255,0.05) 55px, rgba(255,255,255,0.05) 110px)",
+      }}/>
       {/* Language toggle: shown only on welcome screen */}
       {screen === "welcome" && (
         <div style={{
@@ -18215,8 +18226,8 @@ function AppInner() {
         key={screen + (screen==="group"?String(groupIdx):"")}
         className="screen-enter"
         style={(screen === "group" || screen === "today" || screen === "bracket" || screen === "bonus" || screen === "league")
-          ? { paddingBottom: "calc(76px + env(safe-area-inset-bottom, 0px))" }
-          : undefined}
+          ? { paddingBottom: "calc(76px + env(safe-area-inset-bottom, 0px))", position:"relative", zIndex:1 }
+          : { position:"relative", zIndex:1 }}
       >
 
       {screen === "group" && (
