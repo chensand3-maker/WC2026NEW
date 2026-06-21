@@ -12,7 +12,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.65.1";
+const APP_VERSION = "3.67.0";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -14170,6 +14170,144 @@ function Badge({ children, color }) {
 
 // ─── LEAGUE HUB (Firebase-powered) ────────────────────────────────────────────
 
+// 🔔 Daily popup — shows the newest ad once per day
+function AdDailyPopup({ ad, onViewAll, onClose }) {
+  const lang = useContext(LangContext).lang;
+  const he = lang === "he";
+  if (!ad) return null;
+  return (
+    <div style={{
+      position:"fixed",inset:0,zIndex:9550,
+      background:"rgba(0,0,0,0.78)",backdropFilter:"blur(4px)",
+      display:"flex",alignItems:"center",justifyContent:"center",padding:20,
+    }} onClick={onClose}>
+      <div onClick={e=>e.stopPropagation()} style={{
+        width:"100%",maxWidth:360,
+        background:"linear-gradient(160deg,#0d2b1a,#020617)",
+        border:"1px solid rgba(251,191,36,0.4)",borderRadius:20,overflow:"hidden",
+        boxShadow:"0 20px 50px rgba(0,0,0,0.6)",
+      }}>
+        <div style={{background:"linear-gradient(135deg,#fbbf24,#d97706)",color:"#1a1206",fontSize:11,fontWeight:900,textAlign:"center",padding:7,letterSpacing:1}}>
+          📢 {he?"פרסומת היום":"Ad of the day"}
+        </div>
+        {/* Image — contain on uniform bg (no crop) */}
+        <div style={{width:"100%",height:240,background:"linear-gradient(160deg,#0a3019,#020617)",display:"flex",alignItems:"center",justifyContent:"center"}}>
+          <img src={ad.imageUrl} alt={ad.caption||"ad"} style={{maxWidth:"100%",maxHeight:"100%",objectFit:"contain",display:"block"}} onError={(e)=>{e.target.style.opacity=0.2;}}/>
+        </div>
+        <div style={{padding:14}}>
+          {ad.caption && <div style={{fontSize:14,fontWeight:700,color:"#f1f5f9",marginBottom:4,lineHeight:1.4}}>{ad.caption}</div>}
+          <div style={{fontSize:10,color:"#4d7c5a",marginBottom:14}}>{he?"מאת":"by"} {ad.author||"?"}</div>
+          <div style={{display:"flex",gap:8}}>
+            <button onClick={onViewAll} style={{flex:1,padding:11,borderRadius:11,background:"linear-gradient(135deg,#22c55e,#15803d)",border:"none",color:"#fff",fontSize:13,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>
+              {he?"כל הפרסומות":"View all"}
+            </button>
+            <button onClick={onClose} style={{padding:"11px 18px",borderRadius:11,background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.12)",color:"#cbd5e1",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+              {he?"סגור":"Close"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// 📸 Instagram-story-style full-screen ad viewer
+function AdStoryViewer({ ads, startIndex = 0, onClose }) {
+  const [idx, setIdx] = useState(startIndex);
+  const lang = useContext(LangContext).lang;
+  const he = lang === "he";
+  const ad = ads[idx];
+
+  // Auto-advance progress (visual only — no auto-skip, user controls)
+  const goNext = () => {
+    if (idx < ads.length - 1) setIdx(idx + 1);
+    else onClose();
+  };
+  const goPrev = () => {
+    if (idx > 0) setIdx(idx - 1);
+  };
+
+  // Keyboard support (desktop)
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key === "Escape") onClose();
+      else if (e.key === "ArrowLeft") he ? goNext() : goPrev();
+      else if (e.key === "ArrowRight") he ? goPrev() : goNext();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [idx, he]);
+
+  if (!ad) return null;
+
+  const timeAgo = (ts) => {
+    if (!ts) return "";
+    const diff = Date.now() - ts;
+    const h = Math.floor(diff / 3600000);
+    const d = Math.floor(h / 24);
+    if (d > 0) return he ? `לפני ${d} ימים` : `${d}d ago`;
+    if (h > 0) return he ? `לפני ${h} שעות` : `${h}h ago`;
+    const m = Math.floor(diff / 60000);
+    return he ? `לפני ${m} דק'` : `${m}m ago`;
+  };
+
+  return (
+    <div style={{
+      position:"fixed",inset:0,zIndex:9600,
+      background:"#000",
+      display:"flex",alignItems:"center",justifyContent:"center",
+    }}>
+      {/* The image — CONTAIN (full image, no crop) on a uniform dark-green bg */}
+      <div style={{
+        position:"absolute",inset:0,
+        background:"linear-gradient(160deg,#0a3019,#020617)",
+        display:"flex",alignItems:"center",justifyContent:"center",
+      }}>
+        <img src={ad.imageUrl} alt={ad.caption||"ad"} style={{
+          maxWidth:"100%",maxHeight:"100%",objectFit:"contain",display:"block",
+        }} onError={(e)=>{e.target.style.opacity=0.2;}}/>
+      </div>
+
+      {/* Progress bars (top) */}
+      <div style={{position:"absolute",top:10,left:10,right:10,display:"flex",gap:4,zIndex:10}}>
+        {ads.map((_, i) => (
+          <div key={i} style={{flex:1,height:3,borderRadius:2,background:"rgba(255,255,255,0.3)",overflow:"hidden"}}>
+            <div style={{height:"100%",borderRadius:2,background:"#fff",width: i < idx ? "100%" : i === idx ? "100%" : "0%"}}/>
+          </div>
+        ))}
+      </div>
+
+      {/* Header */}
+      <div style={{position:"absolute",top:22,left:12,right:12,display:"flex",alignItems:"center",gap:8,zIndex:10}}>
+        <div style={{width:32,height:32,borderRadius:"50%",background:"linear-gradient(135deg,#fbbf24,#d97706)",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:900,fontSize:14,color:"#fff",border:"2px solid rgba(255,255,255,0.4)"}}>{(ad.author||"?")[0]?.toUpperCase()}</div>
+        <div style={{flex:1,minWidth:0}}>
+          <div style={{fontSize:12,fontWeight:800,color:"#fff",textShadow:"0 1px 4px rgba(0,0,0,0.6)"}}>{he?"לוח הפרסומות":"Ad Board"}</div>
+          <div style={{fontSize:9,color:"rgba(255,255,255,0.8)",textShadow:"0 1px 4px rgba(0,0,0,0.6)"}}>{ad.author} · {timeAgo(ad.createdAt)}</div>
+        </div>
+        <button onClick={onClose} style={{background:"transparent",border:"none",color:"#fff",fontSize:24,cursor:"pointer",fontFamily:"inherit",padding:0,lineHeight:1,textShadow:"0 1px 4px rgba(0,0,0,0.6)"}}>✕</button>
+      </div>
+
+      {/* Tap zones — left half = prev (he: next), right half = next (he: prev) */}
+      {/* In RTL Hebrew, tapping right side should go to previous (natural) */}
+      <div onClick={he ? goNext : goPrev} style={{position:"absolute",top:60,bottom:0,left:0,width:"35%",zIndex:8,cursor:"pointer"}}/>
+      <div onClick={he ? goPrev : goNext} style={{position:"absolute",top:60,bottom:0,right:0,width:"35%",zIndex:8,cursor:"pointer"}}/>
+
+      {/* Caption */}
+      {ad.caption && (
+        <div style={{position:"absolute",bottom:30,left:16,right:16,zIndex:10,
+          fontSize:15,fontWeight:700,color:"#fff",textShadow:"0 2px 8px rgba(0,0,0,0.85)",lineHeight:1.4,textAlign:"center"}}>
+          {ad.caption}
+        </div>
+      )}
+
+      {/* Counter hint */}
+      <div style={{position:"absolute",bottom:8,left:0,right:0,textAlign:"center",zIndex:10,fontSize:9,color:"rgba(255,255,255,0.5)"}}>
+        {idx + 1} / {ads.length}
+      </div>
+    </div>
+  );
+}
+
 function AdsScreen({ leagueCode, leagueData, name, userId }) {
   const t = useT();
   const { showToast } = useToast();
@@ -14180,6 +14318,8 @@ function AdsScreen({ leagueCode, leagueData, name, userId }) {
   const [caption, setCaption] = useState("");
   const [busy, setBusy] = useState(false);
   const [previewOk, setPreviewOk] = useState(false);
+  const [viewerIndex, setViewerIndex] = useState(null); // null = closed, number = open at index
+  const [showPopupPreview, setShowPopupPreview] = useState(false); // test the daily popup
 
   const lang = useContext(LangContext).lang;
   const he = lang === "he";
@@ -14257,6 +14397,15 @@ function AdsScreen({ leagueCode, leagueData, name, userId }) {
         }}>+ {he?"הוסף פרסומת":"Add ad"}</button>
       )}
 
+      {/* Admin: test the daily popup */}
+      {isAdmin && !showForm && ads.length > 0 && (
+        <button onClick={()=>setShowPopupPreview(true)} style={{
+          width:"100%",padding:"10px",borderRadius:12,marginBottom:16,
+          background:"rgba(251,191,36,0.12)",border:"1px solid rgba(251,191,36,0.4)",
+          color:"#fde68a",fontSize:13,fontWeight:800,cursor:"pointer",fontFamily:"inherit",
+        }}>🔔 {he?"בדוק איך נראית הקפיצה היומית":"Preview daily popup"}</button>
+      )}
+
       {/* Admin: upload form */}
       {isAdmin && showForm && (
         <div style={{
@@ -14317,40 +14466,60 @@ function AdsScreen({ leagueCode, leagueData, name, userId }) {
         </div>
       )}
 
-      {/* Ads gallery */}
+      {/* Ads gallery — grid of thumbnails */}
       {ads.length === 0 ? (
         <div style={{background:"rgba(34,197,94,0.05)",border:"1px dashed rgba(34,197,94,0.25)",borderRadius:14,padding:"30px 16px",textAlign:"center",fontSize:13,color:"#64748b",lineHeight:1.6}}>
           {he ? "עוד אין פרסומות 📭" : "No ads yet 📭"}<br/>
           {isAdmin && <span style={{fontSize:11}}>{he?"לחץ \"הוסף פרסומת\" כדי להתחיל":"Tap \"Add ad\" to start"}</span>}
         </div>
       ) : (
-        <div style={{display:"flex",flexDirection:"column",gap:14}}>
-          {ads.map(ad => (
-            <div key={ad.id} style={{
-              background:"linear-gradient(150deg,rgba(8,38,22,0.7),rgba(2,14,8,0.5))",
-              border:"1px solid rgba(34,197,94,0.25)",borderRadius:16,overflow:"hidden",
-              boxShadow:"0 6px 20px rgba(0,0,0,0.35)",
-            }}>
-              <img src={ad.imageUrl} alt={ad.caption||"ad"} loading="lazy"
-                style={{width:"100%",display:"block",maxHeight:420,objectFit:"cover"}}
-                onError={(e)=>{e.target.style.display="none";}}/>
-              {(ad.caption || isAdmin) && (
-                <div style={{padding:"10px 12px"}}>
-                  {ad.caption && <div style={{fontSize:13,color:"#f1f5f9",fontWeight:600,lineHeight:1.4,marginBottom:6}}>{ad.caption}</div>}
-                  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-                    <span style={{fontSize:9,color:"#4d7c5a"}}>{he?"מאת":"by"} {ad.author||"?"}</span>
-                    {isAdmin && (
-                      <button onClick={()=>handleDelete(ad.id)} style={{
-                        background:"transparent",border:"none",color:"#f87171",fontSize:11,
-                        cursor:"pointer",fontFamily:"inherit",fontWeight:700,padding:"2px 6px",
-                      }}>🗑️ {he?"מחק":"Delete"}</button>
-                    )}
-                  </div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+          {ads.map((ad, i) => (
+            <div key={ad.id} style={{position:"relative"}}>
+              <button onClick={()=>setViewerIndex(i)} style={{
+                width:"100%",aspectRatio:"1",borderRadius:12,overflow:"hidden",
+                border:"1px solid rgba(34,197,94,0.25)",cursor:"pointer",padding:0,
+                background:"linear-gradient(160deg,#0a3019,#020617)",display:"block",
+              }}>
+                <img src={ad.imageUrl} alt={ad.caption||"ad"} loading="lazy"
+                  style={{width:"100%",height:"100%",objectFit:"cover",display:"block"}}
+                  onError={(e)=>{e.target.style.opacity=0.2;}}/>
+              </button>
+              {/* caption overlay at bottom */}
+              {ad.caption && (
+                <div style={{position:"absolute",bottom:0,left:0,right:0,padding:"14px 8px 6px",
+                  background:"linear-gradient(180deg,transparent,rgba(0,0,0,0.8))",borderRadius:"0 0 12px 12px",
+                  fontSize:10,color:"#fff",fontWeight:600,lineHeight:1.3,pointerEvents:"none",
+                  overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                  {ad.caption}
                 </div>
+              )}
+              {/* admin delete */}
+              {isAdmin && (
+                <button onClick={()=>handleDelete(ad.id)} style={{
+                  position:"absolute",top:5,insetInlineEnd:5,
+                  background:"rgba(0,0,0,0.6)",border:"none",borderRadius:"50%",
+                  width:24,height:24,color:"#f87171",fontSize:12,cursor:"pointer",
+                  display:"flex",alignItems:"center",justifyContent:"center",
+                }}>🗑️</button>
               )}
             </div>
           ))}
         </div>
+      )}
+
+      {/* 📸 Story viewer (instagram-style) */}
+      {viewerIndex !== null && ads[viewerIndex] && (
+        <AdStoryViewer ads={ads} startIndex={viewerIndex} onClose={()=>setViewerIndex(null)} />
+      )}
+
+      {/* 🔔 Daily popup preview (newest ad = ads[0] since list is reversed) */}
+      {showPopupPreview && ads[0] && (
+        <AdDailyPopup
+          ad={ads[0]}
+          onViewAll={()=>{ setShowPopupPreview(false); setViewerIndex(0); }}
+          onClose={()=>setShowPopupPreview(false)}
+        />
       )}
     </div>
   );
