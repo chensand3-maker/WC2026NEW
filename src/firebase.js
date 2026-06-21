@@ -127,6 +127,30 @@ export async function sendGiftToLeague(code, gift) {
   await updateDoc(ref, { gifts: newGifts });
 }
 
+// ─── LEAGUE ADS (funny image posts) ─────────────────────────────────────────
+// Each ad = { id, imageUrl, caption, author, createdAt }
+export async function addLeagueAd(code, ad) {
+  const ref = doc(db, "leagues", code);
+  const snap = await getDoc(ref);
+  if (!snap.exists()) throw new Error("League not found");
+  const data = snap.data();
+  const existing = Array.isArray(data.ads) ? data.ads : [];
+  // Keep only the last 40 ads (prevent bloat)
+  const trimmed = existing.slice(-39);
+  const newAds = [...trimmed, ad];
+  await updateDoc(ref, { ads: newAds });
+}
+
+export async function deleteLeagueAd(code, adId) {
+  const ref = doc(db, "leagues", code);
+  const snap = await getDoc(ref);
+  if (!snap.exists()) throw new Error("League not found");
+  const data = snap.data();
+  const existing = Array.isArray(data.ads) ? data.ads : [];
+  const newAds = existing.filter(a => a.id !== adId);
+  await updateDoc(ref, { ads: newAds });
+}
+
 // ─── GLOBAL LEADERBOARD ─────────────────────────────────────────────────────
 
 export async function updateMyGlobalProfile(userId, name, picks, koWinners, extras = {}) {

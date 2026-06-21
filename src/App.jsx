@@ -5,13 +5,14 @@ import {
   updateMyGlobalProfile, deleteMyGlobalProfile, fetchGlobalLeaderboard, renameLeague,
   fetchMyGlobalProfile,
   sendGiftToLeague,
+  addLeagueAd, deleteLeagueAd,
   fetchAllGlobalUsers, deleteGlobalUser,
 } from "./firebase";
 import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWinners, mapKnockoutToBracket, fetchTopScorers, buildTopScorersFromEvents, clearTopScorersFromEventsCache, fetchMatchDetails, getApiFixtureId, fetchLineup } from "./liveResults";
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.64.1";
+const APP_VERSION = "3.65.1";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -9713,7 +9714,7 @@ function LuckyWheelModal({ onClose, onWin, onUpdateBestStreak, personalBest, lea
 }
 
 // ─── 🌍 GLOBAL ADMIN MODAL — manage all users in Firebase (requires secret code) ─
-function GlobalAdminModal({ onClose, galaxyTestMode, setGalaxyTestMode, onGiveCoins }) {
+function GlobalAdminModal({ onClose, galaxyTestMode, setGalaxyTestMode, onGiveCoins, adsLeagueCode, adsLeagueData, adsName, adsUserId }) {
   const [unlocked, setUnlocked] = useState(false);
   const [codeInput, setCodeInput] = useState("");
   const [codeError, setCodeError] = useState("");
@@ -9877,6 +9878,18 @@ function GlobalAdminModal({ onClose, galaxyTestMode, setGalaxyTestMode, onGiveCo
                 }}>
                 🧠 חידון
               </button>
+              <button
+                onClick={() => setAdminTab("ads")}
+                style={{
+                  flex:1,padding:"10px 8px",
+                  background: adminTab === "ads" ? "rgba(251,191,36,0.2)" : "rgba(36,49,80,0.4)",
+                  border: `1px solid ${adminTab === "ads" ? "rgba(251,191,36,0.6)" : "rgba(71,85,105,0.4)"}`,
+                  borderRadius:10,
+                  color: adminTab === "ads" ? "#fde68a" : "#94a3b8",
+                  fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"inherit",
+                }}>
+                📢 פרסומות
+              </button>
             </div>
 
             {adminTab === "quiz" ? (
@@ -10003,6 +10016,25 @@ function GlobalAdminModal({ onClose, galaxyTestMode, setGalaxyTestMode, onGiveCo
                     </div>
                   ))}
                 </div>
+              </div>
+            ) : adminTab === "ads" ? (
+              // 📢 ADS BOARD (preview/admin while testing)
+              <div>
+                <div style={{
+                  background:"linear-gradient(135deg,rgba(251,191,36,0.15),rgba(217,119,6,0.08))",
+                  border:"1px solid rgba(251,191,36,0.4)",
+                  borderRadius:10,padding:"10px 12px",marginBottom:14,
+                  fontSize:12,color:"#fde68a",textAlign:"center",lineHeight:1.5,
+                }}>
+                  📢 לוח הפרסומות — גרסת בדיקה פרטית<br/>
+                  <span style={{fontSize:10,color:"#94a3b8"}}>רק אתה רואה את זה כרגע</span>
+                </div>
+                <AdsScreen
+                  leagueCode={adsLeagueCode}
+                  leagueData={adsLeagueData}
+                  name={adsName}
+                  userId={adsUserId}
+                />
               </div>
             ) : (
             <>
@@ -14137,6 +14169,192 @@ function Badge({ children, color }) {
 }
 
 // ─── LEAGUE HUB (Firebase-powered) ────────────────────────────────────────────
+
+function AdsScreen({ leagueCode, leagueData, name, userId }) {
+  const t = useT();
+  const { showToast } = useToast();
+  const isAdmin = leagueData?.createdBy === name;
+  const ads = Array.isArray(leagueData?.ads) ? [...leagueData.ads].reverse() : []; // newest first
+  const [showForm, setShowForm] = useState(false);
+  const [imageUrl, setImageUrl] = useState("");
+  const [caption, setCaption] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [previewOk, setPreviewOk] = useState(false);
+
+  const lang = useContext(LangContext).lang;
+  const he = lang === "he";
+
+  // Normalize an Imgur (or other) URL into a direct image link when possible
+  const normalizeUrl = (url) => {
+    let u = url.trim();
+    if (!u) return "";
+    // Convert a bare imgur page link like https://imgur.com/abc123 to the direct i.imgur.com/abc123.jpg
+    const m = u.match(/^https?:\/\/(?:www\.)?imgur\.com\/([a-zA-Z0-9]+)$/);
+    if (m) return `https://i.imgur.com/${m[1]}.jpg`;
+    return u;
+  };
+
+  const handleAdd = async () => {
+    const finalUrl = normalizeUrl(imageUrl);
+    if (!finalUrl) { showToast(he ? "צריך קישור לתמונה" : "Image link required", "error"); return; }
+    if (!leagueCode) { showToast(he ? "אין ליגה פעילה" : "No active league", "error"); return; }
+    setBusy(true);
+    try {
+      await addLeagueAd(leagueCode, {
+        id: `ad_${Date.now()}_${Math.random().toString(36).slice(2,7)}`,
+        imageUrl: finalUrl,
+        caption: caption.trim().slice(0, 200),
+        author: name,
+        createdAt: Date.now(),
+      });
+      showToast(he ? "הפרסומת עלתה! 📢" : "Ad posted! 📢", "success");
+      setImageUrl(""); setCaption(""); setShowForm(false); setPreviewOk(false);
+    } catch (e) {
+      showToast(he ? "שגיאה בהעלאה" : "Upload failed", "error");
+    }
+    setBusy(false);
+  };
+
+  const handleDelete = async (adId) => {
+    if (!leagueCode) return;
+    try {
+      await deleteLeagueAd(leagueCode, adId);
+      showToast(he ? "נמחק" : "Deleted", "info");
+    } catch {
+      showToast(he ? "שגיאה במחיקה" : "Delete failed", "error");
+    }
+  };
+
+  // No active league yet
+  if (!leagueCode || !leagueData) {
+    return (
+      <div style={{padding:"16px 14px 60px",maxWidth:560,margin:"0 auto"}}>
+        <div style={{textAlign:"center",marginBottom:18}}>
+          <h2 style={{fontSize:24,margin:"4px 0",background:"linear-gradient(180deg,#fde68a,#f59e0b)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",fontWeight:900}}>📢 {he?"פרסומות":"Ads"}</h2>
+        </div>
+        <div style={{background:"rgba(34,197,94,0.06)",border:"1px dashed rgba(34,197,94,0.3)",borderRadius:14,padding:"24px 16px",textAlign:"center",fontSize:13,color:"#94a3b8",lineHeight:1.6}}>
+          {he ? "צריך להצטרף לליגה כדי לראות פרסומות" : "Join a league to see ads"}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{padding:"16px 14px 60px",maxWidth:560,margin:"0 auto"}}>
+      <div style={{textAlign:"center",marginBottom:8}}>
+        <div style={{fontSize:10,color:"#4d7c5a",letterSpacing:3,fontWeight:700}}>{leagueData.name}</div>
+        <h2 style={{fontSize:24,margin:"4px 0",color:"#fff",fontWeight:900,textShadow:"0 0 18px rgba(34,197,94,0.4)"}}>📢 {he?"לוח הפרסומות":"Ad Board"}</h2>
+        <p style={{fontSize:11,color:"#94a3b8",margin:0}}>{he?"הפרסומות המצחיקות של הליגה":"The league's funniest ads"}</p>
+      </div>
+
+      {/* Admin: add button */}
+      {isAdmin && !showForm && (
+        <button onClick={()=>setShowForm(true)} style={{
+          width:"100%",padding:"12px",borderRadius:12,marginBottom:16,
+          background:"linear-gradient(135deg,#22c55e,#15803d)",border:"none",
+          color:"#fff",fontSize:14,fontWeight:800,cursor:"pointer",fontFamily:"inherit",
+          boxShadow:"0 4px 14px rgba(34,197,94,0.3)",
+        }}>+ {he?"הוסף פרסומת":"Add ad"}</button>
+      )}
+
+      {/* Admin: upload form */}
+      {isAdmin && showForm && (
+        <div style={{
+          background:"linear-gradient(150deg,rgba(34,197,94,0.1),rgba(2,14,8,0.6))",
+          border:"1px solid rgba(34,197,94,0.35)",borderRadius:14,padding:14,marginBottom:16,
+        }}>
+          <div style={{fontSize:12,fontWeight:800,color:"#4ade80",marginBottom:10}}>📢 {he?"פרסומת חדשה":"New ad"}</div>
+
+          {/* How-to hint */}
+          <div style={{fontSize:10,color:"#94a3b8",lineHeight:1.6,marginBottom:10,background:"rgba(0,0,0,0.25)",borderRadius:8,padding:"8px 10px"}}>
+            {he ? "1. העלה תמונה ל-imgur.com (בלי הרשמה)" : "1. Upload an image to imgur.com (no signup)"}<br/>
+            {he ? "2. העתק את הקישור והדבק כאן" : "2. Copy the link and paste it here"}
+          </div>
+
+          <input
+            type="text" value={imageUrl}
+            onChange={e=>{setImageUrl(e.target.value); setPreviewOk(false);}}
+            placeholder={he?"קישור לתמונה (https://i.imgur.com/...)":"Image link (https://i.imgur.com/...)"}
+            dir="ltr"
+            style={{width:"100%",padding:"10px 12px",borderRadius:9,marginBottom:8,
+              background:"rgba(0,0,0,0.45)",border:"1px solid rgba(34,197,94,0.3)",
+              color:"#f1f5f9",fontSize:12,fontFamily:"inherit",outline:"none",boxSizing:"border-box"}}
+          />
+
+          {/* Live preview */}
+          {imageUrl.trim() && (
+            <div style={{marginBottom:8,borderRadius:9,overflow:"hidden",background:"rgba(0,0,0,0.3)",minHeight:60,display:"flex",alignItems:"center",justifyContent:"center"}}>
+              <img src={normalizeUrl(imageUrl)} alt="preview"
+                onLoad={()=>setPreviewOk(true)} onError={()=>setPreviewOk(false)}
+                style={{maxWidth:"100%",maxHeight:200,display:previewOk?"block":"none"}}/>
+              {!previewOk && <span style={{fontSize:10,color:"#64748b",padding:20}}>{he?"מחכה לתמונה תקינה...":"Waiting for valid image..."}</span>}
+            </div>
+          )}
+
+          <input
+            type="text" value={caption}
+            onChange={e=>setCaption(e.target.value)}
+            placeholder={he?"כיתוב מצחיק (אופציונלי)":"Funny caption (optional)"}
+            maxLength={200}
+            style={{width:"100%",padding:"10px 12px",borderRadius:9,marginBottom:10,
+              background:"rgba(0,0,0,0.45)",border:"1px solid rgba(34,197,94,0.3)",
+              color:"#f1f5f9",fontSize:12,fontFamily:"inherit",outline:"none",boxSizing:"border-box"}}
+          />
+
+          <div style={{display:"flex",gap:8}}>
+            <button onClick={handleAdd} disabled={busy} style={{
+              flex:1,padding:"10px",borderRadius:9,
+              background: busy?"rgba(34,197,94,0.3)":"linear-gradient(135deg,#22c55e,#15803d)",
+              border:"none",color:"#fff",fontSize:13,fontWeight:800,
+              cursor:busy?"default":"pointer",fontFamily:"inherit",
+            }}>{busy?(he?"מעלה...":"Posting..."):(he?"פרסם":"Post")}</button>
+            <button onClick={()=>{setShowForm(false);setImageUrl("");setCaption("");setPreviewOk(false);}} style={{
+              padding:"10px 16px",borderRadius:9,background:"rgba(255,255,255,0.06)",
+              border:"1px solid rgba(255,255,255,0.1)",color:"#cbd5e1",fontSize:13,
+              fontWeight:700,cursor:"pointer",fontFamily:"inherit",
+            }}>{he?"ביטול":"Cancel"}</button>
+          </div>
+        </div>
+      )}
+
+      {/* Ads gallery */}
+      {ads.length === 0 ? (
+        <div style={{background:"rgba(34,197,94,0.05)",border:"1px dashed rgba(34,197,94,0.25)",borderRadius:14,padding:"30px 16px",textAlign:"center",fontSize:13,color:"#64748b",lineHeight:1.6}}>
+          {he ? "עוד אין פרסומות 📭" : "No ads yet 📭"}<br/>
+          {isAdmin && <span style={{fontSize:11}}>{he?"לחץ \"הוסף פרסומת\" כדי להתחיל":"Tap \"Add ad\" to start"}</span>}
+        </div>
+      ) : (
+        <div style={{display:"flex",flexDirection:"column",gap:14}}>
+          {ads.map(ad => (
+            <div key={ad.id} style={{
+              background:"linear-gradient(150deg,rgba(8,38,22,0.7),rgba(2,14,8,0.5))",
+              border:"1px solid rgba(34,197,94,0.25)",borderRadius:16,overflow:"hidden",
+              boxShadow:"0 6px 20px rgba(0,0,0,0.35)",
+            }}>
+              <img src={ad.imageUrl} alt={ad.caption||"ad"} loading="lazy"
+                style={{width:"100%",display:"block",maxHeight:420,objectFit:"cover"}}
+                onError={(e)=>{e.target.style.display="none";}}/>
+              {(ad.caption || isAdmin) && (
+                <div style={{padding:"10px 12px"}}>
+                  {ad.caption && <div style={{fontSize:13,color:"#f1f5f9",fontWeight:600,lineHeight:1.4,marginBottom:6}}>{ad.caption}</div>}
+                  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                    <span style={{fontSize:9,color:"#4d7c5a"}}>{he?"מאת":"by"} {ad.author||"?"}</span>
+                    {isAdmin && (
+                      <button onClick={()=>handleDelete(ad.id)} style={{
+                        background:"transparent",border:"none",color:"#f87171",fontSize:11,
+                        cursor:"pointer",fontFamily:"inherit",fontWeight:700,padding:"2px 6px",
+                      }}>🗑️ {he?"מחק":"Delete"}</button>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 function LeagueHub({
   name, userId, picks, koWinners, koPicks,
@@ -18511,6 +18729,10 @@ function AppInner() {
             setCoins(next);
             try { localStorage.setItem("wc2026_coins_v7", JSON.stringify(next)); } catch {}
           }}
+          adsLeagueCode={activeLeagueCode}
+          adsLeagueData={allLeagueData?.[activeLeagueCode] || null}
+          adsName={name}
+          adsUserId={userId}
         />
       )}
 
