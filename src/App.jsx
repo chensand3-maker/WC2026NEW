@@ -11,7 +11,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.60.0";
+const APP_VERSION = "3.61.0";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -15252,6 +15252,83 @@ function LeagueHub({
           <div style={{fontSize:11,color:"#94a3b8"}}>
             <span style={{color:"#22c55e"}}>●</span> {members.length} {members.length===1?t("league.member"):t("league.members")}
           </div>
+
+          {/* 🏆 PODIUM — top 3 (only once results exist) */}
+          {hasActuals && members.length >= 1 && (
+            <div style={{display:"flex",alignItems:"flex-end",justifyContent:"center",gap:10,marginTop:18,paddingTop:14}}>
+              {/* 2nd place (left) */}
+              {members[1] && (() => {
+                const m = members[1];
+                return (
+                  <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:5,flex:1,maxWidth:110}}>
+                    <div style={{width:52,height:52,borderRadius:"50%",background:`linear-gradient(135deg,${colorFor(m.name)},${colorFor(m.name)}aa)`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,fontWeight:900,color:"#fff",border:"2px solid #e2e8f0"}}>{m.name[0]?.toUpperCase()}</div>
+                    <div style={{fontSize:12,fontWeight:800,color:"#f1f5f9",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:100}}>{m.name}</div>
+                    <div style={{fontSize:15,fontWeight:900,color:"#cbd5e1"}}>{m.totalPoints}</div>
+                    <div style={{width:"100%",height:42,borderRadius:"8px 8px 0 0",background:"linear-gradient(180deg,rgba(203,213,225,0.2),rgba(203,213,225,0.02))",display:"flex",alignItems:"flex-start",justifyContent:"center",paddingTop:6,fontSize:20,fontWeight:900,color:"rgba(255,255,255,0.25)"}}>2</div>
+                  </div>
+                );
+              })()}
+              {/* 1st place (center, tallest) */}
+              {members[0] && (() => {
+                const m = members[0];
+                return (
+                  <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:5,flex:1,maxWidth:110}}>
+                    <div style={{position:"relative",display:"flex",justifyContent:"center"}}>
+                      <span style={{position:"absolute",top:-18,fontSize:20}}>👑</span>
+                      <div style={{width:66,height:66,borderRadius:"50%",background:`linear-gradient(135deg,${colorFor(m.name)},${colorFor(m.name)}aa)`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:26,fontWeight:900,color:"#fff",border:"2px solid #fde68a",boxShadow:"0 0 26px rgba(251,191,36,0.55)"}}>{m.name[0]?.toUpperCase()}</div>
+                    </div>
+                    <div style={{fontSize:12,fontWeight:800,color:"#f1f5f9",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:100}}>{m.name}</div>
+                    <div style={{fontSize:15,fontWeight:900,color:"#fbbf24"}}>{m.totalPoints}</div>
+                    <div style={{width:"100%",height:56,borderRadius:"8px 8px 0 0",background:"linear-gradient(180deg,rgba(251,191,36,0.25),rgba(251,191,36,0.03))",display:"flex",alignItems:"flex-start",justifyContent:"center",paddingTop:6,fontSize:20,fontWeight:900,color:"rgba(255,255,255,0.25)"}}>1</div>
+                  </div>
+                );
+              })()}
+              {/* 3rd place (right) */}
+              {members[2] && (() => {
+                const m = members[2];
+                return (
+                  <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:5,flex:1,maxWidth:110}}>
+                    <div style={{width:52,height:52,borderRadius:"50%",background:`linear-gradient(135deg,${colorFor(m.name)},${colorFor(m.name)}aa)`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,fontWeight:900,color:"#fff",border:"2px solid #f59e0b"}}>{m.name[0]?.toUpperCase()}</div>
+                    <div style={{fontSize:12,fontWeight:800,color:"#f1f5f9",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:100}}>{m.name}</div>
+                    <div style={{fontSize:15,fontWeight:900,color:"#f59e0b"}}>{m.totalPoints}</div>
+                    <div style={{width:"100%",height:32,borderRadius:"8px 8px 0 0",background:"linear-gradient(180deg,rgba(217,119,6,0.2),rgba(217,119,6,0.02))",display:"flex",alignItems:"flex-start",justifyContent:"center",paddingTop:6,fontSize:20,fontWeight:900,color:"rgba(255,255,255,0.25)"}}>3</div>
+                  </div>
+                );
+              })()}
+            </div>
+          )}
+
+          {/* 🎯 Compact leader banner: sniper + unlucky */}
+          {hasActuals && members.length > 0 && (() => {
+            const topHit = [...members].sort((a,b) => (b.matchScore.exact - a.matchScore.exact) || (b.totalPoints - a.totalPoints))[0];
+            const eligible = members.filter(m => m.matchScore.played > 0);
+            const topMiss = eligible.length ? [...eligible].sort((a,b) => (b.matchScore.wrong - a.matchScore.wrong) || (a.totalPoints - b.totalPoints))[0] : null;
+            const anyHits = topHit && topHit.matchScore.exact > 0;
+            const anyMisses = topMiss && topMiss.matchScore.wrong > 0;
+            if (!anyHits && !anyMisses) return null;
+            return (
+              <div style={{display:"flex",gap:8,marginTop:14}}>
+                {anyHits && (
+                  <div style={{flex:1,display:"flex",alignItems:"center",gap:8,padding:"9px 11px",borderRadius:11,background:"linear-gradient(135deg,rgba(251,191,36,0.13),rgba(13,20,36,0.5))",border:"1px solid rgba(251,191,36,0.3)"}}>
+                    <span style={{fontSize:20}}>🎯</span>
+                    <div style={{textAlign:"start",flex:1,minWidth:0}}>
+                      <div style={{fontSize:9,color:"#fbbf24",fontWeight:800}}>צלף הליגה</div>
+                      <div style={{fontSize:12,fontWeight:800,color:"#f1f5f9",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{topHit.name} · <span style={{color:"#fbbf24"}}>{topHit.matchScore.exact} בולים</span></div>
+                    </div>
+                  </div>
+                )}
+                {anyMisses && (
+                  <div style={{flex:1,display:"flex",alignItems:"center",gap:8,padding:"9px 11px",borderRadius:11,background:"linear-gradient(135deg,rgba(56,189,248,0.12),rgba(13,20,36,0.5))",border:"1px solid rgba(56,189,248,0.28)"}}>
+                    <span style={{fontSize:20}}>🌧️</span>
+                    <div style={{textAlign:"start",flex:1,minWidth:0}}>
+                      <div style={{fontSize:9,color:"#38bdf8",fontWeight:800}}>חסר מזל</div>
+                      <div style={{fontSize:12,fontWeight:800,color:"#f1f5f9",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{topMiss.name} · <span style={{color:"#38bdf8"}}>{topMiss.matchScore.wrong} פספוסים</span></div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
         </div>
 
         {/* 🎯 Hits & Misses awards — preview before tournament starts */}
@@ -15291,83 +15368,7 @@ function LeagueHub({
           </div>
         )}
 
-        {/* 🎯 Hits & Misses awards */}
-        {hasActuals && members.length > 0 && (() => {
-          // Find member with most exact-score hits
-          const topHit = [...members].sort((a, b) => {
-            if (b.matchScore.exact !== a.matchScore.exact) return b.matchScore.exact - a.matchScore.exact;
-            // tie-break: more total points wins
-            return b.totalPoints - a.totalPoints;
-          })[0];
-          // Find member with most wrong predictions (only count members who actually predicted)
-          const eligibleForMiss = members.filter(m => m.matchScore.played > 0);
-          const topMiss = eligibleForMiss.length > 0 ? [...eligibleForMiss].sort((a, b) => {
-            if (b.matchScore.wrong !== a.matchScore.wrong) return b.matchScore.wrong - a.matchScore.wrong;
-            return a.totalPoints - b.totalPoints;
-          })[0] : null;
-          const anyHits = topHit && topHit.matchScore.exact > 0;
-          const anyMisses = topMiss && topMiss.matchScore.wrong > 0;
-          if (!anyHits && !anyMisses) return null;
-          return (
-            <div style={{marginBottom:14}}>
-              <div style={{fontSize:11,color:"#94a3b8",letterSpacing:3,marginBottom:8,textAlign:"center"}}>{t("league.hitsMisses")}</div>
-              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
-                {/* Top Hit */}
-                <div style={{
-                  background:"linear-gradient(135deg,rgba(34,197,94,0.15),rgba(36,49,80,0.5))",
-                  border:"1px solid rgba(34,197,94,0.4)",
-                  borderRadius:12,padding:"10px 10px",
-                  boxShadow:"0 4px 12px rgba(34,197,94,0.15)",
-                }}>
-                  <div style={{display:"flex",alignItems:"center",gap:5,marginBottom:6}}>
-                    <span style={{fontSize:18}}>🎯</span>
-                    <span style={{fontSize:9,color:"#22c55e",letterSpacing:2,fontWeight:800}}>{t("league.topHit")}</span>
-                  </div>
-                  {anyHits ? (
-                    <>
-                      <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:4}}>
-                        <div style={{width:24,height:24,borderRadius:"50%",background:`linear-gradient(135deg,${colorFor(topHit.name)},${colorFor(topHit.name)}aa)`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:900,color:"#fff",flexShrink:0}}>{topHit.name[0]?.toUpperCase()}</div>
-                        <span style={{fontSize:13,color:"#f1f5f9",fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{topHit.name}{topHit.isMe?t("league.you"):""}</span>
-                      </div>
-                      <div style={{fontSize:11,color:"#22c55e",fontWeight:700}}>
-                        {topHit.matchScore.exact} {topHit.matchScore.exact === 1 ? t("league.exactScoreOne") : t("league.exactScoresMany")}
-                      </div>
-                      <div style={{fontSize:9,color:"#64748b",marginTop:2}}>{t("league.nailedIt")}</div>
-                    </>
-                  ) : (
-                    <div style={{fontSize:11,color:"#64748b",fontStyle:"italic"}}>{t("league.noExactPicks")}</div>
-                  )}
-                </div>
-                {/* Top Miss */}
-                <div style={{
-                  background:"linear-gradient(135deg,rgba(239,68,68,0.12),rgba(36,49,80,0.5))",
-                  border:"1px solid rgba(239,68,68,0.4)",
-                  borderRadius:12,padding:"10px 10px",
-                  boxShadow:"0 4px 12px rgba(239,68,68,0.1)",
-                }}>
-                  <div style={{display:"flex",alignItems:"center",gap:5,marginBottom:6}}>
-                    <span style={{fontSize:18}}>💀</span>
-                    <span style={{fontSize:9,color:"#f87171",letterSpacing:2,fontWeight:800}}>{t("league.topMiss")}</span>
-                  </div>
-                  {anyMisses ? (
-                    <>
-                      <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:4}}>
-                        <div style={{width:24,height:24,borderRadius:"50%",background:`linear-gradient(135deg,${colorFor(topMiss.name)},${colorFor(topMiss.name)}aa)`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:900,color:"#fff",flexShrink:0}}>{topMiss.name[0]?.toUpperCase()}</div>
-                        <span style={{fontSize:13,color:"#f1f5f9",fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{topMiss.name}{topMiss.isMe?t("league.you"):""}</span>
-                      </div>
-                      <div style={{fontSize:11,color:"#f87171",fontWeight:700}}>
-                        {topMiss.matchScore.wrong} {topMiss.matchScore.wrong === 1 ? t("league.wrongPickOne") : t("league.wrongPicksMany")}
-                      </div>
-                      <div style={{fontSize:9,color:"#64748b",marginTop:2}}>{t("league.oof")}</div>
-                    </>
-                  ) : (
-                    <div style={{fontSize:11,color:"#64748b",fontStyle:"italic"}}>{t("league.noMissesYet")}</div>
-                  )}
-                </div>
-              </div>
-            </div>
-          );
-        })()}
+        {/* 🎯 Hits & Misses awards — replaced by compact banner in the header above */}
 
         {/* Leaderboard */}
         <div style={{fontSize:11,color:"#94a3b8",letterSpacing:3,marginBottom:8,textAlign:"center"}}>
@@ -15452,11 +15453,22 @@ function LeagueHub({
                 }}>{p.name}{p.isMe?t("league.you"):""}</div>
                 <div style={{fontSize:10,color:"#64748b",marginTop:1}}>
                   {p.predictedCount}/{FIXTURES.length} {t("league.predicted")}
-                  {showPoints && p.matchScore.exact>0 && ` · 🎯${p.matchScore.exact} ${t("league.exact")}`}
-                  {showPoints && p.matchScore.result>0 && ` · ✅${p.matchScore.result}`}
                   {showPoints && p.koScore?.exact>0 && ` · 🏆${p.koScore.exact}`}
                 </div>
               </div>
+              {/* 🎯 Bull / ✓ Wins stat columns (only with results) */}
+              {showPoints && (
+                <div style={{display:"flex",gap:10,marginInlineEnd:4}}>
+                  <div style={{textAlign:"center",minWidth:26}}>
+                    <div style={{fontSize:14,fontWeight:900,color:"#fbbf24",lineHeight:1}}>{p.matchScore.exact}</div>
+                    <div style={{fontSize:8,color:"#64748b"}}>🎯</div>
+                  </div>
+                  <div style={{textAlign:"center",minWidth:26}}>
+                    <div style={{fontSize:14,fontWeight:900,color:"#4ade80",lineHeight:1}}>{p.matchScore.result}</div>
+                    <div style={{fontSize:8,color:"#64748b"}}>✓</div>
+                  </div>
+                </div>
+              )}
               {/* Points */}
               <div style={{textAlign:"right"}}>
                 <div style={{
