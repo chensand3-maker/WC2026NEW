@@ -11,7 +11,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.61.0";
+const APP_VERSION = "3.62.0";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -42,6 +42,11 @@ const TRANSLATIONS = {
     "nav.bracket": "🏆 Bracket",
     "nav.bonus": "⭐ Bonus",
     "nav.league": "🏅 League",
+    "nav.todayShort": "Today",
+    "nav.predictShort": "Predict",
+    "nav.bracketShort": "Bracket",
+    "nav.bonusShort": "Bonus",
+    "nav.leagueShort": "League",
     // Welcome
     "welcome.title": "FIFA World Cup 2026 Predictions",
     "welcome.subtitle": "Predict every match, pick your champion, beat your friends.",
@@ -563,6 +568,11 @@ const TRANSLATIONS = {
     "nav.bracket": "🏆 שלב הנוקאאוט",
     "nav.bonus": "⭐ בונוס",
     "nav.league": "🏅 ליגה",
+    "nav.todayShort": "היום",
+    "nav.predictShort": "ניחושים",
+    "nav.bracketShort": "נוקאאוט",
+    "nav.bonusShort": "בונוס",
+    "nav.leagueShort": "ליגה",
     // Welcome
     "welcome.title": "ניחושי מונדיאל 2026",
     "welcome.subtitle": "נחשו כל משחק, בחרו אלוף, נצחו את חבריכם.",
@@ -11077,9 +11087,9 @@ function BackToTopButton() {
       aria-label="Back to top"
       style={{
         position: "fixed",
-        bottom: 70,
+        bottom: "calc(86px + env(safe-area-inset-bottom, 0px))",
         right: 16,
-        zIndex: 50,
+        zIndex: 49,
         width: 44, height: 44,
         borderRadius: "50%",
         background: "linear-gradient(135deg,#fbbf24,#d97706)",
@@ -18192,26 +18202,6 @@ function AppInner() {
 
           {/* 🏆 Countdown to first match — disappears when tournament starts */}
           <CountdownBar />
-
-          {/* Bottom nav */}
-          {(screen === "group" || screen === "today" || screen === "bracket" || screen === "bonus" || screen === "league") && (
-            <div style={{display:"flex",justifyContent:"center",borderTop:"1px solid rgba(71,85,105,0.3)"}}>
-              {[
-                ["today", TRANSLATIONS[lang]?.["nav.today"] || TRANSLATIONS.en["nav.today"]],
-                ["group", TRANSLATIONS[lang]?.["nav.predict"] || TRANSLATIONS.en["nav.predict"]],
-                ["bracket", TRANSLATIONS[lang]?.["nav.bracket"] || TRANSLATIONS.en["nav.bracket"]],
-                ["bonus", TRANSLATIONS[lang]?.["nav.bonus"] || TRANSLATIONS.en["nav.bonus"]],
-                ["league", TRANSLATIONS[lang]?.["nav.league"] || TRANSLATIONS.en["nav.league"]],
-              ].map(([s, label]) => (
-                <button key={s} onClick={()=>setScreen(s)} style={{
-                  flex:1,padding:"8px 2px",background:screen===s?"rgba(251,191,36,0.1)":"transparent",
-                  border:"none",borderBottom:screen===s?"2px solid #fbbf24":"2px solid transparent",
-                  color:screen===s?"#fbbf24":"#94a3b8",fontSize:10,cursor:"pointer",fontFamily:"inherit",
-                  letterSpacing:0.5,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",
-                }}>{label}</button>
-              ))}
-            </div>
-          )}
         </div>
       )}
 
@@ -18220,7 +18210,14 @@ function AppInner() {
       {screen === "welcome" && !showIntro && <Welcome onStart={handleStart} onImport={handleImport} onRecoverUserId={handleRecoverUserId} />}
 
       {/* Main screens — wrapped so each one slides in on screen change */}
-      <div key={screen + (screen==="group"?String(groupIdx):"")} className="screen-enter">
+      {/* Extra bottom padding when the fixed bottom-nav is visible, so content isn't hidden behind it */}
+      <div
+        key={screen + (screen==="group"?String(groupIdx):"")}
+        className="screen-enter"
+        style={(screen === "group" || screen === "today" || screen === "bracket" || screen === "bonus" || screen === "league")
+          ? { paddingBottom: "calc(76px + env(safe-area-inset-bottom, 0px))" }
+          : undefined}
+      >
 
       {screen === "group" && (
         <GroupView
@@ -18414,6 +18411,45 @@ function AppInner() {
       {/* 📊 Recap modal — new matches since last visit */}
       {pendingRecap && (
         <RecapModal recap={pendingRecap} onClose={()=>setPendingRecap(null)} />
+      )}
+
+      {/* 📱 Bottom navigation — fixed to the bottom, stadium-green theme (style C) */}
+      {(screen === "group" || screen === "today" || screen === "bracket" || screen === "bonus" || screen === "league") && (
+        <div style={{
+          position:"fixed",bottom:0,left:0,right:0,zIndex:50,
+          display:"flex",justifyContent:"center",
+          background:"linear-gradient(180deg,#041a0e,#020617)",
+          borderTop:"1px solid rgba(34,197,94,0.2)",
+          padding:"8px 6px calc(8px + env(safe-area-inset-bottom, 0px))",
+          gap:2,
+        }}>
+          <div style={{display:"flex",justifyContent:"center",gap:2,maxWidth:560,width:"100%",margin:"0 auto"}}>
+            {[
+              ["today", "📅", TRANSLATIONS[lang]?.["nav.todayShort"] || TRANSLATIONS[lang]?.["nav.today"] || TRANSLATIONS.en["nav.today"]],
+              ["group", "🎯", TRANSLATIONS[lang]?.["nav.predictShort"] || TRANSLATIONS[lang]?.["nav.predict"] || TRANSLATIONS.en["nav.predict"]],
+              ["bracket", "🏆", TRANSLATIONS[lang]?.["nav.bracketShort"] || TRANSLATIONS[lang]?.["nav.bracket"] || TRANSLATIONS.en["nav.bracket"]],
+              ["bonus", "⭐", TRANSLATIONS[lang]?.["nav.bonusShort"] || TRANSLATIONS[lang]?.["nav.bonus"] || TRANSLATIONS.en["nav.bonus"]],
+              ["league", "🏅", TRANSLATIONS[lang]?.["nav.leagueShort"] || TRANSLATIONS[lang]?.["nav.league"] || TRANSLATIONS.en["nav.league"]],
+            ].map(([s, icon, label]) => {
+              const active = screen === s;
+              // Strip any leading emoji from the label (older translations include one)
+              const cleanLabel = String(label).replace(/^[^\p{L}\p{N}]+/u, "").trim();
+              return (
+                <button key={s} onClick={()=>{ setScreen(s); window.scrollTo({top:0,behavior:"smooth"}); }} style={{
+                  flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:3,
+                  padding:"7px 2px",borderRadius:12,cursor:"pointer",fontFamily:"inherit",
+                  background: active ? "linear-gradient(135deg,rgba(34,197,94,0.2),rgba(34,197,94,0.05))" : "transparent",
+                  border:"none",
+                  boxShadow: active ? "inset 0 0 0 1px rgba(34,197,94,0.3)" : "none",
+                  transition:"all 0.15s",
+                }}>
+                  <span style={{fontSize:19,filter: active ? "none" : "grayscale(0.6)", transform: active ? "scale(1.1)" : "none", transition:"all 0.15s", display:"block", lineHeight:1}}>{icon}</span>
+                  <span style={{fontSize:8,fontWeight:700,color: active ? "#4ade80" : "#4d7c5a", whiteSpace:"nowrap"}}>{cleanLabel}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
       )}
 
       {/* ⬆ Back to top floating button */}
