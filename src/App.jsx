@@ -13,7 +13,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.83.3";
+const APP_VERSION = "3.84.0";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -1489,6 +1489,20 @@ const PROFILE_EMOJIS = [
     { id:"money",  emoji:"🤑", name:"כסף", price:400 },
     { id:"devil",  emoji:"😈", name:"שטן", price:400 },
     { id:"zany",   emoji:"🤪", name:"משוגע", price:300 },
+    { id:"bubble", emoji:"🫪", name:"בועה", price:300 },
+    { id:"melt",   emoji:"🫠", name:"נמס", price:300 },
+    { id:"shush",  emoji:"🤫", name:"ששש", price:300 },
+    { id:"liar",   emoji:"🤥", name:"שקרן", price:300 },
+    { id:"salute", emoji:"🫡", name:"מצדיע", price:300 },
+    { id:"hole",   emoji:"🫥", name:"נעלם", price:300 },
+    { id:"upside", emoji:"🙃", name:"הפוך", price:300 },
+    { id:"drool",  emoji:"🤤", name:"מזיל ריר", price:300 },
+    { id:"woozy",  emoji:"🥴", name:"שתוי", price:300 },
+    { id:"mask",   emoji:"😷", name:"מסכה", price:300 },
+    { id:"sick",   emoji:"🤢", name:"חולה", price:300 },
+    { id:"cowboy2",emoji:"🫨", name:"רועד", price:300 },
+    { id:"peek",   emoji:"🫣", name:"מציץ", price:300 },
+    { id:"yawn",   emoji:"🥱", name:"מפהק", price:300 },
   ]},
   { cat:"פרצופים", items:[
     { id:"king",   emoji:"🤴", name:"נסיך", price:500 },
@@ -1501,6 +1515,16 @@ const PROFILE_EMOJIS = [
     { id:"vampire",emoji:"🧛", name:"ערפד", price:500 },
     { id:"santa",  emoji:"🎅", name:"סנטה", price:400 },
     { id:"cowboy", emoji:"🤠", name:"קאובוי", price:400 },
+    { id:"genie",  emoji:"🧞", name:"שד מנורה", price:600 },
+    { id:"fairy",  emoji:"🧚", name:"פיה", price:500 },
+    { id:"elf",    emoji:"🧝", name:"אלף", price:500 },
+    { id:"merman", emoji:"🧜", name:"בת ים", price:500 },
+    { id:"mage",   emoji:"🧙‍♂️", name:"אשף", price:600 },
+    { id:"pilot",  emoji:"🧑‍✈️", name:"טייס", price:400 },
+    { id:"astro",  emoji:"🧑‍🚀", name:"אסטרונאוט", price:600 },
+    { id:"guard",  emoji:"💂", name:"שומר", price:400 },
+    { id:"clownf", emoji:"🃏", name:"ג'וקר", price:600 },
+    { id:"boxer",  emoji:"🥊", name:"מתאגרף", price:500 },
   ]},
   { cat:"סמלים", items:[
     { id:"diamond",emoji:"💎", name:"יהלום", price:800 },
@@ -1511,6 +1535,28 @@ const PROFILE_EMOJIS = [
     { id:"lightning",emoji:"🌩️", name:"סופה", price:500 },
     { id:"medal2", emoji:"🎖️", name:"עיטור", price:600 },
     { id:"gem",    emoji:"💠", name:"אבן חן", price:500 },
+    { id:"star2",  emoji:"⭐", name:"כוכב", price:400 },
+    { id:"sparkle",emoji:"✨", name:"נצנוצים", price:400 },
+    { id:"sun",    emoji:"☀️", name:"שמש", price:400 },
+    { id:"moon",   emoji:"🌙", name:"ירח", price:400 },
+    { id:"snow",   emoji:"❄️", name:"פתית שלג", price:400 },
+    { id:"heart",  emoji:"❤️", name:"לב", price:400 },
+    { id:"clover", emoji:"🍀", name:"תלתן", price:500 },
+    { id:"infinity",emoji:"♾️", name:"אינסוף", price:500 },
+    { id:"yin",    emoji:"☯️", name:"יין-יאנג", price:500 },
+    { id:"100",    emoji:"💯", name:"מאה", price:500 },
+  ]},
+  { cat:"כדורגל", items:[
+    { id:"soccer", emoji:"⚽", name:"כדור", price:0 },
+    { id:"stadium",emoji:"🏟️", name:"אצטדיון", price:500 },
+    { id:"whistle2",emoji:"🨺", name:"שריקה", price:400 },
+    { id:"redcard",emoji:"🟥", name:"כרטיס אדום", price:400 },
+    { id:"yellowcard",emoji:"🟨", name:"כרטיס צהוב", price:400 },
+    { id:"shoe",   emoji:"👟", name:"נעל", price:400 },
+    { id:"flag2",  emoji:"🚩", name:"דגל קרן", price:400 },
+    { id:"net",    emoji:"🥅", name:"שער", price:400 },
+    { id:"cup",    emoji:"🏆", name:"גביע", price:600 },
+    { id:"firstmedal",emoji:"🥇", name:"זהב", price:600 },
   ]},
 ];
 
