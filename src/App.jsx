@@ -12,7 +12,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.71.4";
+const APP_VERSION = "3.72.0";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -4187,7 +4187,7 @@ function ToastProvider({ children }) {
   );
 }
 
-function ProfileStats({ name, picks, koWinners, koPicks = {}, actuals, actualKo, actualKoScores = {}, winnerPick, topScorerPick, actualWinner, actualTopScorer, topScorers = [], onClose }) {
+function ProfileStats({ name, picks, koWinners, koPicks = {}, actuals, actualKo, actualKoScores = {}, winnerPick, topScorerPick, actualWinner, actualTopScorer, topScorers = [], onClose, myTheme = null, myAvatarContent = null }) {
   const t = useT();
   const stats = useMemo(() => {
     const ms = totalScore(picks, actuals);
@@ -4324,12 +4324,12 @@ function ProfileStats({ name, picks, koWinners, koPicks = {}, actuals, actualKo,
         <div style={{textAlign:"center",marginBottom:18}}>
           <div style={{
             width:64,height:64,borderRadius:"50%",
-            background:`linear-gradient(135deg,${colorFor(name)},${colorFor(name)}aa)`,
+            background: myTheme ? `linear-gradient(135deg,${myTheme.c1},${myTheme.c2})` : `linear-gradient(135deg,${colorFor(name)},${colorFor(name)}aa)`,
             display:"flex",alignItems:"center",justifyContent:"center",
             fontSize:28,fontWeight:900,color:"#fff",
             margin:"0 auto 8px",
             boxShadow:"0 6px 20px rgba(0,0,0,0.4)",
-          }}>{name[0]?.toUpperCase()}</div>
+          }}>{myAvatarContent || name[0]?.toUpperCase()}</div>
           <h2 style={{margin:0,fontSize:18,color:"#f1f5f9"}}>{name}</h2>
           <div style={{fontSize:10,color:"#64748b",letterSpacing:3,marginTop:2}}>{t("profile.yourStats")}</div>
         </div>
@@ -4721,7 +4721,7 @@ function WorldLeaderboard({ userId, name, onClose }) {
 }
 
 // ─── SIDEBAR: hamburger menu drawer that slides in from one side ─────────────
-function Sidebar({ open, onClose, name, lang, setLang, onShowProfile, onShowRules, onShowBackup, onShowTutorial, onShowAchievements, onShowRoulette, onShowWrapped, onShowAdmin, onShowAdminGift, onShowGlobalAdmin, onShowLuckyWheel, onShowCoinWheel, onShowQuiz, quizTokens, coinWheelAvailable, wheelAvailable, hlPlaysToday, onLogout, onReset, totalPoints, unlockedCount, coinBalance, onShowAds, onShowCustomize }) {
+function Sidebar({ open, onClose, name, lang, setLang, onShowProfile, onShowRules, onShowBackup, onShowTutorial, onShowAchievements, onShowRoulette, onShowWrapped, onShowAdmin, onShowAdminGift, onShowGlobalAdmin, onShowLuckyWheel, onShowCoinWheel, onShowQuiz, quizTokens, coinWheelAvailable, wheelAvailable, hlPlaysToday, onLogout, onReset, totalPoints, unlockedCount, coinBalance, onShowAds, onShowCustomize, myTheme = null, myAvatarContent = null }) {
   const t = useT();
   const isRTL = lang === "he";
 
@@ -4767,11 +4767,11 @@ function Sidebar({ open, onClose, name, lang, setLang, onShowProfile, onShowRule
           <div style={{display:"flex",alignItems:"center",gap:12}}>
             <div style={{
               width:48,height:48,borderRadius:"50%",
-              background:`linear-gradient(135deg,${colorFor(name)},${colorFor(name)}aa)`,
+              background: myTheme ? `linear-gradient(135deg,${myTheme.c1},${myTheme.c2})` : `linear-gradient(135deg,${colorFor(name)},${colorFor(name)}aa)`,
               display:"flex",alignItems:"center",justifyContent:"center",
               fontSize:20,fontWeight:900,color:"#fff",flexShrink:0,
               boxShadow:"0 4px 12px rgba(0,0,0,0.3)",
-            }}>{name?.[0]?.toUpperCase() || "?"}</div>
+            }}>{myAvatarContent || name?.[0]?.toUpperCase() || "?"}</div>
             <div style={{flex:1,minWidth:0}}>
               <div style={{fontSize:16,fontWeight:800,color:"#f1f5f9",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{name}</div>
               <div style={{fontSize:11,color:"#fbbf24",marginTop:2,fontWeight:700}}>
@@ -19263,6 +19263,8 @@ function AppInner() {
           actualTopScorer={actualTopScorer}
           topScorers={topScorers}
           onClose={()=>setShowProfile(false)}
+          myTheme={myTheme}
+          myAvatarContent={myAvatarContent}
         />
       )}
 
@@ -19387,6 +19389,8 @@ function AppInner() {
         onShowProfile={()=>setShowProfile(true)}
         onShowAds={()=>setShowAds(true)}
         onShowCustomize={()=>setShowCustomize(true)}
+        myTheme={myTheme}
+        myAvatarContent={myAvatarContent}
         onShowRules={()=>setShowRules(true)}
         onShowBackup={()=>setShowBackup(true)}
         onShowTutorial={()=>setShowOnboarding(true)}
