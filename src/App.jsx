@@ -12,7 +12,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.70.0";
+const APP_VERSION = "3.71.0";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -1432,6 +1432,12 @@ const PROFILE_EMOJIS = [
     { id:"smile",  emoji:"🙂", name:"חיוך", price:200 },
     { id:"laugh",  emoji:"😂", name:"צוחק", price:200 },
     { id:"star",   emoji:"🤩", name:"כוכבים", price:200 },
+    { id:"wink",   emoji:"😉", name:"קריצה", price:200 },
+    { id:"heart_eyes", emoji:"😍", name:"מאוהב", price:200 },
+    { id:"sunglasses2", emoji:"🥸", name:"תחפושת", price:200 },
+    { id:"think",  emoji:"🤔", name:"חושב", price:200 },
+    { id:"party",  emoji:"🥳", name:"חוגג", price:300 },
+    { id:"hot",    emoji:"🥵", name:"חם", price:200 },
   ]},
   { cat:"חיות", items:[
     { id:"lion",   emoji:"🦁", name:"אריה", price:500 },
@@ -1442,6 +1448,14 @@ const PROFILE_EMOJIS = [
     { id:"dragon", emoji:"🐉", name:"דרקון", price:800 },
     { id:"shark",  emoji:"🦈", name:"כריש", price:500 },
     { id:"goat",   emoji:"🐐", name:"GOAT", price:1000 },
+    { id:"bear",   emoji:"🐻", name:"דוב", price:500 },
+    { id:"panda",  emoji:"🐼", name:"פנדה", price:500 },
+    { id:"monkey", emoji:"🐵", name:"קוף", price:400 },
+    { id:"snake",  emoji:"🐍", name:"נחש", price:500 },
+    { id:"unicorn",emoji:"🦄", name:"חד-קרן", price:800 },
+    { id:"croc",   emoji:"🐊", name:"תנין", price:500 },
+    { id:"gorilla",emoji:"🦍", name:"גורילה", price:600 },
+    { id:"bull",   emoji:"🐂", name:"שור", price:600 },
   ]},
   { cat:"ספורט", items:[
     { id:"trophy", emoji:"🏆", name:"גביע", price:600 },
@@ -1450,6 +1464,12 @@ const PROFILE_EMOJIS = [
     { id:"goal",   emoji:"🥅", name:"שער", price:400 },
     { id:"bolt",   emoji:"⚡", name:"ברק", price:500 },
     { id:"fire",   emoji:"🔥", name:"אש", price:500 },
+    { id:"boot",   emoji:"🥾", name:"נעל", price:400 },
+    { id:"whistle",emoji:"📣", name:"רמקול", price:300 },
+    { id:"target", emoji:"🎯", name:"מטרה", price:500 },
+    { id:"hundred",emoji:"💯", name:"מאה", price:500 },
+    { id:"muscle", emoji:"💪", name:"שריר", price:500 },
+    { id:"gloves", emoji:"🧤", name:"כפפות", price:400 },
   ]},
   { cat:"מצחיק", items:[
     { id:"clown",  emoji:"🤡", name:"ליצן", price:300 },
@@ -1460,6 +1480,36 @@ const PROFILE_EMOJIS = [
     { id:"ghost",  emoji:"👻", name:"רוח", price:400 },
     { id:"nerd",   emoji:"🤓", name:"חנון", price:300 },
     { id:"baby",   emoji:"👶", name:"תינוק", price:300 },
+    { id:"cry",    emoji:"😭", name:"בוכה", price:300 },
+    { id:"dizzy",  emoji:"😵", name:"מסוחרר", price:300 },
+    { id:"puke",   emoji:"🤮", name:"מקיא", price:300 },
+    { id:"explode",emoji:"🤯", name:"מתפוצץ", price:400 },
+    { id:"sleep",  emoji:"😴", name:"ישן", price:300 },
+    { id:"money",  emoji:"🤑", name:"כסף", price:400 },
+    { id:"devil",  emoji:"😈", name:"שטן", price:400 },
+    { id:"zany",   emoji:"🤪", name:"משוגע", price:300 },
+  ]},
+  { cat:"פרצופים", items:[
+    { id:"king",   emoji:"🤴", name:"נסיך", price:500 },
+    { id:"super",  emoji:"🦸", name:"גיבור", price:600 },
+    { id:"villain",emoji:"🦹", name:"נבל", price:600 },
+    { id:"ninja",  emoji:"🥷", name:"נינג'ה", price:600 },
+    { id:"detective",emoji:"🕵️", name:"בלש", price:500 },
+    { id:"zombie", emoji:"🧟", name:"זומבי", price:500 },
+    { id:"wizard", emoji:"🧙", name:"קוסם", price:600 },
+    { id:"vampire",emoji:"🧛", name:"ערפד", price:500 },
+    { id:"santa",  emoji:"🎅", name:"סנטה", price:400 },
+    { id:"cowboy", emoji:"🤠", name:"קאובוי", price:400 },
+  ]},
+  { cat:"סמלים", items:[
+    { id:"diamond",emoji:"💎", name:"יהלום", price:800 },
+    { id:"rocket", emoji:"🚀", name:"רקטה", price:600 },
+    { id:"crown2", emoji:"💫", name:"ברק כוכב", price:500 },
+    { id:"rainbow",emoji:"🌈", name:"קשת", price:500 },
+    { id:"comet",  emoji:"☄️", name:"שביט", price:500 },
+    { id:"lightning",emoji:"🌩️", name:"סופה", price:500 },
+    { id:"medal2", emoji:"🎖️", name:"עיטור", price:600 },
+    { id:"gem",    emoji:"💠", name:"אבן חן", price:500 },
   ]},
 ];
 
@@ -14728,8 +14778,7 @@ function CustomizeShop({ custom, saveCustom, coinBalance, onSpend, name, onClose
   return (
     <div style={{
       position:"fixed",inset:0,zIndex:9100,overflowY:"auto",
-      background:`linear-gradient(170deg,#020617 0%, ${previewTheme.c2}22 55%, ${previewTheme.c1}15 100%)`,
-      transition:"background 0.4s ease",
+      background:`linear-gradient(170deg,#020617 0%, #0a1628 55%, #04140b 100%)`,
     }}>
       {/* Sticky header */}
       <div style={{position:"sticky",top:0,zIndex:5,background:"rgba(2,14,8,0.9)",backdropFilter:"blur(8px)",borderBottom:"1px solid rgba(255,255,255,0.1)",padding:"12px 14px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
@@ -14868,6 +14917,8 @@ function LeagueHub({
   leagueCodes, activeLeagueCode, setActiveLeagueCode, allLeagueData, maxLeagues,
   onShowWorld,
   cardCollection,
+  myTheme = null,
+  myAvatarContent = null,
 }) {
   const t = useT();
   const { showToast } = useToast();
@@ -15024,6 +15075,17 @@ function LeagueHub({
     let h = 0;
     for (let i = 0; i < n.length; i++) h = (h * 31 + n.charCodeAt(i)) % AVATAR_COLORS.length;
     return AVATAR_COLORS[h];
+  };
+  // Avatar gradient for a member. If it's ME and I picked a theme, use it.
+  const avatarBg = (memberName) => {
+    if (myTheme && memberName === name) return `linear-gradient(135deg,${myTheme.c1},${myTheme.c2})`;
+    const c = colorFor(memberName);
+    return `linear-gradient(135deg,${c},${c}aa)`;
+  };
+  // What goes inside a member's avatar circle. For ME, my chosen pic/letter.
+  const avatarInner = (memberName) => {
+    if (myAvatarContent && memberName === name) return myAvatarContent;
+    return memberName[0]?.toUpperCase();
   };
 
   // ─── LIST MODE: overview of all leagues the user is in ──
@@ -15505,8 +15567,8 @@ function LeagueHub({
 
           {/* Header */}
           <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:14}}>
-            <div style={{width:48,height:48,borderRadius:"50%",background:`linear-gradient(135deg,${colorFor(m.name)},${colorFor(m.name)}aa)`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,fontWeight:900,color:"#fff"}}>
-              {m.name[0]?.toUpperCase()}
+            <div style={{width:48,height:48,borderRadius:"50%",background:avatarBg(m.name),display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,fontWeight:900,color:"#fff"}}>
+              {avatarInner(m.name)}
             </div>
             <div style={{flex:1}}>
               <h2 style={{margin:0,fontSize:18,color:"#f1f5f9"}}>{m.name}{m.isMe?" (you)":""}</h2>
@@ -15985,7 +16047,7 @@ function LeagueHub({
                 const m = members[1];
                 return (
                   <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:5,flex:1,maxWidth:110}}>
-                    <div style={{width:52,height:52,borderRadius:"50%",background:`linear-gradient(135deg,${colorFor(m.name)},${colorFor(m.name)}aa)`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,fontWeight:900,color:"#fff",border:"2px solid #e2e8f0"}}>{m.name[0]?.toUpperCase()}</div>
+                    <div style={{width:52,height:52,borderRadius:"50%",background:avatarBg(m.name),display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,fontWeight:900,color:"#fff",border:"2px solid #e2e8f0"}}>{avatarInner(m.name)}</div>
                     <div style={{fontSize:12,fontWeight:800,color:"#f1f5f9",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:100}}>{m.name}</div>
                     <div style={{fontSize:15,fontWeight:900,color:"#cbd5e1"}}>{m.totalPoints}</div>
                     <div style={{width:"100%",height:42,borderRadius:"8px 8px 0 0",background:"linear-gradient(180deg,rgba(203,213,225,0.2),rgba(203,213,225,0.02))",display:"flex",alignItems:"flex-start",justifyContent:"center",paddingTop:6,fontSize:20,fontWeight:900,color:"rgba(255,255,255,0.25)"}}>2</div>
@@ -15999,7 +16061,7 @@ function LeagueHub({
                   <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:5,flex:1,maxWidth:110}}>
                     <div style={{position:"relative",display:"flex",justifyContent:"center"}}>
                       <span style={{position:"absolute",top:-18,fontSize:20}}>👑</span>
-                      <div style={{width:66,height:66,borderRadius:"50%",background:`linear-gradient(135deg,${colorFor(m.name)},${colorFor(m.name)}aa)`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:26,fontWeight:900,color:"#fff",border:"2px solid #fde68a",boxShadow:"0 0 26px rgba(251,191,36,0.55)"}}>{m.name[0]?.toUpperCase()}</div>
+                      <div style={{width:66,height:66,borderRadius:"50%",background:avatarBg(m.name),display:"flex",alignItems:"center",justifyContent:"center",fontSize:26,fontWeight:900,color:"#fff",border:"2px solid #fde68a",boxShadow:"0 0 26px rgba(251,191,36,0.55)"}}>{avatarInner(m.name)}</div>
                     </div>
                     <div style={{fontSize:12,fontWeight:800,color:"#f1f5f9",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:100}}>{m.name}</div>
                     <div style={{fontSize:15,fontWeight:900,color:"#fbbf24"}}>{m.totalPoints}</div>
@@ -16012,7 +16074,7 @@ function LeagueHub({
                 const m = members[2];
                 return (
                   <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:5,flex:1,maxWidth:110}}>
-                    <div style={{width:52,height:52,borderRadius:"50%",background:`linear-gradient(135deg,${colorFor(m.name)},${colorFor(m.name)}aa)`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,fontWeight:900,color:"#fff",border:"2px solid #f59e0b"}}>{m.name[0]?.toUpperCase()}</div>
+                    <div style={{width:52,height:52,borderRadius:"50%",background:avatarBg(m.name),display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,fontWeight:900,color:"#fff",border:"2px solid #f59e0b"}}>{avatarInner(m.name)}</div>
                     <div style={{fontSize:12,fontWeight:800,color:"#f1f5f9",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:100}}>{m.name}</div>
                     <div style={{fontSize:15,fontWeight:900,color:"#f59e0b"}}>{m.totalPoints}</div>
                     <div style={{width:"100%",height:32,borderRadius:"8px 8px 0 0",background:"linear-gradient(180deg,rgba(217,119,6,0.2),rgba(217,119,6,0.02))",display:"flex",alignItems:"flex-start",justifyContent:"center",paddingTop:6,fontSize:20,fontWeight:900,color:"rgba(255,255,255,0.25)"}}>3</div>
@@ -19119,6 +19181,8 @@ function AppInner() {
           maxLeagues={MAX_LEAGUES}
           onShowWorld={()=>setScreen("world")}
           cardCollection={cardCollection}
+          myTheme={myTheme}
+          myAvatarContent={myAvatarContent}
         />
       )}
 
