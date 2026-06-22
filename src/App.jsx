@@ -13,7 +13,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.74.0";
+const APP_VERSION = "3.74.1";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -4775,6 +4775,7 @@ function Sidebar({ open, onClose, name, lang, setLang, onShowProfile, onShowRule
             }}>{myAvatarContent || name?.[0]?.toUpperCase() || "?"}</div>
             <div style={{flex:1,minWidth:0}}>
               <div style={{fontSize:16,fontWeight:800,color:"#f1f5f9",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{name}</div>
+              <div style={{fontSize:8,color:"#f87171",fontFamily:"monospace"}}>DBG theme={myTheme?myTheme.id:"NULL"} pic={myAvatarContent||"-"}</div>
               <div style={{fontSize:11,color:"#fbbf24",marginTop:2,fontWeight:700}}>
                 📈 <AnimatedNumber value={totalPoints} /> {t("welcome.pts")}
               </div>
