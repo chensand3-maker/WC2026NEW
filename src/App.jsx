@@ -12,7 +12,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.71.1";
+const APP_VERSION = "3.71.2";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -16044,6 +16044,10 @@ function LeagueHub({
             background:"linear-gradient(180deg,#fde68a,#f59e0b)",
             WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",
           }}>{leagueData.name}</h2>
+          {/* 🐛 TEMP DEBUG — remove after diagnosis */}
+          <div style={{fontSize:9,color:"#f87171",background:"rgba(0,0,0,0.4)",padding:"3px 6px",borderRadius:6,margin:"4px 0",fontFamily:"monospace"}}>
+            theme={myTheme?myTheme.id:"NULL"} · c1={myTheme?myTheme.c1:"?"} · pic={myAvatarContent||"?"} · uid={userId?userId.slice(0,8):"NULL"}
+          </div>
           <div style={{fontSize:11,color:"#94a3b8"}}>
             <span style={{color:"#22c55e"}}>●</span> {members.length} {members.length===1?t("league.member"):t("league.members")}
           </div>
