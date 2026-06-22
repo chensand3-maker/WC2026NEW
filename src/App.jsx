@@ -13,7 +13,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.78.0";
+const APP_VERSION = "3.79.0";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -13027,13 +13027,13 @@ function NextMatchCountdown({ allMatches }) {
 
   return (
     <div style={{
-      background:"linear-gradient(160deg,rgba(34,197,94,0.14),rgba(6,20,12,0.85))",
-      border:"1px solid rgba(34,197,94,0.35)",
+      background:"linear-gradient(160deg,color-mix(in srgb, var(--accent) 14%, transparent),rgba(6,20,12,0.85))",
+      border:"1px solid color-mix(in srgb, var(--accent) 35%, transparent)",
       borderRadius:16,padding:"12px 14px",marginBottom:14,
-      boxShadow:"0 0 30px rgba(34,197,94,0.1)",
+      boxShadow:"0 0 30px color-mix(in srgb, var(--accent) 12%, transparent)",
     }}>
       <div style={{
-        fontSize:10,color:"#4ade80",letterSpacing:2,
+        fontSize:10,color:"var(--accent)",letterSpacing:2,
         fontWeight:800,textAlign:"center",marginBottom:8,
       }}>
         ⏰ {t("today.nextMatchIn")}
@@ -16209,8 +16209,8 @@ function LeagueHub({
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
               {/* Empty Top Hit preview */}
               <div style={{
-                background:"linear-gradient(135deg,rgba(34,197,94,0.06),rgba(36,49,80,0.4))",
-                border:"1px dashed rgba(34,197,94,0.3)",
+                background:"linear-gradient(135deg,color-mix(in srgb, var(--accent) 7%, transparent),rgba(36,49,80,0.4))",
+                border:"1px dashed color-mix(in srgb, var(--accent) 30%, transparent)",
                 borderRadius:12,padding:"10px 10px",
               }}>
                 <div style={{display:"flex",alignItems:"center",gap:5,marginBottom:6}}>
@@ -16379,13 +16379,13 @@ function LeagueHub({
 
         {/* Invite friends card — moved from header to keep top slim */}
         <div style={{
-          background:"linear-gradient(135deg,rgba(34,197,94,0.08),rgba(36,49,80,0.5))",
-          border:"1px solid rgba(34,197,94,0.3)",
+          background:"linear-gradient(135deg,color-mix(in srgb, var(--accent) 9%, transparent),rgba(36,49,80,0.5))",
+          border:"1px solid color-mix(in srgb, var(--accent) 30%, transparent)",
           borderRadius:14,padding:14,marginTop:18,marginBottom:6,
         }}>
           <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:10}}>
             <span style={{fontSize:18}}>📣</span>
-            <span style={{fontSize:12,fontWeight:800,color:"#22c55e",letterSpacing:1}}>{t("league.inviteFriends")}</span>
+            <span style={{fontSize:12,fontWeight:800,color:"var(--accent)",letterSpacing:1}}>{t("league.inviteFriends")}</span>
           </div>
           {/* Code display */}
           <div style={{display:"flex",alignItems:"center",gap:6,background:"#1e2940",borderRadius:8,padding:"8px 10px",border:"1px dashed rgba(71,85,105,0.5)",marginBottom:8}}>
