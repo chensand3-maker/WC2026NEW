@@ -13,7 +13,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.75.0";
+const APP_VERSION = "3.75.1";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -17390,10 +17390,6 @@ function AppInner() {
   const saveCustom = (next) => {
     setCustom(next);
     try { localStorage.setItem("wc2026_custom_v1", JSON.stringify(next)); } catch {}
-    // Also sync theme+pic to the league so others see it
-    try {
-      if (activeLeagueCode && userId) updateMyCustom(activeLeagueCode, userId, next);
-    } catch {}
   };
 
   // The active theme object {c1,c2,...} for the current user.
@@ -17948,12 +17944,12 @@ function AppInner() {
   const MAX_LEAGUES = 5;
   const [userId, setUserId] = useState(() => saved?.userId || `u_${Date.now()}_${Math.random().toString(36).slice(2,8)}`);
 
-  // 🎨 On entering a league, push my customization so others see my theme/pic.
+  // 🎨 Sync my customization to the league whenever it changes, so others see my theme/pic.
   useEffect(() => {
     if (activeLeagueCode && userId) {
       try { updateMyCustom(activeLeagueCode, userId, custom); } catch {}
     }
-  }, [activeLeagueCode, userId]);
+  }, [activeLeagueCode, userId, custom]);
 
   // 📢 Detect a freshly-pushed ad popup from the league admin
   useEffect(() => {
