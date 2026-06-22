@@ -13,7 +13,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.76.0";
+const APP_VERSION = "3.77.0";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -12280,8 +12280,8 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
 
   return (
     <div style={{
-      background: sc ? sc.bg : (hasResult ? "rgba(34,197,94,0.06)" : "linear-gradient(160deg,rgba(6,24,14,0.92),rgba(2,15,8,0.96))"),
-      border:`1px solid ${sc ? sc.border : (hasResult ? "rgba(34,197,94,0.3)" : "rgba(34,197,94,0.22)")}`,
+      background: sc ? sc.bg : (hasResult ? "color-mix(in srgb, var(--accent) 8%, transparent)" : "linear-gradient(160deg,rgba(6,24,14,0.92),rgba(2,15,8,0.96))"),
+      border:`1px solid ${sc ? sc.border : (hasResult ? "color-mix(in srgb, var(--accent) 40%, transparent)" : "rgba(34,197,94,0.22)")}`,
       borderRadius:14,padding:"12px 14px",marginBottom:10,transition:"all 0.25s",
       position:"relative",overflow:"visible",
       animation: reaction ? "matchFlash 0.5s ease-out" : "none",
