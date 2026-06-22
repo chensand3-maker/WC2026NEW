@@ -13,7 +13,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.85.0";
+const APP_VERSION = "3.86.0";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -15563,24 +15563,26 @@ function LeagueHub({
         if (aw && mw && aw === mw) bonusPoints += POINTS.WINNER_BET;
       }
       // Top scorer: +2 per goal for each member's pick
+      let tsPoints = 0;
       if (m.topScorerPick) {
         if (topScorers.length > 0) {
           // Match by full name or last name (events return "L. Messi", picks store "Lionel Messi")
           const foundInScorers = topScorers.find(s => nameMatch(s.name, m.topScorerPick.name));
           if (foundInScorers) {
-            bonusPoints += (foundInScorers.goals || 0) * POINTS.TOP_SCORER_GOAL;
+            tsPoints = (foundInScorers.goals || 0) * POINTS.TOP_SCORER_GOAL;
           }
         } else if (m.topScorerGoals && nameMatch(m.topScorerName, m.topScorerPick.name)) {
-          bonusPoints += m.topScorerGoals * POINTS.TOP_SCORER_GOAL;
+          tsPoints = m.topScorerGoals * POINTS.TOP_SCORER_GOAL;
         } else if (actualTopScorer && nameMatch(actualTopScorer.name, m.topScorerPick.name)) {
-          bonusPoints += (actualTopScorer.goals || 0) * POINTS.TOP_SCORER_GOAL;
+          tsPoints = (actualTopScorer.goals || 0) * POINTS.TOP_SCORER_GOAL;
         }
       }
+      bonusPoints += tsPoints;
       return {
         uid, name: m.name, isMe: uid === userId, theme: m.theme, pic: m.pic,
         picks: m.picks, koWinners: m.koWinners, standings: st, bestThirds: bt, knockout: kt,
         matchScore: ms, koScore: ks,
-        bonusPoints,
+        bonusPoints, tsPoints,
         winnerPick: m.winnerPick, topScorerPick: m.topScorerPick,
         totalPoints: ms.total + ks.total + bonusPoints,
         predictedCount,
@@ -16458,7 +16460,7 @@ function LeagueHub({
                   {showPoints && p.koScore?.exact>0 && ` · 🏆${p.koScore.exact}`}
                 </div>
               </div>
-              {/* 🎯 Bull / ✓ Wins stat columns (only with results) */}
+              {/* 🎯 Bull / ✓ Wins / 👟 Golden Boot stat columns (only with results) */}
               {showPoints && (
                 <div style={{display:"flex",gap:10,marginInlineEnd:4}}>
                   <div style={{textAlign:"center",minWidth:26}}>
@@ -16468,6 +16470,10 @@ function LeagueHub({
                   <div style={{textAlign:"center",minWidth:26}}>
                     <div style={{fontSize:14,fontWeight:900,color:"#4ade80",lineHeight:1}}>{p.matchScore.result}</div>
                     <div style={{fontSize:8,color:"#64748b"}}>✓</div>
+                  </div>
+                  <div style={{textAlign:"center",minWidth:26}}>
+                    <div style={{fontSize:14,fontWeight:900,color:"#a855f7",lineHeight:1}}>{p.tsPoints || 0}</div>
+                    <div style={{fontSize:8,color:"#64748b"}}>👟</div>
                   </div>
                 </div>
               )}
