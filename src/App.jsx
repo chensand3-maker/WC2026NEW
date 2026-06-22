@@ -13,7 +13,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.77.0";
+const APP_VERSION = "3.78.0";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -2140,10 +2140,10 @@ const inputStyle = {
 const errStyle = {color:"#f87171",fontSize:12,marginBottom:8};
 const primaryBtn = {
   width:"100%",padding:"12px 18px",
-  background:"linear-gradient(135deg,#fbbf24,#d97706)",
-  color:"#1e2940",border:"none",borderRadius:12,
+  background:"linear-gradient(135deg,var(--accent),var(--accent2))",
+  color:"#fff",border:"none",borderRadius:12,
   fontSize:14,fontWeight:800,cursor:"pointer",letterSpacing:0.5,fontFamily:"inherit",
-  boxShadow:"0 4px 0 #92400e, 0 8px 18px rgba(251,191,36,0.35), inset 0 1px 0 rgba(255,255,255,0.3)",
+  boxShadow:"0 4px 0 rgba(0,0,0,0.35), 0 8px 18px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.25)",
   transition:"all 0.15s",
 };
 const ghostBtn = {
@@ -12098,9 +12098,9 @@ function LineupButton({ homeTeam, awayTeam }) {
       style={{
         display:"flex",alignItems:"center",justifyContent:"center",gap:5,
         width:"100%",padding:"6px 10px",
-        background:"rgba(34,197,94,0.08)",
-        border:"1px solid rgba(34,197,94,0.25)",
-        borderRadius:8,color:"#4ade80",
+        background:"color-mix(in srgb, var(--accent) 10%, transparent)",
+        border:"1px solid color-mix(in srgb, var(--accent) 30%, transparent)",
+        borderRadius:8,color:"var(--accent)",
         fontSize:11,fontWeight:700,cursor:"pointer",
         fontFamily:"inherit",letterSpacing:0.5,
         textDecoration:"none",boxSizing:"border-box",
@@ -12399,13 +12399,13 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
             placeholder={isLocked?"·":"—"}
             style={{width:36,height:38,textAlign:"center",
               background: isLocked?"rgba(71,85,105,0.2)":"rgba(0,0,0,0.55)",
-              border:`1px solid ${isLocked?"rgba(71,85,105,0.4)":((result==="home" && showHighlight)?"#22c55e":"rgba(34,197,94,0.3)")}`,
+              border:`1px solid ${isLocked?"rgba(71,85,105,0.4)":((result==="home" && showHighlight)?"#22c55e":"color-mix(in srgb, var(--accent) 35%, transparent)")}`,
               borderRadius:9,
               color: isLocked?"#64748b":((result==="home" && showHighlight)?"#22c55e":"#f1f5f9"),
               fontSize:18,fontWeight:800,fontFamily:"inherit",outline:"none",
               cursor: isLocked?"not-allowed":"text",
             }}/>
-          <span style={{color:"#15803d",fontSize:11}}>:</span>
+          <span style={{color:"var(--accent2)",fontSize:11}}>:</span>
           <input id={awayInputId} type="text" inputMode="numeric" value={a}
             onChange={e=>handleInput("a", e)}
             onKeyDown={e=>handleKeyDown("a", e)}
@@ -12414,7 +12414,7 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
             placeholder={isLocked?"·":"—"}
             style={{width:36,height:38,textAlign:"center",
               background: isLocked?"rgba(71,85,105,0.2)":"rgba(0,0,0,0.55)",
-              border:`1px solid ${isLocked?"rgba(71,85,105,0.4)":((result==="away" && showHighlight)?"#22c55e":"rgba(34,197,94,0.3)")}`,
+              border:`1px solid ${isLocked?"rgba(71,85,105,0.4)":((result==="away" && showHighlight)?"#22c55e":"color-mix(in srgb, var(--accent) 35%, transparent)")}`,
               borderRadius:9,
               color: isLocked?"#64748b":((result==="away" && showHighlight)?"#22c55e":"#f1f5f9"),
               fontSize:18,fontWeight:800,fontFamily:"inherit",outline:"none",
