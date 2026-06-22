@@ -12,7 +12,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.71.0";
+const APP_VERSION = "3.71.1";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -15077,15 +15077,24 @@ function LeagueHub({
     return AVATAR_COLORS[h];
   };
   // Avatar gradient for a member. If it's ME and I picked a theme, use it.
-  const avatarBg = (memberName) => {
-    if (myTheme && memberName === name) return `linear-gradient(135deg,${myTheme.c1},${myTheme.c2})`;
+  // Pass the whole member object so we can use its reliable isMe / uid.
+  const avatarBg = (member) => {
+    const isMe = typeof member === "object"
+      ? (member.isMe || member.uid === userId)
+      : (member === name); // string fallback
+    const memberName = typeof member === "object" ? member.name : member;
+    if (myTheme && isMe) return `linear-gradient(135deg,${myTheme.c1},${myTheme.c2})`;
     const c = colorFor(memberName);
     return `linear-gradient(135deg,${c},${c}aa)`;
   };
   // What goes inside a member's avatar circle. For ME, my chosen pic/letter.
-  const avatarInner = (memberName) => {
-    if (myAvatarContent && memberName === name) return myAvatarContent;
-    return memberName[0]?.toUpperCase();
+  const avatarInner = (member) => {
+    const isMe = typeof member === "object"
+      ? (member.isMe || member.uid === userId)
+      : (member === name);
+    const memberName = typeof member === "object" ? member.name : member;
+    if (myAvatarContent && isMe) return myAvatarContent;
+    return memberName?.[0]?.toUpperCase();
   };
 
   // ─── LIST MODE: overview of all leagues the user is in ──
@@ -15567,8 +15576,8 @@ function LeagueHub({
 
           {/* Header */}
           <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:14}}>
-            <div style={{width:48,height:48,borderRadius:"50%",background:avatarBg(m.name),display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,fontWeight:900,color:"#fff"}}>
-              {avatarInner(m.name)}
+            <div style={{width:48,height:48,borderRadius:"50%",background:avatarBg(m),display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,fontWeight:900,color:"#fff"}}>
+              {avatarInner(m)}
             </div>
             <div style={{flex:1}}>
               <h2 style={{margin:0,fontSize:18,color:"#f1f5f9"}}>{m.name}{m.isMe?" (you)":""}</h2>
@@ -16047,7 +16056,7 @@ function LeagueHub({
                 const m = members[1];
                 return (
                   <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:5,flex:1,maxWidth:110}}>
-                    <div style={{width:52,height:52,borderRadius:"50%",background:avatarBg(m.name),display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,fontWeight:900,color:"#fff",border:"2px solid #e2e8f0"}}>{avatarInner(m.name)}</div>
+                    <div style={{width:52,height:52,borderRadius:"50%",background:avatarBg(m),display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,fontWeight:900,color:"#fff",border:"2px solid #e2e8f0"}}>{avatarInner(m)}</div>
                     <div style={{fontSize:12,fontWeight:800,color:"#f1f5f9",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:100}}>{m.name}</div>
                     <div style={{fontSize:15,fontWeight:900,color:"#cbd5e1"}}>{m.totalPoints}</div>
                     <div style={{width:"100%",height:42,borderRadius:"8px 8px 0 0",background:"linear-gradient(180deg,rgba(203,213,225,0.2),rgba(203,213,225,0.02))",display:"flex",alignItems:"flex-start",justifyContent:"center",paddingTop:6,fontSize:20,fontWeight:900,color:"rgba(255,255,255,0.25)"}}>2</div>
@@ -16061,7 +16070,7 @@ function LeagueHub({
                   <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:5,flex:1,maxWidth:110}}>
                     <div style={{position:"relative",display:"flex",justifyContent:"center"}}>
                       <span style={{position:"absolute",top:-18,fontSize:20}}>👑</span>
-                      <div style={{width:66,height:66,borderRadius:"50%",background:avatarBg(m.name),display:"flex",alignItems:"center",justifyContent:"center",fontSize:26,fontWeight:900,color:"#fff",border:"2px solid #fde68a",boxShadow:"0 0 26px rgba(251,191,36,0.55)"}}>{avatarInner(m.name)}</div>
+                      <div style={{width:66,height:66,borderRadius:"50%",background:avatarBg(m),display:"flex",alignItems:"center",justifyContent:"center",fontSize:26,fontWeight:900,color:"#fff",border:"2px solid #fde68a",boxShadow:"0 0 26px rgba(251,191,36,0.55)"}}>{avatarInner(m)}</div>
                     </div>
                     <div style={{fontSize:12,fontWeight:800,color:"#f1f5f9",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:100}}>{m.name}</div>
                     <div style={{fontSize:15,fontWeight:900,color:"#fbbf24"}}>{m.totalPoints}</div>
@@ -16074,7 +16083,7 @@ function LeagueHub({
                 const m = members[2];
                 return (
                   <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:5,flex:1,maxWidth:110}}>
-                    <div style={{width:52,height:52,borderRadius:"50%",background:avatarBg(m.name),display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,fontWeight:900,color:"#fff",border:"2px solid #f59e0b"}}>{avatarInner(m.name)}</div>
+                    <div style={{width:52,height:52,borderRadius:"50%",background:avatarBg(m),display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,fontWeight:900,color:"#fff",border:"2px solid #f59e0b"}}>{avatarInner(m)}</div>
                     <div style={{fontSize:12,fontWeight:800,color:"#f1f5f9",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:100}}>{m.name}</div>
                     <div style={{fontSize:15,fontWeight:900,color:"#f59e0b"}}>{m.totalPoints}</div>
                     <div style={{width:"100%",height:32,borderRadius:"8px 8px 0 0",background:"linear-gradient(180deg,rgba(217,119,6,0.2),rgba(217,119,6,0.02))",display:"flex",alignItems:"flex-start",justifyContent:"center",paddingTop:6,fontSize:20,fontWeight:900,color:"rgba(255,255,255,0.25)"}}>3</div>
