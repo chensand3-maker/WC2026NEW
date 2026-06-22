@@ -13,7 +13,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.83.2";
+const APP_VERSION = "3.83.3";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -16117,11 +16117,6 @@ function LeagueHub({
             background:"linear-gradient(180deg,#fde68a,#f59e0b)",
             WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",
           }}>{leagueData.name}</h2>
-          {/* 🐛 TEMP DEBUG */}
-          <div style={{fontSize:8,color:"#f87171",fontFamily:"monospace",background:"rgba(0,0,0,0.4)",padding:"3px",borderRadius:5,margin:"3px 0"}}>
-            SYNC: {syncDebug}<br/>
-            {members.map(m => `${m.name}: th=${m.theme||"∅"} pic=${m.pic||"∅"}`).join(" | ")}
-          </div>
           <div style={{fontSize:11,color:"#94a3b8"}}>
             <span style={{color:"#22c55e"}}>●</span> {members.length} {members.length===1?t("league.member"):t("league.members")}
           </div>
@@ -17327,7 +17322,6 @@ function AppInner() {
   const [pendingRecap, setPendingRecap] = useState(null); // {newMatches: [...], totalPoints: N}
   const [pendingAdPopup, setPendingAdPopup] = useState(null); // the ad object to pop up
   const [pendingGift, setPendingGift] = useState(null); // emoji gift received from a friend
-  const [syncDebug, setSyncDebug] = useState("?"); // 🐛 temp: shows sync result on screen
   const [userAdViewerOpen, setUserAdViewerOpen] = useState(false); // user opened full viewer from popup
   // Profile modal open?
   const [showProfile, setShowProfile] = useState(false);
@@ -17950,11 +17944,7 @@ function AppInner() {
   // 🎨 Sync my customization to the league whenever it changes, so others see my theme/pic.
   useEffect(() => {
     if (activeLeagueCode && userId) {
-      updateMyCustom(activeLeagueCode, userId, custom)
-        .then(() => setSyncDebug(`OK ${custom.theme}/${custom.pic}`))
-        .catch(e => setSyncDebug("FAIL: " + (e?.message || e).slice(0,40)));
-    } else {
-      setSyncDebug(`no-league code=${activeLeagueCode||"∅"} uid=${userId?"ok":"∅"}`);
+      updateMyCustom(activeLeagueCode, userId, custom).catch(() => {});
     }
   }, [activeLeagueCode, userId, custom]);
 
