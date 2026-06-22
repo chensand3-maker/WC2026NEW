@@ -13,7 +13,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.82.0";
+const APP_VERSION = "3.83.0";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -12281,7 +12281,7 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
   return (
     <div style={{
       background: sc ? sc.bg : (hasResult ? "color-mix(in srgb, var(--accent) 8%, transparent)" : "linear-gradient(160deg,rgba(6,24,14,0.92),rgba(2,15,8,0.96))"),
-      border:`1px solid ${sc ? sc.border : (hasResult ? "color-mix(in srgb, var(--accent) 40%, transparent)" : "rgba(34,197,94,0.22)")}`,
+      border:`1px solid ${sc ? sc.border : (hasResult ? "color-mix(in srgb, var(--accent) 40%, transparent)" : "color-mix(in srgb, var(--accent) 22%, transparent)")}`,
       borderRadius:14,padding:"12px 14px",marginBottom:10,transition:"all 0.25s",
       position:"relative",overflow:"visible",
       animation: reaction ? "matchFlash 0.5s ease-out" : "none",
@@ -13255,8 +13255,8 @@ function TodayScreen({ picks, actuals, onPick, onBack, onGoToBracket, leagueMemb
   // 🏟️ Stadium-style section header: colored glowing dot + label + count chip
   const sectionHeader = (color, glow, label, count) => (
     <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
-      <span style={{width:7,height:7,borderRadius:"50%",background:color,boxShadow:`0 0 8px ${glow}`,display:"inline-block",flexShrink:0}}/>
-      <span style={{fontSize:12,fontWeight:800,letterSpacing:1,color}}>{label}</span>
+      <span style={{width:7,height:7,borderRadius:"50%",background:color,boxShadow:`0 0 8px ${color}`,display:"inline-block",flexShrink:0}}/>
+      <span style={{fontSize:12,fontWeight:800,letterSpacing:1,color:color}}>{label}</span>
       {count != null && (
         <span style={{fontSize:10,color:"var(--accent)",background:"color-mix(in srgb, var(--accent) 12%, transparent)",padding:"2px 9px",borderRadius:10,marginRight:"auto"}}>
           {count} {count === 1 ? "משחק" : "משחקים"}
