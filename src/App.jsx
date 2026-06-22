@@ -12,7 +12,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.71.3";
+const APP_VERSION = "3.71.4";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -16044,10 +16044,8 @@ function LeagueHub({
             background:"linear-gradient(180deg,#fde68a,#f59e0b)",
             WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",
           }}>{leagueData.name}</h2>
-          {/* 🐛 TEMP DEBUG — remove after diagnosis */}
-          <div style={{fontSize:9,color:"#f87171",background:"rgba(0,0,0,0.4)",padding:"3px 6px",borderRadius:6,margin:"4px 0",fontFamily:"monospace"}}>
-            theme={myTheme?myTheme.id:"NULL"} · pic={myAvatarContent||"?"} · myUid={userId?userId.slice(0,10):"NULL"}<br/>
-            {members.map(m => `${m.name}:isMe=${m.isMe?"Y":"n"}/uid=${(m.uid||"?").slice(0,10)}`).join(" | ")}
+          <div style={{fontSize:11,color:"#94a3b8"}}>
+            <span style={{color:"#22c55e"}}>●</span> {members.length} {members.length===1?t("league.member"):t("league.members")}
           </div>
           <div style={{fontSize:11,color:"#94a3b8"}}>
             <span style={{color:"#22c55e"}}>●</span> {members.length} {members.length===1?t("league.member"):t("league.members")}
@@ -16239,11 +16237,11 @@ function LeagueHub({
                 width: isPodium && showPoints ? 38 : 34,
                 height: isPodium && showPoints ? 38 : 34,
                 borderRadius:"50%",
-                background:`linear-gradient(135deg,${colorFor(p.name)},${colorFor(p.name)}aa)`,
+                background:avatarBg(p),
                 display:"flex",alignItems:"center",justifyContent:"center",
                 fontSize: isPodium && showPoints ? 16 : 14,
                 fontWeight:900,color:"#fff",flexShrink:0,
-              }}>{p.name[0]?.toUpperCase()}</div>
+              }}>{avatarInner(p)}</div>
               {/* Name + breakdown */}
               <div style={{flex:1,minWidth:0}}>
                 <div style={{
