@@ -13,7 +13,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.79.0";
+const APP_VERSION = "3.80.0";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -13338,10 +13338,10 @@ function TodayScreen({ picks, actuals, onPick, onBack, onGoToBracket, leagueMemb
           {onRefresh && (
             <button onClick={onRefresh} style={{
               padding:"7px 12px",
-              background:"rgba(34,197,94,0.15)",
-              border:"1px solid rgba(34,197,94,0.4)",
+              background:"color-mix(in srgb, var(--accent) 15%, transparent)",
+              border:"1px solid color-mix(in srgb, var(--accent) 40%, transparent)",
               borderRadius:10,
-              color:"#22c55e",fontSize:13,fontWeight:700,
+              color:"var(--accent)",fontSize:13,fontWeight:700,
               cursor:"pointer",fontFamily:"inherit",
               display:"flex",alignItems:"center",gap:5,
             }}>
@@ -13356,7 +13356,7 @@ function TodayScreen({ picks, actuals, onPick, onBack, onGoToBracket, leagueMemb
         <h2 style={{
           fontSize:26,margin:"4px 0",
           color:"#fff",fontWeight:900,
-          textShadow:"0 0 24px rgba(34,197,94,0.5)",
+          textShadow:"0 0 24px color-mix(in srgb, var(--accent) 50%, transparent)",
         }}>{t("today.title")} ⚽</h2>
         <p style={{fontSize:12,color:"#86efac",margin:0,opacity:0.7}}>{t("today.subtitle")}</p>
       </div>
@@ -16272,11 +16272,11 @@ function LeagueHub({
           // Background: podium colors for top 3, "trash" gray for the rest
           const rowBg = isPodium && showPoints
             ? `linear-gradient(135deg, ${podiumGlow}, rgba(36,49,80,0.4))`
-            : p.isMe ? "linear-gradient(135deg,rgba(251,191,36,0.1),rgba(217,119,6,0.05))"
+            : p.isMe ? "linear-gradient(135deg,color-mix(in srgb, var(--accent) 12%, transparent),color-mix(in srgb, var(--accent2) 5%, transparent))"
             : "rgba(30,41,59,0.5)";
           const rowBorder = isPodium && showPoints
             ? `1px solid ${podiumBorder}`
-            : p.isMe ? "1px solid #fbbf24"
+            : p.isMe ? "1px solid color-mix(in srgb, var(--accent) 55%, transparent)"
             : "1px solid rgba(71,85,105,0.3)";
           // Below-podium rows get a slightly dimmer look when results exist
           const rowOpacity = !isPodium && showPoints ? 0.75 : 1;
