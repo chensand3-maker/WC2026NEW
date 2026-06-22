@@ -12,7 +12,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.68.2";
+const APP_VERSION = "3.68.3";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -17405,22 +17405,6 @@ function AppInner() {
     }
   }, [actuals, picks, name, pendingRecap]);
 
-  // 📢 Detect a freshly-pushed ad popup from the league admin
-  useEffect(() => {
-    if (pendingAdPopup) return; // already showing one
-    const data = allLeagueData?.[activeLeagueCode];
-    const active = data?.activeAd;
-    if (!active || !active.popupId || !active.id) return;
-    // Has this user already seen THIS popup push?
-    let seen = "";
-    try { seen = localStorage.getItem("wc2026_seen_ad_popup_v1") || ""; } catch {}
-    if (seen === active.popupId) return;
-    // Find the actual ad object
-    const ad = (Array.isArray(data.ads) ? data.ads : []).find(a => a.id === active.id);
-    if (!ad) return;
-    setPendingAdPopup({ ...ad, _popupId: active.popupId });
-  }, [allLeagueData, activeLeagueCode, pendingAdPopup]);
-
   const dismissAdPopup = () => {
     if (pendingAdPopup?._popupId) {
       try { localStorage.setItem("wc2026_seen_ad_popup_v1", pendingAdPopup._popupId); } catch {}
@@ -17459,6 +17443,20 @@ function AppInner() {
   const [allLeagueData, setAllLeagueData] = useState({});
   const MAX_LEAGUES = 5;
   const [userId, setUserId] = useState(() => saved?.userId || `u_${Date.now()}_${Math.random().toString(36).slice(2,8)}`);
+
+  // 📢 Detect a freshly-pushed ad popup from the league admin
+  useEffect(() => {
+    if (pendingAdPopup) return; // already showing one
+    const data = allLeagueData?.[activeLeagueCode];
+    const active = data?.activeAd;
+    if (!active || !active.popupId || !active.id) return;
+    let seen = "";
+    try { seen = localStorage.getItem("wc2026_seen_ad_popup_v1") || ""; } catch {}
+    if (seen === active.popupId) return;
+    const ad = (Array.isArray(data.ads) ? data.ads : []).find(a => a.id === active.id);
+    if (!ad) return;
+    setPendingAdPopup({ ...ad, _popupId: active.popupId });
+  }, [allLeagueData, activeLeagueCode, pendingAdPopup]);
   // Backwards-compatibility shims: rest of App.jsx still uses `leagueCode` / `setLeagueCode`
   // for the *currently active* league. These will continue to work transparently.
   const leagueCode = activeLeagueCode;
