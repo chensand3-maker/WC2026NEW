@@ -5,14 +5,14 @@ import {
   updateMyGlobalProfile, deleteMyGlobalProfile, fetchGlobalLeaderboard, renameLeague,
   fetchMyGlobalProfile,
   sendGiftToLeague,
-  addLeagueAd, deleteLeagueAd,
+  addLeagueAd, deleteLeagueAd, pushAdPopup, clearAdPopup,
   fetchAllGlobalUsers, deleteGlobalUser,
 } from "./firebase";
 import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWinners, mapKnockoutToBracket, fetchTopScorers, buildTopScorersFromEvents, clearTopScorersFromEventsCache, fetchMatchDetails, getApiFixtureId, fetchLineup } from "./liveResults";
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.67.0";
+const APP_VERSION = "3.68.2";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -4582,7 +4582,7 @@ function WorldLeaderboard({ userId, name, onClose }) {
 }
 
 // ─── SIDEBAR: hamburger menu drawer that slides in from one side ─────────────
-function Sidebar({ open, onClose, name, lang, setLang, onShowProfile, onShowRules, onShowBackup, onShowTutorial, onShowAchievements, onShowRoulette, onShowWrapped, onShowAdmin, onShowAdminGift, onShowGlobalAdmin, onShowLuckyWheel, onShowCoinWheel, onShowQuiz, quizTokens, coinWheelAvailable, wheelAvailable, hlPlaysToday, onLogout, onReset, totalPoints, unlockedCount, coinBalance }) {
+function Sidebar({ open, onClose, name, lang, setLang, onShowProfile, onShowRules, onShowBackup, onShowTutorial, onShowAchievements, onShowRoulette, onShowWrapped, onShowAdmin, onShowAdminGift, onShowGlobalAdmin, onShowLuckyWheel, onShowCoinWheel, onShowQuiz, quizTokens, coinWheelAvailable, wheelAvailable, hlPlaysToday, onLogout, onReset, totalPoints, unlockedCount, coinBalance, onShowAds }) {
   const t = useT();
   const isRTL = lang === "he";
 
@@ -4645,6 +4645,9 @@ function Sidebar({ open, onClose, name, lang, setLang, onShowProfile, onShowRule
         {/* Menu items */}
         <div style={{padding:"12px 12px",flex:1}}>
           <SidebarItem icon="📊" label={t("sidebar.myStats")} onClick={()=>{onClose();onShowProfile();}}/>
+          {onShowAds && (
+            <SidebarItem icon="📢" label={lang==="he"?"פרסומות":"Ads"} onClick={()=>{onClose();onShowAds();}}/>
+          )}
           {onShowWrapped && (
             <SidebarItem icon="🎬" label={t("sidebar.wrapped")} onClick={()=>{onClose();onShowWrapped();}}/>
           )}
@@ -14308,11 +14311,15 @@ function AdStoryViewer({ ads, startIndex = 0, onClose }) {
   );
 }
 
-function AdsScreen({ leagueCode, leagueData, name, userId }) {
+function AdsScreen({ leagueCode, leagueData, name, userId, viewerMode = false }) {
   const t = useT();
   const { showToast } = useToast();
-  const isAdmin = leagueData?.createdBy === name;
-  const ads = Array.isArray(leagueData?.ads) ? [...leagueData.ads].reverse() : []; // newest first
+  const isAdmin = !viewerMode && leagueData?.createdBy === name;
+  // In viewer mode (hamburger for everyone), show ONLY ads that were pushed to the league.
+  const rawAds = Array.isArray(leagueData?.ads) ? leagueData.ads : [];
+  const ads = viewerMode
+    ? [...rawAds].filter(a => a.pushed).sort((a,b) => (b.pushedAt||0) - (a.pushedAt||0))
+    : [...rawAds].reverse(); // admin: newest first, all ads
   const [showForm, setShowForm] = useState(false);
   const [imageUrl, setImageUrl] = useState("");
   const [caption, setCaption] = useState("");
@@ -14362,6 +14369,16 @@ function AdsScreen({ leagueCode, leagueData, name, userId }) {
       showToast(he ? "נמחק" : "Deleted", "info");
     } catch {
       showToast(he ? "שגיאה במחיקה" : "Delete failed", "error");
+    }
+  };
+
+  const handlePush = async (ad) => {
+    if (!leagueCode) return;
+    try {
+      await pushAdPopup(leagueCode, ad);
+      showToast(he ? "📢 הפרסומת תקפוץ לכל הליגה!" : "📢 Pushed to the whole league!", "success");
+    } catch {
+      showToast(he ? "שגיאה בהקפצה" : "Push failed", "error");
     }
   };
 
@@ -14494,14 +14511,24 @@ function AdsScreen({ leagueCode, leagueData, name, userId }) {
                   {ad.caption}
                 </div>
               )}
-              {/* admin delete */}
+              {/* admin controls */}
               {isAdmin && (
-                <button onClick={()=>handleDelete(ad.id)} style={{
-                  position:"absolute",top:5,insetInlineEnd:5,
-                  background:"rgba(0,0,0,0.6)",border:"none",borderRadius:"50%",
-                  width:24,height:24,color:"#f87171",fontSize:12,cursor:"pointer",
-                  display:"flex",alignItems:"center",justifyContent:"center",
-                }}>🗑️</button>
+                <>
+                  <button onClick={()=>handleDelete(ad.id)} style={{
+                    position:"absolute",top:5,insetInlineEnd:5,
+                    background:"rgba(0,0,0,0.6)",border:"none",borderRadius:"50%",
+                    width:24,height:24,color:"#f87171",fontSize:12,cursor:"pointer",
+                    display:"flex",alignItems:"center",justifyContent:"center",
+                  }}>🗑️</button>
+                  <button onClick={()=>handlePush(ad)} title={he?"הקפץ לכולם":"Push to everyone"} style={{
+                    position:"absolute",top:5,insetInlineStart:5,
+                    background: leagueData?.activeAd?.id === ad.id ? "rgba(251,191,36,0.9)" : "rgba(0,0,0,0.6)",
+                    border:"none",borderRadius:"50%",
+                    width:24,height:24,color: leagueData?.activeAd?.id === ad.id ? "#1a1206" : "#fde68a",
+                    fontSize:12,cursor:"pointer",
+                    display:"flex",alignItems:"center",justifyContent:"center",
+                  }}>📢</button>
+                </>
               )}
             </div>
           ))}
@@ -16844,8 +16871,11 @@ function AppInner() {
     } catch { return new Set(); }
   });
   const [pendingRecap, setPendingRecap] = useState(null); // {newMatches: [...], totalPoints: N}
+  const [pendingAdPopup, setPendingAdPopup] = useState(null); // the ad object to pop up
+  const [userAdViewerOpen, setUserAdViewerOpen] = useState(false); // user opened full viewer from popup
   // Profile modal open?
   const [showProfile, setShowProfile] = useState(false);
+  const [showAds, setShowAds] = useState(false);
   const [showRules, setShowRules] = useState(false);
   const [showAchievements, setShowAchievements] = useState(false);
   const [showWrapped, setShowWrapped] = useState(false);
@@ -17374,6 +17404,29 @@ function AppInner() {
       try { localStorage.setItem("wc2026_seen_actuals_v1", JSON.stringify([...newSet])); } catch {}
     }
   }, [actuals, picks, name, pendingRecap]);
+
+  // 📢 Detect a freshly-pushed ad popup from the league admin
+  useEffect(() => {
+    if (pendingAdPopup) return; // already showing one
+    const data = allLeagueData?.[activeLeagueCode];
+    const active = data?.activeAd;
+    if (!active || !active.popupId || !active.id) return;
+    // Has this user already seen THIS popup push?
+    let seen = "";
+    try { seen = localStorage.getItem("wc2026_seen_ad_popup_v1") || ""; } catch {}
+    if (seen === active.popupId) return;
+    // Find the actual ad object
+    const ad = (Array.isArray(data.ads) ? data.ads : []).find(a => a.id === active.id);
+    if (!ad) return;
+    setPendingAdPopup({ ...ad, _popupId: active.popupId });
+  }, [allLeagueData, activeLeagueCode, pendingAdPopup]);
+
+  const dismissAdPopup = () => {
+    if (pendingAdPopup?._popupId) {
+      try { localStorage.setItem("wc2026_seen_ad_popup_v1", pendingAdPopup._popupId); } catch {}
+    }
+    setPendingAdPopup(null);
+  };
 
   const [topScorerPick, setTopScorerPick] = useState(saved?.topScorerPick || null); // {name, team}
   const [actualWinner, setActualWinner] = useState(saved?.actualWinner || null);
@@ -18790,10 +18843,56 @@ function AppInner() {
       {/* ⓘ Scoring rules modal */}
       {showRules && <ScoringRulesModal onClose={()=>setShowRules(false)} />}
 
+      {/* 📢 Ads — full-screen, opened from hamburger (everyone, PUSHED ads only, view-only) */}
+      {showAds && (
+        <div style={{
+          position:"fixed",inset:0,zIndex:9000,overflowY:"auto",
+          background:"linear-gradient(170deg,#020617 0%,#06210f 55%,#052e16 100%)",
+        }}>
+          <div style={{position:"sticky",top:0,zIndex:5,background:"rgba(2,14,8,0.9)",backdropFilter:"blur(8px)",borderBottom:"1px solid rgba(34,197,94,0.2)",padding:"12px 14px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+            <span style={{fontSize:13,fontWeight:800,color:"#4ade80"}}>📢 {lang==="he"?"פרסומות":"Ads"}</span>
+            <button onClick={()=>setShowAds(false)} style={{background:"transparent",border:"none",color:"#94a3b8",fontSize:22,cursor:"pointer",fontFamily:"inherit",padding:0,lineHeight:1}}>✕</button>
+          </div>
+          <AdsScreen
+            leagueCode={activeLeagueCode}
+            leagueData={allLeagueData?.[activeLeagueCode] || null}
+            name={name}
+            userId={userId}
+            viewerMode={true}
+          />
+        </div>
+      )}
+
       {/* 📊 Recap modal — new matches since last visit */}
       {pendingRecap && (
         <RecapModal recap={pendingRecap} onClose={()=>setPendingRecap(null)} />
       )}
+
+      {/* 📢 Pushed ad popup — pops up once when admin pushes an ad */}
+      {pendingAdPopup && !userAdViewerOpen && (
+        <AdDailyPopup
+          ad={pendingAdPopup}
+          onViewAll={()=>{ setUserAdViewerOpen(true); }}
+          onClose={dismissAdPopup}
+        />
+      )}
+      {/* If user taps "view all" from the popup, open the story viewer over PUSHED league ads only */}
+      {pendingAdPopup && userAdViewerOpen && (() => {
+        const data = allLeagueData?.[activeLeagueCode];
+        // Only ads that were actually pushed to the league (newest first)
+        const pushedAds = Array.isArray(data?.ads)
+          ? [...data.ads].filter(a => a.pushed).sort((a,b) => (b.pushedAt||0) - (a.pushedAt||0))
+          : [];
+        const startAt = Math.max(0, pushedAds.findIndex(a => a.id === pendingAdPopup.id));
+        if (pushedAds.length === 0) return null;
+        return (
+          <AdStoryViewer
+            ads={pushedAds}
+            startIndex={startAt}
+            onClose={()=>{ setUserAdViewerOpen(false); dismissAdPopup(); }}
+          />
+        );
+      })()}
 
       {/* 📱 Bottom navigation — fixed to the bottom, stadium-green theme (style C) */}
       {(screen === "group" || screen === "today" || screen === "bracket" || screen === "bonus" || screen === "league") && (
@@ -18848,6 +18947,7 @@ function AppInner() {
         unlockedCount={unlockedAchievements.size}
         coinBalance={coins.balance}
         onShowProfile={()=>setShowProfile(true)}
+        onShowAds={()=>setShowAds(true)}
         onShowRules={()=>setShowRules(true)}
         onShowBackup={()=>setShowBackup(true)}
         onShowTutorial={()=>setShowOnboarding(true)}

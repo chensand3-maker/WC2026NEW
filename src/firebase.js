@@ -148,7 +148,32 @@ export async function deleteLeagueAd(code, adId) {
   const data = snap.data();
   const existing = Array.isArray(data.ads) ? data.ads : [];
   const newAds = existing.filter(a => a.id !== adId);
-  await updateDoc(ref, { ads: newAds });
+  // If the deleted ad was the active popup, clear it too
+  const update = { ads: newAds };
+  if (data.activeAd?.id === adId) update.activeAd = null;
+  await updateDoc(ref, update);
+}
+
+// Push an ad as the "active popup" — every member sees it pop up once.
+// Also marks the ad as "pushed" so it appears in the users' history viewer.
+// `popupId` is a fresh timestamp so the same ad can be re-pushed later and pop again.
+export async function pushAdPopup(code, ad) {
+  const ref = doc(db, "leagues", code);
+  const snap = await getDoc(ref);
+  if (!snap.exists()) throw new Error("League not found");
+  const data = snap.data();
+  const existing = Array.isArray(data.ads) ? data.ads : [];
+  // Mark this ad as pushed (so it shows in users' history) and record the time
+  const newAds = existing.map(a => a.id === ad.id ? { ...a, pushed: true, pushedAt: Date.now() } : a);
+  await updateDoc(ref, {
+    ads: newAds,
+    activeAd: { id: ad.id, popupId: `pop_${Date.now()}` },
+  });
+}
+
+export async function clearAdPopup(code) {
+  const ref = doc(db, "leagues", code);
+  await updateDoc(ref, { activeAd: null });
 }
 
 // ─── GLOBAL LEADERBOARD ─────────────────────────────────────────────────────
