@@ -6,14 +6,14 @@ import {
   fetchMyGlobalProfile,
   sendGiftToLeague,
   addLeagueAd, deleteLeagueAd, pushAdPopup, clearAdPopup,
-  sendEmojiGift, clearEmojiGift,
+  sendEmojiGift, clearEmojiGift, updateMyCustom,
   fetchAllGlobalUsers, deleteGlobalUser,
 } from "./firebase";
 import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWinners, mapKnockoutToBracket, fetchTopScorers, buildTopScorersFromEvents, clearTopScorersFromEventsCache, fetchMatchDetails, getApiFixtureId, fetchLineup } from "./liveResults";
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.74.1";
+const APP_VERSION = "3.75.0";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -4775,7 +4775,6 @@ function Sidebar({ open, onClose, name, lang, setLang, onShowProfile, onShowRule
             }}>{myAvatarContent || name?.[0]?.toUpperCase() || "?"}</div>
             <div style={{flex:1,minWidth:0}}>
               <div style={{fontSize:16,fontWeight:800,color:"#f1f5f9",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{name}</div>
-              <div style={{fontSize:8,color:"#f87171",fontFamily:"monospace"}}>DBG theme={myTheme?myTheme.id:"NULL"} pic={myAvatarContent||"-"}</div>
               <div style={{fontSize:11,color:"#fbbf24",marginTop:2,fontWeight:700}}>
                 📈 <AnimatedNumber value={totalPoints} /> {t("welcome.pts")}
               </div>
@@ -15139,24 +15138,35 @@ function LeagueHub({
     for (let i = 0; i < n.length; i++) h = (h * 31 + n.charCodeAt(i)) % AVATAR_COLORS.length;
     return AVATAR_COLORS[h];
   };
-  // Avatar gradient for a member. If it's ME and I picked a theme, use it.
-  // Pass the whole member object so we can use its reliable isMe / uid.
+  // Avatar gradient for a member. Uses the member's OWN saved theme (from Firebase);
+  // falls back to my live theme for me, then to the name-hash color.
   const avatarBg = (member) => {
     const isMe = typeof member === "object"
       ? (member.isMe || member.uid === userId)
-      : (member === name); // string fallback
+      : (member === name);
     const memberName = typeof member === "object" ? member.name : member;
-    if (myTheme && isMe) return `linear-gradient(135deg,${myTheme.c1},${myTheme.c2})`;
+    // Member's own saved theme id (others), or my live theme (me)
+    const themeId = typeof member === "object" ? member.theme : null;
+    if (isMe && myTheme) return `linear-gradient(135deg,${myTheme.c1},${myTheme.c2})`;
+    if (themeId) {
+      const th = themeById(themeId);
+      return `linear-gradient(135deg,${th.c1},${th.c2})`;
+    }
     const c = colorFor(memberName);
     return `linear-gradient(135deg,${c},${c}aa)`;
   };
-  // What goes inside a member's avatar circle. For ME, my chosen pic/letter.
+  // What goes inside a member's avatar circle (their pic emoji, or first letter).
   const avatarInner = (member) => {
     const isMe = typeof member === "object"
       ? (member.isMe || member.uid === userId)
       : (member === name);
     const memberName = typeof member === "object" ? member.name : member;
-    if (myAvatarContent && isMe) return myAvatarContent;
+    const picId = typeof member === "object" ? member.pic : null;
+    if (isMe && myAvatarContent) return myAvatarContent;
+    if (picId) {
+      const em = profileEmojiById(picId).emoji;
+      if (em) return em;
+    }
     return memberName?.[0]?.toUpperCase();
   };
 
@@ -15433,7 +15443,7 @@ function LeagueHub({
         }
       }
       return {
-        uid, name: m.name, isMe: uid === userId,
+        uid, name: m.name, isMe: uid === userId, theme: m.theme, pic: m.pic,
         picks: m.picks, koWinners: m.koWinners, standings: st, bestThirds: bt, knockout: kt,
         matchScore: ms, koScore: ks,
         bonusPoints,
@@ -17380,6 +17390,10 @@ function AppInner() {
   const saveCustom = (next) => {
     setCustom(next);
     try { localStorage.setItem("wc2026_custom_v1", JSON.stringify(next)); } catch {}
+    // Also sync theme+pic to the league so others see it
+    try {
+      if (activeLeagueCode && userId) updateMyCustom(activeLeagueCode, userId, next);
+    } catch {}
   };
 
   // The active theme object {c1,c2,...} for the current user.
@@ -17933,6 +17947,13 @@ function AppInner() {
   const [allLeagueData, setAllLeagueData] = useState({});
   const MAX_LEAGUES = 5;
   const [userId, setUserId] = useState(() => saved?.userId || `u_${Date.now()}_${Math.random().toString(36).slice(2,8)}`);
+
+  // 🎨 On entering a league, push my customization so others see my theme/pic.
+  useEffect(() => {
+    if (activeLeagueCode && userId) {
+      try { updateMyCustom(activeLeagueCode, userId, custom); } catch {}
+    }
+  }, [activeLeagueCode, userId]);
 
   // 📢 Detect a freshly-pushed ad popup from the league admin
   useEffect(() => {

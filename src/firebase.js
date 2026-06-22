@@ -176,6 +176,16 @@ export async function clearAdPopup(code) {
   await updateDoc(ref, { activeAd: null });
 }
 
+// Save a member's customization (theme + profile pic) so the whole league sees it.
+export async function updateMyCustom(code, userId, custom) {
+  if (!code || !userId) return;
+  const ref = doc(db, "leagues", code);
+  await updateDoc(ref, {
+    [`members.${userId}.theme`]: custom.theme || "green",
+    [`members.${userId}.pic`]: custom.pic || "letter",
+  });
+}
+
 // ─── 🎁 EMOJI GIFTS (buy a profile pic for a friend) ─────────────────────────
 // Writes a pending gift onto the recipient's member record. When they open the
 // app, they see a popup, the emoji is applied, and it's saved to their bank.
