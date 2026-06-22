@@ -13,7 +13,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.75.1";
+const APP_VERSION = "3.76.0";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -18982,7 +18982,7 @@ function AppInner() {
         transform: perspective(800px) rotateY(0deg) rotateX(0deg) scale(0.97);
       }
     `}</style>
-    <div style={{minHeight:"100vh",background:"linear-gradient(170deg,#020617 0%,#06210f 55%,#052e16 100%)",color:"#f1f5f9",fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif",position:"relative",overflow:"hidden",direction:lang==="he"?"rtl":"ltr"}}>
+    <div style={{minHeight:"100vh",background:"linear-gradient(170deg,#020617 0%,#06210f 55%,#052e16 100%)",color:"#f1f5f9",fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif",position:"relative",overflow:"hidden",direction:lang==="he"?"rtl":"ltr","--accent":myTheme.c1,"--accent2":myTheme.c2}}>
       {/* Language toggle: shown only on welcome screen */}
       {screen === "welcome" && (
         <div style={{
@@ -19506,13 +19506,13 @@ function AppInner() {
                 <button key={s} onClick={()=>{ setScreen(s); window.scrollTo({top:0,behavior:"smooth"}); }} style={{
                   flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:3,
                   padding:"7px 2px",borderRadius:12,cursor:"pointer",fontFamily:"inherit",
-                  background: active ? "linear-gradient(135deg,rgba(34,197,94,0.2),rgba(34,197,94,0.05))" : "transparent",
+                  background: active ? "linear-gradient(135deg,color-mix(in srgb, var(--accent) 25%, transparent),color-mix(in srgb, var(--accent) 6%, transparent))" : "transparent",
                   border:"none",
-                  boxShadow: active ? "inset 0 0 0 1px rgba(34,197,94,0.3)" : "none",
+                  boxShadow: active ? "inset 0 0 0 1px color-mix(in srgb, var(--accent) 35%, transparent)" : "none",
                   transition:"all 0.15s",
                 }}>
                   <span style={{fontSize:19,filter: active ? "none" : "grayscale(0.6)", transform: active ? "scale(1.1)" : "none", transition:"all 0.15s", display:"block", lineHeight:1}}>{icon}</span>
-                  <span style={{fontSize:8,fontWeight:700,color: active ? "#4ade80" : "#4d7c5a", whiteSpace:"nowrap"}}>{cleanLabel}</span>
+                  <span style={{fontSize:8,fontWeight:700,color: active ? "var(--accent)" : "#4d7c5a", whiteSpace:"nowrap"}}>{cleanLabel}</span>
                 </button>
               );
             })}
