@@ -12,7 +12,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.68.3";
+const APP_VERSION = "3.69.0";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -1377,6 +1377,95 @@ const COINS = {
   DUP_FRIEND: 1000,    // 🎴 Friend cards — rare so a decent refund
   DUP_TRASH: 50,       // 🗑️ Israeli "legends" — small refund (it's a joke tier)
 };
+
+// ─── CUSTOMIZATION: THEMES & PROFILE PICS ────────────────────────────────────
+// Color themes — each sets the accent gradient (c1→c2) used for the user's
+// avatar, primary buttons, and highlights. id "green" is the free default.
+const COLOR_THEMES = [
+  { id:"green",  name:"אצטדיון ירוק", emoji:"⚽", c1:"#22c55e", c2:"#15803d", price:0 },
+  { id:"blue",   name:"כחול קלאסי",   emoji:"💎", c1:"#3b82f6", c2:"#1e40af", price:800 },
+  { id:"purple", name:"סגול מלכותי",  emoji:"👑", c1:"#a855f7", c2:"#6d28d9", price:1500 },
+  { id:"gold",   name:"זהב אלופים",   emoji:"🏆", c1:"#f59e0b", c2:"#d97706", price:2000 },
+  { id:"red",    name:"אדום לוהט",    emoji:"🔥", c1:"#ef4444", c2:"#991b1b", price:1500 },
+  { id:"pink",   name:"ורוד נועז",    emoji:"🌸", c1:"#ec4899", c2:"#be185d", price:1500 },
+  { id:"cyan",   name:"טורקיז ים",    emoji:"🌊", c1:"#06b6d4", c2:"#0e7490", price:1500 },
+  { id:"orange", name:"כתום שקיעה",   emoji:"🌅", c1:"#fb923c", c2:"#c2410c", price:1500 },
+  { id:"sunset", name:"שקיעה",        emoji:"🌇", c1:"#f97316", c2:"#db2777", price:2500 },
+  { id:"aurora", name:"זוהר הקוטב",   emoji:"✨", c1:"#10b981", c2:"#8b5cf6", price:3000 },
+  { id:"galaxy", name:"גלקסיה",       emoji:"🌠", c1:"#8b5cf6", c2:"#1e1b4b", price:3500 },
+  { id:"dark",   name:"לילה כהה",     emoji:"🖤", c1:"#475569", c2:"#0f172a", price:3000 },
+];
+
+// National-team themes — flag + kit colors. Same effect as color themes.
+const TEAM_THEMES = [
+  { id:"t_brazil",      name:"ברזיל",     emoji:"🇧🇷", c1:"#fde047", c2:"#16a34a", price:1500 },
+  { id:"t_argentina",   name:"ארגנטינה",  emoji:"🇦🇷", c1:"#6cb4e4", c2:"#1e6fb8", price:1500 },
+  { id:"t_england",     name:"אנגליה",    emoji:"🏴󠁧󠁢󠁥󠁮󠁧󠁿", c1:"#f8fafc", c2:"#dc2626", price:1500 },
+  { id:"t_france",      name:"צרפת",      emoji:"🇫🇷", c1:"#3b82f6", c2:"#1e3a8a", price:1500 },
+  { id:"t_spain",       name:"ספרד",      emoji:"🇪🇸", c1:"#fbbf24", c2:"#dc2626", price:1500 },
+  { id:"t_germany",     name:"גרמניה",    emoji:"🇩🇪", c1:"#fbbf24", c2:"#1f2937", price:1500 },
+  { id:"t_portugal",    name:"פורטוגל",   emoji:"🇵🇹", c1:"#dc2626", c2:"#15803d", price:1500 },
+  { id:"t_netherlands", name:"הולנד",     emoji:"🇳🇱", c1:"#fb923c", c2:"#c2410c", price:1500 },
+  { id:"t_italy",       name:"איטליה",    emoji:"🇮🇹", c1:"#3b82f6", c2:"#1e40af", price:1500 },
+  { id:"t_belgium",     name:"בלגיה",     emoji:"🇧🇪", c1:"#ef4444", c2:"#fbbf24", price:1500 },
+  { id:"t_croatia",     name:"קרואטיה",   emoji:"🇭🇷", c1:"#ef4444", c2:"#f8fafc", price:1500 },
+  { id:"t_mexico",      name:"מקסיקו",    emoji:"🇲🇽", c1:"#16a34a", c2:"#dc2626", price:1500 },
+  { id:"t_usa",         name:"ארה\"ב",    emoji:"🇺🇸", c1:"#3b82f6", c2:"#dc2626", price:1500 },
+  { id:"t_morocco",     name:"מרוקו",     emoji:"🇲🇦", c1:"#dc2626", c2:"#15803d", price:1500 },
+  { id:"t_japan",       name:"יפן",       emoji:"🇯🇵", c1:"#1e40af", c2:"#dc2626", price:1500 },
+  { id:"t_uruguay",     name:"אורוגוואי", emoji:"🇺🇾", c1:"#60a5fa", c2:"#1e40af", price:1500 },
+  { id:"t_senegal",     name:"סנגל",      emoji:"🇸🇳", c1:"#16a34a", c2:"#fbbf24", price:1500 },
+  { id:"t_korea",       name:"קוריאה",    emoji:"🇰🇷", c1:"#dc2626", c2:"#1e40af", price:1500 },
+];
+
+// All themes in one list for easy lookup by id.
+const ALL_THEMES = [...COLOR_THEMES, ...TEAM_THEMES];
+const themeById = (id) => ALL_THEMES.find(t => t.id === id) || COLOR_THEMES[0];
+
+// Profile-pic emojis, grouped by category. emoji "" / id "letter" = default
+// (shows the first letter of the user's name). All others are bought/gifted.
+const PROFILE_EMOJIS = [
+  { cat:"בסיס", items:[
+    { id:"letter", emoji:"", name:"אות", price:0 },
+    { id:"cool",   emoji:"😎", name:"מגניב", price:0 },
+    { id:"ball",   emoji:"⚽", name:"כדור", price:0 },
+    { id:"smile",  emoji:"🙂", name:"חיוך", price:200 },
+    { id:"laugh",  emoji:"😂", name:"צוחק", price:200 },
+    { id:"star",   emoji:"🤩", name:"כוכבים", price:200 },
+  ]},
+  { cat:"חיות", items:[
+    { id:"lion",   emoji:"🦁", name:"אריה", price:500 },
+    { id:"tiger",  emoji:"🐯", name:"נמר", price:500 },
+    { id:"eagle",  emoji:"🦅", name:"נשר", price:500 },
+    { id:"wolf",   emoji:"🐺", name:"זאב", price:500 },
+    { id:"fox",    emoji:"🦊", name:"שועל", price:500 },
+    { id:"dragon", emoji:"🐉", name:"דרקון", price:800 },
+    { id:"shark",  emoji:"🦈", name:"כריש", price:500 },
+    { id:"goat",   emoji:"🐐", name:"GOAT", price:1000 },
+  ]},
+  { cat:"ספורט", items:[
+    { id:"trophy", emoji:"🏆", name:"גביע", price:600 },
+    { id:"medal",  emoji:"🥇", name:"מדליה", price:600 },
+    { id:"crown",  emoji:"👑", name:"כתר", price:800 },
+    { id:"goal",   emoji:"🥅", name:"שער", price:400 },
+    { id:"bolt",   emoji:"⚡", name:"ברק", price:500 },
+    { id:"fire",   emoji:"🔥", name:"אש", price:500 },
+  ]},
+  { cat:"מצחיק", items:[
+    { id:"clown",  emoji:"🤡", name:"ליצן", price:300 },
+    { id:"poop",   emoji:"💩", name:"קקי", price:300 },
+    { id:"alien",  emoji:"👽", name:"חייזר", price:400 },
+    { id:"robot",  emoji:"🤖", name:"רובוט", price:400 },
+    { id:"skull",  emoji:"💀", name:"גולגולת", price:400 },
+    { id:"ghost",  emoji:"👻", name:"רוח", price:400 },
+    { id:"nerd",   emoji:"🤓", name:"חנון", price:300 },
+    { id:"baby",   emoji:"👶", name:"תינוק", price:300 },
+  ]},
+];
+
+// All profile emojis flat, for lookup by id.
+const ALL_PROFILE_EMOJIS = PROFILE_EMOJIS.flatMap(g => g.items);
+const profileEmojiById = (id) => ALL_PROFILE_EMOJIS.find(e => e.id === id) || ALL_PROFILE_EMOJIS[0];
 
 // ─── ACHIEVEMENTS ────────────────────────────────────────────────────────────
 // 20+ badges users can unlock. Each has an id, icon, color, and a `check(ctx)`
@@ -16910,6 +16999,41 @@ function AppInner() {
   });
   // Pop-up notification for newly earned coins
   const [coinFlash, setCoinFlash] = useState(null); // { amount, type, key }
+
+  // 🎨 Customization — active theme, active profile pic, and owned items.
+  // Format: { theme: "green", pic: "letter", ownedThemes: ["green"], ownedPics: ["letter","cool","ball"] }
+  const [custom, setCustom] = useState(() => {
+    const DEFAULT = {
+      theme: "green",
+      pic: "letter",
+      ownedThemes: ["green"],                 // free default theme
+      ownedPics: ["letter", "cool", "ball"],  // free default pics
+    };
+    try {
+      const raw = localStorage.getItem("wc2026_custom_v1");
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        // Make sure free defaults are always owned (in case of older saves)
+        const ownedThemes = Array.from(new Set([...(parsed.ownedThemes||[]), "green"]));
+        const ownedPics = Array.from(new Set([...(parsed.ownedPics||[]), "letter", "cool", "ball"]));
+        return { ...DEFAULT, ...parsed, ownedThemes, ownedPics };
+      }
+    } catch {}
+    try { localStorage.setItem("wc2026_custom_v1", JSON.stringify(DEFAULT)); } catch {}
+    return DEFAULT;
+  });
+  // Persist customization whenever it changes
+  const saveCustom = (next) => {
+    setCustom(next);
+    try { localStorage.setItem("wc2026_custom_v1", JSON.stringify(next)); } catch {}
+  };
+
+  // The active theme object {c1,c2,...} for the current user.
+  const myTheme = themeById(custom.theme);
+  // The active profile-pic emoji string ("" means show the name's first letter).
+  const myPicEmoji = profileEmojiById(custom.pic).emoji;
+  // Convenience: what to render inside the user's own avatar circle.
+  const myAvatarContent = myPicEmoji || (name ? name[0].toUpperCase() : "?");
 
   // 🃏 Card collection — stores which cards the user owns (and counts of duplicates)
   // Format: { [cardId]: count }
