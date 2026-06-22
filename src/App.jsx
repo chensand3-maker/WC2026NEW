@@ -13,7 +13,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.83.0";
+const APP_VERSION = "3.83.1";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -16117,8 +16117,9 @@ function LeagueHub({
             background:"linear-gradient(180deg,#fde68a,#f59e0b)",
             WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",
           }}>{leagueData.name}</h2>
-          <div style={{fontSize:11,color:"#94a3b8"}}>
-            <span style={{color:"#22c55e"}}>●</span> {members.length} {members.length===1?t("league.member"):t("league.members")}
+          {/* 🐛 TEMP DEBUG */}
+          <div style={{fontSize:8,color:"#f87171",fontFamily:"monospace",background:"rgba(0,0,0,0.4)",padding:"3px",borderRadius:5,margin:"3px 0"}}>
+            {members.map(m => `${m.name}: th=${m.theme||"∅"} pic=${m.pic||"∅"}`).join(" | ")}
           </div>
           <div style={{fontSize:11,color:"#94a3b8"}}>
             <span style={{color:"#22c55e"}}>●</span> {members.length} {members.length===1?t("league.member"):t("league.members")}
