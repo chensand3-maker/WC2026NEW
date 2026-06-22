@@ -92,6 +92,20 @@ function normalizeTeam(name) {
 const CACHE_KEY = "wc2026_live_cache_v5";
 const CACHE_TTL = 60 * 1000; // 1 minute
 
+// 🛡️ Hard rate-limit: never hit the fixtures endpoint more than once per 30s,
+// even when callers pass force=true. This is a safety net against any runaway
+// loop accidentally draining the API quota.
+const MIN_FETCH_GAP_MS = 30 * 1000;
+function liveFetchAllowed() {
+  try {
+    const last = Number(localStorage.getItem("wc2026_last_live_fetch") || 0);
+    return Date.now() - last >= MIN_FETCH_GAP_MS;
+  } catch { return true; }
+}
+function markLiveFetch() {
+  try { localStorage.setItem("wc2026_last_live_fetch", String(Date.now())); } catch {}
+}
+
 export function clearLiveCache() {
   try {
     // Clear all versions
@@ -127,9 +141,23 @@ export async function fetchLiveResults(force = false) {
     if (cached) return cached.data;
   }
 
+  // 🛡️ Even with force=true, respect the hard rate-limit. If we fetched very
+  // recently, return whatever cache we have rather than hammering the API.
+  if (!liveFetchAllowed()) {
+    const cached = getCache();
+    if (cached) return cached.data;
+    // No cache but rate-limited: try the stale cache directly
+    try {
+      const raw = localStorage.getItem(CACHE_KEY);
+      if (raw) return JSON.parse(raw).data;
+    } catch {}
+    // Nothing cached at all — fall through and allow this one fetch
+  }
+
   if (!API_FOOTBALL_KEY || API_FOOTBALL_KEY === "PASTE_HERE") {
     throw new Error("API-Football key not set");
   }
+  markLiveFetch();
 
   // 📊 Track total API calls today
   try {

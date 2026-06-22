@@ -13,7 +13,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.86.0";
+const APP_VERSION = "3.89.0";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -18738,17 +18738,14 @@ function AppInner() {
       } catch {}
     }
     try {
-      // Get live data first (needed for events)
-      let currentLiveData = liveData;
-      if (!currentLiveData || force) {
-        try { currentLiveData = await fetchLiveResults(force); } catch {}
-      }
-      // Build top scorers from match events — always accurate and up to date
-      let scorers = await buildTopScorersFromEvents(currentLiveData);
-      if (scorers.length === 0) {
-        // Fallback to API if no events yet
+      // 💰 Use ONLY the single-call top-scorers endpoint (1 API call).
+      // We deliberately do NOT fall back to per-match events anymore, because
+      // that fired one /fixtures/events call per finished match (dozens per
+      // refresh) and drained the entire API quota. One call is enough.
+      let scorers = [];
+      try {
         scorers = await fetchTopScorers();
-      }
+      } catch {}
       setTopScorers(scorers);
       setTopScorersFetchedAt(Date.now());
       setTopScorersError(null);
@@ -18789,14 +18786,25 @@ function AppInner() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [name]);
 
-  // 🔄 Auto-refresh every 5 minutes — no conditions, always runs
+  // 🔄 Auto-refresh — gentle on the API. Refreshes every 10 minutes, and only
+  // force-clears the cache when there is actually a live match in progress.
+  // We read actuals via a ref so the interval is created ONCE (not re-created
+  // every time actuals changes, which would stack up many intervals).
+  const actualsRef = useRef(actuals);
+  useEffect(() => { actualsRef.current = actuals; }, [actuals]);
   useEffect(() => {
     if (!name) return;
     const interval = setInterval(() => {
-      clearLiveCache();
-      fetchAndApplyLive(true);
-      fetchAndApplyTopScorers(true);
-    }, 5 * 60 * 1000);
+      const hasLiveMatch = Object.values(actualsRef.current || {}).some(a => a && a.isLive === true);
+      if (hasLiveMatch) {
+        clearLiveCache();
+        fetchAndApplyLive(true);
+        fetchAndApplyTopScorers(true);
+      } else {
+        fetchAndApplyLive(false);
+        fetchAndApplyTopScorers(false);
+      }
+    }, 10 * 60 * 1000);
     return () => clearInterval(interval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [name]);
