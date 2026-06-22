@@ -176,6 +176,35 @@ export async function clearAdPopup(code) {
   await updateDoc(ref, { activeAd: null });
 }
 
+// ─── 🎁 EMOJI GIFTS (buy a profile pic for a friend) ─────────────────────────
+// Writes a pending gift onto the recipient's member record. When they open the
+// app, they see a popup, the emoji is applied, and it's saved to their bank.
+export async function sendEmojiGift(code, toUserId, gift) {
+  const ref = doc(db, "leagues", code);
+  const snap = await getDoc(ref);
+  if (!snap.exists()) throw new Error("League not found");
+  const data = snap.data();
+  const member = data.members?.[toUserId];
+  if (!member) throw new Error("Member not found");
+  // Keep a small queue of pending gifts (so multiple gifts don't overwrite)
+  const existing = Array.isArray(member.pendingGifts) ? member.pendingGifts : [];
+  const newGifts = [...existing.slice(-9), gift]; // keep last 10
+  await updateDoc(ref, { [`members.${toUserId}.pendingGifts`]: newGifts });
+}
+
+// Clear a pending gift after the recipient has seen it.
+export async function clearEmojiGift(code, userId, giftId) {
+  const ref = doc(db, "leagues", code);
+  const snap = await getDoc(ref);
+  if (!snap.exists()) return;
+  const data = snap.data();
+  const member = data.members?.[userId];
+  if (!member) return;
+  const existing = Array.isArray(member.pendingGifts) ? member.pendingGifts : [];
+  const remaining = existing.filter(g => g.id !== giftId);
+  await updateDoc(ref, { [`members.${userId}.pendingGifts`]: remaining });
+}
+
 // ─── GLOBAL LEADERBOARD ─────────────────────────────────────────────────────
 
 export async function updateMyGlobalProfile(userId, name, picks, koWinners, extras = {}) {

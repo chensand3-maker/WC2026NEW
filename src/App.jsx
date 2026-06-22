@@ -6,13 +6,14 @@ import {
   fetchMyGlobalProfile,
   sendGiftToLeague,
   addLeagueAd, deleteLeagueAd, pushAdPopup, clearAdPopup,
+  sendEmojiGift, clearEmojiGift,
   fetchAllGlobalUsers, deleteGlobalUser,
 } from "./firebase";
 import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWinners, mapKnockoutToBracket, fetchTopScorers, buildTopScorersFromEvents, clearTopScorersFromEventsCache, fetchMatchDetails, getApiFixtureId, fetchLineup } from "./liveResults";
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.72.0";
+const APP_VERSION = "3.74.0";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -14696,7 +14697,7 @@ function AdsScreen({ leagueCode, leagueData, name, userId, viewerMode = false })
 
 // 🎨 Customization shop — themes (colors/teams) + profile pics, with a
 // select-then-confirm purchase flow (clicking only previews; buying is explicit).
-function CustomizeShop({ custom, saveCustom, coinBalance, onSpend, name, onClose }) {
+function CustomizeShop({ custom, saveCustom, coinBalance, onSpend, name, onClose, leagueMembers = [], onSendGift = null }) {
   const { showToast } = useToast();
   const [topTab, setTopTab] = useState("theme"); // "theme" | "pic"
   const [themeSub, setThemeSub] = useState("colors"); // "colors" | "teams"
@@ -14705,6 +14706,9 @@ function CustomizeShop({ custom, saveCustom, coinBalance, onSpend, name, onClose
   // What's currently selected (previewing) in each tab — starts at the active one.
   const [selThemeId, setSelThemeId] = useState(custom.theme);
   const [selPicId, setSelPicId] = useState(custom.pic);
+  // Gift flow: when set, shows the friend-picker for this emoji
+  const [giftFor, setGiftFor] = useState(null); // the pic object being gifted
+  const [giftBusy, setGiftBusy] = useState(false);
 
   const ownsTheme = (id) => custom.ownedThemes.includes(id);
   const ownsPic = (id) => custom.ownedPics.includes(id);
@@ -14821,6 +14825,15 @@ function CustomizeShop({ custom, saveCustom, coinBalance, onSpend, name, onClose
           {renderActionBar()}
         </div>
 
+        {/* 🎁 Gift to friend — only in pic tab, for non-free emojis, if there are friends */}
+        {topTab === "pic" && onSendGift && leagueMembers.length > 0 && selPic.price > 0 && (
+          <button onClick={()=>setGiftFor(selPic)} style={{
+            width:"100%",padding:"11px",borderRadius:12,marginBottom:16,
+            background:"linear-gradient(135deg,#ec4899,#be185d)",border:"none",
+            color:"#fff",fontSize:13,fontWeight:800,cursor:"pointer",fontFamily:"inherit",
+          }}>🎁 קנה את {selPic.emoji} לחבר · 🪙 {selPic.price.toLocaleString()}</button>
+        )}
+
         {/* Content per tab */}
         {topTab === "theme" ? (
           <>
@@ -14902,6 +14915,55 @@ function CustomizeShop({ custom, saveCustom, coinBalance, onSpend, name, onClose
           לחץ על פריט כדי לבחור ולראות תצוגה.<br/>אז "קנה" לתשלום, או "החל" אם כבר שלך.
         </div>
       </div>
+
+      {/* 🎁 Friend picker modal */}
+      {giftFor && (
+        <div onClick={()=>!giftBusy && setGiftFor(null)} style={{
+          position:"fixed",inset:0,zIndex:9300,background:"rgba(0,0,0,0.75)",backdropFilter:"blur(4px)",
+          display:"flex",alignItems:"center",justifyContent:"center",padding:20,
+        }}>
+          <div onClick={e=>e.stopPropagation()} style={{
+            width:"100%",maxWidth:360,background:"linear-gradient(160deg,#1a0a14,#020617)",
+            border:"1px solid rgba(236,72,153,0.4)",borderRadius:20,overflow:"hidden",
+          }}>
+            <div style={{background:"linear-gradient(135deg,#ec4899,#be185d)",padding:"12px",textAlign:"center"}}>
+              <div style={{fontSize:32}}>{giftFor.emoji}</div>
+              <div style={{fontSize:13,fontWeight:900,color:"#fff",marginTop:2}}>למי לקנות את "{giftFor.name}"?</div>
+            </div>
+            <div style={{padding:14,maxHeight:340,overflowY:"auto"}}>
+              {leagueMembers.map(friend => (
+                <button key={friend.uid} disabled={giftBusy} onClick={async ()=>{
+                  if (coinBalance < giftFor.price) { showToast("🪙 אין מספיק מטבעות", "error"); return; }
+                  setGiftBusy(true);
+                  const ok = onSendGift && await onSendGift(friend.uid, {
+                    id: `gift_${Date.now()}_${Math.random().toString(36).slice(2,6)}`,
+                    picId: giftFor.id, emoji: giftFor.emoji, name: giftFor.name,
+                    from: name, at: Date.now(),
+                  });
+                  if (ok) {
+                    onSpend(giftFor.price);
+                    showToast(`🎁 שלחת ${giftFor.emoji} ל${friend.name}!`, "success");
+                    setGiftFor(null);
+                  } else {
+                    showToast("שגיאה בשליחה", "error");
+                  }
+                  setGiftBusy(false);
+                }} style={{
+                  width:"100%",display:"flex",alignItems:"center",gap:10,padding:"10px",borderRadius:12,marginBottom:8,
+                  background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.08)",cursor:"pointer",fontFamily:"inherit",
+                }}>
+                  <div style={{width:36,height:36,borderRadius:"50%",background:"linear-gradient(135deg,#64748b,#334155)",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:900,color:"#fff",fontSize:15}}>{friend.name[0]?.toUpperCase()}</div>
+                  <span style={{flex:1,textAlign:"start",fontSize:13,fontWeight:700,color:"#f1f5f9"}}>{friend.name}</span>
+                  <span style={{fontSize:11,color:"#fde68a",fontWeight:800}}>🪙 {giftFor.price.toLocaleString()}</span>
+                </button>
+              ))}
+            </div>
+            <div style={{padding:"0 14px 14px"}}>
+              <button onClick={()=>!giftBusy && setGiftFor(null)} style={{width:"100%",padding:10,borderRadius:11,background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.12)",color:"#cbd5e1",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>ביטול</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -17251,6 +17313,7 @@ function AppInner() {
   });
   const [pendingRecap, setPendingRecap] = useState(null); // {newMatches: [...], totalPoints: N}
   const [pendingAdPopup, setPendingAdPopup] = useState(null); // the ad object to pop up
+  const [pendingGift, setPendingGift] = useState(null); // emoji gift received from a friend
   const [userAdViewerOpen, setUserAdViewerOpen] = useState(false); // user opened full viewer from popup
   // Profile modal open?
   const [showProfile, setShowProfile] = useState(false);
@@ -17883,6 +17946,32 @@ function AppInner() {
     if (!ad) return;
     setPendingAdPopup({ ...ad, _popupId: active.popupId });
   }, [allLeagueData, activeLeagueCode, pendingAdPopup]);
+
+  // 🎁 Detect an incoming emoji gift from a friend
+  useEffect(() => {
+    if (pendingGift) return; // already showing one
+    const data = allLeagueData?.[activeLeagueCode];
+    const me = data?.members?.[userId];
+    const gifts = Array.isArray(me?.pendingGifts) ? me.pendingGifts : [];
+    if (gifts.length === 0) return;
+    // Show the oldest unseen gift
+    setPendingGift(gifts[0]);
+  }, [allLeagueData, activeLeagueCode, userId, pendingGift]);
+
+  // Accept a gift: apply the emoji, add to bank, clear from Firebase.
+  const acceptGift = async () => {
+    if (!pendingGift) return;
+    const g = pendingGift;
+    // Apply + save to bank (ownedPics)
+    saveCustom({
+      ...custom,
+      pic: g.picId,
+      ownedPics: Array.from(new Set([...custom.ownedPics, g.picId])),
+    });
+    // Clear from Firebase so it doesn't pop again
+    try { await clearEmojiGift(activeLeagueCode, userId, g.id); } catch {}
+    setPendingGift(null);
+  };
   // Backwards-compatibility shims: rest of App.jsx still uses `leagueCode` / `setLeagueCode`
   // for the *currently active* league. These will continue to work transparently.
   const leagueCode = activeLeagueCode;
@@ -19280,6 +19369,19 @@ function AppInner() {
           onSpend={spendCoins}
           name={name}
           onClose={()=>setShowCustomize(false)}
+          leagueMembers={(() => {
+            const data = allLeagueData?.[activeLeagueCode];
+            if (!data?.members) return [];
+            return Object.entries(data.members)
+              .filter(([uid]) => uid !== userId) // exclude myself
+              .map(([uid, m]) => ({ uid, name: m.name }));
+          })()}
+          onSendGift={async (toUserId, gift) => {
+            try {
+              await sendEmojiGift(activeLeagueCode, toUserId, gift);
+              return true;
+            } catch { return false; }
+          }}
         />
       )}
 
@@ -19306,6 +19408,33 @@ function AppInner() {
       {/* 📊 Recap modal — new matches since last visit */}
       {pendingRecap && (
         <RecapModal recap={pendingRecap} onClose={()=>setPendingRecap(null)} />
+      )}
+
+      {/* 🎁 Emoji gift received popup */}
+      {pendingGift && (
+        <div style={{
+          position:"fixed",inset:0,zIndex:9560,background:"rgba(0,0,0,0.78)",backdropFilter:"blur(4px)",
+          display:"flex",alignItems:"center",justifyContent:"center",padding:20,
+        }}>
+          <div style={{
+            width:"100%",maxWidth:340,background:"linear-gradient(160deg,#1a0a14,#020617)",
+            border:"1px solid rgba(236,72,153,0.4)",borderRadius:20,overflow:"hidden",
+            boxShadow:"0 20px 50px rgba(0,0,0,0.6)",
+          }}>
+            <div style={{background:"linear-gradient(135deg,#ec4899,#be185d)",color:"#fff",fontSize:12,fontWeight:900,textAlign:"center",padding:8,letterSpacing:1}}>
+              🎁 קיבלת מתנה!
+            </div>
+            <div style={{padding:"22px 16px",textAlign:"center"}}>
+              <div style={{fontSize:70,marginBottom:10}}>{pendingGift.emoji}</div>
+              <div style={{fontSize:15,fontWeight:800,color:"#f1f5f9",marginBottom:4}}>{pendingGift.from} קנה לך את האימוג'י הזה!</div>
+              <div style={{fontSize:11,color:"#94a3b8",marginBottom:18,lineHeight:1.5}}>הוא עכשיו תמונת הפרופיל שלך 😂<br/>(רוצה להחליף? אפשר בהתאמה אישית)</div>
+              <button onClick={acceptGift} style={{
+                width:"100%",padding:12,borderRadius:12,background:"linear-gradient(135deg,#ec4899,#be185d)",
+                border:"none",color:"#fff",fontSize:14,fontWeight:900,cursor:"pointer",fontFamily:"inherit",
+              }}>אישור 👍</button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* 📢 Pushed ad popup — pops up once when admin pushes an ad */}
