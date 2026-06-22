@@ -13,7 +13,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.81.0";
+const APP_VERSION = "3.82.0";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -13258,7 +13258,7 @@ function TodayScreen({ picks, actuals, onPick, onBack, onGoToBracket, leagueMemb
       <span style={{width:7,height:7,borderRadius:"50%",background:color,boxShadow:`0 0 8px ${glow}`,display:"inline-block",flexShrink:0}}/>
       <span style={{fontSize:12,fontWeight:800,letterSpacing:1,color}}>{label}</span>
       {count != null && (
-        <span style={{fontSize:10,color:"#4d7c5a",background:"rgba(34,197,94,0.08)",padding:"2px 9px",borderRadius:10,marginRight:"auto"}}>
+        <span style={{fontSize:10,color:"var(--accent)",background:"color-mix(in srgb, var(--accent) 12%, transparent)",padding:"2px 9px",borderRadius:10,marginRight:"auto"}}>
           {count} {count === 1 ? "משחק" : "משחקים"}
         </span>
       )}
@@ -13352,7 +13352,7 @@ function TodayScreen({ picks, actuals, onPick, onBack, onGoToBracket, leagueMemb
       </div>
 
       <div style={{textAlign:"center",marginBottom:18}}>
-        <div style={{fontSize:10,color:"#4d7c5a",letterSpacing:3}}>{t("today.upcoming")}</div>
+        <div style={{fontSize:10,color:"var(--accent)",letterSpacing:3,opacity:0.8}}>{t("today.upcoming")}</div>
         <h2 style={{
           fontSize:26,margin:"4px 0",
           color:"#fff",fontWeight:900,
@@ -13398,7 +13398,7 @@ function TodayScreen({ picks, actuals, onPick, onBack, onGoToBracket, leagueMemb
 
       {/* Today */}
       <div style={{marginBottom:18}}>
-        {sectionHeader("#fbbf24", "rgba(251,191,36,0.6)", `⚽ ${t("today.today")}`, todayMatches.length)}
+        {sectionHeader("var(--accent)", "color-mix(in srgb, var(--accent) 60%, transparent)", `⚽ ${t("today.today")}`, todayMatches.length)}
         {todayMatches.length === 0
           ? renderEmptySection(t("today.noMatchesToday"))
           : todayMatches.map(renderMatchRow)}
@@ -13406,7 +13406,7 @@ function TodayScreen({ picks, actuals, onPick, onBack, onGoToBracket, leagueMemb
 
       {/* Tomorrow */}
       <div style={{marginBottom:18}}>
-        {sectionHeader("#4ade80", "rgba(34,197,94,0.5)", `🌅 ${t("today.tomorrow")}`, tomorrowMatches.length)}
+        {sectionHeader("var(--accent)", "color-mix(in srgb, var(--accent) 50%, transparent)", `🌅 ${t("today.tomorrow")}`, tomorrowMatches.length)}
         {tomorrowMatches.length === 0
           ? renderEmptySection(t("today.noMatchesTomorrow"))
           : tomorrowMatches.map(renderMatchRow)}
