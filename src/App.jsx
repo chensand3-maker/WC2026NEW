@@ -12,7 +12,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.69.0";
+const APP_VERSION = "3.70.0";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -4671,7 +4671,7 @@ function WorldLeaderboard({ userId, name, onClose }) {
 }
 
 // ─── SIDEBAR: hamburger menu drawer that slides in from one side ─────────────
-function Sidebar({ open, onClose, name, lang, setLang, onShowProfile, onShowRules, onShowBackup, onShowTutorial, onShowAchievements, onShowRoulette, onShowWrapped, onShowAdmin, onShowAdminGift, onShowGlobalAdmin, onShowLuckyWheel, onShowCoinWheel, onShowQuiz, quizTokens, coinWheelAvailable, wheelAvailable, hlPlaysToday, onLogout, onReset, totalPoints, unlockedCount, coinBalance, onShowAds }) {
+function Sidebar({ open, onClose, name, lang, setLang, onShowProfile, onShowRules, onShowBackup, onShowTutorial, onShowAchievements, onShowRoulette, onShowWrapped, onShowAdmin, onShowAdminGift, onShowGlobalAdmin, onShowLuckyWheel, onShowCoinWheel, onShowQuiz, quizTokens, coinWheelAvailable, wheelAvailable, hlPlaysToday, onLogout, onReset, totalPoints, unlockedCount, coinBalance, onShowAds, onShowCustomize }) {
   const t = useT();
   const isRTL = lang === "he";
 
@@ -4734,6 +4734,9 @@ function Sidebar({ open, onClose, name, lang, setLang, onShowProfile, onShowRule
         {/* Menu items */}
         <div style={{padding:"12px 12px",flex:1}}>
           <SidebarItem icon="📊" label={t("sidebar.myStats")} onClick={()=>{onClose();onShowProfile();}}/>
+          {onShowCustomize && (
+            <SidebarItem icon="🎨" label={lang==="he"?"התאמה אישית":"Customize"} onClick={()=>{onClose();onShowCustomize();}}/>
+          )}
           {onShowAds && (
             <SidebarItem icon="📢" label={lang==="he"?"פרסומות":"Ads"} onClick={()=>{onClose();onShowAds();}}/>
           )}
@@ -14641,6 +14644,219 @@ function AdsScreen({ leagueCode, leagueData, name, userId, viewerMode = false })
   );
 }
 
+// 🎨 Customization shop — themes (colors/teams) + profile pics, with a
+// select-then-confirm purchase flow (clicking only previews; buying is explicit).
+function CustomizeShop({ custom, saveCustom, coinBalance, onSpend, name, onClose }) {
+  const { showToast } = useToast();
+  const [topTab, setTopTab] = useState("theme"); // "theme" | "pic"
+  const [themeSub, setThemeSub] = useState("colors"); // "colors" | "teams"
+  const [picSub, setPicSub] = useState("בסיס");
+  const [search, setSearch] = useState("");
+  // What's currently selected (previewing) in each tab — starts at the active one.
+  const [selThemeId, setSelThemeId] = useState(custom.theme);
+  const [selPicId, setSelPicId] = useState(custom.pic);
+
+  const ownsTheme = (id) => custom.ownedThemes.includes(id);
+  const ownsPic = (id) => custom.ownedPics.includes(id);
+
+  // ── Buy / apply handlers ──
+  const buyTheme = (th) => {
+    if (!onSpend(th.price)) { showToast("🪙 אין מספיק מטבעות", "error"); return; }
+    saveCustom({ ...custom, theme: th.id, ownedThemes: [...custom.ownedThemes, th.id] });
+    showToast("🎉 קנית והחלת: " + th.name, "success");
+  };
+  const applyTheme = (th) => {
+    saveCustom({ ...custom, theme: th.id });
+    showToast("✓ הוחל: " + th.name, "success");
+  };
+  const buyPic = (p) => {
+    if (!onSpend(p.price)) { showToast("🪙 אין מספיק מטבעות", "error"); return; }
+    saveCustom({ ...custom, pic: p.id, ownedPics: [...custom.ownedPics, p.id] });
+    showToast("🎉 קנית והחלת: " + p.name, "success");
+  };
+  const applyPic = (p) => {
+    saveCustom({ ...custom, pic: p.id });
+    showToast("✓ הוחל: " + p.name, "success");
+  };
+
+  // Currently selected objects (for preview + action bar)
+  const selTheme = themeById(selThemeId);
+  const selPic = profileEmojiById(selPicId);
+  // The theme shown in the preview = the selected one (so user sees it live)
+  const previewTheme = topTab === "theme" ? selTheme : themeById(custom.theme);
+  const previewPicEmoji = (topTab === "pic" ? selPic : profileEmojiById(custom.pic)).emoji;
+  const avatarContent = previewPicEmoji || (name ? name[0].toUpperCase() : "?");
+  const grad = `linear-gradient(135deg,${previewTheme.c1},${previewTheme.c2})`;
+
+  // ── Action bar content depends on what's selected ──
+  const renderActionBar = () => {
+    if (topTab === "theme") {
+      const th = selTheme;
+      if (th.id === custom.theme) return actionBtn("פעיל ✓", "active", null, "הנושא הפעיל שלך");
+      if (ownsTheme(th.id)) return actionBtn("החל", "apply", () => applyTheme(th), "כבר ברשותך");
+      if (coinBalance >= th.price) return actionBtn(`קנה · 🪙 ${th.price.toLocaleString()}`, "buy", () => buyTheme(th), "לחץ לרכישה");
+      return actionBtn(`🪙 ${th.price.toLocaleString()}`, "cant", null, `חסר 🪙 ${(th.price - coinBalance).toLocaleString()}`);
+    } else {
+      const p = selPic;
+      if (p.id === custom.pic) return actionBtn("פעיל ✓", "active", null, "תמונת הפרופיל הפעילה");
+      if (ownsPic(p.id)) return actionBtn("החל", "apply", () => applyPic(p), "כבר ברשותך");
+      if (coinBalance >= p.price) return actionBtn(`קנה · 🪙 ${p.price.toLocaleString()}`, "buy", () => buyPic(p), "לחץ לרכישה");
+      return actionBtn(`🪙 ${p.price.toLocaleString()}`, "cant", null, `חסר 🪙 ${(p.price - coinBalance).toLocaleString()}`);
+    }
+  };
+  const selName = topTab === "theme" ? selTheme.name : (selPic.emoji ? selPic.emoji + " " + selPic.name : "אות ראשונה");
+  function actionBtn(label, kind, onClick, status) {
+    const styles = {
+      buy:    { background:"linear-gradient(135deg,#fbbf24,#d97706)", color:"#1a1206", cursor:"pointer" },
+      apply:  { background:"linear-gradient(135deg,#22c55e,#15803d)", color:"#fff", cursor:"pointer" },
+      active: { background:"rgba(255,255,255,0.1)", color:"#94a3b8", cursor:"default" },
+      cant:   { background:"rgba(71,85,105,0.4)", color:"#64748b", cursor:"not-allowed" },
+    }[kind];
+    return (
+      <div style={{display:"flex",alignItems:"center",gap:10}}>
+        <div style={{flex:1}}>
+          <div style={{fontSize:13,fontWeight:800}}>{selName}</div>
+          <div style={{fontSize:10,color:"#94a3b8"}}>{status}</div>
+        </div>
+        <button onClick={onClick||undefined} style={{
+          padding:"10px 18px",borderRadius:11,fontSize:13,fontWeight:900,border:"none",fontFamily:"inherit",...styles,
+        }}>{label}</button>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{
+      position:"fixed",inset:0,zIndex:9100,overflowY:"auto",
+      background:`linear-gradient(170deg,#020617 0%, ${previewTheme.c2}22 55%, ${previewTheme.c1}15 100%)`,
+      transition:"background 0.4s ease",
+    }}>
+      {/* Sticky header */}
+      <div style={{position:"sticky",top:0,zIndex:5,background:"rgba(2,14,8,0.9)",backdropFilter:"blur(8px)",borderBottom:"1px solid rgba(255,255,255,0.1)",padding:"12px 14px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+        <span style={{fontSize:14,fontWeight:900,color:"#fff"}}>🎨 התאמה אישית</span>
+        <div style={{display:"flex",alignItems:"center",gap:10}}>
+          <span style={{display:"inline-flex",alignItems:"center",gap:4,background:"rgba(251,191,36,0.15)",border:"1px solid rgba(251,191,36,0.4)",borderRadius:16,padding:"3px 10px",fontSize:12,fontWeight:800,color:"#fde68a"}}>🪙 {coinBalance.toLocaleString()}</span>
+          <button onClick={onClose} style={{background:"transparent",border:"none",color:"#94a3b8",fontSize:22,cursor:"pointer",fontFamily:"inherit",padding:0,lineHeight:1}}>✕</button>
+        </div>
+      </div>
+
+      <div style={{padding:"14px",maxWidth:480,margin:"0 auto"}}>
+        {/* Preview */}
+        <div style={{fontSize:10,color:"#94a3b8",letterSpacing:2,fontWeight:700,textAlign:"center",margin:"4px 0 10px"}}>⭐ תצוגה מקדימה</div>
+        <div style={{borderRadius:16,padding:16,marginBottom:14,background:"linear-gradient(150deg,rgba(8,38,22,0.7),rgba(2,14,8,0.5))",border:`1px solid ${previewTheme.c1}55`,position:"relative",overflow:"hidden",transition:"all 0.3s"}}>
+          <div style={{position:"absolute",top:-20,insetInlineStart:-10,fontSize:90,opacity:0.12}}>{previewTheme.emoji}</div>
+          <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:12,position:"relative"}}>
+            <div style={{width:54,height:54,borderRadius:"50%",background:grad,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:900,fontSize:26,color:"#fff",border:"2px solid rgba(255,255,255,0.3)",transition:"all 0.3s"}}>{avatarContent}</div>
+            <div>
+              <div style={{fontSize:15,fontWeight:800}}>{name||"שחקן"}</div>
+              <span style={{fontSize:10,padding:"2px 8px",borderRadius:10,fontWeight:800,marginTop:3,display:"inline-block",background:previewTheme.c1+"33",color:previewTheme.c1}}>{previewTheme.name} · {(topTab==="pic"?selPic:profileEmojiById(custom.pic)).name}</span>
+            </div>
+          </div>
+          <div style={{padding:10,borderRadius:10,textAlign:"center",fontSize:12,fontWeight:800,color:"#fff",background:grad,transition:"all 0.3s"}}>כך ייראו הכפתורים וההדגשות שלך</div>
+        </div>
+
+        {/* Top tabs */}
+        <div style={{display:"flex",gap:8,marginBottom:14}}>
+          {[["theme","🎨 ערכת נושא"],["pic","😎 תמונת פרופיל"]].map(([id,label]) => (
+            <button key={id} onClick={()=>setTopTab(id)} style={{
+              flex:1,padding:11,borderRadius:12,fontSize:13,fontWeight:800,cursor:"pointer",fontFamily:"inherit",
+              background: topTab===id ? "rgba(96,165,250,0.2)" : "rgba(255,255,255,0.06)",
+              border: `1px solid ${topTab===id ? "#60a5fa" : "rgba(255,255,255,0.1)"}`,
+              color: topTab===id ? "#93c5fd" : "#94a3b8",
+            }}>{label}</button>
+          ))}
+        </div>
+
+        {/* Action bar */}
+        <div style={{borderRadius:14,padding:"12px 14px",marginBottom:16,background:"rgba(0,0,0,0.3)",border:"1px solid rgba(255,255,255,0.1)"}}>
+          {renderActionBar()}
+        </div>
+
+        {/* Content per tab */}
+        {topTab === "theme" ? (
+          <>
+            {/* Theme sub-tabs */}
+            <div style={{display:"flex",gap:6,marginBottom:12}}>
+              {[["colors","🎨 צבעים"],["teams","🌍 נבחרות"]].map(([id,label]) => (
+                <button key={id} onClick={()=>{setThemeSub(id);setSearch("");}} style={{
+                  padding:"7px 14px",borderRadius:16,fontSize:11,fontWeight:800,cursor:"pointer",fontFamily:"inherit",
+                  background: themeSub===id ? "rgba(34,197,94,0.2)" : "rgba(255,255,255,0.06)",
+                  border: `1px solid ${themeSub===id ? "#22c55e" : "rgba(255,255,255,0.1)"}`,
+                  color: themeSub===id ? "#4ade80" : "#94a3b8",
+                }}>{label}</button>
+              ))}
+            </div>
+            {themeSub === "teams" && (
+              <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="🔍 חפש נבחרת..."
+                style={{width:"100%",padding:"9px 14px",borderRadius:12,marginBottom:12,background:"rgba(0,0,0,0.4)",border:"1px solid rgba(255,255,255,0.12)",color:"#f1f5f9",fontSize:13,fontFamily:"inherit",outline:"none",boxSizing:"border-box"}}/>
+            )}
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:9}}>
+              {(themeSub==="colors" ? COLOR_THEMES : TEAM_THEMES)
+                .filter(t => !search || t.name.includes(search.trim()))
+                .map(th => {
+                  const owned = ownsTheme(th.id);
+                  const active = th.id === custom.theme;
+                  const selected = th.id === selThemeId;
+                  return (
+                    <button key={th.id} onClick={()=>setSelThemeId(th.id)} style={{
+                      borderRadius:13,padding:"9px 7px",cursor:"pointer",position:"relative",overflow:"hidden",fontFamily:"inherit",
+                      background:"rgba(255,255,255,0.03)",
+                      border: `2px solid ${active ? "#fbbf24" : selected ? "#60a5fa" : "rgba(255,255,255,0.08)"}`,
+                      boxShadow: active ? "0 0 16px rgba(251,191,36,0.35)" : selected ? "0 0 12px rgba(96,165,250,0.3)" : "none",
+                    }}>
+                      {!owned && <span style={{position:"absolute",top:4,insetInlineStart:4,fontSize:9}}>🔒</span>}
+                      <div style={{height:48,borderRadius:9,marginBottom:6,display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,background:`linear-gradient(135deg,${th.c1},${th.c2})`}}>{th.emoji}</div>
+                      <div style={{fontSize:10,fontWeight:800,textAlign:"center",lineHeight:1.2,color:"#f1f5f9"}}>{th.name}</div>
+                      <div style={{fontSize:9,textAlign:"center",marginTop:3,fontWeight:700,color: active ? "#fbbf24" : owned ? "#4ade80" : "#fde68a"}}>
+                        {active ? "✓ פעיל" : owned ? "שלך" : "🪙 " + th.price.toLocaleString()}
+                      </div>
+                    </button>
+                  );
+                })}
+            </div>
+          </>
+        ) : (
+          <>
+            {/* Pic category sub-tabs */}
+            <div style={{display:"flex",gap:6,marginBottom:12,overflowX:"auto",paddingBottom:3}}>
+              {PROFILE_EMOJIS.map(g => (
+                <button key={g.cat} onClick={()=>setPicSub(g.cat)} style={{
+                  flexShrink:0,padding:"7px 14px",borderRadius:16,fontSize:11,fontWeight:800,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap",
+                  background: picSub===g.cat ? "rgba(34,197,94,0.2)" : "rgba(255,255,255,0.06)",
+                  border: `1px solid ${picSub===g.cat ? "#22c55e" : "rgba(255,255,255,0.1)"}`,
+                  color: picSub===g.cat ? "#4ade80" : "#94a3b8",
+                }}>{g.cat}</button>
+              ))}
+            </div>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(6,1fr)",gap:8}}>
+              {(PROFILE_EMOJIS.find(g=>g.cat===picSub)?.items||[]).map(p => {
+                const owned = ownsPic(p.id);
+                const active = p.id === custom.pic;
+                const selected = p.id === selPicId;
+                return (
+                  <button key={p.id} onClick={()=>setSelPicId(p.id)} style={{
+                    aspectRatio:"1",borderRadius:12,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",
+                    fontSize:24,fontFamily:"inherit",position:"relative",background:"rgba(255,255,255,0.04)",
+                    border: `2px solid ${active ? "#fbbf24" : selected ? "#60a5fa" : "rgba(255,255,255,0.08)"}`,
+                    boxShadow: active ? "0 0 12px rgba(251,191,36,0.3)" : "none",
+                  }}>
+                    {!owned && <span style={{position:"absolute",top:2,insetInlineStart:3,fontSize:8}}>🔒</span>}
+                    {p.emoji || <span style={{fontSize:18,fontWeight:900}}>A</span>}
+                  </button>
+                );
+              })}
+            </div>
+          </>
+        )}
+
+        <div style={{textAlign:"center",fontSize:11,color:"#64748b",marginTop:18,lineHeight:1.6}}>
+          לחץ על פריט כדי לבחור ולראות תצוגה.<br/>אז "קנה" לתשלום, או "החל" אם כבר שלך.
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function LeagueHub({
   name, userId, picks, koWinners, koPicks,
   leagueCode, setLeagueCode, leagueData, leagueError,
@@ -17035,6 +17251,18 @@ function AppInner() {
   // Convenience: what to render inside the user's own avatar circle.
   const myAvatarContent = myPicEmoji || (name ? name[0].toUpperCase() : "?");
 
+  // Whether the customization shop modal is open.
+  const [showCustomize, setShowCustomize] = useState(false);
+  // Spend coins for a purchase. Returns true if successful, false if not enough.
+  const spendCoins = (amount) => {
+    if (amount <= 0) return true;
+    if ((coins?.balance || 0) < amount) return false;
+    const next = { ...coins, balance: (coins?.balance || 0) - amount };
+    setCoins(next);
+    try { localStorage.setItem("wc2026_coins_v7", JSON.stringify(next)); } catch {}
+    return true;
+  };
+
   // 🃏 Card collection — stores which cards the user owns (and counts of duplicates)
   // Format: { [cardId]: count }
   const [cardCollection, setCardCollection] = useState(() => {
@@ -18965,6 +19193,18 @@ function AppInner() {
       {/* ⓘ Scoring rules modal */}
       {showRules && <ScoringRulesModal onClose={()=>setShowRules(false)} />}
 
+      {/* 🎨 Customization shop */}
+      {showCustomize && (
+        <CustomizeShop
+          custom={custom}
+          saveCustom={saveCustom}
+          coinBalance={coins?.balance || 0}
+          onSpend={spendCoins}
+          name={name}
+          onClose={()=>setShowCustomize(false)}
+        />
+      )}
+
       {/* 📢 Ads — full-screen, opened from hamburger (everyone, PUSHED ads only, view-only) */}
       {showAds && (
         <div style={{
@@ -19070,6 +19310,7 @@ function AppInner() {
         coinBalance={coins.balance}
         onShowProfile={()=>setShowProfile(true)}
         onShowAds={()=>setShowAds(true)}
+        onShowCustomize={()=>setShowCustomize(true)}
         onShowRules={()=>setShowRules(true)}
         onShowBackup={()=>setShowBackup(true)}
         onShowTutorial={()=>setShowOnboarding(true)}
