@@ -13,7 +13,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.84.0";
+const APP_VERSION = "3.85.0";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -5214,7 +5214,76 @@ function playWinSound(rarity) {
 
 // 🎁 DAILY BONUS MODAL — shows the 7-day reward grid + claim button
 
-function RouletteModal({ coins, isSpinning, pendingCard, onSpin, onLegendsSpin, legendsSpinAvailable, onGalaxySpin, galaxyTestMode, galaxySpinning, spinCount, onClose, onShowCollection, onShowQuiz }) {
+// 🎰 ×10 spin results — shows all 10 cards in a grid with a summary.
+function MultiSpinResult({ data, onClose, onShowCollection }) {
+  const { results, totalRefund, spent } = data;
+  const rarityRank = { B:0, X:1, L:2, G:3, F:4, E:5, R:6, U:7, T:8, C:9 };
+  const sorted = [...results].sort((a,b) => (rarityRank[a.card.rarity]??99) - (rarityRank[b.card.rarity]??99));
+  const rareCount = results.filter(r => ["B","X","L","G","E"].includes(r.card.rarity)).length;
+  const newCount = results.filter(r => !r.isDuplicate).length;
+
+  return (
+    <div onClick={onClose} style={{
+      position:"fixed",inset:0,zIndex:9100,
+      background:"radial-gradient(circle at center, rgba(30,27,75,0.95), rgba(10,6,30,0.97))",
+      display:"flex",alignItems:"flex-start",justifyContent:"center",padding:14,overflowY:"auto",
+    }}>
+      <div onClick={e=>e.stopPropagation()} style={{ width:"100%",maxWidth:440,margin:"auto" }}>
+        <div style={{textAlign:"center",marginBottom:14,marginTop:8}}>
+          <div style={{fontSize:13,fontWeight:900,color:"var(--accent)",letterSpacing:2}}>🎰 ×10 ספינים</div>
+          <div style={{fontSize:24,fontWeight:900,color:"#fff",margin:"4px 0"}}>פתחת 10 קלפים!</div>
+          <div style={{fontSize:12,color:"#cbd5e1"}}>
+            {newCount > 0 && <span style={{color:"#4ade80",fontWeight:700}}>{newCount} חדשים</span>}
+            {newCount > 0 && rareCount > 0 && " · "}
+            {rareCount > 0 && <span style={{color:"#fbbf24",fontWeight:700}}>{rareCount} נדירים+ ✨</span>}
+            {newCount === 0 && rareCount === 0 && "כל הקלפים כפולים"}
+          </div>
+        </div>
+
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:14}}>
+          {sorted.map((r, i) => {
+            const cfg = RARITY_CONFIG[r.card.rarity] || RARITY_CONFIG.C;
+            return (
+              <div key={i} style={{
+                background:cfg.bgGrad,borderRadius:12,padding:"10px 8px",
+                position:"relative",overflow:"hidden",
+                boxShadow:`0 0 14px ${cfg.glow}`,border:`1px solid ${cfg.color}`,
+                opacity: r.isDuplicate ? 0.78 : 1,
+              }}>
+                {r.isDuplicate ? (
+                  <div style={{position:"absolute",top:5,insetInlineEnd:5,background:"rgba(0,0,0,0.6)",borderRadius:6,padding:"1px 5px",fontSize:8,fontWeight:800,color:"#fde68a"}}>כפול +{r.refund}</div>
+                ) : (
+                  <div style={{position:"absolute",top:5,insetInlineEnd:5,background:"rgba(0,0,0,0.5)",borderRadius:6,padding:"1px 5px",fontSize:8,fontWeight:900,color:"#4ade80"}}>חדש!</div>
+                )}
+                <div style={{fontSize:9,fontWeight:900,color:"#1a1206",opacity:0.7,marginBottom:2}}>{cfg.emoji} {cfg.label}</div>
+                <div style={{fontSize:13,fontWeight:900,color:"#1a1206",lineHeight:1.1,minHeight:30}}>{r.card.name}</div>
+                {r.card.team && <div style={{fontSize:9,fontWeight:700,color:"#1a1206",opacity:0.65,marginTop:2}}>{r.card.team}</div>}
+              </div>
+            );
+          })}
+        </div>
+
+        <div style={{background:"rgba(0,0,0,0.4)",borderRadius:12,padding:"12px 14px",marginBottom:12,border:"1px solid rgba(255,255,255,0.1)"}}>
+          <div style={{display:"flex",justifyContent:"space-between",fontSize:12,marginBottom:5}}>
+            <span style={{color:"#94a3b8"}}>עלות</span>
+            <span style={{color:"#f87171",fontWeight:800}}>−🪙 {spent.toLocaleString()}</span>
+          </div>
+          <div style={{display:"flex",justifyContent:"space-between",fontSize:12}}>
+            <span style={{color:"#94a3b8"}}>החזר על כפולים</span>
+            <span style={{color:"#4ade80",fontWeight:800}}>+🪙 {totalRefund.toLocaleString()}</span>
+          </div>
+        </div>
+
+        <div style={{display:"flex",gap:8,paddingBottom:20}}>
+          <button onClick={onShowCollection} style={{flex:1,padding:12,borderRadius:12,background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.15)",color:"#f1f5f9",fontSize:13,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>📚 האוסף שלי</button>
+          <button onClick={onClose} style={{flex:1,padding:12,borderRadius:12,background:"linear-gradient(135deg,var(--accent),var(--accent2))",border:"none",color:"#fff",fontSize:14,fontWeight:900,cursor:"pointer",fontFamily:"inherit"}}>סגור</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function RouletteModal({ coins, isSpinning, pendingCard, onSpin, onSpin10, onLegendsSpin, legendsSpinAvailable, onGalaxySpin, galaxyTestMode, galaxySpinning, spinCount, onClose, onShowCollection, onShowQuiz }) {
   const t = useT();
   const canSpin = coins.balance >= COINS.SPIN && !isSpinning;
   const [leverPulled, setLeverPulled] = useState(false);
@@ -5470,6 +5539,25 @@ function RouletteModal({ coins, isSpinning, pendingCard, onSpin, onLegendsSpin, 
         }}>
           {isSpinning ? `🎰 ${t("roulette.spinning")}` : canSpin ? `🎰 ${t("roulette.spinBtn")}` : `🪙 ${t("roulette.notEnough")}`}
         </button>
+
+        {/* 🎰 ×10 spin — draws 10 cards at once */}
+        {(() => {
+          const cost10 = COINS.SPIN * 10;
+          const canSpin10 = coins.balance >= cost10 && !isSpinning;
+          return (
+            <button onClick={() => canSpin10 && onSpin10?.()} disabled={!canSpin10} style={{
+              width:"100%",marginTop:10,padding:"13px",borderRadius:12,
+              background: canSpin10 ? "linear-gradient(135deg,var(--accent),var(--accent2))" : "rgba(71,85,105,0.4)",
+              color: canSpin10 ? "#fff" : "#64748b",
+              border:"none",fontSize:15,fontWeight:900,
+              fontFamily:"inherit",cursor: canSpin10 ? "pointer" : "not-allowed",
+              boxShadow: canSpin10 ? "0 8px 24px rgba(0,0,0,0.3)" : "none",
+              letterSpacing:1,
+            }}>
+              {canSpin10 ? `🎰 ×10 ספינים · 🪙 ${cost10.toLocaleString()}` : `🪙 צריך ${cost10.toLocaleString()} ל-×10`}
+            </button>
+          );
+        })()}
 
         {/* 🟢 Legends Spin — appears after 5 regular spins */}
         {legendsSpinAvailable ? (
@@ -17611,6 +17699,7 @@ function AppInner() {
   const [spinResult, setSpinResult] = useState(null);       // the card just won
   const [isSpinning, setIsSpinning] = useState(false);      // animation playing
   const [pendingCard, setPendingCard] = useState(null);     // card chosen upfront; reels stop on it
+  const [multiResult, setMultiResult] = useState(null);     // 🎰 results of a 10x spin: { cards:[], totalRefund, newCount }
   // 🟢 Legends spin counter — every 5 regular spins → 1 free Legends spin
   const [spinCount, setSpinCount] = useState(() => {
     try { return parseInt(localStorage.getItem("wc2026_spin_count_v1") || "0", 10) || 0; }
@@ -17645,6 +17734,54 @@ function AppInner() {
   }, [galaxyTestMode]);
 
   // Spend coins, roll a card, save to collection
+  // 🎰 ×10 SPIN — draw 10 cards at once (1000 coins), show them all together.
+  const handleSpin10 = () => {
+    const COST_10 = COINS.SPIN * 10;
+    if (coins.balance < COST_10 || isSpinning) return;
+    // Draw 10 cards
+    const drawn = Array.from({ length: 10 }, () => rollOneCard());
+    // Deduct cost
+    let balance = coins.balance - COST_10;
+    // Build up the new collection and tally refunds for duplicates
+    const newCollection = { ...cardCollection };
+    let totalRefund = 0;
+    const results = drawn.map(card => {
+      const isDuplicate = (newCollection[card.id] || 0) > 0;
+      newCollection[card.id] = (newCollection[card.id] || 0) + 1;
+      let refund = 0;
+      if (isDuplicate) {
+        refund = RARITY_CONFIG[card.rarity]?.coins || 0;
+        totalRefund += refund;
+      }
+      return { card, isDuplicate, refund };
+    });
+    balance += totalRefund;
+    // Persist coins + collection
+    const updatedCoins = { ...coins, balance };
+    setCoins(updatedCoins);
+    try { localStorage.setItem("wc2026_coins_v7", JSON.stringify(updatedCoins)); } catch {}
+    setCardCollection(newCollection);
+    try { localStorage.setItem("wc2026_cards_v2", JSON.stringify(newCollection)); } catch {}
+    // Advance spin counter by 10 (unlock legends spin if crossed 5)
+    const newCount = spinCount + 10;
+    setSpinCount(newCount);
+    try { localStorage.setItem("wc2026_spin_count_v1", String(newCount)); } catch {}
+    if (newCount >= 5 && !legendsSpinAvailable) {
+      setLegendsSpinAvailable(true);
+      try { localStorage.setItem("wc2026_legends_spin_v1", "1"); } catch {}
+    }
+    // Haptic feedback — celebrate the best card pulled
+    try {
+      const hasLegend = results.some(r => r.card.rarity === "L");
+      const hasEpic = results.some(r => r.card.rarity === "E");
+      if (hasLegend) navigator.vibrate?.([30, 50, 30, 50, 80, 50, 120]);
+      else if (hasEpic) navigator.vibrate?.([20, 40, 50]);
+      else navigator.vibrate?.(20);
+    } catch {}
+    // Show the results panel
+    setMultiResult({ results, totalRefund, spent: COST_10 });
+  };
+
   const handleSpin = () => {
     if (coins.balance < COINS.SPIN || isSpinning) return;
     // Roll the card UPFRONT — the reels need to know what to stop on
@@ -19956,12 +20093,13 @@ function AppInner() {
       )}
 
       {/* 🎰 Roulette */}
-      {showRoulette && !spinResult && (
+      {showRoulette && !spinResult && !multiResult && (
         <RouletteModal
           coins={coins}
           isSpinning={isSpinning}
           pendingCard={pendingCard}
           onSpin={handleSpin}
+          onSpin10={handleSpin10}
           onLegendsSpin={handleLegendsSpin}
           legendsSpinAvailable={legendsSpinAvailable}
           onGalaxySpin={handleGalaxySpin}
@@ -19971,6 +20109,15 @@ function AppInner() {
           onClose={()=>setShowRoulette(false)}
           onShowCollection={()=>setShowCollection(true)}
           onShowQuiz={()=>{ setShowRoulette(false); setShowQuiz(true); }}
+        />
+      )}
+
+      {/* 🎰 ×10 Spin results */}
+      {multiResult && (
+        <MultiSpinResult
+          data={multiResult}
+          onClose={()=>setMultiResult(null)}
+          onShowCollection={()=>{ setMultiResult(null); setShowCollection(true); }}
         />
       )}
 
