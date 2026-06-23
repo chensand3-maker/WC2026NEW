@@ -13,7 +13,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.89.0";
+const APP_VERSION = "3.90.0";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -18738,14 +18738,22 @@ function AppInner() {
       } catch {}
     }
     try {
-      // 💰 Use ONLY the single-call top-scorers endpoint (1 API call).
-      // We deliberately do NOT fall back to per-match events anymore, because
-      // that fired one /fixtures/events call per finished match (dozens per
-      // refresh) and drained the entire API quota. One call is enough.
+      // 💰 Top scorers strategy:
+      // 1) Try the single-call topscorers endpoint (1 API call, cached 30 min).
+      // 2) If it returns nothing (the tournament endpoint is often empty),
+      //    fall back to events — but that path now uses a permanent per-match
+      //    cache and a 6-match-per-pass cap, so it costs only a few calls total.
       let scorers = [];
       try {
         scorers = await fetchTopScorers();
       } catch {}
+      if (scorers.length === 0) {
+        let currentLiveData = liveData;
+        if (!currentLiveData) {
+          try { currentLiveData = await fetchLiveResults(false); } catch {}
+        }
+        try { scorers = await buildTopScorersFromEvents(currentLiveData); } catch {}
+      }
       setTopScorers(scorers);
       setTopScorersFetchedAt(Date.now());
       setTopScorersError(null);

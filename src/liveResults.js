@@ -448,26 +448,49 @@ export async function buildTopScorersFromEvents(liveData) {
 
   if (finishedIds.length === 0) return [];
 
-  // Fetch events for each finished fixture
-  const goalTally = {}; // name → { goals, team }
+  // 💰 Per-fixture cache: once we've read a finished match's goals, we never
+  // fetch it again. Only brand-new finished matches trigger an API call, so
+  // this costs at most a handful of calls per day instead of dozens each refresh.
+  let perFixture = {};
+  try { perFixture = JSON.parse(localStorage.getItem("wc2026_fixture_goals_v1") || "{}"); } catch {}
 
-  for (const fixtureId of finishedIds) {
+  // Find which finished fixtures we have NOT already cached
+  const uncachedIds = finishedIds.filter(id => !perFixture[id]);
+
+  // 🛡️ Safety cap: never fetch more than 6 new matches in a single pass,
+  // so even a burst can't drain the quota. The rest get picked up next time.
+  const toFetch = uncachedIds.slice(0, 6);
+
+  for (const fixtureId of toFetch) {
     try {
       const res = await fetch(`${API_URL}/fixtures/events?fixture=${fixtureId}`, {
         headers: { "x-apisports-key": API_FOOTBALL_KEY },
       });
       if (!res.ok) continue;
       const json = await res.json();
+      const goals = [];
       for (const e of (json.response || [])) {
         if (e.type !== "Goal") continue;
         if (e.detail === "Own Goal") continue; // לא סופרים גול עצמי
         const name = e.player?.name;
         const team = normalizeTeam(e.team?.name || "");
         if (!name) continue;
-        if (!goalTally[name]) goalTally[name] = { goals: 0, team };
-        goalTally[name].goals++;
+        goals.push({ name, team });
       }
+      perFixture[fixtureId] = goals; // cache this match's goals permanently
     } catch {}
+  }
+  // Save updated per-fixture cache
+  try { localStorage.setItem("wc2026_fixture_goals_v1", JSON.stringify(perFixture)); } catch {}
+
+  // Tally goals across ALL cached fixtures (no API calls here)
+  const goalTally = {}; // name → { goals, team }
+  for (const id of finishedIds) {
+    const goals = perFixture[id] || [];
+    for (const g of goals) {
+      if (!goalTally[g.name]) goalTally[g.name] = { goals: 0, team: g.team };
+      goalTally[g.name].goals++;
+    }
   }
 
   // Build sorted array
