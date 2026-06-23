@@ -416,7 +416,7 @@ function setTopScorersCache(data) {
 // we aggregate goals from each match's events.
 
 const SCORERS_FROM_EVENTS_KEY = "wc2026_scorers_events_v1";
-const SCORERS_FROM_EVENTS_TTL = 15 * 60 * 1000; // 15 min
+const SCORERS_FROM_EVENTS_TTL = 3 * 60 * 1000; // 3 min
 
 export async function buildTopScorersFromEvents(liveData) {
   // Check cache
@@ -438,16 +438,12 @@ export async function buildTopScorersFromEvents(liveData) {
     ...Object.values(liveData.knockout || {}),
   ];
 
-  // Count goals from matches that are finished OR currently live — so a goal
-  // scored in an in-progress match shows up immediately, not only at full time.
-  const finishedIds = allFixtures
-    .filter(f => (f.isFinished || f.isLive) && f.fixtureId)
-    .map(f => f.fixtureId);
+  // Separate finished matches (never change → cache forever) from live ones
+  // (still changing → must re-fetch each time).
+  const finishedList = allFixtures.filter(f => f.isFinished && f.fixtureId);
+  const liveList     = allFixtures.filter(f => !f.isFinished && f.isLive && f.fixtureId);
 
-  if (finishedIds.length === 0) return [];
-
-  // Fetch events for each relevant fixture
-  const goalTally = {}; // normalizedKey → { goals, team, displayName }
+  if (finishedList.length === 0 && liveList.length === 0) return [];
 
   // Build a stable key from a player's name so that "Kylian Mbappé",
   // "K. Mbappé" and "Kylian Mbappe" all merge into the SAME scorer.
@@ -459,36 +455,65 @@ export async function buildTopScorersFromEvents(liveData) {
     return `${firstInitial}|${last}`;
   };
 
-  for (const fixtureId of finishedIds) {
+  // 💰 Permanent per-fixture goal cache. Once a FINISHED match's goals are
+  // stored, we never call the API for it again — finished matches don't change.
+  // This is what stops the burst of /fixtures/events calls every refresh.
+  let perFixture = {};
+  try { perFixture = JSON.parse(localStorage.getItem("wc2026_fixture_goals_v2") || "{}"); } catch {}
+
+  const extractGoals = (json) => {
+    const goals = [];
+    for (const e of (json.response || [])) {
+      if (e.type !== "Goal") continue;
+      const detail = (e.detail || "").toLowerCase();
+      const comments = (e.comments || "").toLowerCase();
+      if (detail === "own goal") continue;            // גול עצמי
+      if (detail === "missed penalty") continue;       // פנדל שהוחמץ
+      if (comments.includes("disallowed")) continue;   // גול שבוטל (VAR)
+      if (comments.includes("penalty shootout")) continue; // דו-קרב פנדלים
+      const name = e.player?.name;
+      const team = normalizeTeam(e.team?.name || "");
+      if (!name) continue;
+      goals.push({ name, team });
+    }
+    return goals;
+  };
+
+  // Fetch ONLY: finished matches we haven't cached yet + all live matches.
+  const toFetch = [
+    ...finishedList.filter(f => !perFixture[f.fixtureId]).map(f => ({ id: f.fixtureId, finished: true })),
+    ...liveList.map(f => ({ id: f.fixtureId, finished: false })),
+  ];
+
+  for (const { id, finished } of toFetch) {
     try {
-      const res = await fetch(`${API_URL}/fixtures/events?fixture=${fixtureId}`, {
+      const res = await fetch(`${API_URL}/fixtures/events?fixture=${id}`, {
         headers: { "x-apisports-key": API_FOOTBALL_KEY },
       });
       if (!res.ok) continue;
       const json = await res.json();
-      for (const e of (json.response || [])) {
-        if (e.type !== "Goal") continue;
-        // API-Football returns several non-goal events under type "Goal".
-        // Count only REAL goals: skip own goals, missed penalties, and any
-        // goal that was disallowed (e.g. by VAR). Without this, a player who
-        // missed a penalty would be credited with an extra goal.
-        const detail = (e.detail || "").toLowerCase();
-        const comments = (e.comments || "").toLowerCase();
-        if (detail === "own goal") continue;            // גול עצמי
-        if (detail === "missed penalty") continue;       // פנדל שהוחמץ
-        if (comments.includes("disallowed")) continue;   // גול שבוטל (VAR)
-        if (comments.includes("penalty shootout")) continue; // דו-קרב פנדלים
-        const name = e.player?.name;
-        const team = normalizeTeam(e.team?.name || "");
-        if (!name) continue;
-        const key = playerKey(name);
-        if (!goalTally[key]) goalTally[key] = { goals: 0, team, displayName: name };
-        goalTally[key].goals++;
-        // Prefer the longest (most complete) display name we've seen
-        if (name.length > goalTally[key].displayName.length) goalTally[key].displayName = name;
-      }
+      const goals = extractGoals(json);
+      // Only cache FINISHED matches permanently; live ones stay uncached so
+      // they refresh next time.
+      if (finished) perFixture[id] = goals;
+      else perFixture[`live_${id}`] = goals;
     } catch {}
   }
+  // Persist the finished-match cache
+  try { localStorage.setItem("wc2026_fixture_goals_v2", JSON.stringify(perFixture)); } catch {}
+
+  // Tally goals from ALL relevant matches using the cache (no API calls here)
+  const goalTally = {}; // normalizedKey → { goals, team, displayName }
+  const addGoals = (goals) => {
+    for (const g of goals) {
+      const key = playerKey(g.name);
+      if (!goalTally[key]) goalTally[key] = { goals: 0, team: g.team, displayName: g.name };
+      goalTally[key].goals++;
+      if (g.name.length > goalTally[key].displayName.length) goalTally[key].displayName = g.name;
+    }
+  };
+  for (const f of finishedList) addGoals(perFixture[f.fixtureId] || []);
+  for (const f of liveList) addGoals(perFixture[`live_${f.fixtureId}`] || []);
 
   // Build sorted array
   const out = Object.values(goalTally)
