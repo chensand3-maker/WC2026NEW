@@ -14,7 +14,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.99.0";
+const APP_VERSION = "3.99.1";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -15746,47 +15746,6 @@ function LeagueHub({
       return (a.uid || "").localeCompare(b.uid || "");
     });
 
-    // 📈 Rank-change arrows. We keep TWO things in storage:
-    //   sig    — a signature of the standings when we last recorded positions
-    //   ranks  — each member's position AT THAT TIME (the baseline to compare to)
-    // Arrows = baseline position − current position. The baseline only moves
-    // forward when the scores actually change, so arrows persist and are correct.
-    const rankTrends = {};
-    if (hasActuals) {
-      const snapKey = `wc2026_prev_ranks_${activeLeagueCode || "x"}`;
-      const sig = members.map(p => `${p.uid}:${p.totalPoints}`).join("|");
-      let snap = { sig: "", ranks: {}, prevRanks: {} };
-      try { snap = { prevRanks:{}, ...JSON.parse(localStorage.getItem(snapKey) || "{}") }; } catch {}
-
-      // Current positions
-      const currentRanks = {};
-      members.forEach((p, i) => { currentRanks[p.uid] = i; });
-
-      if (!snap.sig) {
-        // First time ever: no baseline yet. Record current, no arrows.
-        setTimeout(() => {
-          try { localStorage.setItem(snapKey, JSON.stringify({ sig, ranks: currentRanks, prevRanks: currentRanks })); } catch {}
-        }, 50);
-      } else if (sig !== snap.sig) {
-        // Scores changed since last record. The arrows show movement from the
-        // OLD positions (snap.ranks) to now. Then we slide the baseline forward.
-        members.forEach((p, i) => {
-          const prev = snap.ranks?.[p.uid];
-          rankTrends[p.uid] = (typeof prev === "number") ? (prev - i) : 0;
-        });
-        setTimeout(() => {
-          try { localStorage.setItem(snapKey, JSON.stringify({ sig, ranks: currentRanks, prevRanks: snap.ranks })); } catch {}
-        }, 50);
-      } else {
-        // Scores unchanged since last record: keep showing the same arrows
-        // (movement from the positions BEFORE this scoring change).
-        members.forEach((p, i) => {
-          const prev = snap.prevRanks?.[p.uid];
-          rankTrends[p.uid] = (typeof prev === "number") ? (prev - i) : 0;
-        });
-      }
-    }
-
     // Drill into one member
     if (viewing) {
       const m = members.find(x => x.uid === viewing);
@@ -16628,15 +16587,6 @@ function LeagueHub({
                 {showPoints && isPodium && (
                   <span style={{fontSize:9,color:podiumBorder,fontWeight:800,letterSpacing:1}}>
                     {i===0?"1ST":i===1?"2ND":"3RD"}
-                  </span>
-                )}
-                {/* 📈 Rank-change arrow */}
-                {showPoints && rankTrends[p.uid] !== 0 && rankTrends[p.uid] !== undefined && (
-                  <span style={{
-                    fontSize:9,fontWeight:900,lineHeight:1,
-                    color: rankTrends[p.uid] > 0 ? "#34d399" : "#fb7185",
-                  }}>
-                    {rankTrends[p.uid] > 0 ? "▲" : "▼"}{Math.abs(rankTrends[p.uid])}
                   </span>
                 )}
               </div>
