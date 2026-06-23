@@ -70,6 +70,16 @@ export async function renameLeague(code, newName) {
   await updateDoc(ref, { name: newName });
 }
 
+// 👑 Admin: set (or clear) the top-scorer pick for a specific member.
+// Used when a member forgot to choose. Pass null to clear.
+export async function adminSetMemberTopScorer(code, userId, pick) {
+  if (!code || !userId) return;
+  const ref = doc(db, "leagues", code);
+  await updateDoc(ref, {
+    [`members.${userId}.topScorerPick`]: pick || null,
+  });
+}
+
 export async function leaveLeague(code, userId) {
   const ref = doc(db, "leagues", code);
   await updateDoc(ref, {

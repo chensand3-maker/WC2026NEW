@@ -8,12 +8,13 @@ import {
   addLeagueAd, deleteLeagueAd, pushAdPopup, clearAdPopup,
   sendEmojiGift, clearEmojiGift, updateMyCustom,
   fetchAllGlobalUsers, deleteGlobalUser,
+  adminSetMemberTopScorer,
 } from "./firebase";
 import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWinners, mapKnockoutToBracket, fetchTopScorers, buildTopScorersFromEvents, clearTopScorersFromEventsCache, fetchMatchDetails, getApiFixtureId, fetchLineup } from "./liveResults";
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.97.0";
+const APP_VERSION = "3.98.0";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -6790,6 +6791,23 @@ function LeagueAdminModal({ leagueData, leagueCode, onClose }) {
   };
 
   const [removingUid, setRemovingUid] = useState(null);
+  // 👑 Admin: set top scorer for a member who forgot to choose
+  const [scorerForMember, setScorerForMember] = useState(null);
+  const [scorerSearch, setScorerSearch] = useState("");
+  const [savingScorer, setSavingScorer] = useState(false);
+  const handleSetScorer = async (pick) => {
+    if (!scorerForMember) return;
+    setSavingScorer(true);
+    try {
+      await adminSetMemberTopScorer(leagueCode, scorerForMember.uid, pick);
+      alert(`✅ ${scorerForMember.name} — מלך השערים נקבע ל${pick.name}`);
+      setScorerForMember(null);
+      setScorerSearch("");
+    } catch (err) {
+      alert("שגיאה: " + (err.message || "נסה שוב"));
+    }
+    setSavingScorer(false);
+  };
   const handleRemove = async (member) => {
     const ok = confirm(`להסיר את ${member.name} מהליגה?\n\nהפעולה לא הפיכה — כל הניחושים והנתונים שלו יימחקו מהליגה.`);
     if (!ok) return;
@@ -6994,6 +7012,18 @@ function LeagueAdminModal({ leagueData, leagueCode, onClose }) {
                   }}>
                   📅 אפס חידון יומי
                 </button>
+                <button
+                  onClick={() => { setScorerForMember(m); setScorerSearch(""); }}
+                  style={{
+                    flex:1,minWidth:"45%",padding:"7px 10px",
+                    background:"linear-gradient(180deg,rgba(168,85,247,0.2),rgba(168,85,247,0.1))",
+                    border:"1px solid rgba(168,85,247,0.4)",
+                    borderRadius:8,
+                    color:"#c4b5fd",fontSize:11,fontWeight:700,
+                    cursor:"pointer",fontFamily:"inherit",
+                  }}>
+                  👟 קבע מלך שערים
+                </button>
               </div>
             </div>
           ))}
@@ -7005,6 +7035,53 @@ function LeagueAdminModal({ leagueData, leagueCode, onClose }) {
           </div>
         )}
       </div>
+
+      {/* 👟 Top-scorer picker for a member */}
+      {scorerForMember && (
+        <div onClick={()=>setScorerForMember(null)} style={{
+          position:"fixed",inset:0,zIndex:9600,background:"rgba(0,0,0,0.8)",
+          display:"flex",alignItems:"flex-end",justifyContent:"center",
+        }}>
+          <div onClick={e=>e.stopPropagation()} style={{
+            width:"100%",maxWidth:440,maxHeight:"80vh",
+            background:"linear-gradient(180deg,#0a1628,#04140b)",
+            borderRadius:"20px 20px 0 0",border:"1px solid rgba(168,85,247,0.3)",
+            display:"flex",flexDirection:"column",overflow:"hidden",
+          }}>
+            <div style={{padding:"16px 18px 12px",borderBottom:"1px solid rgba(255,255,255,0.08)"}}>
+              <div style={{fontSize:16,fontWeight:900,color:"#fff"}}>👟 מלך שערים ל{scorerForMember.name}</div>
+              <div style={{fontSize:11,color:"#94a3b8",marginTop:2}}>בחר שחקן מהרשימה</div>
+              <input
+                value={scorerSearch}
+                onChange={e=>setScorerSearch(e.target.value)}
+                placeholder="🔍 חפש שחקן..."
+                style={{
+                  width:"100%",marginTop:10,padding:"9px 12px",borderRadius:10,
+                  background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.12)",
+                  color:"#fff",fontSize:13,fontFamily:"inherit",outline:"none",
+                }}
+              />
+            </div>
+            <div style={{overflowY:"auto",padding:"8px 12px 20px"}}>
+              {TOP_SCORER_CANDIDATES
+                .filter(p => !scorerSearch || p.name.toLowerCase().includes(scorerSearch.toLowerCase()) || p.team.toLowerCase().includes(scorerSearch.toLowerCase()))
+                .slice(0, 60)
+                .map(p => (
+                  <button key={p.name} onClick={()=>!savingScorer && handleSetScorer(p)} disabled={savingScorer} style={{
+                    width:"100%",display:"flex",alignItems:"center",gap:10,
+                    padding:"10px 12px",marginBottom:5,borderRadius:10,
+                    background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.08)",
+                    color:"#fff",fontSize:13,fontWeight:700,cursor:savingScorer?"wait":"pointer",
+                    fontFamily:"inherit",textAlign:"right",
+                  }}>
+                    <span style={{flex:1}}>{p.name}</span>
+                    <span style={{fontSize:11,color:"#94a3b8"}}>{p.team}</span>
+                  </button>
+                ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
