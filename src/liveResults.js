@@ -447,7 +447,17 @@ export async function buildTopScorersFromEvents(liveData) {
   if (finishedIds.length === 0) return [];
 
   // Fetch events for each relevant fixture
-  const goalTally = {}; // name → { goals, team }
+  const goalTally = {}; // normalizedKey → { goals, team, displayName }
+
+  // Build a stable key from a player's name so that "Kylian Mbappé",
+  // "K. Mbappé" and "Kylian Mbappe" all merge into the SAME scorer.
+  const playerKey = (raw) => {
+    const clean = (raw || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+    const parts = clean.split(/\s+/);
+    const last = parts[parts.length - 1] || clean;       // last name
+    const firstInitial = parts.length > 1 ? parts[0][0] : ""; // first letter of first name
+    return `${firstInitial}|${last}`;
+  };
 
   for (const fixtureId of finishedIds) {
     try {
@@ -471,15 +481,18 @@ export async function buildTopScorersFromEvents(liveData) {
         const name = e.player?.name;
         const team = normalizeTeam(e.team?.name || "");
         if (!name) continue;
-        if (!goalTally[name]) goalTally[name] = { goals: 0, team };
-        goalTally[name].goals++;
+        const key = playerKey(name);
+        if (!goalTally[key]) goalTally[key] = { goals: 0, team, displayName: name };
+        goalTally[key].goals++;
+        // Prefer the longest (most complete) display name we've seen
+        if (name.length > goalTally[key].displayName.length) goalTally[key].displayName = name;
       }
     } catch {}
   }
 
   // Build sorted array
-  const out = Object.entries(goalTally)
-    .map(([name, v]) => ({ name, team: v.team, goals: v.goals }))
+  const out = Object.values(goalTally)
+    .map(v => ({ name: v.displayName, team: v.team, goals: v.goals }))
     .filter(s => s.goals > 0)
     .sort((a, b) => b.goals - a.goals || a.name.localeCompare(b.name));
 
