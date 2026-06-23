@@ -13,7 +13,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.95.0";
+const APP_VERSION = "3.96.0";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -15594,6 +15594,34 @@ function LeagueHub({
       return (a.uid || "").localeCompare(b.uid || "");
     });
 
+    // 📈 Rank-change arrows: compare each member's current position to the
+    // position we saved the last time the SCORES changed. Returns uid → delta
+    // (positive = moved UP, negative = moved DOWN, 0 = no change / new).
+    const rankTrends = {};
+    if (hasActuals) {
+      const snapKey = `wc2026_prev_ranks_${activeLeagueCode || "x"}`;
+      // A signature of the current standings (points per member). Only when this
+      // changes do we treat it as a new "round" and refresh the saved snapshot.
+      const sig = members.map(p => `${p.uid}:${p.totalPoints}`).join("|");
+      let snap = { sig: "", ranks: {} };
+      try { snap = JSON.parse(localStorage.getItem(snapKey) || '{"sig":"","ranks":{}}'); } catch {}
+
+      members.forEach((p, i) => {
+        const prev = snap.ranks?.[p.uid];
+        rankTrends[p.uid] = (typeof prev === "number") ? (prev - i) : 0;
+      });
+
+      // If the standings signature changed, save the PREVIOUS positions as the
+      // new baseline (so arrows reflect movement since the last scoring change).
+      if (sig !== snap.sig) {
+        const newRanks = {};
+        members.forEach((p, i) => { newRanks[p.uid] = i; });
+        setTimeout(() => {
+          try { localStorage.setItem(snapKey, JSON.stringify({ sig, ranks: newRanks })); } catch {}
+        }, 50);
+      }
+    }
+
     // Drill into one member
     if (viewing) {
       const m = members.find(x => x.uid === viewing);
@@ -16435,6 +16463,15 @@ function LeagueHub({
                 {showPoints && isPodium && (
                   <span style={{fontSize:9,color:podiumBorder,fontWeight:800,letterSpacing:1}}>
                     {i===0?"1ST":i===1?"2ND":"3RD"}
+                  </span>
+                )}
+                {/* 📈 Rank-change arrow */}
+                {showPoints && rankTrends[p.uid] !== 0 && rankTrends[p.uid] !== undefined && (
+                  <span style={{
+                    fontSize:9,fontWeight:900,lineHeight:1,
+                    color: rankTrends[p.uid] > 0 ? "#34d399" : "#fb7185",
+                  }}>
+                    {rankTrends[p.uid] > 0 ? "▲" : "▼"}{Math.abs(rankTrends[p.uid])}
                   </span>
                 )}
               </div>
