@@ -139,19 +139,15 @@ export async function fetchLiveResults(force = false) {
   if (!force) {
     const cached = getCache();
     if (cached) return cached.data;
-  }
 
-  // 🛡️ Even with force=true, respect the hard rate-limit. If we fetched very
-  // recently, return whatever cache we have rather than hammering the API.
-  if (!liveFetchAllowed()) {
-    const cached = getCache();
-    if (cached) return cached.data;
-    // No cache but rate-limited: try the stale cache directly
-    try {
-      const raw = localStorage.getItem(CACHE_KEY);
-      if (raw) return JSON.parse(raw).data;
-    } catch {}
-    // Nothing cached at all — fall through and allow this one fetch
+    // 🛡️ Rate-limit only NON-forced (automatic) refreshes. A user pressing the
+    // refresh button (force=true) always gets fresh data so new goals show up.
+    if (!liveFetchAllowed()) {
+      try {
+        const raw = localStorage.getItem(CACHE_KEY);
+        if (raw) return JSON.parse(raw).data;
+      } catch {}
+    }
   }
 
   if (!API_FOOTBALL_KEY || API_FOOTBALL_KEY === "PASTE_HERE") {
@@ -442,13 +438,15 @@ export async function buildTopScorersFromEvents(liveData) {
     ...Object.values(liveData.knockout || {}),
   ];
 
+  // Count goals from matches that are finished OR currently live — so a goal
+  // scored in an in-progress match shows up immediately, not only at full time.
   const finishedIds = allFixtures
-    .filter(f => f.isFinished && f.fixtureId)
+    .filter(f => (f.isFinished || f.isLive) && f.fixtureId)
     .map(f => f.fixtureId);
 
   if (finishedIds.length === 0) return [];
 
-  // Fetch events for each finished fixture
+  // Fetch events for each relevant fixture
   const goalTally = {}; // name → { goals, team }
 
   for (const fixtureId of finishedIds) {
@@ -460,7 +458,16 @@ export async function buildTopScorersFromEvents(liveData) {
       const json = await res.json();
       for (const e of (json.response || [])) {
         if (e.type !== "Goal") continue;
-        if (e.detail === "Own Goal") continue; // לא סופרים גול עצמי
+        // API-Football returns several non-goal events under type "Goal".
+        // Count only REAL goals: skip own goals, missed penalties, and any
+        // goal that was disallowed (e.g. by VAR). Without this, a player who
+        // missed a penalty would be credited with an extra goal.
+        const detail = (e.detail || "").toLowerCase();
+        const comments = (e.comments || "").toLowerCase();
+        if (detail === "own goal") continue;            // גול עצמי
+        if (detail === "missed penalty") continue;       // פנדל שהוחמץ
+        if (comments.includes("disallowed")) continue;   // גול שבוטל (VAR)
+        if (comments.includes("penalty shootout")) continue; // דו-קרב פנדלים
         const name = e.player?.name;
         const team = normalizeTeam(e.team?.name || "");
         if (!name) continue;
