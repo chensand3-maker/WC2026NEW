@@ -13,7 +13,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.96.0";
+const APP_VERSION = "3.96.1";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -16522,7 +16522,6 @@ function LeagueHub({
                   color: showPoints ? (isPodium ? podiumBorder : "#94a3b8") : "#475569",
                   lineHeight:1,
                 }}><AnimatedNumber value={p.totalPoints} /></div>
-                <div style={{fontSize:9,color:"#94a3b8",letterSpacing:1}}>{t("league.pts")}</div>
               </div>
             </button>
           );
