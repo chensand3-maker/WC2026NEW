@@ -106,6 +106,18 @@ function markLiveFetch() {
   try { localStorage.setItem("wc2026_last_live_fetch", String(Date.now())); } catch {}
 }
 
+// 📊 Count every real API call so the in-app counter is accurate.
+function countApiCall() {
+  try {
+    const today = new Date().toISOString().slice(0, 10);
+    const stats = JSON.parse(localStorage.getItem("wc2026_api_stats_v1") || "{}");
+    if (stats.date !== today) { stats.date = today; stats.calls = 0; }
+    stats.calls = (stats.calls || 0) + 1;
+    stats.lastCall = Date.now();
+    localStorage.setItem("wc2026_api_stats_v1", JSON.stringify(stats));
+  } catch {}
+}
+
 export function clearLiveCache() {
   try {
     // Clear all versions
@@ -156,17 +168,7 @@ export async function fetchLiveResults(force = false) {
   markLiveFetch();
 
   // 📊 Track total API calls today
-  try {
-    const today = new Date().toISOString().slice(0, 10);
-    const stats = JSON.parse(localStorage.getItem("wc2026_api_stats_v1") || "{}");
-    if (stats.date !== today) {
-      stats.date = today;
-      stats.calls = 0;
-    }
-    stats.calls = (stats.calls || 0) + 1;
-    stats.lastCall = Date.now();
-    localStorage.setItem("wc2026_api_stats_v1", JSON.stringify(stats));
-  } catch {}
+  countApiCall();
 
   const res = await fetch(`${API_URL}/fixtures?league=1&season=2026`, {
     headers: { "x-apisports-key": API_FOOTBALL_KEY },
@@ -350,6 +352,7 @@ export async function fetchMatchDetails(apiFixtureId) {
     throw new Error("API-Football key not set");
   }
 
+  countApiCall();
   const eventsRes = await fetch(`${API_URL}/fixtures/events?fixture=${apiFixtureId}`, {
     headers: { "x-apisports-key": API_FOOTBALL_KEY },
   });
@@ -487,6 +490,7 @@ export async function buildTopScorersFromEvents(liveData) {
 
   for (const { id, finished } of toFetch) {
     try {
+      countApiCall();
       const res = await fetch(`${API_URL}/fixtures/events?fixture=${id}`, {
         headers: { "x-apisports-key": API_FOOTBALL_KEY },
       });
