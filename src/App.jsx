@@ -13,7 +13,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.94.0";
+const APP_VERSION = "3.95.0";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -11835,13 +11835,6 @@ function BonusPicks({
             )
           ) : (
             <>
-              {/* 🐛 TEMP DEBUG */}
-              <div style={{fontSize:9,color:"#f87171",fontFamily:"monospace",background:"rgba(0,0,0,0.5)",padding:"4px",borderRadius:5,marginBottom:6,wordBreak:"break-all"}}>
-                סהכ {topScorers.length} שחקנים · {(() => {
-                  const mb = topScorers.find(s => (s.name||"").toLowerCase().includes("mbapp"));
-                  return mb ? `מבאפה: ${mb.goals} גולים` : "מבאפה לא נמצא ברשימה";
-                })()}
-              </div>
               {/* Top 10 */}
               <div>
                 {topScorers.slice(0, 10).map((s, i) => {
