@@ -419,7 +419,7 @@ function setTopScorersCache(data) {
 // we aggregate goals from each match's events.
 
 const SCORERS_FROM_EVENTS_KEY = "wc2026_scorers_events_v1";
-const SCORERS_FROM_EVENTS_TTL = 3 * 60 * 1000; // 3 min
+const SCORERS_FROM_EVENTS_TTL = 10 * 60 * 1000; // 10 min
 
 export async function buildTopScorersFromEvents(liveData) {
   // Check cache

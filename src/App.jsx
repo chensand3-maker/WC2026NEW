@@ -14,7 +14,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.99.4";
+const APP_VERSION = "3.99.5";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -18880,17 +18880,9 @@ function AppInner() {
 
   // Fetch top scorers (separate API call, same 5-min cache)
   const fetchAndApplyTopScorers = async (force = false) => {
-    // 💰 Only the league ADMIN computes top scorers from the API. Everyone else
-    // receives them through Firebase (see the subscribe handler that calls
-    // setTopScorers(data.topScorers)). This cuts API usage by ~6/7 for a league
-    // of 7, since members no longer each hit /fixtures/events.
-    const inALeague = Boolean(leagueData && leagueCode);
-    const amLeagueAdmin = leagueData?.createdBy === name;
-    // Non-admins inside a league rely on shared Firebase data (unless they
-    // explicitly force a manual refresh). Solo users (no league) still compute.
-    if (inALeague && !amLeagueAdmin && !force) {
-      return;
-    }
+    // Everyone computes top scorers, but the permanent per-fixture cache means
+    // each finished match is fetched only ONCE per device, and live matches are
+    // rate-limited — so this stays cheap on the API.
     if (force) {
       try {
         localStorage.removeItem("wc2026_topscorers_v1");
