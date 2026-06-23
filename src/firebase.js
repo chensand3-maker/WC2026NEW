@@ -80,6 +80,15 @@ export async function adminSetMemberTopScorer(code, userId, pick) {
   });
 }
 
+// 👑 Admin: set (or clear) the champion (winner) pick for a specific member.
+export async function adminSetMemberWinner(code, userId, pick) {
+  if (!code || !userId) return;
+  const ref = doc(db, "leagues", code);
+  await updateDoc(ref, {
+    [`members.${userId}.winnerPick`]: pick || null,
+  });
+}
+
 export async function leaveLeague(code, userId) {
   const ref = doc(db, "leagues", code);
   await updateDoc(ref, {
