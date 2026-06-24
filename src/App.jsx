@@ -14,7 +14,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "4.0.0";
+const APP_VERSION = "4.0.1";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -13177,18 +13177,18 @@ function MatchDetailsModal({ fixture, apiFixtureId, onClose }) {
           background:"rgba(15,23,42,0.5)",borderRadius:10,
         }}>
           <div style={{flex:1,textAlign:lang==="he"?"left":"right"}}>
-            <div style={{fontSize:13,color:"#fff",fontWeight:800}}>{home?.n}</div>
-            <div style={{fontSize:24,marginTop:2}}>{home?.f}</div>
+            <div style={{fontSize:13,color:"#fff",fontWeight:800}}>{away?.n}</div>
+            <div style={{fontSize:24,marginTop:2}}>{away?.f}</div>
           </div>
           <div style={{
             fontSize:26,fontWeight:900,color:"#fbbf24",
             fontVariantNumeric:"tabular-nums",padding:"0 8px",letterSpacing:-1,
           }}>
-            {(fixture.h ?? (goals.length ? homeScore : "—"))} : {(fixture.a ?? (goals.length ? awayScore : "—"))}
+            {(fixture.a ?? (goals.length ? awayScore : "—"))} : {(fixture.h ?? (goals.length ? homeScore : "—"))}
           </div>
           <div style={{flex:1,textAlign:lang==="he"?"right":"left"}}>
-            <div style={{fontSize:13,color:"#fff",fontWeight:800}}>{away?.n}</div>
-            <div style={{fontSize:24,marginTop:2}}>{away?.f}</div>
+            <div style={{fontSize:13,color:"#fff",fontWeight:800}}>{home?.n}</div>
+            <div style={{fontSize:24,marginTop:2}}>{home?.f}</div>
           </div>
         </div>
 
