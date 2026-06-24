@@ -10,11 +10,11 @@ import {
   fetchAllGlobalUsers, deleteGlobalUser,
   adminSetMemberTopScorer, adminSetMemberWinner,
 } from "./firebase";
-import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWinners, mapKnockoutToBracket, fetchTopScorers, buildTopScorersFromEvents, clearTopScorersFromEventsCache, fetchMatchDetails, getApiFixtureId, fetchLineup } from "./liveResults";
+import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWinners, mapKnockoutToBracket, fetchTopScorers, buildTopScorersFromEvents, clearTopScorersFromEventsCache, fetchMatchDetails, getApiFixtureId, fetchLineup, buildTeamMatchStats, clearTeamMatchStatsCache } from "./liveResults";
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "4.5.1";
+const APP_VERSION = "4.6.0";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -13499,7 +13499,7 @@ function getTeamMatches(teamName, actuals) {
   return out.reverse(); // newest first
 }
 
-function StatsScreen({ actuals, lang, onClose, initialTeam = null }) {
+function StatsScreen({ actuals, lang, onClose, initialTeam = null, teamMatchStats = {} }) {
   const he = lang === "he";
   const [selectedTeam, setSelectedTeam] = useState(initialTeam);
   const S = computeTeamStats(actuals);
@@ -13652,6 +13652,61 @@ function StatsScreen({ actuals, lang, onClose, initialTeam = null }) {
               {statBox(he?"שערים למשחק":"Goals/game", t.gfpg.toFixed(2), "#60a5fa")}
             </div>
 
+            {/* Advanced: attack & control (only if we have match stats) */}
+            {(() => {
+              const ms = teamMatchStats[t.name];
+              if (!ms || !ms.games) return null;
+              const g = ms.games;
+              const avg = (x) => (x / g).toFixed(1);
+              const shotAcc = ms.shots > 0 ? Math.round(ms.shotsOnGoal / ms.shots * 100) : 0;
+              return (
+                <>
+                  {/* Attack */}
+                  <div style={{fontSize:11,fontWeight:800,color:"#94a3b8",margin:"4px 4px 8px"}}>{he?"התקפה":"Attack"}</div>
+                  {/* shot accuracy radial */}
+                  <div style={{display:"flex",alignItems:"center",gap:16,background:"rgba(15,23,42,0.5)",border:"1px solid rgba(71,85,105,0.25)",borderRadius:14,padding:14,marginBottom:8}}>
+                    <svg width="76" height="76" viewBox="0 0 36 36" style={{transform:"rotate(-90deg)",flexShrink:0}}>
+                      <circle cx="18" cy="18" r="15.9" fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth="4" />
+                      <circle cx="18" cy="18" r="15.9" fill="none" stroke="#fbbf24" strokeWidth="4" strokeLinecap="round" strokeDasharray={`${shotAcc} 100`} />
+                    </svg>
+                    <div style={{flex:1}}>
+                      <div style={{fontSize:18,fontWeight:900,color:"#fbbf24",direction:"ltr"}}>{shotAcc}%</div>
+                      <div style={{fontSize:11,color:"#94a3b8",marginTop:2}}>{he?"דיוק בעיטות למסגרת":"Shot accuracy"}</div>
+                    </div>
+                  </div>
+                  <div style={{display:"flex",flexWrap:"wrap",gap:8,marginBottom:8}}>
+                    {statBox(he?"בעיטות למשחק":"Shots/game", avg(ms.shots), "#fbbf24")}
+                    {statBox(he?"למסגרת למשחק":"On target/g", avg(ms.shotsOnGoal), "#fb923c")}
+                    {statBox(he?"קרנות למשחק":"Corners/g", avg(ms.corners), "#a855f7")}
+                    {statBox(he?"אופסיידים":"Offsides/g", avg(ms.offsides), "#60a5fa")}
+                  </div>
+
+                  {/* Control */}
+                  <div style={{fontSize:11,fontWeight:800,color:"#94a3b8",margin:"4px 4px 8px"}}>{he?"שליטה":"Control"}</div>
+                  {/* possession bar */}
+                  {ms.possession > 0 && (() => {
+                    const poss = Math.round(ms.possession / g);
+                    return (
+                      <div style={{background:"rgba(15,23,42,0.5)",border:"1px solid rgba(71,85,105,0.25)",borderRadius:14,padding:14,marginBottom:8}}>
+                        <div style={{display:"flex",justifyContent:"space-between",fontSize:11,color:"#94a3b8",marginBottom:7}}>
+                          <span>{he?"אחזקת כדור ממוצעת":"Avg possession"}</span>
+                          <span style={{color:"#3b82f6",fontWeight:800,direction:"ltr"}}>{poss}%</span>
+                        </div>
+                        <div style={{height:22,borderRadius:8,overflow:"hidden",display:"flex",background:"rgba(255,255,255,0.08)"}}>
+                          <div style={{width:`${poss}%`,background:"linear-gradient(90deg,#3b82f6,#2563eb)",display:"flex",alignItems:"center",padding:"0 10px",fontSize:12,fontWeight:900,color:"#fff",direction:"ltr"}}>{poss}%</div>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                  <div style={{display:"flex",flexWrap:"wrap",gap:8,marginBottom:8}}>
+                    {statBox(he?"פאולים למשחק":"Fouls/game", avg(ms.fouls), "#f59e0b")}
+                    {statBox(he?"צהובים למשחק":"Yellows/g", avg(ms.yellow), "#facc15")}
+                    {statBox(he?"אדומים":"Reds", ms.red, "#ef4444")}
+                  </div>
+                </>
+              );
+            })()}
+
             {/* Defense */}
             <div style={{fontSize:11,fontWeight:800,color:"#94a3b8",margin:"0 4px 8px"}}>{he?"הגנה":"Defense"}</div>
             <div style={{display:"flex",flexWrap:"wrap",gap:8,marginBottom:8}}>
@@ -13686,7 +13741,9 @@ function StatsScreen({ actuals, lang, onClose, initialTeam = null }) {
             })()}
 
             <div style={{fontSize:10,color:"#64748b",textAlign:"center",marginTop:10}}>
-              {he?"נתוני xG ובעיטות יתווספו בקרוב":"xG & shots coming soon"}
+              {teamMatchStats[t.name]?.games
+                ? (he?"נתוני בעיטות ושליטה מבוססים על משחקים שהסתיימו":"Shots & control based on finished matches")
+                : (he?"טוען נתוני בעיטות ושליטה...":"Loading shots & control...")}
             </div>
           </div>
         );
@@ -17993,6 +18050,7 @@ function AppInner() {
   // 🎯 Which fixture's details modal is open
   const [matchDetailsFor, setMatchDetailsFor] = useState(null);
   const [statsTeam, setStatsTeam] = useState(null); // preselect team in stats
+  const [teamMatchStats, setTeamMatchStats] = useState({}); // advanced stats per team
   const [actualKo, setActualKo] = useState(saved?.actualKo || {});
   // NEW: actual scores for knockout matches (parallel to actualKo which is just a/b winner)
   // Format: { "R32-1": { h: "2", a: "1" }, ... }
@@ -19288,6 +19346,22 @@ function AppInner() {
   };
 
   // Fetch top scorers (separate API call, same 5-min cache)
+  // 📊 Fetch advanced team match stats when the stats screen opens
+  useEffect(() => {
+    if (screen !== "stats") return;
+    let cancelled = false;
+    (async () => {
+      try {
+        let ld = liveData;
+        if (!ld) { try { ld = await fetchLiveResults(false); } catch {} }
+        const agg = await buildTeamMatchStats(ld);
+        if (!cancelled) setTeamMatchStats(agg || {});
+      } catch {}
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [screen]);
+
   const fetchAndApplyTopScorers = async (force = false) => {
     // Everyone computes top scorers, but the permanent per-fixture cache means
     // each finished match is fetched only ONCE per device, and live matches are
@@ -20077,7 +20151,7 @@ function AppInner() {
       )}
 
       {screen === "stats" && (
-        <StatsScreen actuals={actuals} lang={lang} initialTeam={statsTeam} onClose={()=>{setStatsTeam(null); setScreen("today");}} />
+        <StatsScreen actuals={actuals} lang={lang} initialTeam={statsTeam} teamMatchStats={teamMatchStats} onClose={()=>{setStatsTeam(null); setScreen("today");}} />
       )}
 
       {screen === "results" && (

@@ -531,6 +531,116 @@ export async function buildTopScorersFromEvents(liveData) {
   return out;
 }
 
+// ─── TEAM MATCH STATISTICS (shots, possession, fouls, etc.) ───────────────────
+// Fetches /fixtures/statistics for each finished match ONCE, caches forever.
+// Returns per-team aggregated totals so the app can show averages.
+const TEAM_STATS_KEY = "wc2026_team_stats_v1";
+const TEAM_STATS_AGG_KEY = "wc2026_team_stats_agg_v1";
+const TEAM_STATS_AGG_TTL = 10 * 60 * 1000; // 10 min
+
+function parseStatValue(v) {
+  if (v == null) return 0;
+  if (typeof v === "number") return v;
+  // "56%" → 56
+  const n = parseFloat(String(v).replace("%", ""));
+  return Number.isNaN(n) ? 0 : n;
+}
+
+export async function buildTeamMatchStats(liveData) {
+  // Aggregate cache (so we don't recompute every render)
+  try {
+    const raw = localStorage.getItem(TEAM_STATS_AGG_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Date.now() - parsed.fetchedAt < TEAM_STATS_AGG_TTL) return parsed.data;
+    }
+  } catch {}
+
+  if (!liveData) return {};
+
+  const allFixtures = [
+    ...Object.values(liveData.byTeamPair || {}),
+    ...Object.values(liveData.knockout || {}),
+  ];
+  const finishedList = allFixtures.filter(f => f.isFinished && f.fixtureId);
+  if (finishedList.length === 0) return {};
+
+  // Permanent per-fixture cache of raw statistics
+  let perFixture = {};
+  try { perFixture = JSON.parse(localStorage.getItem(TEAM_STATS_KEY) || "{}"); } catch {}
+
+  // Only fetch matches we haven't cached yet (cap at 6 per pass for safety)
+  const toFetch = finishedList.filter(f => !perFixture[f.fixtureId]).slice(0, 6);
+
+  for (const f of toFetch) {
+    try {
+      countApiCall();
+      const res = await fetch(`${API_URL}/fixtures/statistics?fixture=${f.fixtureId}`, {
+        headers: { "x-apisports-key": API_FOOTBALL_KEY },
+      });
+      if (!res.ok) { perFixture[f.fixtureId] = { teams: [] }; continue; }
+      const json = await res.json();
+      const teams = (json.response || []).map(block => {
+        const get = (type) => {
+          const item = (block.statistics || []).find(s => s.type === type);
+          return item ? parseStatValue(item.value) : 0;
+        };
+        return {
+          team: normalizeTeam(block.team?.name || ""),
+          shots: get("Total Shots"),
+          shotsOnGoal: get("Shots on Goal"),
+          fouls: get("Fouls"),
+          corners: get("Corner Kicks"),
+          offsides: get("Offsides"),
+          possession: get("Ball Possession"),
+          yellow: get("Yellow Cards"),
+          red: get("Red Cards"),
+          saves: get("Goalkeeper Saves"),
+        };
+      });
+      perFixture[f.fixtureId] = { teams };
+    } catch {
+      perFixture[f.fixtureId] = { teams: [] };
+    }
+  }
+  try { localStorage.setItem(TEAM_STATS_KEY, JSON.stringify(perFixture)); } catch {}
+
+  // Aggregate per team across all cached fixtures
+  const agg = {}; // teamName → { games, shots, shotsOnGoal, fouls, corners, offsides, possession, yellow, red, saves }
+  const ensure = (name) => {
+    if (!agg[name]) agg[name] = { games: 0, shots: 0, shotsOnGoal: 0, fouls: 0, corners: 0, offsides: 0, possession: 0, yellow: 0, red: 0, saves: 0 };
+    return agg[name];
+  };
+  for (const f of finishedList) {
+    const rec = perFixture[f.fixtureId];
+    if (!rec || !rec.teams) continue;
+    rec.teams.forEach(ts => {
+      if (!ts.team) return;
+      const a = ensure(ts.team);
+      a.games++;
+      a.shots += ts.shots;
+      a.shotsOnGoal += ts.shotsOnGoal;
+      a.fouls += ts.fouls;
+      a.corners += ts.corners;
+      a.offsides += ts.offsides;
+      a.possession += ts.possession;
+      a.yellow += ts.yellow;
+      a.red += ts.red;
+      a.saves += ts.saves;
+    });
+  }
+
+  try { localStorage.setItem(TEAM_STATS_AGG_KEY, JSON.stringify({ fetchedAt: Date.now(), data: agg })); } catch {}
+  return agg;
+}
+
+export function clearTeamMatchStatsCache() {
+  try {
+    localStorage.removeItem(TEAM_STATS_KEY);
+    localStorage.removeItem(TEAM_STATS_AGG_KEY);
+  } catch {}
+}
+
 export function clearTopScorersFromEventsCache() {
   try { localStorage.removeItem(SCORERS_FROM_EVENTS_KEY); } catch {}
 }
