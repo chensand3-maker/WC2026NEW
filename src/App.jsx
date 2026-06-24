@@ -14,7 +14,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "4.7.0";
+const APP_VERSION = "4.7.1";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -13994,7 +13994,124 @@ function StatsScreen({ actuals, lang, onClose, initialTeam = null, teamMatchStat
   );
 }
 
-function TodayScreen({ picks, actuals, onPick, onBack, onGoToBracket, leagueMembers = null, onRefresh, lastFetchAt, onShowDetails = null, liveData = null, onTeamClick = null }) {
+// ─── ⚔️ Inline head-to-head shown under each match ────────────────────────────
+function H2HInline({ homeTeam, awayTeam, actuals, teamMatchStats }) {
+  const [open, setOpen] = useState(false);
+  const S = useMemo(() => computeTeamStats(actuals), [actuals]);
+  const tH = S.teams.find(x => x.name === homeTeam);
+  const tA = S.teams.find(x => x.name === awayTeam);
+  const msH = teamMatchStats[homeTeam];
+  const msA = teamMatchStats[awayTeam];
+
+  // Need at least basic stats for both
+  if (!tH || !tA) {
+    return null;
+  }
+
+  const rows = [];
+  const push = (label, va, vb, higherBetter=true, fmt=(x)=>x) => {
+    if (va == null || vb == null || Number.isNaN(va) || Number.isNaN(vb)) return;
+    rows.push({ label, va, vb, higherBetter, fmt });
+  };
+
+  push("שערים בעד", tH.gf, tA.gf);
+  push("שערי חובה", tH.ga, tA.ga, false);
+  push("הפרש שערים", tH.gd, tA.gd, true, (x)=>`${x>=0?"+":""}${x}`);
+  push("שערים למשחק", tH.gfpg, tA.gfpg, true, (x)=>x.toFixed(2));
+  push("ספיגה למשחק", tH.gapg, tA.gapg, false, (x)=>x.toFixed(2));
+  push("קלין שיטס", tH.cleanSheets, tA.cleanSheets);
+  if (msH?.games && msA?.games) {
+    const gh = msH.games, ga = msA.games;
+    push("בעיטות למשחק", msH.shots/gh, msA.shots/ga, true, (x)=>x.toFixed(1));
+    push("למסגרת למשחק", msH.shotsOnGoal/gh, msA.shotsOnGoal/ga, true, (x)=>x.toFixed(1));
+    const accH = msH.shots>0?msH.shotsOnGoal/msH.shots*100:0;
+    const accA = msA.shots>0?msA.shotsOnGoal/msA.shots*100:0;
+    push("דיוק למסגרת", accH, accA, true, (x)=>Math.round(x)+"%");
+    push("קרנות למשחק", msH.corners/gh, msA.corners/ga, true, (x)=>x.toFixed(1));
+    push("אחזקת כדור", msH.possession/gh, msA.possession/ga, true, (x)=>Math.round(x)+"%");
+    push("פאולים למשחק", msH.fouls/gh, msA.fouls/ga, false, (x)=>x.toFixed(1));
+    push("צהובים למשחק", msH.yellow/gh, msA.yellow/ga, false, (x)=>x.toFixed(1));
+  }
+
+  if (rows.length === 0) return null;
+
+  let winsH = 0, winsA = 0;
+  rows.forEach(r => {
+    const hWins = r.higherBetter ? r.va > r.vb : r.va < r.vb;
+    const aWins = r.higherBetter ? r.vb > r.va : r.vb < r.va;
+    if (hWins) winsH++; else if (aWins) winsA++;
+  });
+
+  const flag = (n)=>flagFor(n);
+
+  const renderRow = (r, i) => {
+    const hWins = r.higherBetter ? r.va > r.vb : r.va < r.vb;
+    const aWins = r.higherBetter ? r.vb > r.va : r.vb < r.va;
+    const total = Math.abs(r.va) + Math.abs(r.vb) || 1;
+    let pctH = (Math.abs(r.va) / total) * 100;
+    let pctA = 100 - pctH;
+    if (!r.higherBetter) { const t = pctH; pctH = pctA; pctA = t; }
+    const colH = hWins ? "#22c55e" : aWins ? "#ef4444" : "#94a3b8";
+    const colA = aWins ? "#22c55e" : hWins ? "#ef4444" : "#94a3b8";
+    const barH = hWins ? "linear-gradient(90deg,#16a34a,#22c55e)" : aWins ? "linear-gradient(90deg,#dc2626,#ef4444)" : "#64748b";
+    const barA = aWins ? "linear-gradient(90deg,#16a34a,#22c55e)" : hWins ? "linear-gradient(90deg,#dc2626,#ef4444)" : "#64748b";
+    return (
+      <div key={i} style={{marginBottom:10}}>
+        <div style={{textAlign:"center",fontSize:10,color:"#8b9cc0",fontWeight:700,marginBottom:3}}>{r.label}</div>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:3}}>
+          <span style={{fontSize:14,fontWeight:900,direction:"ltr",color:colH}}>{r.fmt(r.va)}</span>
+          <span style={{fontSize:14,fontWeight:900,direction:"ltr",color:colA}}>{r.fmt(r.vb)}</span>
+        </div>
+        <div style={{display:"flex",height:6,borderRadius:4,overflow:"hidden",background:"rgba(255,255,255,0.06)"}}>
+          <div style={{width:`${pctH}%`,background:barH}} />
+          <div style={{width:`${pctA}%`,background:barA,marginInlineStart:"auto"}} />
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div style={{marginTop:8}}>
+      <button onClick={()=>setOpen(o=>!o)} style={{
+        width:"100%",
+        background:"linear-gradient(135deg,rgba(59,130,246,0.12),rgba(36,49,80,0.4))",
+        border:"1px solid rgba(59,130,246,0.3)",
+        color:"#93c5fd",borderRadius:10,padding:"9px 12px",
+        fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit",
+        display:"flex",alignItems:"center",justifyContent:"center",gap:6,
+      }}>
+        ⚔️ ראש בראש {open ? "▲" : "▼"}
+      </button>
+
+      {open && (
+        <div style={{marginTop:8,background:"rgba(15,23,42,0.5)",border:"1px solid rgba(71,85,105,0.25)",borderRadius:12,padding:"14px 12px"}}>
+          {/* header with flags + win counts */}
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+            <div style={{textAlign:"center",flex:1}}>
+              <div style={{fontSize:26}}>{flag(homeTeam)}</div>
+              <div style={{fontSize:11,fontWeight:700,color:"#f1f5f9",marginTop:2}}>{homeTeam}</div>
+              <div style={{fontSize:18,fontWeight:900,color:winsH>=winsA?"#22c55e":"#94a3b8",marginTop:3}}>{winsH}</div>
+            </div>
+            <div style={{fontSize:12,fontWeight:900,color:"#64748b"}}>VS</div>
+            <div style={{textAlign:"center",flex:1}}>
+              <div style={{fontSize:26}}>{flag(awayTeam)}</div>
+              <div style={{fontSize:11,fontWeight:700,color:"#f1f5f9",marginTop:2}}>{awayTeam}</div>
+              <div style={{fontSize:18,fontWeight:900,color:winsA>winsH?"#22c55e":"#94a3b8",marginTop:3}}>{winsA}</div>
+            </div>
+          </div>
+          {rows.map((r,i)=>renderRow(r,i))}
+          {(!msH?.games || !msA?.games) && (
+            <div style={{fontSize:9,color:"#64748b",textAlign:"center",marginTop:8}}>
+              נתוני בעיטות ושליטה ייטענו ברגעים הקרובים
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function TodayScreen({ picks, actuals, onPick, onBack, onGoToBracket, leagueMembers = null, onRefresh, lastFetchAt, onShowDetails = null, liveData = null, onTeamClick = null, teamMatchStats = {} }) {
   const t = useT();
 
   // ─── Pull-to-refresh ───
@@ -14128,6 +14245,7 @@ function TodayScreen({ picks, actuals, onPick, onBack, onGoToBracket, leagueMemb
           {!isFinishedSection && (
             <div style={{marginBottom:12}}>
               <LineupButton homeTeam={f.home} awayTeam={f.away} />
+              <H2HInline homeTeam={f.home} awayTeam={f.away} actuals={actuals} teamMatchStats={teamMatchStats} />
             </div>
           )}
         </div>
@@ -19515,7 +19633,7 @@ function AppInner() {
   // Fetch top scorers (separate API call, same 5-min cache)
   // 📊 Fetch advanced team match stats when the stats screen opens
   useEffect(() => {
-    if (screen !== "stats" && screen !== "h2h") return;
+    if (screen !== "stats" && screen !== "h2h" && screen !== "today") return;
     let cancelled = false;
     (async () => {
       try {
@@ -20237,6 +20355,7 @@ function AppInner() {
           }}
           onShowDetails={(fix) => setMatchDetailsFor(fix)}
           onTeamClick={(teamName) => { setStatsTeam(teamName); setScreen("stats"); }}
+          teamMatchStats={teamMatchStats}
         />
       )}
 
