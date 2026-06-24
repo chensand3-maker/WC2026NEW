@@ -14,7 +14,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "4.3.0";
+const APP_VERSION = "4.3.1";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -17144,6 +17144,15 @@ function LeagueHub({
               padding:"8px 16px",borderRadius:10,
               cursor:"pointer",fontFamily:"inherit",
             }}>🌍 {t("world.openButton")}</button>
+          )}
+          {onShowStats && (
+            <button onClick={onShowStats} style={{
+              background:"linear-gradient(135deg,rgba(168,85,247,0.15),rgba(36,49,80,0.5))",
+              border:"1px solid rgba(168,85,247,0.4)",
+              color:"#c4b5fd",fontSize:12,fontWeight:700,
+              padding:"8px 16px",borderRadius:10,
+              cursor:"pointer",fontFamily:"inherit",
+            }}>📊 סטטיסטיקות</button>
           )}
           <button onClick={requestLeave} style={{background:"transparent",border:"none",color:"#64748b",fontSize:12,cursor:"pointer",fontFamily:"inherit",textDecoration:"underline"}}>{t("league.leaveLeague")}</button>
         </div>
