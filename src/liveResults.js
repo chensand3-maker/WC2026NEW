@@ -534,8 +534,8 @@ export async function buildTopScorersFromEvents(liveData) {
 // ─── TEAM MATCH STATISTICS (shots, possession, fouls, etc.) ───────────────────
 // Fetches /fixtures/statistics for each finished match ONCE, caches forever.
 // Returns per-team aggregated totals so the app can show averages.
-const TEAM_STATS_KEY = "wc2026_team_stats_v2";
-const TEAM_STATS_AGG_KEY = "wc2026_team_stats_agg_v2";
+const TEAM_STATS_KEY = "wc2026_team_stats_v3";
+const TEAM_STATS_AGG_KEY = "wc2026_team_stats_agg_v3";
 const TEAM_STATS_AGG_TTL = 10 * 60 * 1000; // 10 min
 
 function parseStatValue(v) {
@@ -578,8 +578,8 @@ export async function buildTeamMatchStats(liveData) {
   let perFixture = {};
   try { perFixture = JSON.parse(localStorage.getItem(TEAM_STATS_KEY) || "{}"); } catch {}
 
-  // Only fetch matches we haven't cached yet (cap at 6 per pass for safety)
-  const toFetch = finishedList.filter(f => !perFixture[f.fixtureId]).slice(0, 6);
+  // Only fetch matches we haven't cached yet (cap per pass for safety)
+  const toFetch = finishedList.filter(f => !perFixture[f.fixtureId]).slice(0, 12);
 
   for (const f of toFetch) {
     try {
@@ -587,7 +587,9 @@ export async function buildTeamMatchStats(liveData) {
       const res = await fetch(`${API_URL}/fixtures/statistics?fixture=${f.fixtureId}`, {
         headers: { "x-apisports-key": API_FOOTBALL_KEY },
       });
-      if (!res.ok) { perFixture[f.fixtureId] = { teams: [] }; continue; }
+      // If the API isn't ready yet (not ok / 204), DON'T cache an empty result —
+      // leave it uncached so we retry next time instead of locking in zeros.
+      if (!res.ok) continue;
       const json = await res.json();
       const teams = (json.response || []).map(block => {
         const get = (type) => {
@@ -607,9 +609,10 @@ export async function buildTeamMatchStats(liveData) {
           saves: get("Goalkeeper Saves"),
         };
       });
-      perFixture[f.fixtureId] = { teams };
+      // Only cache when we actually got team data; otherwise retry later.
+      if (teams.length > 0) perFixture[f.fixtureId] = { teams };
     } catch {
-      perFixture[f.fixtureId] = { teams: [] };
+      // network error — leave uncached to retry
     }
   }
   try { localStorage.setItem(TEAM_STATS_KEY, JSON.stringify(perFixture)); } catch {}
