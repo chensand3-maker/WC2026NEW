@@ -14,7 +14,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.99.6";
+const APP_VERSION = "3.99.7";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -13198,16 +13198,24 @@ function MatchDetailsModal({ fixture, apiFixtureId, onClose }) {
                 </div>
                 <div style={{display:"flex",flexDirection:"column",gap:5}}>
                   {goals.map((g, i) => {
-                    // Compare the goal's team (an API name) against the API home
-                    // team name — never our internal name, which may differ
-                    // (e.g. "Korea Republic" vs "South Korea") and flip the flag.
-                    const gTeam = (g.teamName || "").trim().toLowerCase();
-                    const apiHome = (details?.homeTeam || "").trim().toLowerCase();
-                    const apiAway = (details?.awayTeam || "").trim().toLowerCase();
+                    // Resolve the flag directly from the goal's own team name
+                    // (already normalized by the data layer). This avoids any
+                    // home/away guessing that could flip the flag.
+                    const gName = (g.teamName || "").trim();
+                    const gNameL = gName.toLowerCase();
+                    const homeL = (fixture.home || "").toLowerCase();
+                    const awayL = (fixture.away || "").toLowerCase();
                     let isHome;
-                    if (gTeam && apiHome && gTeam === apiHome) isHome = true;
-                    else if (gTeam && apiAway && gTeam === apiAway) isHome = false;
-                    else isHome = g.teamName === fixture.home || g.teamName === details.homeTeam; // fallback
+                    if (gNameL && gNameL === homeL) isHome = true;
+                    else if (gNameL && gNameL === awayL) isHome = false;
+                    else {
+                      // fallback to API home-team comparison
+                      const apiHome = (details?.homeTeam || "").toLowerCase();
+                      isHome = apiHome ? (gNameL === apiHome) : (g.teamName === fixture.home);
+                    }
+                    // Flag: look the team up by its own name; fall back to side.
+                    const goalTeamObj = findTeam(gName) || (isHome ? home : away);
+                    const goalFlag = goalTeamObj?.f || (isHome ? home?.f : away?.f) || "⚽";
                     return (
                       <div key={i} style={{
                         display:"flex",alignItems:"center",gap:8,
@@ -13234,7 +13242,7 @@ function MatchDetailsModal({ fixture, apiFixtureId, onClose }) {
                             </div>
                           )}
                         </div>
-                        <span style={{fontSize:16}}>{isHome ? home?.f : away?.f}</span>
+                        <span style={{fontSize:16}}>{goalFlag}</span>
                       </div>
                     );
                   })}
