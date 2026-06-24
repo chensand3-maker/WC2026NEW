@@ -14,7 +14,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "4.0.2";
+const APP_VERSION = "4.3.0";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -13396,6 +13396,353 @@ function SkeletonScorerRow() {
   );
 }
 
+// ─── 📊 TEAM STATISTICS — computed from actual results (no API calls) ─────────
+function computeTeamStats(actuals) {
+  // teamName → { gf, ga, w, d, l, played, cleanSheets }
+  const stats = {};
+  const ensure = (name) => {
+    if (!stats[name]) stats[name] = { name, gf: 0, ga: 0, w: 0, d: 0, l: 0, played: 0, cleanSheets: 0 };
+    return stats[name];
+  };
+
+  let totalGoals = 0, totalMatches = 0, biggestWin = null, highestScoring = null;
+
+  FIXTURES.forEach(f => {
+    const a = actuals[f.id];
+    if (!a || a.h === undefined || a.h === "" || a.a === undefined || a.a === "") return;
+    if (a.isLive === true) return; // count only finished matches
+    const h = Number(a.h), aw = Number(a.a);
+    if (Number.isNaN(h) || Number.isNaN(aw)) return;
+
+    const home = ensure(f.home), away = ensure(f.away);
+    home.gf += h; home.ga += aw; away.gf += aw; away.ga += h;
+    home.played++; away.played++;
+    if (aw === 0) home.cleanSheets++;   // home kept a clean sheet
+    if (h === 0) away.cleanSheets++;     // away kept a clean sheet
+    if (h > aw) { home.w++; away.l++; }
+    else if (h < aw) { away.w++; home.l++; }
+    else { home.d++; away.d++; }
+
+    totalGoals += h + aw; totalMatches++;
+    const margin = Math.abs(h - aw);
+    if (!biggestWin || margin > biggestWin.margin) {
+      biggestWin = { margin, home: f.home, away: f.away, h, a: aw };
+    }
+    if (!highestScoring || (h + aw) > highestScoring.total) {
+      highestScoring = { total: h + aw, home: f.home, away: f.away, h, a: aw };
+    }
+  });
+
+  const arr = Object.values(stats);
+  arr.forEach(t => {
+    t.gd = t.gf - t.ga;
+    t.points = t.w * 3 + t.d;
+    t.ppg = t.played ? (t.points / t.played) : 0;       // points per game
+    t.gfpg = t.played ? (t.gf / t.played) : 0;          // goals for per game
+    t.gapg = t.played ? (t.ga / t.played) : 0;          // goals against per game
+  });
+
+  return {
+    teams: arr,
+    totalGoals,
+    totalMatches,
+    avgGoals: totalMatches ? (totalGoals / totalMatches) : 0,
+    biggestWin,
+    highestScoring,
+  };
+}
+
+function StatBar({ pct, color }) {
+  return (
+    <div style={{flex:1,height:8,background:"rgba(71,85,105,0.3)",borderRadius:4,overflow:"hidden"}}>
+      <div style={{height:"100%",width:`${pct}%`,background:color,borderRadius:4,transition:"width 0.5s"}} />
+    </div>
+  );
+}
+
+// Get all finished matches for a specific team, newest first
+function getTeamMatches(teamName, actuals) {
+  const out = [];
+  FIXTURES.forEach((f, idx) => {
+    if (f.home !== teamName && f.away !== teamName) return;
+    const a = actuals[f.id];
+    if (!a || a.h === undefined || a.h === "" || a.a === undefined || a.a === "") return;
+    if (a.isLive === true) return;
+    const h = Number(a.h), aw = Number(a.a);
+    if (Number.isNaN(h) || Number.isNaN(aw)) return;
+    const isHome = f.home === teamName;
+    const myGoals = isHome ? h : aw;
+    const oppGoals = isHome ? aw : h;
+    const opponent = isHome ? f.away : f.home;
+    let result = "d";
+    if (myGoals > oppGoals) result = "w";
+    else if (myGoals < oppGoals) result = "l";
+    out.push({ idx, opponent, myGoals, oppGoals, result });
+  });
+  return out.reverse(); // newest first
+}
+
+function StatsScreen({ actuals, lang }) {
+  const he = lang === "he";
+  const [selectedTeam, setSelectedTeam] = useState(null);
+  const S = computeTeamStats(actuals);
+  const flag = (n) => flagFor(n);
+
+  if (S.totalMatches === 0) {
+    return (
+      <div style={{padding:"40px 20px",textAlign:"center",color:"#94a3b8"}}>
+        <div style={{fontSize:40,marginBottom:12}}>📊</div>
+        <div style={{fontSize:15,fontWeight:700,color:"#f1f5f9"}}>{he?"עדיין אין נתונים":"No data yet"}</div>
+        <div style={{fontSize:12,marginTop:6}}>{he?"הסטטיסטיקות יופיעו אחרי שיסתיימו משחקים":"Stats appear after matches finish"}</div>
+      </div>
+    );
+  }
+
+  const topAttack = [...S.teams].sort((a,b)=>b.gf-a.gf).slice(0,5);
+  const bestDef   = [...S.teams].sort((a,b)=>a.ga-b.ga).slice(0,5);
+  const worstDef  = [...S.teams].sort((a,b)=>b.ga-a.ga).slice(0,3);
+  const bestGd    = [...S.teams].sort((a,b)=>b.gd-a.gd).slice(0,5);
+  const mostWins  = [...S.teams].sort((a,b)=>b.w-a.w).slice(0,3);
+  const mostDraws = [...S.teams].sort((a,b)=>b.d-a.d).slice(0,3);
+
+  const maxGf = Math.max(...topAttack.map(t=>t.gf), 1);
+  const maxGdAbs = Math.max(...bestGd.map(t=>Math.abs(t.gd)), 1);
+
+  const card = (icon, title, tag, children) => (
+    <div style={{background:"rgba(30,41,59,0.45)",border:"1px solid rgba(71,85,105,0.3)",borderRadius:16,padding:14,marginBottom:13}}>
+      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12}}>
+        <span style={{fontSize:20}}>{icon}</span>
+        <span style={{fontSize:14,fontWeight:800,color:"#f1f5f9"}}>{title}</span>
+        {tag && <span style={{marginInlineStart:"auto",fontSize:9,color:"#64748b",background:"rgba(0,0,0,0.3)",padding:"3px 8px",borderRadius:20}}>{tag}</span>}
+      </div>
+      {children}
+    </div>
+  );
+
+  const rankRow = (i, t, value, color) => (
+    <div key={t.name} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 4px",borderBottom:"1px solid rgba(71,85,105,0.15)"}}>
+      <span style={{fontSize:13,fontWeight:900,width:20,color:i===0?"#fbbf24":"#64748b"}}>{i+1}</span>
+      <span style={{fontSize:22}}>{flag(t.name)}</span>
+      <span style={{flex:1,fontSize:13,fontWeight:600,color:"#f1f5f9"}}>{t.name}</span>
+      <span style={{fontSize:16,fontWeight:900,color}}>{value}</span>
+    </div>
+  );
+
+  return (
+    <div style={{padding:"8px 14px 30px",maxWidth:480,margin:"0 auto"}}>
+      <h1 style={{fontSize:19,textAlign:"center",marginBottom:3,color:"#f1f5f9"}}>📊 {he?"סטטיסטיקות":"Statistics"}</h1>
+      <div style={{textAlign:"center",fontSize:11,color:"#94a3b8",marginBottom:16}}>{he?"כל המספרים של המונדיאל":"All the World Cup numbers"}</div>
+
+      {/* 🔍 Team filter */}
+      <div style={{marginBottom:16}}>
+        <select
+          value={selectedTeam || ""}
+          onChange={e=>setSelectedTeam(e.target.value || null)}
+          style={{
+            width:"100%",padding:"12px 14px",borderRadius:12,
+            background:"rgba(30,41,59,0.6)",border:"1px solid rgba(71,85,105,0.4)",
+            color:"#f1f5f9",fontSize:14,fontWeight:700,fontFamily:"inherit",
+            appearance:"none",cursor:"pointer",textAlign:"center",
+          }}>
+          <option value="">{he?"🔍 בחר נבחרת לסטטיסטיקות מלאות":"🔍 Pick a team for full stats"}</option>
+          {[...S.teams].sort((a,b)=>a.name.localeCompare(b.name)).map(t=>(
+            <option key={t.name} value={t.name}>{flag(t.name)} {t.name}</option>
+          ))}
+        </select>
+      </div>
+
+      {/* 🏳️ DETAILED TEAM CARD */}
+      {selectedTeam && (() => {
+        const t = S.teams.find(x=>x.name===selectedTeam);
+        if (!t) return null;
+        const statBox = (label, value, color, sub) => (
+          <div style={{flex:1,minWidth:"30%",background:"rgba(15,23,42,0.5)",border:"1px solid rgba(71,85,105,0.25)",borderRadius:12,padding:"11px 8px",textAlign:"center"}}>
+            <div style={{fontSize:20,fontWeight:900,color:color||"#f1f5f9",lineHeight:1,direction:"ltr"}}>{value}</div>
+            <div style={{fontSize:9,color:"#94a3b8",marginTop:4,lineHeight:1.2}}>{label}</div>
+            {sub && <div style={{fontSize:8,color:"#64748b",marginTop:1}}>{sub}</div>}
+          </div>
+        );
+        return (
+          <div style={{marginBottom:18}}>
+            {/* Header */}
+            <div style={{display:"flex",alignItems:"center",gap:12,background:"linear-gradient(135deg,rgba(251,191,36,0.12),rgba(36,49,80,0.4))",border:"1px solid rgba(251,191,36,0.3)",borderRadius:16,padding:16,marginBottom:12}}>
+              <span style={{fontSize:46}}>{flag(t.name)}</span>
+              <div style={{flex:1}}>
+                <div style={{fontSize:20,fontWeight:900,color:"#f1f5f9"}}>{t.name}</div>
+                <div style={{fontSize:11,color:"#fbbf24",marginTop:2}}>{t.points} {he?"נקודות":"pts"} · {t.played} {he?"משחקים":"games"}</div>
+              </div>
+            </div>
+
+            {/* W/D/L donut chart */}
+            {(() => {
+              const total = t.played || 1;
+              const wPct = (t.w / total) * 100;
+              const dPct = (t.d / total) * 100;
+              const lPct = (t.l / total) * 100;
+              // dash arrays for each segment (circumference ~ 100 units with r=15.9)
+              const seg = (pct) => `${pct} ${100 - pct}`;
+              let offset = 0;
+              const wOff = 0; offset += wPct;
+              const dOff = -offset; offset += dPct;
+              const lOff = -offset;
+              return (
+                <div style={{display:"flex",alignItems:"center",gap:18,background:"rgba(15,23,42,0.5)",border:"1px solid rgba(71,85,105,0.25)",borderRadius:16,padding:16,marginBottom:14}}>
+                  <svg width="92" height="92" viewBox="0 0 36 36" style={{transform:"rotate(-90deg)",flexShrink:0}}>
+                    <circle cx="18" cy="18" r="15.9" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="4" />
+                    {t.w > 0 && <circle cx="18" cy="18" r="15.9" fill="none" stroke="#4ade80" strokeWidth="4" strokeDasharray={seg(wPct)} strokeDashoffset={wOff} />}
+                    {t.d > 0 && <circle cx="18" cy="18" r="15.9" fill="none" stroke="#94a3b8" strokeWidth="4" strokeDasharray={seg(dPct)} strokeDashoffset={dOff} />}
+                    {t.l > 0 && <circle cx="18" cy="18" r="15.9" fill="none" stroke="#f87171" strokeWidth="4" strokeDasharray={seg(lPct)} strokeDashoffset={lOff} />}
+                  </svg>
+                  <div style={{flex:1}}>
+                    <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:7,fontSize:12,color:"#cbd5e1"}}>
+                      <span style={{width:11,height:11,borderRadius:3,background:"#4ade80",display:"inline-block"}}></span>
+                      <span style={{flex:1}}>{he?"ניצחונות":"Wins"}</span>
+                      <b style={{color:"#4ade80"}}>{t.w}</b>
+                    </div>
+                    <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:7,fontSize:12,color:"#cbd5e1"}}>
+                      <span style={{width:11,height:11,borderRadius:3,background:"#94a3b8",display:"inline-block"}}></span>
+                      <span style={{flex:1}}>{he?"תיקו":"Draws"}</span>
+                      <b style={{color:"#94a3b8"}}>{t.d}</b>
+                    </div>
+                    <div style={{display:"flex",alignItems:"center",gap:8,fontSize:12,color:"#cbd5e1"}}>
+                      <span style={{width:11,height:11,borderRadius:3,background:"#f87171",display:"inline-block"}}></span>
+                      <span style={{flex:1}}>{he?"הפסדים":"Losses"}</span>
+                      <b style={{color:"#f87171"}}>{t.l}</b>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Base stats */}
+            <div style={{fontSize:11,fontWeight:800,color:"#94a3b8",margin:"0 4px 8px"}}>{he?"בסיס":"Base"}</div>
+            <div style={{display:"flex",flexWrap:"wrap",gap:8,marginBottom:14}}>
+              {statBox(he?"נצח/תיקו/הפסד":"W/D/L", `${t.w}-${t.d}-${t.l}`, "#f1f5f9")}
+              {statBox(he?"שערים בעד":"Goals for", t.gf, "#4ade80")}
+              {statBox(he?"שערים נגד":"Goals against", t.ga, "#f87171")}
+              {statBox(he?"הפרש שערים":"Goal diff", `${t.gd>=0?"+":""}${t.gd}`, t.gd>=0?"#4ade80":"#f87171")}
+              {statBox(he?"נק' למשחק":"Pts/game", t.ppg.toFixed(2), "#fbbf24")}
+              {statBox(he?"שערים למשחק":"Goals/game", t.gfpg.toFixed(2), "#60a5fa")}
+            </div>
+
+            {/* Defense */}
+            <div style={{fontSize:11,fontWeight:800,color:"#94a3b8",margin:"0 4px 8px"}}>{he?"הגנה":"Defense"}</div>
+            <div style={{display:"flex",flexWrap:"wrap",gap:8,marginBottom:8}}>
+              {statBox(he?"ספיגה למשחק":"Conceded/game", t.gapg.toFixed(2), "#f87171")}
+              {statBox(he?"קלין שיטס":"Clean sheets", t.cleanSheets, "#60a5fa")}
+              {statBox(he?"% שער נקי":"Clean %", t.played?Math.round(t.cleanSheets/t.played*100)+"%":"—", "#a855f7")}
+            </div>
+
+            {/* All matches */}
+            {(() => {
+              const matches = getTeamMatches(t.name, actuals);
+              if (matches.length === 0) return null;
+              const resColor = (r) => r==="w" ? "#4ade80" : r==="l" ? "#f87171" : "#94a3b8";
+              const resBg = (r) => r==="w" ? "linear-gradient(145deg,#22c55e,#16a34a)" : r==="l" ? "linear-gradient(145deg,#ef4444,#dc2626)" : "linear-gradient(145deg,#94a3b8,#64748b)";
+              const resLetter = (r) => he ? (r==="w"?"נ":r==="l"?"ה":"ת") : (r==="w"?"W":r==="l"?"L":"D");
+              return (
+                <div style={{marginTop:16}}>
+                  <div style={{fontSize:11,fontWeight:800,color:"#94a3b8",margin:"0 4px 8px"}}>{he?"כל המשחקים":"All matches"}</div>
+                  {matches.map((m, i) => (
+                    <div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"11px 13px",borderRadius:13,marginBottom:8,background:"rgba(15,23,42,0.5)",border:"1px solid rgba(71,85,105,0.25)"}}>
+                      <div style={{width:22,height:22,borderRadius:7,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:900,color:"#fff",flexShrink:0,background:resBg(m.result)}}>{resLetter(m.result)}</div>
+                      <div style={{flex:1,display:"flex",alignItems:"center",gap:7,fontSize:13,fontWeight:600,color:"#f1f5f9"}}>
+                        <span style={{fontSize:9,color:"#64748b"}}>{he?"נגד":"vs"}</span>
+                        <span style={{fontSize:18}}>{flag(m.opponent)}</span>
+                        <span>{m.opponent}</span>
+                      </div>
+                      <div style={{fontSize:15,fontWeight:900,direction:"ltr",color:resColor(m.result)}}>{m.myGoals} : {m.oppGoals}</div>
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
+
+            <div style={{fontSize:10,color:"#64748b",textAlign:"center",marginTop:10}}>
+              {he?"נתוני xG ובעיטות יתווספו בקרוב":"xG & shots coming soon"}
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* Hide global stats when a team is selected, to keep focus */}
+      {!selectedTeam && <>
+      {/* Big numbers */}
+      {card("🔢", he?"מספרים גדולים":"Big numbers", null,
+        <div style={{display:"flex",justifyContent:"space-around",textAlign:"center"}}>
+          <div style={{flex:1}}><div style={{fontSize:26,fontWeight:900,color:"#fbbf24",lineHeight:1}}>{S.totalGoals}</div><div style={{fontSize:9,color:"#94a3b8",marginTop:4}}>{he?"גולים בסה\"כ":"total goals"}</div></div>
+          <div style={{flex:1}}><div style={{fontSize:26,fontWeight:900,color:"#60a5fa",lineHeight:1}}>{S.avgGoals.toFixed(1)}</div><div style={{fontSize:9,color:"#94a3b8",marginTop:4}}>{he?"ממוצע למשחק":"per match"}</div></div>
+          <div style={{flex:1}}><div style={{fontSize:26,fontWeight:900,color:"#c084fc",lineHeight:1}}>{S.totalMatches}</div><div style={{fontSize:9,color:"#94a3b8",marginTop:4}}>{he?"משחקים":"matches"}</div></div>
+        </div>
+      )}
+
+      {/* Top attack with bars */}
+      {card("⚽", he?"מתקפה הכי קטלנית":"Deadliest attack", he?"הכי הרבה גולים":"most goals",
+        topAttack.map((t,i)=>(
+          <div key={t.name} style={{display:"flex",alignItems:"center",gap:8,padding:"6px 4px"}}>
+            <span style={{fontSize:20}}>{flag(t.name)}</span>
+            <span style={{fontSize:12,fontWeight:600,color:"#f1f5f9",width:74,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{t.name}</span>
+            <StatBar pct={(t.gf/maxGf)*100} color="linear-gradient(90deg,#4ade80,#22c55e)" />
+            <span style={{fontSize:15,fontWeight:900,color:"#4ade80",width:24,textAlign:"left"}}>{t.gf}</span>
+          </div>
+        ))
+      )}
+
+      {/* Best defense */}
+      {card("🛡️", he?"חומה בלתי חדירה":"Impenetrable wall", he?"הכי מעט ספגו":"fewest conceded",
+        bestDef.map((t,i)=>rankRow(i,t,t.ga,"#4ade80"))
+      )}
+
+      {/* Worst defense */}
+      {card("🥅", he?"דלת מסתובבת":"Revolving door", he?"הכי הרבה ספגו":"most conceded",
+        worstDef.map((t,i)=>rankRow(i,t,t.ga,"#f87171"))
+      )}
+
+      {/* Goal difference bars */}
+      {card("📈", he?"יחס שערים":"Goal difference", he?"זכות פחות חובה":"scored − conceded",
+        bestGd.map((t,i)=>(
+          <div key={t.name} style={{display:"flex",alignItems:"center",gap:8,padding:"6px 4px"}}>
+            <span style={{fontSize:20}}>{flag(t.name)}</span>
+            <span style={{fontSize:12,fontWeight:600,color:"#f1f5f9",width:74,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{t.name}</span>
+            <StatBar pct={(Math.abs(t.gd)/maxGdAbs)*100} color={t.gd>=0?"linear-gradient(90deg,#4ade80,#22c55e)":"linear-gradient(90deg,#f87171,#ef4444)"} />
+            <span style={{fontSize:14,fontWeight:900,color:t.gd>=0?"#4ade80":"#f87171",width:30,textAlign:"left"}}>{t.gd>=0?"+":""}{t.gd}</span>
+          </div>
+        ))
+      )}
+
+      {/* Most wins */}
+      {card("🏆", he?"מלכת הניצחונות":"Most wins", he?"הכי הרבה ניצחונות":"most wins",
+        mostWins.map((t,i)=>rankRow(i,t,t.w,"#fbbf24"))
+      )}
+
+      {/* Most draws */}
+      {card("🤝", he?"מלכת התיקו":"Draw queen", he?"הכי הרבה תיקויות":"most draws",
+        mostDraws.map((t,i)=>rankRow(i,t,t.d,"#94a3b8"))
+      )}
+
+      {/* Highlight matches */}
+      {S.highestScoring && card("🔥", he?"המשחק הכי משוגע":"Wildest match", he?"הכי הרבה גולים":"most goals",
+        <div style={{textAlign:"center",padding:"4px 0"}}>
+          <div style={{fontSize:14,fontWeight:700,color:"#f1f5f9"}}>
+            {flag(S.highestScoring.home)} {S.highestScoring.home} {S.highestScoring.h} – {S.highestScoring.a} {S.highestScoring.away} {flag(S.highestScoring.away)}
+          </div>
+          <div style={{fontSize:11,color:"#fbbf24",marginTop:4}}>{S.highestScoring.total} {he?"גולים במשחק אחד!":"goals in one match!"}</div>
+        </div>
+      )}
+
+      {S.biggestWin && S.biggestWin.margin > 0 && card("💥", he?"הניצחון הכי גדול":"Biggest win", he?"הפרש שערים":"goal margin",
+        <div style={{textAlign:"center",padding:"4px 0"}}>
+          <div style={{fontSize:14,fontWeight:700,color:"#f1f5f9"}}>
+            {flag(S.biggestWin.home)} {S.biggestWin.home} {S.biggestWin.h} – {S.biggestWin.a} {S.biggestWin.away} {flag(S.biggestWin.away)}
+          </div>
+          <div style={{fontSize:11,color:"#4ade80",marginTop:4}}>{he?"הפרש של":"margin of"} {S.biggestWin.margin} {he?"שערים":"goals"}</div>
+        </div>
+      )}
+      </>}
+    </div>
+  );
+}
+
 function TodayScreen({ picks, actuals, onPick, onBack, onGoToBracket, leagueMembers = null, onRefresh, lastFetchAt, onShowDetails = null, liveData = null }) {
   const t = useT();
 
@@ -15290,6 +15637,7 @@ function LeagueHub({
   topScorers = [],
   leagueCodes, activeLeagueCode, setActiveLeagueCode, allLeagueData, maxLeagues,
   onShowWorld,
+  onShowStats,
   cardCollection,
   myTheme = null,
   myAvatarContent = null,
@@ -15692,6 +16040,19 @@ function LeagueHub({
             display:"flex",alignItems:"center",justifyContent:"center",gap:8,
           }}>
             🌍 {t("world.openButton")}
+          </button>
+        )}
+        {onShowStats && (
+          <button onClick={onShowStats} style={{
+            marginTop:10,width:"100%",
+            background:"linear-gradient(135deg,rgba(168,85,247,0.15),rgba(36,49,80,0.5))",
+            border:"1px solid rgba(168,85,247,0.4)",
+            color:"#c4b5fd",
+            borderRadius:12,padding:"12px 14px",
+            fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"inherit",
+            display:"flex",alignItems:"center",justifyContent:"center",gap:8,
+          }}>
+            📊 סטטיסטיקות
           </button>
         )}
       </div>
@@ -19682,6 +20043,7 @@ function AppInner() {
           allLeagueData={allLeagueData}
           maxLeagues={MAX_LEAGUES}
           onShowWorld={()=>setScreen("world")}
+          onShowStats={()=>setScreen("stats")}
           cardCollection={cardCollection}
           myTheme={myTheme}
           myAvatarContent={myAvatarContent}
@@ -19694,6 +20056,10 @@ function AppInner() {
           name={name}
           onClose={()=>setScreen("league")}
         />
+      )}
+
+      {screen === "stats" && (
+        <StatsScreen actuals={actuals} lang={lang} />
       )}
 
       {screen === "results" && (
