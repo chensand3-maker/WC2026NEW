@@ -14,7 +14,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.99.5";
+const APP_VERSION = "3.99.6";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -13198,7 +13198,16 @@ function MatchDetailsModal({ fixture, apiFixtureId, onClose }) {
                 </div>
                 <div style={{display:"flex",flexDirection:"column",gap:5}}>
                   {goals.map((g, i) => {
-                    const isHome = g.teamName === fixture.home || g.teamName === details.homeTeam;
+                    // Compare the goal's team (an API name) against the API home
+                    // team name — never our internal name, which may differ
+                    // (e.g. "Korea Republic" vs "South Korea") and flip the flag.
+                    const gTeam = (g.teamName || "").trim().toLowerCase();
+                    const apiHome = (details?.homeTeam || "").trim().toLowerCase();
+                    const apiAway = (details?.awayTeam || "").trim().toLowerCase();
+                    let isHome;
+                    if (gTeam && apiHome && gTeam === apiHome) isHome = true;
+                    else if (gTeam && apiAway && gTeam === apiAway) isHome = false;
+                    else isHome = g.teamName === fixture.home || g.teamName === details.homeTeam; // fallback
                     return (
                       <div key={i} style={{
                         display:"flex",alignItems:"center",gap:8,
