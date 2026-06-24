@@ -14,7 +14,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "4.3.1";
+const APP_VERSION = "4.4.0";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -11769,6 +11769,7 @@ function BonusPicks({
   isLocked, onBack,
   topScorers = [], topScorersFetchedAt, topScorersError,
   onFetchTopScorers,
+  onShowStats,
 }) {
   const t = useT();
   const [scorerMode, setScorerMode] = useState("list"); // "list" | "custom"
@@ -11797,6 +11798,20 @@ function BonusPicks({
         <h2 style={{fontSize:24,margin:"4px 0",background:"linear-gradient(180deg,#fde68a,#f59e0b)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",fontWeight:900}}>{t("bonus.title")}</h2>
         <p style={{fontSize:12,color:"#94a3b8",margin:0}}>{t("bonus.subtitle")}</p>
       </div>
+
+      {onShowStats && (
+        <button onClick={onShowStats} style={{
+          width:"100%",marginBottom:18,
+          background:"linear-gradient(135deg,rgba(168,85,247,0.18),rgba(36,49,80,0.5))",
+          border:"1px solid rgba(168,85,247,0.4)",
+          color:"#c4b5fd",
+          borderRadius:12,padding:"12px 14px",
+          fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"inherit",
+          display:"flex",alignItems:"center",justifyContent:"center",gap:8,
+        }}>
+          📊 סטטיסטיקות נבחרות
+        </button>
+      )}
 
       {isLocked && (
         <div style={{background:"rgba(239,68,68,0.1)",border:"1px solid rgba(239,68,68,0.4)",borderRadius:10,padding:"10px 12px",marginBottom:14,fontSize:11,color:"#fca5a5",textAlign:"center"}}>
@@ -13482,7 +13497,7 @@ function getTeamMatches(teamName, actuals) {
   return out.reverse(); // newest first
 }
 
-function StatsScreen({ actuals, lang }) {
+function StatsScreen({ actuals, lang, onClose }) {
   const he = lang === "he";
   const [selectedTeam, setSelectedTeam] = useState(null);
   const S = computeTeamStats(actuals);
@@ -13530,6 +13545,15 @@ function StatsScreen({ actuals, lang }) {
 
   return (
     <div style={{padding:"8px 14px 30px",maxWidth:480,margin:"0 auto"}}>
+      {onClose && (
+        <button onClick={onClose} style={{
+          position:"absolute",top:14,insetInlineEnd:14,zIndex:10,
+          width:36,height:36,borderRadius:12,
+          background:"rgba(30,41,59,0.8)",border:"1px solid rgba(71,85,105,0.4)",
+          color:"#f1f5f9",fontSize:18,cursor:"pointer",fontFamily:"inherit",
+          display:"flex",alignItems:"center",justifyContent:"center",
+        }}>✕</button>
+      )}
       <h1 style={{fontSize:19,textAlign:"center",marginBottom:3,color:"#f1f5f9"}}>📊 {he?"סטטיסטיקות":"Statistics"}</h1>
       <div style={{textAlign:"center",fontSize:11,color:"#94a3b8",marginBottom:16}}>{he?"כל המספרים של המונדיאל":"All the World Cup numbers"}</div>
 
@@ -13617,7 +13641,6 @@ function StatsScreen({ actuals, lang }) {
             {/* Base stats */}
             <div style={{fontSize:11,fontWeight:800,color:"#94a3b8",margin:"0 4px 8px"}}>{he?"בסיס":"Base"}</div>
             <div style={{display:"flex",flexWrap:"wrap",gap:8,marginBottom:14}}>
-              {statBox(he?"נצח/תיקו/הפסד":"W/D/L", `${t.w}-${t.d}-${t.l}`, "#f1f5f9")}
               {statBox(he?"שערים בעד":"Goals for", t.gf, "#4ade80")}
               {statBox(he?"שערים נגד":"Goals against", t.ga, "#f87171")}
               {statBox(he?"הפרש שערים":"Goal diff", `${t.gd>=0?"+":""}${t.gd}`, t.gd>=0?"#4ade80":"#f87171")}
@@ -16042,19 +16065,6 @@ function LeagueHub({
             🌍 {t("world.openButton")}
           </button>
         )}
-        {onShowStats && (
-          <button onClick={onShowStats} style={{
-            marginTop:10,width:"100%",
-            background:"linear-gradient(135deg,rgba(168,85,247,0.15),rgba(36,49,80,0.5))",
-            border:"1px solid rgba(168,85,247,0.4)",
-            color:"#c4b5fd",
-            borderRadius:12,padding:"12px 14px",
-            fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"inherit",
-            display:"flex",alignItems:"center",justifyContent:"center",gap:8,
-          }}>
-            📊 סטטיסטיקות
-          </button>
-        )}
       </div>
     );
   }
@@ -17144,15 +17154,6 @@ function LeagueHub({
               padding:"8px 16px",borderRadius:10,
               cursor:"pointer",fontFamily:"inherit",
             }}>🌍 {t("world.openButton")}</button>
-          )}
-          {onShowStats && (
-            <button onClick={onShowStats} style={{
-              background:"linear-gradient(135deg,rgba(168,85,247,0.15),rgba(36,49,80,0.5))",
-              border:"1px solid rgba(168,85,247,0.4)",
-              color:"#c4b5fd",fontSize:12,fontWeight:700,
-              padding:"8px 16px",borderRadius:10,
-              cursor:"pointer",fontFamily:"inherit",
-            }}>📊 סטטיסטיקות</button>
           )}
           <button onClick={requestLeave} style={{background:"transparent",border:"none",color:"#64748b",fontSize:12,cursor:"pointer",fontFamily:"inherit",textDecoration:"underline"}}>{t("league.leaveLeague")}</button>
         </div>
@@ -20031,6 +20032,7 @@ function AppInner() {
           topScorersFetchedAt={topScorersFetchedAt}
           topScorersError={topScorersError}
           onFetchTopScorers={()=>fetchAndApplyTopScorers(true)}
+          onShowStats={()=>setScreen("stats")}
         />
       )}
 
@@ -20068,7 +20070,7 @@ function AppInner() {
       )}
 
       {screen === "stats" && (
-        <StatsScreen actuals={actuals} lang={lang} />
+        <StatsScreen actuals={actuals} lang={lang} onClose={()=>setScreen("bonus")} />
       )}
 
       {screen === "results" && (
