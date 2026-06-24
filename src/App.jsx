@@ -14,7 +14,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "4.6.5";
+const APP_VERSION = "4.7.0";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -11770,6 +11770,7 @@ function BonusPicks({
   topScorers = [], topScorersFetchedAt, topScorersError,
   onFetchTopScorers,
   onShowStats,
+  onShowH2H,
 }) {
   const t = useT();
   const [scorerMode, setScorerMode] = useState("list"); // "list" | "custom"
@@ -11800,17 +11801,32 @@ function BonusPicks({
       </div>
 
       {onShowStats && (
-        <button onClick={onShowStats} style={{
-          width:"100%",marginBottom:18,
-          background:"linear-gradient(135deg,rgba(168,85,247,0.18),rgba(36,49,80,0.5))",
-          border:"1px solid rgba(168,85,247,0.4)",
-          color:"#c4b5fd",
-          borderRadius:12,padding:"12px 14px",
-          fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"inherit",
-          display:"flex",alignItems:"center",justifyContent:"center",gap:8,
-        }}>
-          📊 סטטיסטיקות נבחרות
-        </button>
+        <div style={{display:"flex",gap:8,marginBottom:18}}>
+          <button onClick={onShowStats} style={{
+            flex:1,
+            background:"linear-gradient(135deg,rgba(168,85,247,0.18),rgba(36,49,80,0.5))",
+            border:"1px solid rgba(168,85,247,0.4)",
+            color:"#c4b5fd",
+            borderRadius:12,padding:"12px 10px",
+            fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit",
+            display:"flex",alignItems:"center",justifyContent:"center",gap:6,
+          }}>
+            📊 סטטיסטיקות
+          </button>
+          {onShowH2H && (
+            <button onClick={onShowH2H} style={{
+              flex:1,
+              background:"linear-gradient(135deg,rgba(59,130,246,0.18),rgba(36,49,80,0.5))",
+              border:"1px solid rgba(59,130,246,0.4)",
+              color:"#93c5fd",
+              borderRadius:12,padding:"12px 10px",
+              fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit",
+              display:"flex",alignItems:"center",justifyContent:"center",gap:6,
+            }}>
+              ⚔️ ראש בראש
+            </button>
+          )}
+        </div>
       )}
 
       {isLocked && (
@@ -13497,6 +13513,157 @@ function getTeamMatches(teamName, actuals) {
     out.push({ idx, opponent, myGoals, oppGoals, result });
   });
   return out.reverse(); // newest first
+}
+
+// ─── ⚔️ HEAD-TO-HEAD comparison of two teams ──────────────────────────────────
+function H2HScreen({ actuals, lang, onClose, teamMatchStats = {} }) {
+  const he = lang === "he";
+  const S = computeTeamStats(actuals);
+  const flag = (n) => flagFor(n);
+  const sortedTeams = [...S.teams].sort((a,b)=>a.name.localeCompare(b.name));
+  const [teamA, setTeamA] = useState(sortedTeams[0]?.name || null);
+  const [teamB, setTeamB] = useState(sortedTeams[1]?.name || null);
+
+  if (S.totalMatches === 0) {
+    return (
+      <div style={{padding:"40px 20px",textAlign:"center",color:"#94a3b8"}}>
+        <div style={{fontSize:40,marginBottom:12}}>⚔️</div>
+        <div style={{fontSize:15,fontWeight:700,color:"#f1f5f9"}}>{he?"עדיין אין נתונים":"No data yet"}</div>
+      </div>
+    );
+  }
+
+  const tA = S.teams.find(x=>x.name===teamA);
+  const tB = S.teams.find(x=>x.name===teamB);
+  const msA = teamMatchStats[teamA];
+  const msB = teamMatchStats[teamB];
+
+  // Build comparison rows. higherBetter=false means lower value wins.
+  const rows = [];
+  const push = (section, label, va, vb, higherBetter=true, fmt=(x)=>x) => {
+    if (va == null || vb == null) return;
+    rows.push({ section, label, va, vb, higherBetter, fmt });
+  };
+
+  if (tA && tB) {
+    push("בסיס", he?"נקודות":"Points", tA.points, tB.points);
+    push("בסיס", he?"שערים בעד":"Goals for", tA.gf, tB.gf);
+    push("בסיס", he?"שערי חובה":"Goals against", tA.ga, tB.ga, false);
+    push("בסיס", he?"הפרש שערים":"Goal diff", tA.gd, tB.gd, true, (x)=>`${x>=0?"+":""}${x}`);
+    push("בסיס", he?"שערים למשחק":"Goals/game", tA.gfpg, tB.gfpg, true, (x)=>x.toFixed(2));
+  }
+  if (msA?.games && msB?.games) {
+    const ga = msA.games, gb = msB.games;
+    push("התקפה", he?"בעיטות למשחק":"Shots/game", msA.shots/ga, msB.shots/gb, true, (x)=>x.toFixed(1));
+    push("התקפה", he?"בעיטות למסגרת למשחק":"On target/g", msA.shotsOnGoal/ga, msB.shotsOnGoal/gb, true, (x)=>x.toFixed(1));
+    const accA = msA.shots>0?msA.shotsOnGoal/msA.shots*100:0;
+    const accB = msB.shots>0?msB.shotsOnGoal/msB.shots*100:0;
+    push("התקפה", he?"דיוק בעיטות למסגרת":"Shot accuracy", accA, accB, true, (x)=>Math.round(x)+"%");
+    push("התקפה", he?"קרנות למשחק":"Corners/game", msA.corners/ga, msB.corners/gb, true, (x)=>x.toFixed(1));
+    push("התקפה", he?"אופסיידים למשחק":"Offsides/g", msA.offsides/ga, msB.offsides/gb, false, (x)=>x.toFixed(1));
+    push("שליטה ומשמעת", he?"אחזקת כדור":"Possession", msA.possession/ga, msB.possession/gb, true, (x)=>Math.round(x)+"%");
+    push("שליטה ומשמעת", he?"פאולים למשחק":"Fouls/game", msA.fouls/ga, msB.fouls/gb, false, (x)=>x.toFixed(1));
+    push("שליטה ומשמעת", he?"צהובים למשחק":"Yellows/g", msA.yellow/ga, msB.yellow/gb, false, (x)=>x.toFixed(1));
+    push("שליטה ומשמעת", he?"הצלות שוער למשחק":"Saves/game", msA.saves/ga, msB.saves/gb, true, (x)=>x.toFixed(1));
+  }
+  if (tA && tB) {
+    push("הגנה", he?"ספיגה למשחק":"Conceded/game", tA.gapg, tB.gapg, false, (x)=>x.toFixed(2));
+    push("הגנה", he?"קלין שיטס":"Clean sheets", tA.cleanSheets, tB.cleanSheets);
+  }
+
+  // Count category wins
+  let winsA = 0, winsB = 0;
+  rows.forEach(r => {
+    const aWins = r.higherBetter ? r.va > r.vb : r.va < r.vb;
+    const bWins = r.higherBetter ? r.vb > r.va : r.vb < r.va;
+    if (aWins) winsA++; else if (bWins) winsB++;
+  });
+
+  const sections = [...new Set(rows.map(r=>r.section))];
+  const sectionColor = { "בסיס":"#4ade80", "התקפה":"#fbbf24", "שליטה ומשמעת":"#3b82f6", "הגנה":"#f87171" };
+
+  const renderRow = (r, i) => {
+    const aWins = r.higherBetter ? r.va > r.vb : r.va < r.vb;
+    const bWins = r.higherBetter ? r.vb > r.va : r.vb < r.va;
+    const total = Math.abs(r.va) + Math.abs(r.vb) || 1;
+    let pctA = (Math.abs(r.va) / total) * 100;
+    let pctB = 100 - pctA;
+    // for "lower is better" flip the bar so the winner's bar is bigger
+    if (!r.higherBetter) { const t = pctA; pctA = pctB; pctB = t; }
+    const colA = aWins ? "#22c55e" : bWins ? "#ef4444" : "#94a3b8";
+    const colB = bWins ? "#22c55e" : aWins ? "#ef4444" : "#94a3b8";
+    const barA = aWins ? "linear-gradient(90deg,#16a34a,#22c55e)" : bWins ? "linear-gradient(90deg,#dc2626,#ef4444)" : "#64748b";
+    const barB = bWins ? "linear-gradient(90deg,#16a34a,#22c55e)" : aWins ? "linear-gradient(90deg,#dc2626,#ef4444)" : "#64748b";
+    return (
+      <div key={i} style={{marginBottom:14}}>
+        <div style={{textAlign:"center",fontSize:11,color:"#8b9cc0",fontWeight:700,marginBottom:5}}>{r.label}</div>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
+          <span style={{fontSize:16,fontWeight:900,direction:"ltr",color:colA}}>{r.fmt(r.va)}</span>
+          <span style={{fontSize:16,fontWeight:900,direction:"ltr",color:colB}}>{r.fmt(r.vb)}</span>
+        </div>
+        <div style={{display:"flex",height:8,borderRadius:5,overflow:"hidden",background:"rgba(255,255,255,0.06)"}}>
+          <div style={{width:`${pctA}%`,background:barA}} />
+          <div style={{width:`${pctB}%`,background:barB,marginInlineStart:"auto"}} />
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div style={{padding:"8px 14px 30px",maxWidth:480,margin:"0 auto"}}>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
+        <div style={{width:36}} />
+        <h1 style={{fontSize:19,textAlign:"center",color:"#f1f5f9",flex:1}}>⚔️ {he?"ראש בראש":"Head to head"}</h1>
+        {onClose ? (
+          <button onClick={onClose} style={{width:36,height:36,borderRadius:12,flexShrink:0,background:"rgba(30,41,59,0.8)",border:"1px solid rgba(71,85,105,0.4)",color:"#f1f5f9",fontSize:18,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center"}}>✕</button>
+        ) : <div style={{width:36}} />}
+      </div>
+
+      {/* Two pickers */}
+      <div style={{display:"flex",gap:10,marginBottom:14}}>
+        {[{val:teamA,set:setTeamA},{val:teamB,set:setTeamB}].map((p,idx)=>(
+          <div key={idx} style={{flex:1,background:"linear-gradient(145deg,rgba(71,85,105,0.25),rgba(36,49,80,0.5))",border:"1px solid rgba(255,255,255,0.12)",borderRadius:14,padding:"10px 8px",textAlign:"center"}}>
+            <div style={{fontSize:30,marginBottom:4}}>{flag(p.val)}</div>
+            <select value={p.val||""} onChange={e=>p.set(e.target.value)} style={{width:"100%",background:"transparent",border:"none",color:"#f1f5f9",fontSize:13,fontWeight:800,fontFamily:"inherit",textAlign:"center",cursor:"pointer",appearance:"none"}}>
+              {sortedTeams.map(t=>(<option key={t.name} value={t.name} style={{background:"#1e293b"}}>{t.name}</option>))}
+            </select>
+          </div>
+        ))}
+      </div>
+      <div style={{textAlign:"center",margin:"-4px 0 14px"}}>
+        <span style={{background:"#0a0e1a",border:"2px solid rgba(255,255,255,0.15)",borderRadius:"50%",width:40,height:40,display:"inline-flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:900,color:"#8b9cc0"}}>VS</span>
+      </div>
+
+      {/* Summary */}
+      <div style={{display:"flex",gap:10,marginBottom:18}}>
+        <div style={{flex:1,borderRadius:14,padding:14,textAlign:"center",background:winsA>=winsB?"linear-gradient(145deg,rgba(34,197,94,0.18),rgba(36,49,80,0.5))":"linear-gradient(145deg,rgba(71,85,105,0.2),rgba(36,49,80,0.5))",border:winsA>=winsB?"1px solid rgba(34,197,94,0.4)":"1px solid rgba(255,255,255,0.1)"}}>
+          <div style={{fontSize:30,fontWeight:900,color:winsA>=winsB?"#22c55e":"#f0f4fa",lineHeight:1}}>{winsA}</div>
+          <div style={{fontSize:10,marginTop:5,color:"#8b9cc0"}}>{flag(teamA)} {teamA} {he?"מובילה ב-":"leads in"}</div>
+        </div>
+        <div style={{flex:1,borderRadius:14,padding:14,textAlign:"center",background:winsB>winsA?"linear-gradient(145deg,rgba(34,197,94,0.18),rgba(36,49,80,0.5))":"linear-gradient(145deg,rgba(71,85,105,0.2),rgba(36,49,80,0.5))",border:winsB>winsA?"1px solid rgba(34,197,94,0.4)":"1px solid rgba(255,255,255,0.1)"}}>
+          <div style={{fontSize:30,fontWeight:900,color:winsB>winsA?"#22c55e":"#f0f4fa",lineHeight:1}}>{winsB}</div>
+          <div style={{fontSize:10,marginTop:5,color:"#8b9cc0"}}>{flag(teamB)} {teamB} {he?"מובילה ב-":"leads in"}</div>
+        </div>
+      </div>
+
+      {/* Rows grouped by section */}
+      {sections.map(sec=>(
+        <div key={sec}>
+          <div style={{fontSize:12,fontWeight:800,color:"#8b9cc0",margin:"18px 4px 12px",display:"flex",alignItems:"center",gap:6}}>
+            <span style={{width:3,height:13,borderRadius:2,background:sectionColor[sec]||"#fbbf24",display:"inline-block"}}></span>
+            {he?sec:sec}
+          </div>
+          {rows.filter(r=>r.section===sec).map((r,i)=>renderRow(r,`${sec}-${i}`))}
+        </div>
+      ))}
+
+      {(!msA?.games || !msB?.games) && (
+        <div style={{fontSize:10,color:"#64748b",textAlign:"center",marginTop:14,padding:10,background:"rgba(255,255,255,0.03)",borderRadius:10}}>
+          {he?"נתוני בעיטות ושליטה ייטענו כשנפתח את המסך":"Shots & control load when screen opens"}
+        </div>
+      )}
+    </div>
+  );
 }
 
 function StatsScreen({ actuals, lang, onClose, initialTeam = null, teamMatchStats = {} }) {
@@ -19348,7 +19515,7 @@ function AppInner() {
   // Fetch top scorers (separate API call, same 5-min cache)
   // 📊 Fetch advanced team match stats when the stats screen opens
   useEffect(() => {
-    if (screen !== "stats") return;
+    if (screen !== "stats" && screen !== "h2h") return;
     let cancelled = false;
     (async () => {
       try {
@@ -20114,6 +20281,7 @@ function AppInner() {
           topScorersError={topScorersError}
           onFetchTopScorers={()=>fetchAndApplyTopScorers(true)}
           onShowStats={()=>setScreen("stats")}
+          onShowH2H={()=>setScreen("h2h")}
         />
       )}
 
@@ -20152,6 +20320,10 @@ function AppInner() {
 
       {screen === "stats" && (
         <StatsScreen actuals={actuals} lang={lang} initialTeam={statsTeam} teamMatchStats={teamMatchStats} onClose={()=>{setStatsTeam(null); setScreen("today");}} />
+      )}
+
+      {screen === "h2h" && (
+        <H2HScreen actuals={actuals} lang={lang} teamMatchStats={teamMatchStats} onClose={()=>setScreen("bonus")} />
       )}
 
       {screen === "results" && (
