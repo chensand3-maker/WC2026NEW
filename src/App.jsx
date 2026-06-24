@@ -14,7 +14,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.99.7";
+const APP_VERSION = "3.99.8";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -13165,7 +13165,7 @@ function MatchDetailsModal({ fixture, apiFixtureId, onClose }) {
             fontSize:26,fontWeight:900,color:"#fbbf24",
             fontVariantNumeric:"tabular-nums",padding:"0 8px",letterSpacing:-1,
           }}>
-            {fixture.h ?? "—"} : {fixture.a ?? "—"}
+            {(fixture.h ?? details?.homeGoals ?? "—")} : {(fixture.a ?? details?.awayGoals ?? "—")}
           </div>
           <div style={{flex:1,textAlign:lang==="he"?"right":"left"}}>
             <div style={{fontSize:13,color:"#fff",fontWeight:800}}>{away?.n}</div>
