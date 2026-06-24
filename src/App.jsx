@@ -14,7 +14,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "4.4.1";
+const APP_VERSION = "4.5.1";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -12413,7 +12413,7 @@ function LineupButton({ homeTeam, awayTeam }) {
 }
 
 
-function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, awayInputId, nextInputId, lockable = true, leagueMembers = null, onShowDetails = null, defaultCollapsed = false, apiFixtureId = null }) {
+function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, awayInputId, nextInputId, lockable = true, leagueMembers = null, onShowDetails = null, defaultCollapsed = false, apiFixtureId = null, onTeamClick = null }) {
   const [showAllPicks, setShowAllPicks] = useState(false);
   const [collapsed, setCollapsed] = useState(defaultCollapsed);
   const t = useT();
@@ -12682,7 +12682,8 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
         </div>
       ) : (
       <div style={{display:"grid",gridTemplateColumns:"1fr auto 1fr",alignItems:"center",gap:8,direction:"ltr"}}>
-        <div style={{display:"flex",alignItems:"center",gap:8,justifyContent:"flex-end",opacity:(result==="away" && showHighlight)?0.5:1}}>
+        <div onClick={onTeamClick ? (e)=>{e.stopPropagation(); onTeamClick(home.n);} : undefined}
+          style={{display:"flex",alignItems:"center",gap:8,justifyContent:"flex-end",opacity:(result==="away" && showHighlight)?0.5:1,cursor:onTeamClick?"pointer":"default"}}>
           <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",minWidth:0}}>
             <span style={{fontSize:13,fontWeight:result==="home"?800:500,color:"#f1f5f9",textAlign:"right",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{home.n}</span>
             {fifaRank(home.n) && (
@@ -12722,7 +12723,8 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
               cursor: isLocked?"not-allowed":"text",
             }}/>
         </div>
-        <div style={{display:"flex",alignItems:"center",gap:8,opacity:(result==="home" && showHighlight)?0.5:1}}>
+        <div onClick={onTeamClick ? (e)=>{e.stopPropagation(); onTeamClick(away.n);} : undefined}
+          style={{display:"flex",alignItems:"center",gap:8,opacity:(result==="home" && showHighlight)?0.5:1,cursor:onTeamClick?"pointer":"default"}}>
           <span className="flag-wave" style={{fontSize:26, animationDelay:"1.5s"}}>{away.f}</span>
           <div style={{display:"flex",flexDirection:"column",alignItems:"flex-start",minWidth:0}}>
             <span style={{fontSize:13,fontWeight:result==="away"?800:500,color:"#f1f5f9",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{away.n}</span>
@@ -13497,9 +13499,9 @@ function getTeamMatches(teamName, actuals) {
   return out.reverse(); // newest first
 }
 
-function StatsScreen({ actuals, lang, onClose }) {
+function StatsScreen({ actuals, lang, onClose, initialTeam = null }) {
   const he = lang === "he";
-  const [selectedTeam, setSelectedTeam] = useState(null);
+  const [selectedTeam, setSelectedTeam] = useState(initialTeam);
   const S = computeTeamStats(actuals);
   const flag = (n) => flagFor(n);
 
@@ -13768,7 +13770,7 @@ function StatsScreen({ actuals, lang, onClose }) {
   );
 }
 
-function TodayScreen({ picks, actuals, onPick, onBack, onGoToBracket, leagueMembers = null, onRefresh, lastFetchAt, onShowDetails = null, liveData = null }) {
+function TodayScreen({ picks, actuals, onPick, onBack, onGoToBracket, leagueMembers = null, onRefresh, lastFetchAt, onShowDetails = null, liveData = null, onTeamClick = null }) {
   const t = useT();
 
   // ─── Pull-to-refresh ───
@@ -13897,6 +13899,7 @@ function TodayScreen({ picks, actuals, onPick, onBack, onGoToBracket, leagueMemb
             onShowDetails={hasResult ? onShowDetails : null}
             defaultCollapsed={isFinishedSection}
             apiFixtureId={getApiFixtureId(liveData, f)}
+            onTeamClick={onTeamClick}
           />
           {!isFinishedSection && (
             <div style={{marginBottom:12}}>
@@ -17989,6 +17992,7 @@ function AppInner() {
   const [liveData, setLiveData] = useState(null);
   // 🎯 Which fixture's details modal is open
   const [matchDetailsFor, setMatchDetailsFor] = useState(null);
+  const [statsTeam, setStatsTeam] = useState(null); // preselect team in stats
   const [actualKo, setActualKo] = useState(saved?.actualKo || {});
   // NEW: actual scores for knockout matches (parallel to actualKo which is just a/b winner)
   // Format: { "R32-1": { h: "2", a: "1" }, ... }
@@ -19991,6 +19995,7 @@ function AppInner() {
             ]);
           }}
           onShowDetails={(fix) => setMatchDetailsFor(fix)}
+          onTeamClick={(teamName) => { setStatsTeam(teamName); setScreen("stats"); }}
         />
       )}
 
@@ -20072,7 +20077,7 @@ function AppInner() {
       )}
 
       {screen === "stats" && (
-        <StatsScreen actuals={actuals} lang={lang} onClose={()=>setScreen("bonus")} />
+        <StatsScreen actuals={actuals} lang={lang} initialTeam={statsTeam} onClose={()=>{setStatsTeam(null); setScreen("today");}} />
       )}
 
       {screen === "results" && (
