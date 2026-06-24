@@ -14,7 +14,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.99.9";
+const APP_VERSION = "3.99.10";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -13139,7 +13139,7 @@ function MatchDetailsModal({ fixture, apiFixtureId, onClose }) {
   for (const g of allGoals) {
     const side = sideOf(g.teamName);
     if (!side) continue;
-    const isOwn = (g.detail || "").toLowerCase() === "own goal";
+    const isOwn = (g.detail || "").toLowerCase().includes("own");
     const scoringSide = isOwn ? (side === "home" ? "away" : "home") : side;
     if (scoringSide === "home") homeScore++; else awayScore++;
   }
@@ -13220,7 +13220,7 @@ function MatchDetailsModal({ fixture, apiFixtureId, onClose }) {
                   {goals.map((g, i) => {
                     const gName = (g.teamName || "").trim();
                     const side = sideOf(gName);          // which side the player plays for
-                    const isOwn = (g.detail || "").toLowerCase() === "own goal";
+                    const isOwn = (g.detail || "").toLowerCase().includes("own");
                     // Flag shown = the team that the goal COUNTS for. For an own
                     // goal that's the opposing side.
                     const creditSide = isOwn ? (side === "home" ? "away" : "home") : side;
