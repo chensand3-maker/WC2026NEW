@@ -14,7 +14,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.99.10";
+const APP_VERSION = "3.99.11";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -13245,6 +13245,10 @@ function MatchDetailsModal({ fixture, apiFixtureId, onClose }) {
                         <span style={{fontSize:14}}>⚽</span>
                         <div style={{flex:1,fontSize:12,color:"#fff",lineHeight:1.3}}>
                           <div style={{fontWeight:700}}>{g.playerName || t("matchdetails.unknown")}</div>
+                          {/* 🐛 TEMP DEBUG */}
+                          <div style={{fontSize:8,color:"#f87171",fontFamily:"monospace"}}>
+                            team:[{g.teamName}] detail:[{g.detail}] side:[{side}] own:[{String(isOwn)}]
+                          </div>
                           {g.assistName && (
                             <div style={{fontSize:10,color:"#94a3b8"}}>
                               {t("matchdetails.assist")}: {g.assistName}
