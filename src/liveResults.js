@@ -372,38 +372,13 @@ export async function fetchMatchDetails(apiFixtureId) {
     const playerName = e.player?.name || "";
     const assistName = e.assist?.name || "";
     const teamName = normalizeTeam(e.team?.name || "");
-    // Keep goals even if the minute is missing (don't drop a real goal just
-    // because the API didn't supply a timestamp).
+    // Keep goals even if the minute is missing.
     if (minute == null && type !== "Goal") continue;
     events.push({ minute: (minute == null ? "" : minute), extra, type, detail, playerName, assistName, teamName });
   }
 
-  // Tally the score from the goals themselves (so the modal can show a result
-  // even when the fixture record doesn't carry one).
-  const goalEvents = events.filter(e =>
-    e.type === "Goal" &&
-    (e.detail || "").toLowerCase() !== "missed penalty"
-  );
-  let homeTeam = "";
-  let awayTeam = "";
-  for (const e of goalEvents) {
-    if (e.teamName) {
-      if (!homeTeam) homeTeam = e.teamName;
-      else if (e.teamName !== homeTeam && !awayTeam) awayTeam = e.teamName;
-      if (homeTeam && awayTeam) break;
-    }
-  }
-  // Count goals per team (own goals count for the OTHER team)
-  let homeGoals = 0, awayGoals = 0;
-  for (const e of goalEvents) {
-    const isOwn = (e.detail || "").toLowerCase() === "own goal";
-    const scoringTeam = isOwn ? (e.teamName === homeTeam ? awayTeam : homeTeam) : e.teamName;
-    if (scoringTeam === homeTeam) homeGoals++;
-    else if (scoringTeam === awayTeam) awayGoals++;
-  }
-
   const result = {
-    events, homeTeam, awayTeam, homeGoals, awayGoals,
+    events,
     fetchedAt: Date.now(),
   };
 

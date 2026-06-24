@@ -14,7 +14,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.99.8";
+const APP_VERSION = "3.99.9";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -13119,12 +13119,32 @@ function MatchDetailsModal({ fixture, apiFixtureId, onClose }) {
   const home = findTeam(fixture.home);
   const away = findTeam(fixture.away);
 
-  // Find which API team name matches "home" vs "away"
-  // (API may swap orders, so we look at details.homeTeam)
-  const apiHomeIsOurHome = details?.homeTeam === fixture.home;
+  // Real goals only (skip missed penalties; own goals are handled below).
+  const allGoals = (details?.events || []).filter(e =>
+    e.type === "Goal" && (e.detail || "").toLowerCase() !== "missed penalty"
+  );
 
-  // Group goals by team
-  const goals = (details?.events || []).filter(e => e.type === "Goal");
+  // Helper: does a goal's team name refer to our home or away side?
+  const homeL = (fixture.home || "").trim().toLowerCase();
+  const awayL = (fixture.away || "").trim().toLowerCase();
+  const sideOf = (teamName) => {
+    const t = (teamName || "").trim().toLowerCase();
+    if (t && t === homeL) return "home";
+    if (t && t === awayL) return "away";
+    return null;
+  };
+
+  // Tally the score. An OWN GOAL counts for the opposing side.
+  let homeScore = 0, awayScore = 0;
+  for (const g of allGoals) {
+    const side = sideOf(g.teamName);
+    if (!side) continue;
+    const isOwn = (g.detail || "").toLowerCase() === "own goal";
+    const scoringSide = isOwn ? (side === "home" ? "away" : "home") : side;
+    if (scoringSide === "home") homeScore++; else awayScore++;
+  }
+
+  const goals = allGoals;
 
   return (
     <div onClick={onClose} style={{
@@ -13165,7 +13185,7 @@ function MatchDetailsModal({ fixture, apiFixtureId, onClose }) {
             fontSize:26,fontWeight:900,color:"#fbbf24",
             fontVariantNumeric:"tabular-nums",padding:"0 8px",letterSpacing:-1,
           }}>
-            {(fixture.h ?? details?.homeGoals ?? "—")} : {(fixture.a ?? details?.awayGoals ?? "—")}
+            {(fixture.h ?? (goals.length ? homeScore : "—"))} : {(fixture.a ?? (goals.length ? awayScore : "—"))}
           </div>
           <div style={{flex:1,textAlign:lang==="he"?"right":"left"}}>
             <div style={{fontSize:13,color:"#fff",fontWeight:800}}>{away?.n}</div>
@@ -13198,24 +13218,18 @@ function MatchDetailsModal({ fixture, apiFixtureId, onClose }) {
                 </div>
                 <div style={{display:"flex",flexDirection:"column",gap:5}}>
                   {goals.map((g, i) => {
-                    // Resolve the flag directly from the goal's own team name
-                    // (already normalized by the data layer). This avoids any
-                    // home/away guessing that could flip the flag.
                     const gName = (g.teamName || "").trim();
-                    const gNameL = gName.toLowerCase();
-                    const homeL = (fixture.home || "").toLowerCase();
-                    const awayL = (fixture.away || "").toLowerCase();
-                    let isHome;
-                    if (gNameL && gNameL === homeL) isHome = true;
-                    else if (gNameL && gNameL === awayL) isHome = false;
-                    else {
-                      // fallback to API home-team comparison
-                      const apiHome = (details?.homeTeam || "").toLowerCase();
-                      isHome = apiHome ? (gNameL === apiHome) : (g.teamName === fixture.home);
-                    }
-                    // Flag: look the team up by its own name; fall back to side.
-                    const goalTeamObj = findTeam(gName) || (isHome ? home : away);
-                    const goalFlag = goalTeamObj?.f || (isHome ? home?.f : away?.f) || "⚽";
+                    const side = sideOf(gName);          // which side the player plays for
+                    const isOwn = (g.detail || "").toLowerCase() === "own goal";
+                    // Flag shown = the team that the goal COUNTS for. For an own
+                    // goal that's the opposing side.
+                    const creditSide = isOwn ? (side === "home" ? "away" : "home") : side;
+                    const isHome = creditSide === "home";
+                    // Flag from the player's own team name (fallback to side).
+                    const playerTeamObj = findTeam(gName) || (side === "home" ? home : away);
+                    const goalFlag = (isOwn
+                      ? (isHome ? home?.f : away?.f)          // credited team's flag
+                      : (playerTeamObj?.f)) || (isHome ? home?.f : away?.f) || "⚽";
                     return (
                       <div key={i} style={{
                         display:"flex",alignItems:"center",gap:8,
