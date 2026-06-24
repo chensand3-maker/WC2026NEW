@@ -14,7 +14,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "4.4.0";
+const APP_VERSION = "4.4.1";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -13545,16 +13545,18 @@ function StatsScreen({ actuals, lang, onClose }) {
 
   return (
     <div style={{padding:"8px 14px 30px",maxWidth:480,margin:"0 auto"}}>
-      {onClose && (
-        <button onClick={onClose} style={{
-          position:"absolute",top:14,insetInlineEnd:14,zIndex:10,
-          width:36,height:36,borderRadius:12,
-          background:"rgba(30,41,59,0.8)",border:"1px solid rgba(71,85,105,0.4)",
-          color:"#f1f5f9",fontSize:18,cursor:"pointer",fontFamily:"inherit",
-          display:"flex",alignItems:"center",justifyContent:"center",
-        }}>✕</button>
-      )}
-      <h1 style={{fontSize:19,textAlign:"center",marginBottom:3,color:"#f1f5f9"}}>📊 {he?"סטטיסטיקות":"Statistics"}</h1>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
+        <div style={{width:36}} />
+        <h1 style={{fontSize:19,textAlign:"center",color:"#f1f5f9",flex:1}}>📊 {he?"סטטיסטיקות":"Statistics"}</h1>
+        {onClose ? (
+          <button onClick={onClose} style={{
+            width:36,height:36,borderRadius:12,flexShrink:0,
+            background:"rgba(30,41,59,0.8)",border:"1px solid rgba(71,85,105,0.4)",
+            color:"#f1f5f9",fontSize:18,cursor:"pointer",fontFamily:"inherit",
+            display:"flex",alignItems:"center",justifyContent:"center",
+          }}>✕</button>
+        ) : <div style={{width:36}} />}
+      </div>
       <div style={{textAlign:"center",fontSize:11,color:"#94a3b8",marginBottom:16}}>{he?"כל המספרים של המונדיאל":"All the World Cup numbers"}</div>
 
       {/* 🔍 Team filter */}
