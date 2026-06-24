@@ -14,7 +14,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "4.7.1";
+const APP_VERSION = "4.7.2";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -14059,12 +14059,12 @@ function H2HInline({ homeTeam, awayTeam, actuals, teamMatchStats }) {
       <div key={i} style={{marginBottom:10}}>
         <div style={{textAlign:"center",fontSize:10,color:"#8b9cc0",fontWeight:700,marginBottom:3}}>{r.label}</div>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:3}}>
-          <span style={{fontSize:14,fontWeight:900,direction:"ltr",color:colH}}>{r.fmt(r.va)}</span>
           <span style={{fontSize:14,fontWeight:900,direction:"ltr",color:colA}}>{r.fmt(r.vb)}</span>
+          <span style={{fontSize:14,fontWeight:900,direction:"ltr",color:colH}}>{r.fmt(r.va)}</span>
         </div>
         <div style={{display:"flex",height:6,borderRadius:4,overflow:"hidden",background:"rgba(255,255,255,0.06)"}}>
-          <div style={{width:`${pctH}%`,background:barH}} />
-          <div style={{width:`${pctA}%`,background:barA,marginInlineStart:"auto"}} />
+          <div style={{width:`${pctA}%`,background:barA}} />
+          <div style={{width:`${pctH}%`,background:barH,marginInlineStart:"auto"}} />
         </div>
       </div>
     );
@@ -14085,18 +14085,18 @@ function H2HInline({ homeTeam, awayTeam, actuals, teamMatchStats }) {
 
       {open && (
         <div style={{marginTop:8,background:"rgba(15,23,42,0.5)",border:"1px solid rgba(71,85,105,0.25)",borderRadius:12,padding:"14px 12px"}}>
-          {/* header with flags + win counts */}
+          {/* header with flags + win counts — away first (left), home second (right) to match match card */}
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
-            <div style={{textAlign:"center",flex:1}}>
-              <div style={{fontSize:26}}>{flag(homeTeam)}</div>
-              <div style={{fontSize:11,fontWeight:700,color:"#f1f5f9",marginTop:2}}>{homeTeam}</div>
-              <div style={{fontSize:18,fontWeight:900,color:winsH>=winsA?"#22c55e":"#94a3b8",marginTop:3}}>{winsH}</div>
-            </div>
-            <div style={{fontSize:12,fontWeight:900,color:"#64748b"}}>VS</div>
             <div style={{textAlign:"center",flex:1}}>
               <div style={{fontSize:26}}>{flag(awayTeam)}</div>
               <div style={{fontSize:11,fontWeight:700,color:"#f1f5f9",marginTop:2}}>{awayTeam}</div>
-              <div style={{fontSize:18,fontWeight:900,color:winsA>winsH?"#22c55e":"#94a3b8",marginTop:3}}>{winsA}</div>
+              <div style={{fontSize:18,fontWeight:900,color:winsA>=winsH?"#22c55e":"#94a3b8",marginTop:3}}>{winsA}</div>
+            </div>
+            <div style={{fontSize:12,fontWeight:900,color:"#64748b"}}>VS</div>
+            <div style={{textAlign:"center",flex:1}}>
+              <div style={{fontSize:26}}>{flag(homeTeam)}</div>
+              <div style={{fontSize:11,fontWeight:700,color:"#f1f5f9",marginTop:2}}>{homeTeam}</div>
+              <div style={{fontSize:18,fontWeight:900,color:winsH>winsA?"#22c55e":"#94a3b8",marginTop:3}}>{winsH}</div>
             </div>
           </div>
           {rows.map((r,i)=>renderRow(r,i))}
