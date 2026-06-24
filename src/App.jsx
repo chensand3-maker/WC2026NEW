@@ -14,7 +14,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "3.99.11";
+const APP_VERSION = "4.0.0";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -13134,14 +13134,13 @@ function MatchDetailsModal({ fixture, apiFixtureId, onClose }) {
     return null;
   };
 
-  // Tally the score. An OWN GOAL counts for the opposing side.
+  // Tally the score. The API's team field already names the team the goal
+  // COUNTS FOR (for own goals it's the benefiting team), so we do NOT flip.
   let homeScore = 0, awayScore = 0;
   for (const g of allGoals) {
     const side = sideOf(g.teamName);
     if (!side) continue;
-    const isOwn = (g.detail || "").toLowerCase().includes("own");
-    const scoringSide = isOwn ? (side === "home" ? "away" : "home") : side;
-    if (scoringSide === "home") homeScore++; else awayScore++;
+    if (side === "home") homeScore++; else awayScore++;
   }
 
   const goals = allGoals;
@@ -13219,17 +13218,13 @@ function MatchDetailsModal({ fixture, apiFixtureId, onClose }) {
                 <div style={{display:"flex",flexDirection:"column",gap:5}}>
                   {goals.map((g, i) => {
                     const gName = (g.teamName || "").trim();
-                    const side = sideOf(gName);          // which side the player plays for
+                    const side = sideOf(gName);          // the side the goal counts for
                     const isOwn = (g.detail || "").toLowerCase().includes("own");
-                    // Flag shown = the team that the goal COUNTS for. For an own
-                    // goal that's the opposing side.
-                    const creditSide = isOwn ? (side === "home" ? "away" : "home") : side;
-                    const isHome = creditSide === "home";
-                    // Flag from the player's own team name (fallback to side).
-                    const playerTeamObj = findTeam(gName) || (side === "home" ? home : away);
-                    const goalFlag = (isOwn
-                      ? (isHome ? home?.f : away?.f)          // credited team's flag
-                      : (playerTeamObj?.f)) || (isHome ? home?.f : away?.f) || "⚽";
+                    // The API's team field is already the team the goal counts
+                    // for (benefiting team on own goals), so no flipping.
+                    const isHome = side === "home";
+                    // Flag = the crediting team's flag.
+                    const goalFlag = (isHome ? home?.f : away?.f) || "⚽";
                     return (
                       <div key={i} style={{
                         display:"flex",alignItems:"center",gap:8,
@@ -13245,10 +13240,6 @@ function MatchDetailsModal({ fixture, apiFixtureId, onClose }) {
                         <span style={{fontSize:14}}>⚽</span>
                         <div style={{flex:1,fontSize:12,color:"#fff",lineHeight:1.3}}>
                           <div style={{fontWeight:700}}>{g.playerName || t("matchdetails.unknown")}</div>
-                          {/* 🐛 TEMP DEBUG */}
-                          <div style={{fontSize:8,color:"#f87171",fontFamily:"monospace"}}>
-                            team:[{g.teamName}] detail:[{g.detail}] side:[{side}] own:[{String(isOwn)}]
-                          </div>
                           {g.assistName && (
                             <div style={{fontSize:10,color:"#94a3b8"}}>
                               {t("matchdetails.assist")}: {g.assistName}
