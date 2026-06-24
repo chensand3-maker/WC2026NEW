@@ -14,7 +14,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "4.0.1";
+const APP_VERSION = "4.0.2";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -15768,7 +15768,13 @@ function LeagueHub({
         cardCollection: m.cardCollection || {},
       };
     }).sort((a,b) => {
+      // 1) Most total points wins.
       if (b.totalPoints !== a.totalPoints) return b.totalPoints - a.totalPoints;
+      // 2) Tiebreaker: more bullseyes (exact-score hits 🎯) ranks higher.
+      const aExact = (a.matchScore?.exact || 0) + (a.koScore?.exact || 0);
+      const bExact = (b.matchScore?.exact || 0) + (b.koScore?.exact || 0);
+      if (bExact !== aExact) return bExact - aExact;
+      // 3) Final fallback: stable order by uid.
       return (a.uid || "").localeCompare(b.uid || "");
     });
 
