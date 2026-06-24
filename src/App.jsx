@@ -14,7 +14,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "4.6.0";
+const APP_VERSION = "4.6.1";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -13661,6 +13661,10 @@ function StatsScreen({ actuals, lang, onClose, initialTeam = null, teamMatchStat
               const shotAcc = ms.shots > 0 ? Math.round(ms.shotsOnGoal / ms.shots * 100) : 0;
               return (
                 <>
+                  {/* 🐛 TEMP DEBUG */}
+                  <div style={{fontSize:9,color:"#f87171",fontFamily:"monospace",background:"rgba(0,0,0,0.5)",padding:6,borderRadius:6,marginBottom:8,wordBreak:"break-all"}}>
+                    games:{g} shots:{ms.shots} corners:{ms.corners} fouls:{ms.fouls} poss:{ms.possession}
+                  </div>
                   {/* Attack */}
                   <div style={{fontSize:11,fontWeight:800,color:"#94a3b8",margin:"4px 4px 8px"}}>{he?"התקפה":"Attack"}</div>
                   {/* shot accuracy radial */}

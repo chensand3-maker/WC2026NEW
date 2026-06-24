@@ -534,8 +534,8 @@ export async function buildTopScorersFromEvents(liveData) {
 // ─── TEAM MATCH STATISTICS (shots, possession, fouls, etc.) ───────────────────
 // Fetches /fixtures/statistics for each finished match ONCE, caches forever.
 // Returns per-team aggregated totals so the app can show averages.
-const TEAM_STATS_KEY = "wc2026_team_stats_v1";
-const TEAM_STATS_AGG_KEY = "wc2026_team_stats_agg_v1";
+const TEAM_STATS_KEY = "wc2026_team_stats_v2";
+const TEAM_STATS_AGG_KEY = "wc2026_team_stats_agg_v2";
 const TEAM_STATS_AGG_TTL = 10 * 60 * 1000; // 10 min
 
 function parseStatValue(v) {
@@ -562,7 +562,16 @@ export async function buildTeamMatchStats(liveData) {
     ...Object.values(liveData.byTeamPair || {}),
     ...Object.values(liveData.knockout || {}),
   ];
-  const finishedList = allFixtures.filter(f => f.isFinished && f.fixtureId);
+  const finishedRaw = allFixtures.filter(f => f.isFinished && f.fixtureId);
+  // Deduplicate by fixtureId — the same match can appear in more than one map
+  // (byTeamPair / knockout), which would otherwise double-count every stat.
+  const seenIds = new Set();
+  const finishedList = [];
+  for (const f of finishedRaw) {
+    if (seenIds.has(f.fixtureId)) continue;
+    seenIds.add(f.fixtureId);
+    finishedList.push(f);
+  }
   if (finishedList.length === 0) return {};
 
   // Permanent per-fixture cache of raw statistics
