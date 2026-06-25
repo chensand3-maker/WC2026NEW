@@ -14,7 +14,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "4.9.3";
+const APP_VERSION = "4.9.4";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -19135,14 +19135,20 @@ function AppInner() {
     }
   }, [activeLeagueCode, userId, custom]);
 
-  // 🔁 Safety sync: when league data loads, make sure MY pic/theme in the league
-  // matches my local custom. Fixes cases where an older join saved no pic.
+  // 🔁 Safety sync: once league data has loaded, push MY pic/theme into the
+  // league so others see it — even if I already made all my picks and won't
+  // trigger another save. Runs whenever the loaded value differs from mine.
+  const syncedOnceRef = useRef(false);
   useEffect(() => {
     if (!activeLeagueCode || !userId) return;
     const data = allLeagueData?.[activeLeagueCode];
+    if (!data) return;
     const me = data?.members?.[userId];
-    if (!me) return;
-    if (me.pic !== custom.pic || me.theme !== custom.theme) {
+    // If I'm a member but my pic/theme is missing or stale, OR I haven't synced
+    // yet this session, push my current customization up.
+    const needsSync = !me || me.pic !== custom.pic || me.theme !== custom.theme;
+    if (needsSync || !syncedOnceRef.current) {
+      syncedOnceRef.current = true;
       updateMyCustom(activeLeagueCode, userId, custom).catch(() => {});
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
