@@ -14,7 +14,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "4.8.5";
+const APP_VERSION = "4.9.0";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -14138,33 +14138,30 @@ function TodayScreen({ picks, actuals, onPick, onBack, onGoToBracket, leagueMemb
   // 📅 Auto-scroll (animated) to the first not-finished match on first entry
   const todayAnchorRef = useRef(null);
   const didAutoScroll = useRef(false);
+  const animateScrollTo = (targetY, duration = 950) => {
+    const startY = window.scrollY;
+    const dist = targetY - startY;
+    if (Math.abs(dist) < 4) return;
+    const start = performance.now();
+    const ease = (t) => t < 0.5 ? 4*t*t*t : 1 - Math.pow(-2*t+2, 3)/2;
+    const step = (nowTs) => {
+      const p = Math.min(1, (nowTs - start) / duration);
+      window.scrollTo(0, startY + dist * ease(p));
+      if (p < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  };
+  const scrollToToday = () => {
+    const el = todayAnchorRef.current;
+    if (!el) return;
+    const y = el.getBoundingClientRect().top + window.scrollY - 60;
+    animateScrollTo(Math.max(0, y), 950);
+  };
   useEffect(() => {
     if (didAutoScroll.current) return;
     didAutoScroll.current = true;
     window.scrollTo({ top: 0, behavior: "auto" });
-
-    const animateTo = (targetY, duration = 900) => {
-      const startY = window.scrollY;
-      const dist = targetY - startY;
-      if (Math.abs(dist) < 4) return;
-      const start = performance.now();
-      // easeInOutCubic for a smooth, professional feel
-      const ease = (t) => t < 0.5 ? 4*t*t*t : 1 - Math.pow(-2*t+2, 3)/2;
-      const step = (nowTs) => {
-        const p = Math.min(1, (nowTs - start) / duration);
-        window.scrollTo(0, startY + dist * ease(p));
-        if (p < 1) requestAnimationFrame(step);
-      };
-      requestAnimationFrame(step);
-    };
-
-    const go = () => {
-      const el = todayAnchorRef.current;
-      if (!el) return;
-      const y = el.getBoundingClientRect().top + window.scrollY - 60;
-      animateTo(Math.max(0, y), 950);
-    };
-    const t1 = setTimeout(go, 550);
+    const t1 = setTimeout(scrollToToday, 550);
     return () => clearTimeout(t1);
   }, []);
   useEffect(() => {
@@ -14505,7 +14502,48 @@ function TodayScreen({ picks, actuals, onPick, onBack, onGoToBracket, leagueMemb
           </div>
         );
       })}
+
+      {/* 🎯 Floating "jump to today" button */}
+      <TodayJumpButton onJump={scrollToToday} />
     </div>
+  );
+}
+
+function TodayJumpButton({ onJump }) {
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    const onScroll = () => setVisible(window.scrollY > 400);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    onScroll();
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+  if (!visible) return null;
+  return (
+    <button
+      onClick={onJump}
+      aria-label="קפוץ להיום"
+      style={{
+        position: "fixed",
+        bottom: "calc(140px + env(safe-area-inset-bottom, 0px))",
+        right: 16,
+        zIndex: 49,
+        height: 44,
+        padding: "0 16px",
+        borderRadius: 22,
+        background: "linear-gradient(135deg,#3b82f6,#2563eb)",
+        border: "none",
+        color: "#fff",
+        fontSize: 13,
+        fontWeight: 800,
+        cursor: "pointer",
+        fontFamily: "inherit",
+        boxShadow: "0 4px 16px rgba(0,0,0,0.4), 0 0 16px rgba(59,130,246,0.4)",
+        display: "flex",
+        alignItems: "center",
+        gap: 6,
+        animation: "fadeUp 0.3s ease-out",
+      }}
+    >📅 היום</button>
   );
 }
 
