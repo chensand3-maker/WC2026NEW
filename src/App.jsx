@@ -14,7 +14,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "4.9.2";
+const APP_VERSION = "4.9.3";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -20209,7 +20209,7 @@ function AppInner() {
         transform: perspective(800px) rotateY(0deg) rotateX(0deg) scale(0.97);
       }
     `}</style>
-    <div style={{minHeight:"100vh",background:"linear-gradient(170deg,#020617 0%,color-mix(in srgb, var(--accent) 14%, #051016) 55%,color-mix(in srgb, var(--accent) 20%, #04140b) 100%)",color:"#f1f5f9",fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif",position:"relative",overflow:"hidden",direction:lang==="he"?"rtl":"ltr","--accent":myTheme.c1,"--accent2":myTheme.c2}}>
+    <div style={{minHeight:"100vh",background:"linear-gradient(170deg,#020617 0%,color-mix(in srgb, var(--accent) 14%, #051016) 55%,color-mix(in srgb, var(--accent) 20%, #04140b) 100%)",color:"#f1f5f9",fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif",position:"relative",direction:lang==="he"?"rtl":"ltr","--accent":myTheme.c1,"--accent2":myTheme.c2}}>
       {/* Language toggle: shown only on welcome screen */}
       {screen === "welcome" && (
         <div style={{
