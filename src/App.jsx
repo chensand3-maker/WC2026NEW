@@ -14,7 +14,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "4.9.9";
+const APP_VERSION = "4.9.10";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -12679,13 +12679,13 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
           }}
         >
           <div style={{display:"grid",gridTemplateColumns:"1fr auto 1fr",alignItems:"center",gap:8,direction:"ltr"}}>
-            <span style={{fontSize:13,fontWeight:700,color:"#f1f5f9",textAlign:"right",display:"flex",alignItems:"center",justifyContent:"flex-end",gap:6}}>{away.n} <span style={{fontSize:24}}>{away.f}</span></span>
+            <span style={{fontSize:13,fontWeight:700,color:"#f1f5f9",textAlign:"right",display:"flex",alignItems:"center",justifyContent:"flex-end",gap:6}}>{home.n} <span style={{fontSize:24}}>{home.f}</span></span>
             <span style={{
               fontSize:15,fontWeight:900,color: sc?.text || "#22c55e",
               padding:"3px 10px",background:"#1e2940",borderRadius:6,
               unicodeBidi:"isolate",whiteSpace:"nowrap",
-            }}>{actual.a} - {actual.h}</span>
-            <span style={{fontSize:13,fontWeight:700,color:"#f1f5f9",textAlign:"left",display:"flex",alignItems:"center",justifyContent:"flex-start",gap:6}}><span style={{fontSize:24}}>{home.f}</span> {home.n}</span>
+            }}>{actual.h} - {actual.a}</span>
+            <span style={{fontSize:13,fontWeight:700,color:"#f1f5f9",textAlign:"left",display:"flex",alignItems:"center",justifyContent:"flex-start",gap:6}}><span style={{fontSize:24}}>{away.f}</span> {away.n}</span>
           </div>
           {pick && pick.h !== undefined && pick.h !== "" && (
             <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:5,fontSize:10,color:"#94a3b8"}}>
@@ -12705,12 +12705,12 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
             border:"1.5px solid rgba(71,85,105,0.45)",
           }}
         >
-          <span style={{fontSize:13,fontWeight:700,color:"#f1f5f9",textAlign:"right",display:"flex",alignItems:"center",justifyContent:"flex-end",gap:6}}>{away.n} <span style={{fontSize:24}}>{away.f}</span></span>
+          <span style={{fontSize:13,fontWeight:700,color:"#f1f5f9",textAlign:"right",display:"flex",alignItems:"center",justifyContent:"flex-end",gap:6}}>{home.n} <span style={{fontSize:24}}>{home.f}</span></span>
           <div style={{display:"flex",flexDirection:"column",alignItems:"center"}}>
-            <span style={{fontSize:13,fontWeight:800,color:"#93c5fd",padding:"3px 10px",background:"#1e2940",borderRadius:6,whiteSpace:"nowrap",direction:"ltr"}}>{pick.a} - {pick.h}</span>
+            <span style={{fontSize:13,fontWeight:800,color:"#93c5fd",padding:"3px 10px",background:"#1e2940",borderRadius:6,whiteSpace:"nowrap",direction:"ltr"}}>{pick.h} - {pick.a}</span>
             <span style={{fontSize:8,color:"#64748b",marginTop:2}}>הניחוש שלך</span>
           </div>
-          <span style={{fontSize:13,fontWeight:700,color:"#f1f5f9",textAlign:"left",display:"flex",alignItems:"center",justifyContent:"flex-start",gap:6}}><span style={{fontSize:24}}>{home.f}</span> {home.n}</span>
+          <span style={{fontSize:13,fontWeight:700,color:"#f1f5f9",textAlign:"left",display:"flex",alignItems:"center",justifyContent:"flex-start",gap:6}}><span style={{fontSize:24}}>{away.f}</span> {away.n}</span>
         </div>
       ) : (
       <div style={{display:"grid",gridTemplateColumns:"1fr auto 1fr",alignItems:"center",gap:8,direction:"ltr"}}>
