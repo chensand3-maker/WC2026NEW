@@ -14,7 +14,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "4.8.4";
+const APP_VERSION = "4.8.5";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -14135,30 +14135,37 @@ function TodayScreen({ picks, actuals, onPick, onBack, onGoToBracket, leagueMemb
   const [ptrRefreshing, setPtrRefreshing] = useState(false);
   const ptrStart = useRef(null);
   const PTR_THRESHOLD = 70;
-  // 📅 Auto-scroll to the first not-finished match on first entry
+  // 📅 Auto-scroll (animated) to the first not-finished match on first entry
   const todayAnchorRef = useRef(null);
   const didAutoScroll = useRef(false);
   useEffect(() => {
     if (didAutoScroll.current) return;
     didAutoScroll.current = true;
-    // First, jump instantly to roughly the right place (no flash of top),
-    // then do a smooth animated scroll to settle exactly on the match.
-    const jump = () => {
+    window.scrollTo({ top: 0, behavior: "auto" });
+
+    const animateTo = (targetY, duration = 900) => {
+      const startY = window.scrollY;
+      const dist = targetY - startY;
+      if (Math.abs(dist) < 4) return;
+      const start = performance.now();
+      // easeInOutCubic for a smooth, professional feel
+      const ease = (t) => t < 0.5 ? 4*t*t*t : 1 - Math.pow(-2*t+2, 3)/2;
+      const step = (nowTs) => {
+        const p = Math.min(1, (nowTs - start) / duration);
+        window.scrollTo(0, startY + dist * ease(p));
+        if (p < 1) requestAnimationFrame(step);
+      };
+      requestAnimationFrame(step);
+    };
+
+    const go = () => {
       const el = todayAnchorRef.current;
       if (!el) return;
       const y = el.getBoundingClientRect().top + window.scrollY - 60;
-      window.scrollTo({ top: Math.max(0, y), behavior: "auto" });
+      animateTo(Math.max(0, y), 950);
     };
-    const glide = () => {
-      const el = todayAnchorRef.current;
-      if (!el) return;
-      const y = el.getBoundingClientRect().top + window.scrollY - 60;
-      window.scrollTo({ top: Math.max(0, y), behavior: "smooth" });
-    };
-    const t1 = setTimeout(jump, 120);    // settle near target
-    const t2 = setTimeout(glide, 500);   // smooth glide to exact spot
-    const t3 = setTimeout(glide, 1100);  // correct if layout shifted
-    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
+    const t1 = setTimeout(go, 550);
+    return () => clearTimeout(t1);
   }, []);
   useEffect(() => {
     const onTouchStart = (e) => {
