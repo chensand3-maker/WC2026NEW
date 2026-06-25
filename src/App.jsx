@@ -14,7 +14,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "4.7.2";
+const APP_VERSION = "4.8.2";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -41,11 +41,11 @@ const TRANSLATIONS = {
   en: {
     // Nav
     "nav.predict": "⚽ Predict",
-    "nav.today": "📅 Today",
+    "nav.today": "⚽ Games",
     "nav.bracket": "🏆 Bracket",
     "nav.bonus": "⭐ Bonus",
     "nav.league": "🏅 League",
-    "nav.todayShort": "Today",
+    "nav.todayShort": "Games",
     "nav.predictShort": "Predict",
     "nav.bracketShort": "Bracket",
     "nav.bonusShort": "Bonus",
@@ -233,7 +233,7 @@ const TRANSLATIONS = {
     "recap.noPickMade": "You didn't predict this one",
     "recap.gotIt": "Got it! →",
     // Today screen
-    "today.title": "Match Day",
+    "today.title": "Games",
     "today.upcoming": "UPCOMING MATCHES",
     "today.subtitle": "All matches happening today and tomorrow",
     "today.today": "TODAY",
@@ -567,11 +567,11 @@ const TRANSLATIONS = {
   he: {
     // Nav
     "nav.predict": "⚽ ניחושים",
-    "nav.today": "📅 היום",
+    "nav.today": "⚽ משחקים",
     "nav.bracket": "🏆 שלב הנוקאאוט",
     "nav.bonus": "⭐ בונוס",
     "nav.league": "🏅 ליגה",
-    "nav.todayShort": "היום",
+    "nav.todayShort": "משחקים",
     "nav.predictShort": "ניחושים",
     "nav.bracketShort": "נוקאאוט",
     "nav.bonusShort": "בונוס",
@@ -759,7 +759,7 @@ const TRANSLATIONS = {
     "recap.noPickMade": "לא ניחשת את המשחק הזה",
     "recap.gotIt": "הבנתי! →",
     // Today screen
-    "today.title": "המשחקים של היום",
+    "today.title": "משחקים",
     "today.upcoming": "משחקים קרובים",
     "today.subtitle": "כל המשחקים של היום ומחר",
     "today.today": "היום",
@@ -12695,6 +12695,26 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
           <span style={{fontSize:13,fontWeight:700,color:"#f1f5f9",textAlign:"left"}}>
             {away.n} {away.f}
           </span>
+          {pick && pick.h !== undefined && pick.h !== "" && (
+            <div style={{gridColumn:"1 / -1",textAlign:"center",fontSize:10,color:"#93c5fd",marginTop:4}}>
+              הניחוש שלך: {pick.h} - {pick.a}
+            </div>
+          )}
+        </div>
+      ) : collapsed && pick && pick.h !== undefined && pick.h !== "" && !(actual && actual.h !== undefined && actual.h !== "") ? (
+        // collapsed but no result yet — show the user's prediction compactly
+        <div
+          onClick={() => setCollapsed(false)}
+          style={{
+            display:"grid",gridTemplateColumns:"1fr auto 1fr",alignItems:"center",
+            gap:8,padding:"10px 8px",direction:"ltr",cursor:"pointer",
+            background:"rgba(36,49,80,0.3)",borderRadius:8,
+            border:"1px solid rgba(71,85,105,0.4)",
+          }}
+        >
+          <span style={{fontSize:13,fontWeight:700,color:"#f1f5f9",textAlign:"right"}}>{home.f} {home.n}</span>
+          <span style={{fontSize:13,fontWeight:800,color:"#93c5fd",padding:"3px 10px",background:"#1e2940",borderRadius:6,whiteSpace:"nowrap"}}>{pick.h} - {pick.a}</span>
+          <span style={{fontSize:13,fontWeight:700,color:"#f1f5f9",textAlign:"left"}}>{away.n} {away.f}</span>
         </div>
       ) : (
       <div style={{display:"grid",gridTemplateColumns:"1fr auto 1fr",alignItems:"center",gap:8,direction:"ltr"}}>
@@ -14119,6 +14139,25 @@ function TodayScreen({ picks, actuals, onPick, onBack, onGoToBracket, leagueMemb
   const [ptrRefreshing, setPtrRefreshing] = useState(false);
   const ptrStart = useRef(null);
   const PTR_THRESHOLD = 70;
+  // 📅 Auto-scroll to today's matches on first entry
+  const todayAnchorRef = useRef(null);
+  const didAutoScroll = useRef(false);
+  useEffect(() => {
+    if (didAutoScroll.current) return;
+    const el = todayAnchorRef.current;
+    if (!el) return;
+    didAutoScroll.current = true;
+    // Wait for layout to settle, then scroll the anchor near the top.
+    const doScroll = () => {
+      const el2 = todayAnchorRef.current;
+      if (!el2) return;
+      const y = el2.getBoundingClientRect().top + window.scrollY - 70;
+      window.scrollTo({ top: Math.max(0, y), behavior: "smooth" });
+    };
+    const t1 = setTimeout(doScroll, 400);
+    const t2 = setTimeout(doScroll, 900); // second pass in case images/flags shifted layout
+    return () => { clearTimeout(t1); clearTimeout(t2); };
+  });
   useEffect(() => {
     const onTouchStart = (e) => {
       ptrStart.current = window.scrollY <= 0 ? e.touches[0].clientY : null;
@@ -14168,47 +14207,31 @@ function TodayScreen({ picks, actuals, onPick, onBack, onGoToBracket, leagueMemb
   const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
   const tomorrowEnd = new Date(); tomorrowEnd.setDate(tomorrowEnd.getDate() + 2); tomorrowEnd.setHours(0, 0, 0, 0);
 
-  // Bucket matches by day
-  const todayMatches = [];
-  const tomorrowMatches = [];
-  const liveOrJustEndedMatches = [];
-  const justFinishedMatches = [];
+  // 📅 Group ALL matches by calendar day (chronological). Each match also gets
+  // a live/finished flag so the row can render the right state.
+  const liveMatches = [];
+  const dayKey = (ts) => { const d = new Date(ts); d.setHours(0,0,0,0); return d.getTime(); };
+  const byDay = new Map(); // dayKey → [matches]
   for (const m of allMatches) {
     const k = new Date(m.kickoff).getTime();
     const minSinceKickoff = (now - k) / (60 * 1000);
-    // 📡 Has a result already been recorded for this match?
     const actual = m.type === "group" ? actuals[m.fixture?.id] : null;
     const hasScore = actual && actual.h !== "" && actual.h !== undefined && actual.a !== "" && actual.a !== undefined;
-    // 🏁 Truly finished — either API marked it as finished, or manually entered + past 95 mins
     const isApiFinished = actual && actual.isFinished === true;
     const isApiLive = actual && actual.isLive === true;
-    const hasFinalScore = hasScore && (isApiFinished || (!isApiLive && !actual.hasOwnProperty("isLive") && minSinceKickoff > 95));
-    // 🔴 LIVE: started but not yet finished
     const isLive = k <= now && (isApiLive || (hasScore && !isApiFinished && minSinceKickoff <= 120) || (!hasScore && minSinceKickoff <= 120));
-    // 🏁 Just finished: has a FINAL score, AND less than 30 min since match ended
-    // Match ends ~95 min after kickoff (90 + ~5 stoppage). Show window: 95→125 min after kickoff.
-    const isJustFinished = hasFinalScore && minSinceKickoff < 125;
-    if (isLive) {
-      liveOrJustEndedMatches.push(m);
-      continue;
-    }
-    if (isJustFinished) {
-      justFinishedMatches.push(m);
-      continue;
-    }
-    // Past matches not live → show if within 12 hours, collapsed
-    if (k < now) {
-      const hoursSinceKickoff = (now - k) / (60 * 60 * 1000);
-      if (hoursSinceKickoff <= 12 && hasFinalScore) {
-        justFinishedMatches.push(m);
-      }
-      continue;
-    }
-    // Future matches → bucket by today / tomorrow
-    const isToday = k < todayStart.getTime() + 24 * 60 * 60 * 1000;
-    if (isToday) todayMatches.push(m);
-    else if (k < tomorrowEnd.getTime()) tomorrowMatches.push(m);
+    if (isLive) { liveMatches.push(m); }
+    const dk = dayKey(k);
+    if (!byDay.has(dk)) byDay.set(dk, []);
+    byDay.get(dk).push(m);
   }
+  const sortedDays = [...byDay.keys()].sort((a,b)=>a-b);
+  const todayKey = todayStart.getTime();
+  // The day we auto-scroll to: today if it has matches, else the next upcoming day,
+  // else the last day (tournament over).
+  let anchorDay = sortedDays.find(d => d === todayKey);
+  if (anchorDay == null) anchorDay = sortedDays.find(d => d > todayKey);
+  if (anchorDay == null) anchorDay = sortedDays[sortedDays.length - 1];
 
   const renderMatchRow = (m, opts = {}) => {
     const isFinishedSection = opts.isFinishedSection || false;
@@ -14294,8 +14317,8 @@ function TodayScreen({ picks, actuals, onPick, onBack, onGoToBracket, leagueMemb
     </div>
   );
 
-  // Count missing predictions for the today/tomorrow group matches
-  const missingPicks = [...todayMatches, ...tomorrowMatches]
+  // Count missing predictions across all upcoming group matches
+  const missingPicks = allMatches
     .filter(m => m.type === "group")
     .filter(m => {
       const p = picks[m.fixture.id];
@@ -14409,45 +14432,56 @@ function TodayScreen({ picks, actuals, onPick, onBack, onGoToBracket, leagueMemb
       {/* ⏰ Countdown to next upcoming match */}
       <NextMatchCountdown allMatches={allMatches} />
 
-      {/* 🔴 LIVE matches only */}
-      {liveOrJustEndedMatches.length > 0 && (
-        <div style={{marginBottom:18}}>
-          {sectionHeader("#ef4444", "#ef4444", t("today.liveNow"), null)}
-          <style>{`
-            @keyframes livePulse {
-              0%, 100% { opacity: 1; transform: scale(1); }
-              50% { opacity: 0.5; transform: scale(1.2); }
-            }
-          `}</style>
-          {liveOrJustEndedMatches.map(renderMatchRow)}
-        </div>
-      )}
+      <style>{`
+        @keyframes livePulse {
+          0%, 100% { opacity: 1; transform: scale(1); }
+          50% { opacity: 0.5; transform: scale(1.2); }
+        }
+      `}</style>
 
-      {/* 🏁 Just finished moved BELOW today/tomorrow */}
-
-      {/* Today */}
-      <div style={{marginBottom:18}}>
-        {sectionHeader("var(--accent)", "color-mix(in srgb, var(--accent) 60%, transparent)", `⚽ ${t("today.today")}`, todayMatches.length)}
-        {todayMatches.length === 0
-          ? renderEmptySection(t("today.noMatchesToday"))
-          : todayMatches.map(renderMatchRow)}
-      </div>
-
-      {/* Tomorrow */}
-      <div style={{marginBottom:18}}>
-        {sectionHeader("var(--accent)", "color-mix(in srgb, var(--accent) 50%, transparent)", `🌅 ${t("today.tomorrow")}`, tomorrowMatches.length)}
-        {tomorrowMatches.length === 0
-          ? renderEmptySection(t("today.noMatchesTomorrow"))
-          : tomorrowMatches.map(renderMatchRow)}
-      </div>
-
-      {/* 🏁 Just finished matches — at the bottom for less clutter */}
-      {justFinishedMatches.length > 0 && (
-        <div style={{marginBottom:18}}>
-          {sectionHeader("#64748b", "transparent", `🏁 ${t("today.justFinished")}`, null)}
-          {justFinishedMatches.map(m => renderMatchRow(m, { isFinishedSection: true }))}
-        </div>
-      )}
+      {/* 📅 All matches, chronological, grouped by day */}
+      {sortedDays.map(dk => {
+        const dayMatches = byDay.get(dk);
+        const isToday = dk === todayKey;
+        const isPast = dk < todayKey;
+        const dayDate = new Date(dk);
+        // Day label
+        const dayNames = ["ראשון","שני","שלישי","רביעי","חמישי","שישי","שבת"];
+        const months = ["ינואר","פברואר","מרץ","אפריל","מאי","יוני","יולי","אוגוסט","ספטמבר","אוקטובר","נובמבר","דצמבר"];
+        let label = `${dayNames[dayDate.getDay()]}, ${dayDate.getDate()} ב${months[dayDate.getMonth()]}`;
+        const diffDays = Math.round((dk - todayKey) / (24*60*60*1000));
+        if (diffDays === 0) label = `היום · ${label}`;
+        else if (diffDays === 1) label = `מחר · ${label}`;
+        else if (diffDays === -1) label = `אתמול · ${label}`;
+        return (
+          <div key={dk} ref={dk === anchorDay ? todayAnchorRef : null} style={{marginBottom:8,scrollMarginTop:12}}>
+            <div style={{
+              position:"sticky",top:0,zIndex:5,
+              margin:"16px -14px 11px",padding:"9px 16px",
+              display:"flex",alignItems:"center",justifyContent:"space-between",
+              background: isToday
+                ? "linear-gradient(90deg, color-mix(in srgb, var(--accent) 18%, transparent), rgba(10,14,26,0.95) 70%)"
+                : "linear-gradient(90deg, rgba(100,116,139,0.12), rgba(10,14,26,0.95) 70%)",
+              borderTop: isToday ? "1px solid color-mix(in srgb, var(--accent) 40%, transparent)" : "1px solid rgba(100,116,139,0.2)",
+              borderBottom: isToday ? "1px solid color-mix(in srgb, var(--accent) 20%, transparent)" : "1px solid rgba(100,116,139,0.1)",
+            }}>
+              <span style={{fontSize:14,fontWeight:900,color: isToday ? "var(--accent)" : "#94a3b8"}}>{label}</span>
+              {isToday
+                ? <span style={{fontSize:9,fontWeight:900,color:"#0a0e1a",background:"var(--accent)",padding:"2px 8px",borderRadius:6}}>עכשיו</span>
+                : <span style={{fontSize:10,color:"#8b9cc0",fontWeight:700,background:"rgba(0,0,0,0.3)",padding:"3px 9px",borderRadius:20}}>{dayMatches.length} משחקים</span>}
+            </div>
+            {dayMatches.map(m => {
+              // Collapse a match once it has finished (past day, or has a final score today).
+              const mk = new Date(m.kickoff).getTime();
+              const mActual = m.type === "group" ? actuals[m.fixture?.id] : null;
+              const mFinished = (mActual && mActual.isFinished === true) ||
+                (mActual && mActual.h !== "" && mActual.h !== undefined && mActual.isLive !== true && (now - mk)/(60*1000) > 95);
+              const collapse = isPast || mFinished;
+              return renderMatchRow(m, { isFinishedSection: collapse });
+            })}
+          </div>
+        );
+      })}
     </div>
   );
 }
