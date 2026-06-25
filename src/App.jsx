@@ -14,7 +14,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "4.8.3";
+const APP_VERSION = "4.8.4";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -14135,21 +14135,30 @@ function TodayScreen({ picks, actuals, onPick, onBack, onGoToBracket, leagueMemb
   const [ptrRefreshing, setPtrRefreshing] = useState(false);
   const ptrStart = useRef(null);
   const PTR_THRESHOLD = 70;
-  // 📅 Auto-scroll to today's matches on first entry
+  // 📅 Auto-scroll to the first not-finished match on first entry
   const todayAnchorRef = useRef(null);
   const didAutoScroll = useRef(false);
   useEffect(() => {
     if (didAutoScroll.current) return;
     didAutoScroll.current = true;
-    const doScroll = () => {
+    // First, jump instantly to roughly the right place (no flash of top),
+    // then do a smooth animated scroll to settle exactly on the match.
+    const jump = () => {
       const el = todayAnchorRef.current;
       if (!el) return;
       const y = el.getBoundingClientRect().top + window.scrollY - 60;
       window.scrollTo({ top: Math.max(0, y), behavior: "auto" });
     };
-    // Retry several times — layout shifts as flags/rows render in.
-    const timers = [100, 300, 600, 1000, 1500].map(ms => setTimeout(doScroll, ms));
-    return () => timers.forEach(clearTimeout);
+    const glide = () => {
+      const el = todayAnchorRef.current;
+      if (!el) return;
+      const y = el.getBoundingClientRect().top + window.scrollY - 60;
+      window.scrollTo({ top: Math.max(0, y), behavior: "smooth" });
+    };
+    const t1 = setTimeout(jump, 120);    // settle near target
+    const t2 = setTimeout(glide, 500);   // smooth glide to exact spot
+    const t3 = setTimeout(glide, 1100);  // correct if layout shifted
+    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
   }, []);
   useEffect(() => {
     const onTouchStart = (e) => {
@@ -14220,11 +14229,25 @@ function TodayScreen({ picks, actuals, onPick, onBack, onGoToBracket, leagueMemb
   }
   const sortedDays = [...byDay.keys()].sort((a,b)=>a-b);
   const todayKey = todayStart.getTime();
-  // The day we auto-scroll to: today if it has matches, else the next upcoming day,
-  // else the last day (tournament over).
-  let anchorDay = sortedDays.find(d => d === todayKey);
-  if (anchorDay == null) anchorDay = sortedDays.find(d => d > todayKey);
-  if (anchorDay == null) anchorDay = sortedDays[sortedDays.length - 1];
+
+  // 🎯 Find the FIRST match that hasn't finished yet (live or upcoming) — that's
+  // where we auto-scroll, so already-played matches from earlier today are skipped.
+  let anchorFixtureId = null;
+  {
+    const ordered = [...allMatches].sort((a,b)=> new Date(a.kickoff) - new Date(b.kickoff));
+    for (const m of ordered) {
+      const mk = new Date(m.kickoff).getTime();
+      const mActual = m.type === "group" ? actuals[m.fixture?.id] : null;
+      const finished = (mActual && mActual.isFinished === true) ||
+        (mActual && mActual.h !== "" && mActual.h !== undefined && mActual.isLive !== true && (now - mk)/(60*1000) > 95);
+      if (!finished) { anchorFixtureId = m.type === "group" ? `m-${m.fixture.id}` : `m-ko-${m.slotId}`; break; }
+    }
+    // If everything finished, anchor to the very last match.
+    if (!anchorFixtureId && ordered.length) {
+      const last = ordered[ordered.length-1];
+      anchorFixtureId = last.type === "group" ? `m-${last.fixture.id}` : `m-ko-${last.slotId}`;
+    }
+  }
 
   const renderMatchRow = (m, opts = {}) => {
     const isFinishedSection = opts.isFinishedSection || false;
@@ -14241,7 +14264,7 @@ function TodayScreen({ picks, actuals, onPick, onBack, onGoToBracket, leagueMemb
       const kf = formatKickoff(f.kickoff);
 
       return (
-        <div key={f.id}>
+        <div key={f.id} ref={anchorFixtureId === `m-${f.id}` ? todayAnchorRef : null} style={{scrollMarginTop:60}}>
           <MatchCard
             fixture={f}
             pick={p}
@@ -14447,7 +14470,7 @@ function TodayScreen({ picks, actuals, onPick, onBack, onGoToBracket, leagueMemb
         else if (diffDays === 1) label = `מחר · ${label}`;
         else if (diffDays === -1) label = `אתמול · ${label}`;
         return (
-          <div key={dk} ref={dk === anchorDay ? todayAnchorRef : null} style={{marginBottom:8,scrollMarginTop:12}}>
+          <div key={dk} style={{marginBottom:8,scrollMarginTop:12}}>
             <div style={{
               position:"sticky",top:0,zIndex:5,
               margin:"16px -14px 11px",padding:"9px 16px",
