@@ -14,7 +14,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "4.9.4";
+const APP_VERSION = "4.9.5";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -17385,6 +17385,12 @@ function LeagueHub({
             {t("league.noMembers")}
           </div>
         )}
+        {/* 🐛 TEMP DEBUG — show each member's stored pic */}
+        <div style={{background:"rgba(0,0,0,0.6)",border:"1px solid #f87171",borderRadius:8,padding:8,marginBottom:10,fontSize:10,fontFamily:"monospace",color:"#fca5a5",wordBreak:"break-all"}}>
+          {members.map(p => (
+            <div key={p.uid}>{p.name}: pic=[{String(p.pic)}] theme=[{String(p.theme)}]</div>
+          ))}
+        </div>
         {members.map((p, i) => {
           const showPoints = hasActuals;
           // Top 3 get medals; everyone below gets 🗑️
