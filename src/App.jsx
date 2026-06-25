@@ -14,7 +14,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "4.9.10";
+const APP_VERSION = "4.9.11";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -14491,12 +14491,21 @@ function TodayScreen({ picks, actuals, onPick, onBack, onGoToBracket, leagueMemb
                 : <span style={{fontSize:10,color:"#8b9cc0",fontWeight:700,background:"rgba(0,0,0,0.3)",padding:"3px 9px",borderRadius:20}}>{dayMatches.length} משחקים</span>}
             </div>
             {dayMatches.map(m => {
-              // Collapse a match once it has finished (past day, or has a final score today).
               const mk = new Date(m.kickoff).getTime();
               const mActual = m.type === "group" ? actuals[m.fixture?.id] : null;
+              // 🔴 A match counts as LIVE if the API says so, or it kicked off in
+              // the last ~2 hours and isn't marked finished. Live matches stay OPEN.
+              const minSince = (now - mk) / (60 * 1000);
+              const isLiveNow = mActual && (mActual.isLive === true ||
+                (mActual.isFinished !== true && minSince >= 0 && minSince <= 120 &&
+                 mActual.h !== "" && mActual.h !== undefined));
+              const startedNoData = !mActual && minSince >= 0 && minSince <= 120;
+              // 🏁 Finished only when API says finished, OR there's a score, it's
+              // not live, and enough time has passed.
               const mFinished = (mActual && mActual.isFinished === true) ||
-                (mActual && mActual.h !== "" && mActual.h !== undefined && mActual.isLive !== true && (now - mk)/(60*1000) > 95);
-              const collapse = isPast || mFinished;
+                (mActual && mActual.h !== "" && mActual.h !== undefined && mActual.isLive !== true && minSince > 120);
+              // Collapse past days and finished matches — but NEVER a live one.
+              const collapse = !isLiveNow && !startedNoData && (isPast || mFinished);
               return renderMatchRow(m, { isFinishedSection: collapse });
             })}
           </div>
