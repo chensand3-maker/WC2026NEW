@@ -14,7 +14,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "4.8.0";
+const APP_VERSION = "4.8.1";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -14127,11 +14127,16 @@ function TodayScreen({ picks, actuals, onPick, onBack, onGoToBracket, leagueMemb
     const el = todayAnchorRef.current;
     if (!el) return;
     didAutoScroll.current = true;
-    // small delay so layout settles, then glide down to today
-    const tmr = setTimeout(() => {
-      try { el.scrollIntoView({ behavior: "smooth", block: "start" }); } catch {}
-    }, 350);
-    return () => clearTimeout(tmr);
+    // Wait for layout to settle, then scroll the anchor near the top.
+    const doScroll = () => {
+      const el2 = todayAnchorRef.current;
+      if (!el2) return;
+      const y = el2.getBoundingClientRect().top + window.scrollY - 70;
+      window.scrollTo({ top: Math.max(0, y), behavior: "smooth" });
+    };
+    const t1 = setTimeout(doScroll, 400);
+    const t2 = setTimeout(doScroll, 900); // second pass in case images/flags shifted layout
+    return () => { clearTimeout(t1); clearTimeout(t2); };
   });
   useEffect(() => {
     const onTouchStart = (e) => {
@@ -14440,7 +14445,15 @@ function TodayScreen({ picks, actuals, onPick, onBack, onGoToBracket, leagueMemb
                 ? <span style={{fontSize:9,fontWeight:900,color:"#0a0e1a",background:"var(--accent)",padding:"2px 8px",borderRadius:6}}>עכשיו</span>
                 : <span style={{fontSize:10,color:"#8b9cc0",fontWeight:700,background:"rgba(0,0,0,0.3)",padding:"3px 9px",borderRadius:20}}>{dayMatches.length} משחקים</span>}
             </div>
-            {dayMatches.map(m => renderMatchRow(m, { isFinishedSection: isPast }))}
+            {dayMatches.map(m => {
+              // Collapse a match once it has finished (past day, or has a final score today).
+              const mk = new Date(m.kickoff).getTime();
+              const mActual = m.type === "group" ? actuals[m.fixture?.id] : null;
+              const mFinished = (mActual && mActual.isFinished === true) ||
+                (mActual && mActual.h !== "" && mActual.h !== undefined && mActual.isLive !== true && (now - mk)/(60*1000) > 95);
+              const collapse = isPast || mFinished;
+              return renderMatchRow(m, { isFinishedSection: collapse });
+            })}
           </div>
         );
       })}
