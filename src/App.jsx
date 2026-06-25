@@ -14,7 +14,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "4.9.0";
+const APP_VERSION = "4.9.2";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -19134,6 +19134,19 @@ function AppInner() {
       updateMyCustom(activeLeagueCode, userId, custom).catch(() => {});
     }
   }, [activeLeagueCode, userId, custom]);
+
+  // 🔁 Safety sync: when league data loads, make sure MY pic/theme in the league
+  // matches my local custom. Fixes cases where an older join saved no pic.
+  useEffect(() => {
+    if (!activeLeagueCode || !userId) return;
+    const data = allLeagueData?.[activeLeagueCode];
+    const me = data?.members?.[userId];
+    if (!me) return;
+    if (me.pic !== custom.pic || me.theme !== custom.theme) {
+      updateMyCustom(activeLeagueCode, userId, custom).catch(() => {});
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allLeagueData, activeLeagueCode, userId]);
 
   // 📢 Detect a freshly-pushed ad popup from the league admin
   useEffect(() => {

@@ -54,15 +54,19 @@ export async function joinLeague(code) {
 
 export async function updateMyPicks(code, userId, name, picks, koWinners, extras = {}) {
   const ref = doc(db, "leagues", code);
-  await updateDoc(ref, {
-    [`members.${userId}`]: {
-      name,
-      picks,
-      koWinners,
-      ...extras,
-      updatedAt: Date.now(),
-    },
-  });
+  // ⚠️ Use per-field (dot-notation) updates instead of overwriting the whole
+  // member object, so fields written elsewhere (pic, theme, pendingGifts,
+  // topScorerPick, winnerPick…) are NOT wiped out when picks are saved.
+  const update = {
+    [`members.${userId}.name`]: name,
+    [`members.${userId}.picks`]: picks,
+    [`members.${userId}.koWinners`]: koWinners,
+    [`members.${userId}.updatedAt`]: Date.now(),
+  };
+  for (const [k, v] of Object.entries(extras || {})) {
+    update[`members.${userId}.${k}`] = v;
+  }
+  await updateDoc(ref, update);
 }
 
 export async function renameLeague(code, newName) {
