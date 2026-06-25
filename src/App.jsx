@@ -14,7 +14,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "4.9.5";
+const APP_VERSION = "4.9.7";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -17385,12 +17385,6 @@ function LeagueHub({
             {t("league.noMembers")}
           </div>
         )}
-        {/* 🐛 TEMP DEBUG — show each member's stored pic */}
-        <div style={{background:"rgba(0,0,0,0.6)",border:"1px solid #f87171",borderRadius:8,padding:8,marginBottom:10,fontSize:10,fontFamily:"monospace",color:"#fca5a5",wordBreak:"break-all"}}>
-          {members.map(p => (
-            <div key={p.uid}>{p.name}: pic=[{String(p.pic)}] theme=[{String(p.theme)}]</div>
-          ))}
-        </div>
         {members.map((p, i) => {
           const showPoints = hasActuals;
           // Top 3 get medals; everyone below gets 🗑️
@@ -19141,24 +19135,24 @@ function AppInner() {
     }
   }, [activeLeagueCode, userId, custom]);
 
-  // 🔁 Safety sync: once league data has loaded, push MY pic/theme into the
-  // league so others see it — even if I already made all my picks and won't
-  // trigger another save. Runs whenever the loaded value differs from mine.
-  const syncedOnceRef = useRef(false);
+  // 🔁 Auto-save my avatar/theme to the league the moment data loads — no need
+  // to make or change any picks. This runs once per session per league as soon
+  // as we know I'm in it, guaranteeing others see my emoji.
+  const syncedLeaguesRef = useRef(new Set());
   useEffect(() => {
     if (!activeLeagueCode || !userId) return;
     const data = allLeagueData?.[activeLeagueCode];
     if (!data) return;
-    const me = data?.members?.[userId];
-    // If I'm a member but my pic/theme is missing or stale, OR I haven't synced
-    // yet this session, push my current customization up.
-    const needsSync = !me || me.pic !== custom.pic || me.theme !== custom.theme;
-    if (needsSync || !syncedOnceRef.current) {
-      syncedOnceRef.current = true;
-      updateMyCustom(activeLeagueCode, userId, custom).catch(() => {});
+    // Only once per league per session
+    if (syncedLeaguesRef.current.has(activeLeagueCode)) {
+      // but still re-push if the stored value drifted from mine
+      const me = data?.members?.[userId];
+      if (me && me.pic === custom.pic && me.theme === custom.theme) return;
     }
+    syncedLeaguesRef.current.add(activeLeagueCode);
+    updateMyCustom(activeLeagueCode, userId, custom).catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [allLeagueData, activeLeagueCode, userId]);
+  }, [allLeagueData, activeLeagueCode, userId, custom]);
 
   // 📢 Detect a freshly-pushed ad popup from the league admin
   useEffect(() => {
@@ -19550,6 +19544,9 @@ function AppInner() {
           topScorerPick,
           koPicks,
           cardCollection: cardCollection || {},
+          // 🎨 Always include avatar + theme so they're never missing for others
+          pic: custom?.pic || "letter",
+          theme: custom?.theme || "green",
           // 🛡️ Backup fields — restored on re-login
           coinBalance: coins?.balance || 0,
           unlockedAchievements: Array.from(unlockedAchievements || []),
