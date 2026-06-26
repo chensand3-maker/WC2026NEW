@@ -14,7 +14,7 @@ import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWi
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "4.9.11";
+const APP_VERSION = "5.0.0";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -12690,7 +12690,7 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
           {pick && pick.h !== undefined && pick.h !== "" && (
             <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:5,fontSize:10,color:"#94a3b8"}}>
               <span>הניחוש שלך:</span>
-              <span style={{direction:"ltr",fontWeight:800,color:"#93c5fd"}}>{pick.a} - {pick.h}</span>
+              <span style={{direction:"ltr",fontWeight:800,color:"#93c5fd"}}>{pick.h} - {pick.a}</span>
             </div>
           )}
         </div>
