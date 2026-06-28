@@ -15,7 +15,7 @@ import { R32_THIRD_TABLE } from "./r32table";
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "5.7.0";
+const APP_VERSION = "5.7.1";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -12480,7 +12480,8 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
     if (!matchStarted) return null;
     let homeWin = 0, draw = 0, awayWin = 0, total = 0;
     for (const m of leagueMembers) {
-      const p = m.picks?.[fixture.id];
+      // KO matches store picks under koPicks[slotId]; group matches under picks[id].
+      const p = fixture.isKnockout ? m.koPicks?.[fixture.slotId] : m.picks?.[fixture.id];
       if (!p || p.h === undefined || p.h === "" || p.a === undefined || p.a === "") continue;
       const ph = parseInt(p.h), pa = parseInt(p.a);
       if (isNaN(ph) || isNaN(pa)) continue;
@@ -12496,7 +12497,7 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
       draw: Math.round((draw / total) * 100),
       away: Math.round((awayWin / total) * 100),
     };
-  }, [leagueMembers, fixture.id, fixture.kickoff]);
+  }, [leagueMembers, fixture.id, fixture.slotId, fixture.isKnockout, fixture.kickoff]);
 
   // ─── LOCKOUT: matches lock 1 hour before kickoff ──
   const LOCK_MS = 60 * 60 * 1000; // 1 hour
@@ -13037,7 +13038,7 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
             {(() => {
               const rows = [];
               for (const m of leagueMembers) {
-                const p = m.picks?.[fixture.id];
+                const p = fixture.isKnockout ? m.koPicks?.[fixture.slotId] : m.picks?.[fixture.id];
                 if (!p || p.h === undefined || p.h === "" || p.a === undefined || p.a === "") continue;
                 const ph = parseInt(p.h), pa = parseInt(p.a);
                 if (isNaN(ph) || isNaN(pa)) continue;
