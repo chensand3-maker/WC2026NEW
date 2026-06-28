@@ -234,18 +234,26 @@ export async function fetchLiveResults(force = false) {
     const isFinished = FINISHED_STATUSES.includes(status);
     const isLive = !isFinished;
 
+    // 🕒 Per-phase scores (API-Football exposes these under fixture.score)
+    const sc90 = fixture.score?.fulltime;   // result at 90 min (regulation)
+    const scET = fixture.score?.extratime;  // cumulative incl. extra time
+    const scPK = fixture.score?.penalty;    // penalty shootout
+    const ft90 = (sc90 && sc90.home != null && sc90.away != null) ? { h: sc90.home, a: sc90.away } : null;
+    const etRes = (scET && scET.home != null && scET.away != null) ? { h: scET.home, a: scET.away } : null;
+    const pkRes = (scPK && scPK.home != null && scPK.away != null) ? { h: scPK.home, a: scPK.away } : null;
+
     if (isKnockout) {
       const homeWon = fixture.teams?.home?.winner === true;
       const awayWon = fixture.teams?.away?.winner === true;
       const winnerName = homeWon ? home : awayWon ? away : null;
       knockout[`${home}|${away}`] = {
         h: hGoals, a: aGoals, status, round, winnerName, originalHome: home, fixtureId,
-        isLive, isFinished,
+        isLive, isFinished, ft90, etRes, pkRes,
       };
     } else {
       byTeamPair[`${home}|${away}`] = {
         h: hGoals, a: aGoals, status, originalHome: home, fixtureId,
-        isLive, isFinished,
+        isLive, isFinished, ft90, etRes, pkRes,
       };
     }
   }
@@ -265,9 +273,12 @@ export function mapResultsToFixtures(liveData, FIXTURES) {
     const reverse = liveData.byTeamPair[`${f.away}|${f.home}`];
 
     if (direct) {
-      out[f.id] = { h: direct.h, a: direct.a, isLive: direct.isLive, isFinished: direct.isFinished, status: direct.status };
+      out[f.id] = { h: direct.h, a: direct.a, isLive: direct.isLive, isFinished: direct.isFinished, status: direct.status, ft90: direct.ft90, etRes: direct.etRes, pkRes: direct.pkRes };
     } else if (reverse) {
-      out[f.id] = { h: reverse.a, a: reverse.h, isLive: reverse.isLive, isFinished: reverse.isFinished, status: reverse.status };
+      out[f.id] = { h: reverse.a, a: reverse.h, isLive: reverse.isLive, isFinished: reverse.isFinished, status: reverse.status,
+        ft90: reverse.ft90 ? { h: reverse.ft90.a, a: reverse.ft90.h } : null,
+        etRes: reverse.etRes ? { h: reverse.etRes.a, a: reverse.etRes.h } : null,
+        pkRes: reverse.pkRes ? { h: reverse.pkRes.a, a: reverse.pkRes.h } : null };
     }
   }
   return out;

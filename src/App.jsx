@@ -15,7 +15,7 @@ import { R32_THIRD_TABLE } from "./r32table";
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "5.11.2";
+const APP_VERSION = "5.12.0";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -13157,11 +13157,30 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
           </div>
         );
       })()}
+      {/* ⏱️ Phase timeline — only for KO matches that went to extra-time / penalties */}
+      {!collapsed && (matchPhase === "et" || matchPhase === "pens" || matchPhase === "aet") && actual && (() => {
+        const ph90 = actual.ft90;
+        const phET = actual.etRes;
+        const phPK = actual.pkRes;
+        if (!ph90) return null; // need at least the 90-min result to show the timeline
+        const cell = (label, val, kind) => (
+          <div style={{flex:1,textAlign:"center",padding:"6px 4px",borderRadius:8,
+            background: kind==="scored" ? "rgba(201,169,97,0.1)" : kind==="now" ? "rgba(139,92,246,0.1)" : "rgba(255,255,255,0.025)",
+            border: `1px solid ${kind==="scored" ? "rgba(201,169,97,0.45)" : kind==="now" ? "rgba(139,92,246,0.45)" : "rgba(255,255,255,0.05)"}`}}>
+            <div style={{fontSize:7,fontWeight:700,letterSpacing:0.5,color: kind==="scored" ? "#c9a961" : kind==="now" ? "#a78bfa" : "#6b6655"}}>{label}</div>
+            <div style={{fontSize:13,fontWeight:800,marginTop:2,color: kind==="scored" ? "#f4e4b0" : "#f5f3ee"}}>{val.h} : {val.a}</div>
+          </div>
+        );
+        const stillLive = matchPhase === "et" || matchPhase === "pens";
+        return (
+          <div style={{marginTop:10,display:"flex",gap:5}}>
+            {cell("90 דקות ✓", ph90, "scored")}
+            {phET && cell("הארכה", phET, (matchPhase==="et" && stillLive) ? "now" : "")}
+            {phPK && cell("פנדלים", phPK, (matchPhase==="pens") ? "now" : "")}
+          </div>
+        );
+      })()}
       {!collapsed && actual && actual.h !== undefined && actual.h !== "" && (() => {
-        const matchStarted = Date.now() >= new Date(fixture.kickoff).getTime();
-        const minSinceKickoff = (Date.now() - new Date(fixture.kickoff).getTime()) / (60 * 1000);
-        // 🔴 Use the API's isLive flag if present, fallback to time-based
-        const isLive = actual.isLive === true || (matchStarted && minSinceKickoff <= 120 && actual.isFinished !== true);
         // While live, the "חי" chip is already shown in the header — don't repeat it here.
         if (isLive) {
           if (!hasResult) return null;
