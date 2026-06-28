@@ -15,7 +15,7 @@ import { R32_THIRD_TABLE } from "./r32table";
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "5.11.1";
+const APP_VERSION = "5.11.2";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -12880,6 +12880,14 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
     const minsSince = (Date.now() - new Date(fixture.kickoff).getTime()) / (60 * 1000);
     return started && minsSince <= 120;
   })();
+  // ⏱️ Extra-time / penalties phase (from the API status). Only relevant for KO.
+  const matchPhase = (() => {
+    const st = actual?.status;
+    if (st === "ET" || st === "BT") return "et";       // live, in extra time
+    if (st === "P" || st === "PEN") return "pens";       // penalty shootout / decided on pens
+    if (st === "AET") return "aet";                       // finished after extra time
+    return null;
+  })();
   const score = actual && actual.h !== undefined && actual.h !== "" && hasResult && !matchIsLiveNow
     ? (fixture.isKnockout ? scoreKoMatch(pick, actual) : scoreMatch(pick, actual))
     : null;
@@ -12953,7 +12961,11 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
           );
         })()}
         {/* status chip on the right */}
-        {matchIsLiveNow ? (
+        {matchIsLiveNow && (matchPhase === "et" || matchPhase === "pens") ? (
+          <span style={{marginInlineStart:"auto",fontSize:8,fontWeight:800,color:"#fff",background:"#8b5cf6",padding:"3px 10px",borderRadius:20,display:"flex",alignItems:"center",gap:4,whiteSpace:"nowrap"}}>
+            <span style={{width:4,height:4,borderRadius:"50%",background:"#fff",animation:"livePulse 1.1s ease-in-out infinite",display:"inline-block"}}/> {matchPhase === "pens" ? "פנדלים" : "הארכה"}
+          </span>
+        ) : matchIsLiveNow ? (
           <span style={{marginInlineStart:"auto",fontSize:8,fontWeight:800,color:"#fff",background:"#e0524d",padding:"3px 10px",borderRadius:20,display:"flex",alignItems:"center",gap:4,whiteSpace:"nowrap"}}>
             <span style={{width:4,height:4,borderRadius:"50%",background:"#fff",animation:"livePulse 1.1s ease-in-out infinite",display:"inline-block"}}/> חי
           </span>
@@ -13156,7 +13168,11 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
           return (
             <div style={{marginTop:10,paddingTop:9,borderTop:"1px solid rgba(201,169,97,0.12)",
               display:"flex",alignItems:"center",gap:8}}>
-              <span style={{fontSize:9,color:"#8a8472"}}>🔴 משחק חי · הניחוש שלך מוצג בסוגריים</span>
+              {(matchPhase === "et" || matchPhase === "pens") ? (
+                <span style={{fontSize:9,color:"#a78bfa"}}>⏱️ {matchPhase === "pens" ? "פנדלים" : "הארכה"} · הניקוד שלך כבר נסגר לפי 90 דקות</span>
+              ) : (
+                <span style={{fontSize:9,color:"#8a8472"}}>🔴 משחק חי · הניחוש שלך מוצג בסוגריים</span>
+              )}
             </div>
           );
         }
