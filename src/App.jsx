@@ -15,7 +15,7 @@ import { R32_THIRD_TABLE } from "./r32table";
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "5.12.3";
+const APP_VERSION = "5.12.4";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -18906,7 +18906,8 @@ class AppErrorBoundary extends React.Component {
       },
         React.createElement("div", { style: { fontSize: 48, marginBottom: 16 } }, "⚽"),
         React.createElement("div", { style: { fontSize: 18, color: "#fbbf24", fontWeight: 900, marginBottom: 8 } }, "רגע, טוענים מחדש..."),
-        React.createElement("div", { style: { fontSize: 13, color: "#94a3b8", marginBottom: 24, maxWidth: 280, lineHeight: 1.5 } }, "משהו קטן השתבש. לחץ רענון והכל יחזור לעבוד."),
+        React.createElement("div", { style: { fontSize: 13, color: "#94a3b8", marginBottom: 16, maxWidth: 280, lineHeight: 1.5 } }, "משהו קטן השתבש. לחץ רענון והכל יחזור לעבוד."),
+        React.createElement("div", { style: { fontSize: 11, color: "#f87171", marginBottom: 24, maxWidth: 320, lineHeight: 1.5, fontFamily: "monospace", background: "rgba(239,68,68,0.1)", padding: "10px 12px", borderRadius: 8, wordBreak: "break-word", direction: "ltr", textAlign: "left" } }, String(this.state.error?.message || this.state.error || "")),
         React.createElement("button", {
           onClick: () => { try { window.location.reload(); } catch {} },
           style: { padding: "12px 28px", background: "linear-gradient(135deg,#fbbf24,#d97706)", color: "#1a1206", border: "none", borderRadius: 10, fontWeight: 800, fontSize: 15, cursor: "pointer", fontFamily: "inherit" }
