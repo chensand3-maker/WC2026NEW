@@ -15,7 +15,7 @@ import { R32_THIRD_TABLE } from "./r32table";
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "5.10.7";
+const APP_VERSION = "5.11.0";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -1423,7 +1423,9 @@ const TEAM_THEMES = [
 
 // All themes in one list for easy lookup by id.
 const ALL_THEMES = [...COLOR_THEMES, ...TEAM_THEMES];
-const themeById = (id) => ALL_THEMES.find(t => t.id === id) || COLOR_THEMES[0];
+// 🖤 Unified gold-black theme — color customization removed; everyone gets gold.
+const GOLD_THEME = { id:"gold_black", name:"זהב ושחור", emoji:"🏆", c1:"#c9a961", c2:"#8a6d2e", price:0 };
+const themeById = (id) => GOLD_THEME;
 
 // Profile-pic emojis, grouped by category. emoji "" / id "letter" = default
 // (shows the first letter of the user's name). All others are bought/gifted.
@@ -16348,7 +16350,7 @@ function AdsScreen({ leagueCode, leagueData, name, userId, viewerMode = false })
 // select-then-confirm purchase flow (clicking only previews; buying is explicit).
 function CustomizeShop({ custom, saveCustom, coinBalance, onSpend, name, onClose, leagueMembers = [], onSendGift = null }) {
   const { showToast } = useToast();
-  const [topTab, setTopTab] = useState("theme"); // "theme" | "pic"
+  const [topTab, setTopTab] = useState("pic"); // color themes removed — only "pic"
   const [themeSub, setThemeSub] = useState("colors"); // "colors" | "teams"
   const [picSub, setPicSub] = useState("בסיס");
   const [search, setSearch] = useState("");
@@ -16457,16 +16459,11 @@ function CustomizeShop({ custom, saveCustom, coinBalance, onSpend, name, onClose
           <div style={{padding:10,borderRadius:10,textAlign:"center",fontSize:12,fontWeight:800,color:"#fff",background:grad,transition:"all 0.3s"}}>כך ייראו הכפתורים וההדגשות שלך</div>
         </div>
 
-        {/* Top tabs */}
-        <div style={{display:"flex",gap:8,marginBottom:14}}>
-          {[["theme","🎨 ערכת נושא"],["pic","😎 תמונת פרופיל"]].map(([id,label]) => (
-            <button key={id} onClick={()=>setTopTab(id)} style={{
-              flex:1,padding:11,borderRadius:12,fontSize:13,fontWeight:800,cursor:"pointer",fontFamily:"inherit",
-              background: topTab===id ? "rgba(96,165,250,0.2)" : "rgba(255,255,255,0.06)",
-              border: `1px solid ${topTab===id ? "#60a5fa" : "rgba(255,255,255,0.1)"}`,
-              color: topTab===id ? "#93c5fd" : "#94a3b8",
-            }}>{label}</button>
-          ))}
+        {/* Color themes removed — unified gold-black. Only profile emoji remains. */}
+        <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8,marginBottom:14,
+          padding:11,borderRadius:12,background:"rgba(201,169,97,0.08)",border:"1px solid rgba(201,169,97,0.25)"}}>
+          <span style={{fontSize:15}}>😎</span>
+          <span style={{fontSize:13,fontWeight:800,color:"#f4e4b0"}}>בחר תמונת פרופיל</span>
         </div>
 
         {/* Action bar */}
@@ -20743,7 +20740,7 @@ function AppInner() {
         transform: perspective(800px) rotateY(0deg) rotateX(0deg) scale(0.97);
       }
     `}</style>
-    <div style={{minHeight:"100vh",background:"linear-gradient(170deg,#020617 0%,color-mix(in srgb, var(--accent) 14%, #051016) 55%,color-mix(in srgb, var(--accent) 20%, #04140b) 100%)",color:"#f1f5f9",fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif",position:"relative",direction:lang==="he"?"rtl":"ltr","--accent":myTheme.c1,"--accent2":myTheme.c2}}>
+    <div style={{minHeight:"100vh",background:"linear-gradient(170deg,#07070a 0%,#0a0a0e 55%,#0d0d12 100%)",color:"#f1f5f9",fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif",position:"relative",direction:lang==="he"?"rtl":"ltr","--accent":myTheme.c1,"--accent2":myTheme.c2}}>
       {/* Language toggle: shown only on welcome screen */}
       {screen === "welcome" && (
         <div style={{
