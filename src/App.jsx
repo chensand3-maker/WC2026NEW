@@ -11,10 +11,11 @@ import {
   adminSetMemberTopScorer, adminSetMemberWinner,
 } from "./firebase";
 import { fetchLiveResults, clearLiveCache, mapResultsToFixtures, mapKnockoutToWinners, mapKnockoutToBracket, fetchTopScorers, buildTopScorersFromEvents, clearTopScorersFromEventsCache, fetchMatchDetails, getApiFixtureId, fetchLineup, buildTeamMatchStats, clearTeamMatchStatsCache } from "./liveResults";
+import { R32_THIRD_TABLE } from "./r32table";
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "5.0.0";
+const APP_VERSION = "5.2.0";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -1991,26 +1992,40 @@ function buildR32(standings, bestThirds) {
   if (!standings) return null;
   const w = g => { const t = standings[g]?.[0]; return (t && t.p > 0) ? t : null; };
   const r = g => { const t = standings[g]?.[1]; return (t && t.p > 0) ? t : null; };
-  // bestThirds is sorted array of best 8 third-place teams
-  const get3 = (i) => { const t = bestThirds?.[i]; return (t && t.p > 0) ? { ...t, isThird: true } : null; };
+
+  // 🏆 OFFICIAL FIFA allocation: which 3rd-place GROUP each winner faces depends on
+  // WHICH eight groups produced a qualifying third-placed team (not their ranking).
+  // Build the lookup key from the groups of the 8 best thirds, then read the table.
+  const thirdGroups = (bestThirds || []).filter(t => t && t.p > 0).map(t => t.group);
+  const key = [...thirdGroups].sort().join("");
+  const assignment = R32_THIRD_TABLE[key] || null;
+  // third-by-group lookup: given a group letter, return that group's 3rd-place team
+  const thirdByGroup = {};
+  for (const t of (bestThirds || [])) { if (t && t.group) thirdByGroup[t.group] = { ...t, isThird: true }; }
+  // get3ForWinner: the 3rd-place team that winner-group `wg` faces, per official table.
+  const t3 = (wg) => {
+    if (!assignment) return null;
+    const grp = assignment[wg];
+    return grp ? (thirdByGroup[grp] || null) : null;
+  };
 
   // Official FIFA 2026 Round of 32 bracket (matches 73-88)
   return [
     { id:"R32-1",  a:r("A"),  b:r("B")  },  // M73: 2A vs 2B
-    { id:"R32-2",  a:w("E"),  b:get3(0) },  // M74: 1E vs best 3rd
+    { id:"R32-2",  a:w("E"),  b:t3("E") },  // M74: 1E vs best 3rd
     { id:"R32-3",  a:w("F"),  b:r("C")  },  // M75: 1F vs 2C
     { id:"R32-4",  a:w("C"),  b:r("F")  },  // M76: 1C vs 2F
-    { id:"R32-5",  a:w("I"),  b:get3(1) },  // M77: 1I vs best 3rd
+    { id:"R32-5",  a:w("I"),  b:t3("I") },  // M77: 1I vs best 3rd
     { id:"R32-6",  a:r("E"),  b:r("I")  },  // M78: 2E vs 2I
-    { id:"R32-7",  a:w("A"),  b:get3(2) },  // M79: 1A vs best 3rd
-    { id:"R32-8",  a:w("L"),  b:get3(3) },  // M80: 1L vs best 3rd
-    { id:"R32-9",  a:w("D"),  b:get3(4) },  // M81: 1D vs best 3rd
-    { id:"R32-10", a:w("G"),  b:get3(5) },  // M82: 1G vs best 3rd
+    { id:"R32-7",  a:w("A"),  b:t3("A") },  // M79: 1A vs best 3rd
+    { id:"R32-8",  a:w("L"),  b:t3("L") },  // M80: 1L vs best 3rd
+    { id:"R32-9",  a:w("D"),  b:t3("D") },  // M81: 1D vs best 3rd
+    { id:"R32-10", a:w("G"),  b:t3("G") },  // M82: 1G vs best 3rd
     { id:"R32-11", a:r("K"),  b:r("L")  },  // M83: 2K vs 2L
     { id:"R32-12", a:w("H"),  b:r("J")  },  // M84: 1H vs 2J
-    { id:"R32-13", a:w("B"),  b:get3(6) },  // M85: 1B vs best 3rd
+    { id:"R32-13", a:w("B"),  b:t3("B") },  // M85: 1B vs best 3rd
     { id:"R32-14", a:w("J"),  b:r("H")  },  // M86: 1J vs 2H
-    { id:"R32-15", a:w("K"),  b:get3(7) },  // M87: 1K vs best 3rd
+    { id:"R32-15", a:w("K"),  b:t3("K") },  // M87: 1K vs best 3rd
     { id:"R32-16", a:r("D"),  b:r("G")  },  // M88: 2D vs 2G
   ];
 }
@@ -15007,47 +15022,58 @@ function KnockoutBracket({ standings, bestThirds, liveStandings, liveBestThirds,
             </span>
           </div>
         )}
-        {/* teams + score */}
-        <div style={{display:"grid",gridTemplateColumns:"1fr auto auto",alignItems:"center",gap:8}}>
-          <div style={{display:"flex",flexDirection:"column",gap:3,minWidth:0,direction:"ltr"}}>
-            <div style={{display:"flex",alignItems:"center",gap:7,opacity: hasReal && !advA ? 0.4 : 1}}>
-              <span style={{fontSize:16,flexShrink:0}}>{m.a?.flag||m.a?.f||"❓"}</span>
-              <span style={{fontSize:12,fontWeight:advA?800:600,color:advA?"#fff":"#cbd5e1",
-                overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",
-                textDecoration: hasReal && !advA ? "line-through" : "none"}}>{m.a?.name||m.a?.n||"TBD"}</span>
-            </div>
-            <div style={{display:"flex",alignItems:"center",gap:7,opacity: hasReal && !advB ? 0.4 : 1}}>
-              <span style={{fontSize:16,flexShrink:0}}>{m.b?.flag||m.b?.f||"❓"}</span>
-              <span style={{fontSize:12,fontWeight:advB?800:600,color:advB?"#fff":"#cbd5e1",
-                overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",
-                textDecoration: hasReal && !advB ? "line-through" : "none"}}>{m.b?.name||m.b?.n||"TBD"}</span>
-            </div>
-          </div>
-          {/* score inputs or lock */}
-          {ready && !isLocked ? (
-            <div style={{display:"flex",alignItems:"center",gap:3,direction:"ltr"}}>
+        {/* teams — each on its own row with its own goal box, so it's clear who gets which score */}
+        <div style={{display:"flex",flexDirection:"column",gap:5}}>
+          {/* Team A row */}
+          <div style={{display:"flex",alignItems:"center",gap:8,opacity: hasReal && !advA ? 0.45 : 1}}>
+            <span style={{fontSize:20,flexShrink:0}}>{m.a?.flag||m.a?.f||"❓"}</span>
+            <span style={{flex:1,fontSize:13,fontWeight:advA?800:600,color:advA?"#fff":"#e2e8f0",
+              overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",
+              textDecoration: hasReal && !advA ? "line-through" : "none"}}>{m.a?.name||m.a?.n||"TBD"}</span>
+            {ready && !isLocked ? (
               <input value={kp.h} onChange={e=>handleChange("h",e.target.value)} inputMode="numeric"
-                placeholder="–" style={{width:32,height:34,borderRadius:8,background:"rgba(13,20,36,0.8)",
-                border:"1.5px solid rgba(255,255,255,0.1)",color:"#f1f5f9",fontFamily:"inherit",fontSize:16,
-                fontWeight:800,textAlign:"center",outline:"none"}}/>
-              <span style={{color:"#3e4a64",fontWeight:800}}>–</span>
+                onFocus={e=>e.target.select()} placeholder="–"
+                style={{width:38,height:38,borderRadius:9,background:"rgba(13,20,36,0.85)",
+                  border:`1.5px solid ${hasPick?"#fbbf24":"rgba(255,255,255,0.12)"}`,color:"#f1f5f9",
+                  fontFamily:"inherit",fontSize:17,fontWeight:800,textAlign:"center",outline:"none",flexShrink:0}}/>
+            ) : (
+              <span style={{width:38,height:38,borderRadius:9,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",
+                background:"rgba(13,20,36,0.7)",fontSize:16,fontWeight:800,
+                color: hasPick ? "#f1f5f9" : "#3e4a64"}}>
+                {!groupStageOver ? "🔒" : (kickoffLock && hasPick) ? "🔒" : hasPick ? kp.h : "–"}
+              </span>
+            )}
+          </div>
+          {/* Team B row */}
+          <div style={{display:"flex",alignItems:"center",gap:8,opacity: hasReal && !advB ? 0.45 : 1}}>
+            <span style={{fontSize:20,flexShrink:0}}>{m.b?.flag||m.b?.f||"❓"}</span>
+            <span style={{flex:1,fontSize:13,fontWeight:advB?800:600,color:advB?"#fff":"#e2e8f0",
+              overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",
+              textDecoration: hasReal && !advB ? "line-through" : "none"}}>{m.b?.name||m.b?.n||"TBD"}</span>
+            {ready && !isLocked ? (
               <input value={kp.a} onChange={e=>handleChange("a",e.target.value)} inputMode="numeric"
-                placeholder="–" style={{width:32,height:34,borderRadius:8,background:"rgba(13,20,36,0.8)",
-                border:"1.5px solid rgba(255,255,255,0.1)",color:"#f1f5f9",fontFamily:"inherit",fontSize:16,
-                fontWeight:800,textAlign:"center",outline:"none"}}/>
-            </div>
-          ) : (
-            <div style={{display:"flex",alignItems:"center",gap:3,fontFamily:"inherit",fontSize:15,fontWeight:800,
-              color: hasPick ? "#f1f5f9" : "#3e4a64",background:"rgba(13,20,36,0.7)",padding:"5px 9px",borderRadius:8}}>
-              {!groupStageOver ? "🔒" : kickoffLock && hasPick ? "🔒" : hasPick ? `${kp.h}–${kp.a}` : "—"}
+                onFocus={e=>e.target.select()} placeholder="–"
+                style={{width:38,height:38,borderRadius:9,background:"rgba(13,20,36,0.85)",
+                  border:`1.5px solid ${hasPick?"#fbbf24":"rgba(255,255,255,0.12)"}`,color:"#f1f5f9",
+                  fontFamily:"inherit",fontSize:17,fontWeight:800,textAlign:"center",outline:"none",flexShrink:0}}/>
+            ) : (
+              <span style={{width:38,height:38,borderRadius:9,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",
+                background:"rgba(13,20,36,0.7)",fontSize:16,fontWeight:800,
+                color: hasPick ? "#f1f5f9" : "#3e4a64"}}>
+                {!groupStageOver ? "🔒" : (kickoffLock && hasPick) ? "🔒" : hasPick ? kp.a : "–"}
+              </span>
+            )}
+          </div>
+          {/* points badge under the two rows */}
+          {(koScore || hasReal || hasPick) && (
+            <div style={{display:"flex",justifyContent:"flex-end",marginTop:1}}>
+              <span style={{fontSize:10,fontWeight:800,padding:"2px 8px",borderRadius:7,
+                background: koScore?.type==="exact" ? "rgba(251,191,36,0.18)" : koScore?.type==="result" ? "rgba(34,197,94,0.18)" : "rgba(255,255,255,0.04)",
+                color: koScore?.type==="exact" ? "#fbbf24" : koScore?.type==="result" ? "#22c55e" : "#64748b"}}>
+                {koScore ? `+${koScore.points} נק׳` : hasReal ? "0 נק׳" : "⏳ ממתין"}
+              </span>
             </div>
           )}
-          {/* points badge */}
-          <div style={{fontSize:10,fontWeight:800,padding:"3px 7px",borderRadius:7,minWidth:36,textAlign:"center",
-            background: koScore?.type==="exact" ? "rgba(251,191,36,0.18)" : koScore?.type==="result" ? "rgba(34,197,94,0.18)" : "rgba(255,255,255,0.04)",
-            color: koScore?.type==="exact" ? "#fbbf24" : koScore?.type==="result" ? "#22c55e" : "#3e4a64"}}>
-            {koScore ? `+${koScore.points}` : hasReal ? "0" : hasPick ? "⏳" : "—"}
-          </div>
         </div>
         {hasReal && (
           <div style={{fontSize:9,color:"#5b6b8c",textAlign:"center",paddingTop:5}}>
