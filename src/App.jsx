@@ -15,7 +15,7 @@ import { R32_THIRD_TABLE } from "./r32table";
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "5.3.0";
+const APP_VERSION = "5.4.0";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -2132,29 +2132,46 @@ function getKnockoutTeams(standings, bestThirds, koWinners) {
   // Returns Set of team names that the user picked to advance at each round
   const r32 = buildR32(standings, bestThirds);
   if (!r32) return { r16:new Set(), qf:new Set(), sf:new Set(), finalists:new Set(), champion:null };
-  
-  let current = r32.map(m => koWinners[m.id] === "a" ? m.a : koWinners[m.id] === "b" ? m.b : null);
-  const r16 = new Set(current.filter(Boolean).map(t => t.name));
-  
-  const next = (arr, prefix, count) => {
-    const result = [];
-    for (let i = 0; i < count; i += 2) {
-      const id = `${prefix}-${i/2}`;
-      const w = koWinners[id];
-      result.push(w === "a" ? arr[i] : w === "b" ? arr[i+1] : null);
-    }
-    return result;
-  };
-  
-  current = next(current, "R16", 16);
-  const qf = new Set(current.filter(Boolean).map(t => t.name));
-  current = next(current, "QF", 8);
-  const sf = new Set(current.filter(Boolean).map(t => t.name));
-  current = next(current, "SF", 4);
-  const finalists = new Set(current.filter(Boolean).map(t => t.name));
-  const w = koWinners["FINAL"];
-  const champion = w === "a" ? current[0] : w === "b" ? current[1] : null;
-  
+
+  // Winner of each R32 match (by index 0..15 = M73..M88)
+  const W32 = (idx) => { const m = r32[idx]; if (!m) return null; return koWinners[m.id]==="a"?m.a:koWinners[m.id]==="b"?m.b:null; };
+  const r16 = new Set([W32(0),W32(1),W32(2),W32(3),W32(4),W32(5),W32(6),W32(7),W32(8),W32(9),W32(10),W32(11),W32(12),W32(13),W32(14),W32(15)].filter(Boolean).map(t=>t.name));
+
+  // 🏆 OFFICIAL FIFA R16 pairings (match numbers in comments)
+  const r16Pairs = [
+    ["R16-0", W32(1),  W32(4)  ], // M89: W74 vs W77
+    ["R16-1", W32(0),  W32(2)  ], // M90: W73 vs W75
+    ["R16-2", W32(3),  W32(5)  ], // M91: W76 vs W78
+    ["R16-3", W32(6),  W32(7)  ], // M92: W79 vs W80
+    ["R16-4", W32(10), W32(11) ], // M93: W83 vs W84
+    ["R16-5", W32(8),  W32(9)  ], // M94: W81 vs W82
+    ["R16-6", W32(13), W32(15) ], // M95: W86 vs W88
+    ["R16-7", W32(12), W32(14) ], // M96: W85 vs W87
+  ];
+  const W16 = (id) => { const row = r16Pairs.find(p=>p[0]===id); if(!row) return null; return koWinners[id]==="a"?row[1]:koWinners[id]==="b"?row[2]:null; };
+  const qf = new Set([W16("R16-0"),W16("R16-1"),W16("R16-2"),W16("R16-3"),W16("R16-4"),W16("R16-5"),W16("R16-6"),W16("R16-7")].filter(Boolean).map(t=>t.name));
+
+  // QF pairings: QF-0=W89vsW90, QF-1=W93vsW94, QF-2=W91vsW92, QF-3=W95vsW96
+  const qfPairs = [
+    ["QF-0", W16("R16-0"), W16("R16-1")],
+    ["QF-1", W16("R16-4"), W16("R16-5")],
+    ["QF-2", W16("R16-2"), W16("R16-3")],
+    ["QF-3", W16("R16-6"), W16("R16-7")],
+  ];
+  const WQF = (id) => { const row = qfPairs.find(p=>p[0]===id); if(!row) return null; return koWinners[id]==="a"?row[1]:koWinners[id]==="b"?row[2]:null; };
+  const sf = new Set([WQF("QF-0"),WQF("QF-1"),WQF("QF-2"),WQF("QF-3")].filter(Boolean).map(t=>t.name));
+
+  // SF: SF-0=W97vsW98, SF-1=W99vsW100
+  const sfPairs = [
+    ["SF-0", WQF("QF-0"), WQF("QF-1")],
+    ["SF-1", WQF("QF-2"), WQF("QF-3")],
+  ];
+  const WSF = (id) => { const row = sfPairs.find(p=>p[0]===id); if(!row) return null; return koWinners[id]==="a"?row[1]:koWinners[id]==="b"?row[2]:null; };
+  const finalists = new Set([WSF("SF-0"),WSF("SF-1")].filter(Boolean).map(t=>t.name));
+
+  const fa = WSF("SF-0"), fb = WSF("SF-1");
+  const champion = koWinners["FINAL"]==="a"?fa:koWinners["FINAL"]==="b"?fb:null;
+
   return { r16, qf, sf, finalists, champion };
 }
 
@@ -14982,11 +14999,13 @@ function KnockoutBracket({ standings, bestThirds, liveStandings, liveBestThirds,
           {/* Score inputs */}
           <div style={{display:"flex",alignItems:"center",gap:4}}>
             <input
+              id={`brk-h-${m.id}`}
               type="text"
               inputMode="numeric"
               value={kp.h}
               onChange={e=>handleKoScoreChange("h", e.target.value)}
               onFocus={e=>e.target.select()}
+              onInput={e=>{ if(e.target.value!==""){ const el=document.getElementById(`brk-a-${m.id}`); if(el){el.focus();el.select();} } }}
               readOnly={isLocked || !ready}
               placeholder={ready ? (isLocked ? "·" : "—") : ""}
               style={{
@@ -14999,6 +15018,7 @@ function KnockoutBracket({ standings, bestThirds, liveStandings, liveBestThirds,
             />
             <span style={{color:"#475569",fontSize:13,fontWeight:700}}>:</span>
             <input
+              id={`brk-a-${m.id}`}
               type="text"
               inputMode="numeric"
               value={kp.a}
@@ -15110,8 +15130,10 @@ function KnockoutBracket({ standings, bestThirds, liveStandings, liveBestThirds,
               overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",
               textDecoration: hasReal && !advA ? "line-through" : "none"}}>{m.a?.name||m.a?.n||"TBD"}</span>
             {ready && !isLocked ? (
-              <input value={kp.h} onChange={e=>handleChange("h",e.target.value)} inputMode="numeric"
-                onFocus={e=>e.target.select()} placeholder="–"
+              <input id={`brkc-h-${m.id}`} value={kp.h} onChange={e=>handleChange("h",e.target.value)} inputMode="numeric"
+                onFocus={e=>e.target.select()}
+                onInput={e=>{ if(e.target.value!==""){ const el=document.getElementById(`brkc-a-${m.id}`); if(el){el.focus();el.select();} } }}
+                placeholder="–"
                 style={{width:38,height:38,borderRadius:9,background:"rgba(13,20,36,0.85)",
                   border:`1.5px solid ${hasPick?"#fbbf24":"rgba(255,255,255,0.12)"}`,color:"#f1f5f9",
                   fontFamily:"inherit",fontSize:17,fontWeight:800,textAlign:"center",outline:"none",flexShrink:0}}/>
@@ -15130,7 +15152,7 @@ function KnockoutBracket({ standings, bestThirds, liveStandings, liveBestThirds,
               overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",
               textDecoration: hasReal && !advB ? "line-through" : "none"}}>{m.b?.name||m.b?.n||"TBD"}</span>
             {ready && !isLocked ? (
-              <input value={kp.a} onChange={e=>handleChange("a",e.target.value)} inputMode="numeric"
+              <input id={`brkc-a-${m.id}`} value={kp.a} onChange={e=>handleChange("a",e.target.value)} inputMode="numeric"
                 onFocus={e=>e.target.select()} placeholder="–"
                 style={{width:38,height:38,borderRadius:9,background:"rgba(13,20,36,0.85)",
                   border:`1.5px solid ${hasPick?"#fbbf24":"rgba(255,255,255,0.12)"}`,color:"#f1f5f9",
