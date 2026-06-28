@@ -15,7 +15,7 @@ import { R32_THIRD_TABLE } from "./r32table";
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "5.10.6";
+const APP_VERSION = "5.10.7";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -13148,29 +13148,29 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
         const minSinceKickoff = (Date.now() - new Date(fixture.kickoff).getTime()) / (60 * 1000);
         // 🔴 Use the API's isLive flag if present, fallback to time-based
         const isLive = actual.isLive === true || (matchStarted && minSinceKickoff <= 120 && actual.isFinished !== true);
+        // While live, the "חי" chip is already shown in the header — don't repeat it here.
+        if (isLive) {
+          if (!hasResult) return null;
+          return (
+            <div style={{marginTop:10,paddingTop:9,borderTop:"1px solid rgba(201,169,97,0.12)",
+              display:"flex",alignItems:"center",gap:8}}>
+              <span style={{fontSize:9,color:"#8a8472"}}>🔴 משחק חי · הניחוש שלך מוצג בסוגריים</span>
+            </div>
+          );
+        }
         return (
         <div style={{marginTop:10,paddingTop:9,borderTop:"1px solid rgba(201,169,97,0.12)",
           display:"flex",alignItems:"center",gap:8}}>
-          {isLive ? (
-            <span style={{fontSize:9,fontWeight:800,color:"#fff",background:"#e0524d",padding:"3px 10px",borderRadius:20,display:"flex",alignItems:"center",gap:4}}>
-              <span style={{width:4,height:4,borderRadius:"50%",background:"#fff",animation:"livePulse 1.1s ease-in-out infinite",display:"inline-block"}}/>
-              חי
-            </span>
-          ) : (
-            <span style={{fontSize:9,fontWeight:700,color:"#8a8472"}}>
-              {score?.type === "exact" ? "🎯 תוצאה מדויקת!" : score?.type === "result" ? "✅ צדקת במנצח" : score?.type === "wrong" ? "❌ לא קלעת הפעם" : "המשחק הסתיים"}
-            </span>
-          )}
-          {hasResult && !isLive && (
+          <span style={{fontSize:9,fontWeight:700,color:"#8a8472"}}>
+            {score?.type === "exact" ? "🎯 תוצאה מדויקת!" : score?.type === "result" ? "✅ צדקת במנצח" : score?.type === "wrong" ? "❌ לא קלעת הפעם" : "המשחק הסתיים"}
+          </span>
+          {hasResult && (
             <span style={{marginInlineStart:"auto",fontSize:11,fontWeight:900,padding:"3px 11px",borderRadius:7,
               color: score?.points > 0 ? (score.type === "exact" ? "#1a1400" : "#fff") : "#fff",
               background: score?.points > 0
                 ? (score.type === "exact" ? "linear-gradient(135deg,#f4e4b0,#c9a961)" : "linear-gradient(135deg,#10b981,#047857)")
                 : "linear-gradient(135deg,#e0524d,#991b1b)",
             }}>{score?.points > 0 ? `+${score.points} נק׳` : "0 נק׳"}</span>
-          )}
-          {isLive && hasResult && (
-            <span style={{marginInlineStart:"auto",fontSize:9,color:"#8a8472"}}>הניחוש שלך מוצג בסוגריים</span>
           )}
         </div>
         );
@@ -14843,6 +14843,11 @@ function TodayScreen({ picks, actuals, onPick, onBack, onGoToBracket, leagueMemb
     }).length;
 
   return (
+    <div style={{
+      background:"radial-gradient(120% 55% at 50% 0%, rgba(201,169,97,0.06), transparent 55%), radial-gradient(100% 100% at 50% 0%, #13141b, #0a0a0e 55%, #07070a 100%)",
+      minHeight:"100vh",marginLeft:"calc(50% - 50vw)",marginRight:"calc(50% - 50vw)",
+      paddingLeft:"calc(50vw - 50%)",paddingRight:"calc(50vw - 50%)",
+    }}>
     <div style={{padding:"16px 14px 60px",maxWidth:560,margin:"0 auto"}}>
       {/* Pull-to-refresh indicator */}
       {ptrDist > 0 && (
@@ -15008,6 +15013,7 @@ function TodayScreen({ picks, actuals, onPick, onBack, onGoToBracket, leagueMemb
 
       {/* 🎯 Floating "jump to today" button */}
       <TodayJumpButton onJump={scrollToToday} />
+    </div>
     </div>
   );
 }
