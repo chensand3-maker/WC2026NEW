@@ -15,7 +15,7 @@ import { R32_THIRD_TABLE } from "./r32table";
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "5.9.1";
+const APP_VERSION = "5.9.2";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -10182,18 +10182,19 @@ function DesignPreviewPanel() {
   const [view, setView] = useState("matches"); // matches | states | live | screens
 
   const css = `
-@property --dpa { syntax:'<angle>'; initial-value:0deg; inherits:false; }
-@keyframes dpspin { to { --dpa:360deg; } }
+@keyframes dpspin { to { transform:rotate(360deg); } }
 @keyframes dpblink { 0%,100%{opacity:1} 50%{opacity:0.25} }
-.dp-neon { position:relative; border-radius:16px; padding:1.3px; margin-bottom:11px;
-  background:conic-gradient(from var(--dpa,0deg), #fbbf24, #3b82f6, #f43f5e, #fbbf24);
-  animation:dpspin 7s linear infinite; box-shadow:0 6px 20px rgba(0,0,0,0.5); }
-.dp-neon.live { background:conic-gradient(from var(--dpa,0deg), #f43f5e, #fbbf24, #f43f5e, #fb7185); animation:dpspin 4s linear infinite; }
-.dp-neon.still { animation:none; }
-.dp-neon.gold { background:linear-gradient(135deg,#fde047,#f59e0b); animation:none; }
-.dp-neon.green { background:linear-gradient(135deg,#34d399,#16a34a); animation:none; }
-.dp-neon.red { background:linear-gradient(135deg,#ef4444,#991b1b); animation:none; }
-.dp-in { background:rgba(11,15,24,0.97); backdrop-filter:blur(18px); border-radius:14.8px; padding:13px 15px; position:relative; overflow:hidden; }
+.dp-neon { position:relative; border-radius:16px; margin-bottom:11px; box-shadow:0 6px 20px rgba(0,0,0,0.5);
+  background:#0b0f18; overflow:hidden; isolation:isolate; }
+.dp-neon::before { content:""; position:absolute; z-index:0; top:50%; left:50%; width:200%; aspect-ratio:1;
+  transform:translate(-50%,-50%); background:conic-gradient(#fbbf24,#3b82f6,#f43f5e,#fbbf24);
+  animation:dpspin 7s linear infinite; }
+.dp-neon.live::before { background:conic-gradient(#f43f5e,#fbbf24,#f43f5e,#fb7185); animation:dpspin 4s linear infinite; }
+.dp-neon.still::before { animation:none; }
+.dp-neon.gold::before { background:linear-gradient(135deg,#fde047,#f59e0b); animation:none; }
+.dp-neon.green::before { background:linear-gradient(135deg,#34d399,#16a34a); animation:none; }
+.dp-neon.red::before { background:linear-gradient(135deg,#ef4444,#991b1b); animation:none; }
+.dp-in { position:relative; z-index:1; margin:1.4px; background:rgba(11,15,24,0.97); backdrop-filter:blur(18px); border-radius:14.8px; padding:13px 15px; overflow:hidden; }
 .dp-row2 { display:flex; }
 .dp-main { flex:1; min-width:0; }
 .dp-stub { width:64px; flex-shrink:0; position:relative; border-inline-start:2px dashed rgba(255,255,255,0.14); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; margin-inline-start:12px; padding-inline-start:4px; }
@@ -10287,7 +10288,7 @@ function DesignPreviewPanel() {
         <div>
           <div className="dp-day"><span className="d">היום · ראשון 28.6</span><span className="ln"></span></div>
           {/* upcoming — X+Y: neon frame + ticket stub, no prediction line (score is shown big) */}
-          <div className="dp-neon still">
+          <div className="dp-neon">
             <div className="dp-in">
               <div className="dp-row2">
                 <div className="dp-main">
