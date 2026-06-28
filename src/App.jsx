@@ -15,7 +15,7 @@ import { R32_THIRD_TABLE } from "./r32table";
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "5.10.4";
+const APP_VERSION = "5.10.5";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -12898,6 +12898,21 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
     : "linear-gradient(135deg,#5e4e26,#c9a961 38%,#f4e4b0 50%,#c9a961 62%,#5e4e26)";
   const innerBg = sc ? sc.bg : "linear-gradient(165deg,#0e0e13,#08080c)";
 
+  // ticket stub content (time for upcoming, live-minute for live, FT for finished)
+  const stubInfo = (() => {
+    if (matchIsLiveNow) {
+      const mins = Math.max(1, Math.round((Date.now() - new Date(fixture.kickoff).getTime()) / 60000));
+      const label = mins > 120 ? "120'+" : `${mins}'`;
+      return { top:null, big:label, sub:"דקה", live:true };
+    }
+    if (actual && actual.h !== undefined && actual.h !== "") {
+      return { top:"✓", big:"גמר", sub:"הסתיים", live:false };
+    }
+    const k = formatKickoff(fixture.kickoff);
+    if (k) return { top:"🎟️", big:k.time, sub:k.day, live:false };
+    return { top:"🎟️", big:"—", sub:"", live:false };
+  })();
+
   return (
     <div style={{
       background: innerBg,
@@ -12905,8 +12920,8 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
       backgroundImage:`${innerBg}, ${frameGradient}`,
       backgroundOrigin:"border-box",
       backgroundClip:"padding-box, border-box",
-      borderRadius:16,padding:"12px 14px",marginBottom:10,transition:"all 0.25s",
-      position:"relative",overflow:"visible",
+      borderRadius:16,marginBottom:10,transition:"all 0.25s",
+      position:"relative",overflow:"hidden",display:"flex",
       animation: reaction ? "matchFlash 0.5s ease-out" : (score && score.type === "exact" ? "goldPulse 2.5s ease-in-out infinite" : "none"),
       boxShadow: sc
         ? (score.type === "exact" ? "0 0 22px -2px rgba(244,228,176,0.3), 0 12px 30px -10px rgba(0,0,0,0.7)"
@@ -12914,6 +12929,7 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
           : "0 0 14px -2px rgba(224,82,77,0.2), 0 12px 30px -10px rgba(0,0,0,0.7)")
         : "0 14px 38px -14px rgba(0,0,0,0.78)",
     }}>
+      <div style={{flex:1,minWidth:0,padding:"12px 14px",position:"relative"}}>
       {/* Floating reaction */}
       {reaction && (
         <div key={reaction.key} style={{
@@ -12939,17 +12955,6 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
           background:"rgba(201,169,97,0.07)",padding:"3px 10px",borderRadius:20,border:"1px solid rgba(201,169,97,0.18)",whiteSpace:"nowrap"}}>
           {fixture.isKnockout ? (fixture.koLabel || "🏆 נוקאאוט") : `🏆 ${t("matchcard.matchday") || "מחזור"} ${fixture.matchday}`}
         </span>
-        {(() => {
-          const k = formatKickoff(fixture.kickoff);
-          if (!k) return null;
-          const isPast = k.dateObj.getTime() < Date.now();
-          if (isPast) return null;
-          return (
-            <span style={{fontSize:9,color:"#8a8472",fontWeight:600,letterSpacing:0.5,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
-              📅 {k.day} · {k.time}
-            </span>
-          );
-        })()}
         {/* status chip on the right */}
         {matchIsLiveNow ? (
           <span style={{marginInlineStart:"auto",fontSize:8,fontWeight:800,color:"#fff",background:"#e0524d",padding:"3px 10px",borderRadius:20,display:"flex",alignItems:"center",gap:4,whiteSpace:"nowrap"}}>
@@ -13320,6 +13325,16 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
           </div>
         </div>
       )}
+      </div>
+      {/* 🎟️ Ticket stub — left side, perforated (X+Y) */}
+      <div style={{width:62,flexShrink:0,position:"relative",
+        borderInlineStart:`1.5px dashed ${stubInfo.live?"rgba(224,82,77,0.3)":"rgba(201,169,97,0.22)"}`,
+        display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:2,padding:"8px 4px"}}>
+        {stubInfo.top && <span style={{fontSize:13,marginBottom:3,opacity:0.75}}>{stubInfo.top}</span>}
+        <span style={{fontSize:stubInfo.live?18:14,fontWeight:900,letterSpacing:-0.3,color:"#f4e4b0",lineHeight:1}}>{stubInfo.big}</span>
+        <span style={{fontSize:7,color:stubInfo.live?"#fca5a5":"#8a8472",fontWeight:700}}>{stubInfo.sub}</span>
+        {stubInfo.live && <span style={{width:7,height:7,borderRadius:"50%",background:"#c9a961",marginTop:4,animation:"livePulse 1.2s ease-in-out infinite"}}/>}
+      </div>
     </div>
   );
 }
