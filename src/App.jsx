@@ -15,7 +15,7 @@ import { R32_THIRD_TABLE } from "./r32table";
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "5.8.1";
+const APP_VERSION = "5.9.0";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -10177,6 +10177,214 @@ function LuckyWheelModal({ onClose, onWin, onUpdateBestStreak, personalBest, lea
   );
 }
 
+// ─── 🎨 DESIGN PREVIEW PANEL — preview the new neon-glass UI (admin only) ──────
+function DesignPreviewPanel() {
+  const [view, setView] = useState("matches"); // matches | states | live | screens
+
+  const css = `
+@property --dpa { syntax:'<angle>'; initial-value:0deg; inherits:false; }
+@keyframes dpspin { to { --dpa:360deg; } }
+@keyframes dpblink { 0%,100%{opacity:1} 50%{opacity:0.25} }
+.dp-neon { position:relative; border-radius:16px; padding:1.3px; margin-bottom:11px;
+  background:conic-gradient(from var(--dpa,0deg), #fbbf24, #3b82f6, #f43f5e, #fbbf24);
+  animation:dpspin 7s linear infinite; box-shadow:0 6px 20px rgba(0,0,0,0.5); }
+.dp-neon.live { background:conic-gradient(from var(--dpa,0deg), #f43f5e, #fbbf24, #f43f5e, #fb7185); animation:dpspin 4s linear infinite; }
+.dp-neon.still { animation:none; }
+.dp-neon.gold { background:linear-gradient(135deg,#fde047,#f59e0b); animation:none; }
+.dp-neon.green { background:linear-gradient(135deg,#34d399,#16a34a); animation:none; }
+.dp-neon.red { background:linear-gradient(135deg,#ef4444,#991b1b); animation:none; }
+.dp-in { background:rgba(11,15,24,0.97); backdrop-filter:blur(18px); border-radius:14.8px; padding:13px 15px; position:relative; overflow:hidden; }
+.dp-pill { font-size:8px; font-weight:800; letter-spacing:1px; color:#fde68a; background:rgba(251,191,36,0.1); padding:3px 9px; border-radius:20px; border:1px solid rgba(251,191,36,0.22); }
+.dp-head { display:flex; align-items:center; gap:7px; margin-bottom:12px; }
+.dp-live { font-size:8px; font-weight:900; color:#fff; background:#f43f5e; padding:3px 9px; border-radius:20px; margin-inline-start:auto; display:flex; align-items:center; gap:4px; }
+.dp-live .dd { width:4px; height:4px; border-radius:50%; background:#fff; animation:dpblink 1.1s infinite; }
+.dp-time { font-size:9px; color:#7c8699; font-weight:700; margin-inline-start:auto; }
+.dp-tag { font-size:8px; font-weight:900; padding:3px 9px; border-radius:20px; margin-inline-start:auto; }
+.dp-tag.gold { color:#1a1400; background:linear-gradient(135deg,#fde047,#fbbf24); }
+.dp-tag.green { color:#fff; background:linear-gradient(135deg,#34d399,#16a34a); }
+.dp-tag.red { color:#fff; background:linear-gradient(135deg,#f87171,#dc2626); }
+.dp-team { display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:10px; margin-bottom:6px; background:rgba(255,255,255,0.025); border:1px solid rgba(255,255,255,0.05); }
+.dp-team:last-of-type { margin-bottom:0; }
+.dp-team.lead { background:rgba(52,211,153,0.08); border-color:rgba(52,211,153,0.25); }
+.dp-team.dim { opacity:0.55; }
+.dp-fl { font-size:23px; } .dp-nm { font-size:13px; font-weight:700; flex:1; }
+.dp-team.lead .dp-nm { color:#34d399; font-weight:850; }
+.dp-sc { display:flex; align-items:center; gap:6px; }
+.dp-big { font-size:20px; font-weight:900; } .dp-team.lead .dp-big { color:#34d399; }
+.dp-par { font-size:11px; font-weight:800; color:#a8935a; } .dp-par b { color:#fde68a; }
+.dp-inp { width:32px; height:37px; border-radius:9px; background:rgba(251,191,36,0.06); border:1.5px solid rgba(251,191,36,0.5); display:flex; align-items:center; justify-content:center; font-size:17px; font-weight:900; color:#fde68a; }
+.dp-foot { margin-top:11px; padding-top:9px; border-top:1px solid rgba(255,255,255,0.07); display:flex; align-items:center; gap:7px; }
+.dp-foot .lab { font-size:9px; color:#7c8699; font-weight:600; }
+.dp-foot .pred { font-size:11px; font-weight:800; color:#fde68a; }
+.dp-foot .pts { margin-inline-start:auto; font-size:10px; font-weight:900; padding:2px 8px; border-radius:7px; }
+.dp-pts-gold { color:#1a1400; background:linear-gradient(135deg,#fde047,#fbbf24); }
+.dp-pts-green { color:#fff; background:linear-gradient(135deg,#34d399,#16a34a); }
+.dp-pts-red { color:#fff; background:linear-gradient(135deg,#f87171,#dc2626); }
+.dp-ins { margin-top:10px; padding:9px 11px; background:rgba(255,255,255,0.02); border-radius:10px; }
+.dp-ins .il { font-size:8px; color:#5a6478; font-weight:700; margin-bottom:6px; display:flex; justify-content:space-between; }
+.dp-ibar { display:flex; height:6px; border-radius:3px; overflow:hidden; background:rgba(255,255,255,0.05); }
+.dp-ibar .a { background:linear-gradient(90deg,#34d399,#16a34a); } .dp-ibar .dr { background:#475569; } .dp-ibar .b2 { background:linear-gradient(90deg,#60a5fa,#2563eb); }
+.dp-acts { display:flex; gap:7px; margin-bottom:10px; }
+.dp-act { flex:1; padding:9px; border-radius:11px; font-size:11px; font-weight:700; text-align:center; }
+.dp-act.l { background:rgba(59,130,246,0.1); border:1px solid rgba(59,130,246,0.3); color:#93c5fd; }
+.dp-act.h { background:rgba(168,85,247,0.1); border:1px solid rgba(168,85,247,0.3); color:#c4b5fd; }
+.dp-act.d { background:rgba(251,191,36,0.1); border:1px solid rgba(251,191,36,0.3); color:#fde68a; }
+.dp-ghost { position:absolute; left:-6px; bottom:-14px; font-size:50px; font-weight:900; opacity:0.07; letter-spacing:-2px; z-index:0; white-space:nowrap; }
+.dp-day { display:flex; align-items:center; gap:10px; margin:14px 2px 11px; }
+.dp-day .d { font-size:11px; font-weight:800; color:#9aa6bd; } .dp-day .ln { flex:1; height:1px; background:rgba(255,255,255,0.07); }
+.dp-trow { display:grid; grid-template-columns:22px 1fr 26px 30px; gap:6px; align-items:center; padding:8px 5px; font-size:11px; border-bottom:1px solid rgba(255,255,255,0.04); }
+.dp-trow.head { font-size:8px; color:#5a6478; font-weight:800; border-bottom:1px solid rgba(255,255,255,0.1); }
+.dp-trow.qual { background:rgba(52,211,153,0.05); }
+.dp-tpos { font-weight:900; color:#fbbf24; text-align:center; } .dp-ttm { display:flex; align-items:center; gap:6px; font-weight:700; } .dp-ttm .f { font-size:15px; }
+.dp-tval { text-align:center; color:#9aa6bd; } .dp-tpts { text-align:center; font-weight:900; color:#fff; }
+.dp-lrow { display:flex; align-items:center; gap:10px; padding:10px 11px; border-radius:12px; margin-bottom:7px; background:rgba(255,255,255,0.025); border:1px solid rgba(255,255,255,0.05); }
+.dp-lrow.me { background:rgba(251,191,36,0.08); border-color:rgba(251,191,36,0.3); }
+.dp-lrank { width:24px; height:24px; border-radius:7px; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:900; }
+.dp-g1 { background:linear-gradient(135deg,#fde047,#f59e0b); color:#1a1400; } .dp-g2 { background:linear-gradient(135deg,#e2e8f0,#94a3b8); color:#1a1400; } .dp-g3 { background:linear-gradient(135deg,#fdba74,#c2410c); color:#1a1400; } .dp-gx { background:rgba(255,255,255,0.06); color:#8b9cc0; }
+.dp-lav { width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:14px; }
+.dp-lnm { flex:1; font-size:13px; font-weight:700; } .dp-lrow.me .dp-lnm { color:#fde68a; }
+.dp-lpts { font-size:15px; font-weight:900; color:#fff; } .dp-lpts span { font-size:8px; color:#5a6478; }
+.dp-sgrid { display:grid; grid-template-columns:1fr 1fr; gap:9px; }
+.dp-sbox { background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); border-radius:12px; padding:13px; text-align:center; }
+.dp-snum { font-size:24px; font-weight:900; color:#fbbf24; line-height:1; } .dp-slbl { font-size:9px; color:#7c8699; margin-top:5px; }
+  `;
+
+  const subTab = (id, label) => (
+    <button onClick={() => setView(id)} style={{
+      flex:1, padding:"8px 4px", borderRadius:9, fontSize:10, fontWeight:800, cursor:"pointer", fontFamily:"inherit",
+      background: view===id ? "rgba(244,63,94,0.2)" : "rgba(36,49,80,0.4)",
+      border: `1px solid ${view===id ? "rgba(244,63,94,0.6)" : "rgba(71,85,105,0.4)"}`,
+      color: view===id ? "#fda4af" : "#94a3b8",
+    }}>{label}</button>
+  );
+
+  return (
+    <div>
+      <style>{css}</style>
+      <div style={{background:"linear-gradient(135deg,rgba(244,63,94,0.12),rgba(244,63,94,0.04))",border:"1px solid rgba(244,63,94,0.35)",borderRadius:12,padding:14,marginBottom:14,textAlign:"center"}}>
+        <div style={{fontSize:14,fontWeight:900,color:"#fda4af",marginBottom:4}}>🎨 תצוגת עיצוב חדש</div>
+        <div style={{fontSize:11,color:"#94a3b8"}}>רק אתה רואה את זה — לבחינה לפני שמטמיעים בכל האפליקציה</div>
+      </div>
+
+      {/* sub-tabs */}
+      <div style={{display:"flex",gap:5,marginBottom:14}}>
+        {subTab("matches","⚽ משחקים")}
+        {subTab("live","🔴 חי מלא")}
+        {subTab("states","🎯 מצבים")}
+        {subTab("screens","📱 מסכים")}
+      </div>
+
+      {/* ===== MATCHES ===== */}
+      {view === "matches" && (
+        <div>
+          <div className="dp-day"><span className="d">היום · ראשון 28.6</span><span className="ln"></span></div>
+          {/* upcoming */}
+          <div className="dp-neon still">
+            <div className="dp-in">
+              <div className="dp-head"><span className="dp-pill">🏆 שמינית גמר 32</span><span className="dp-time">📅 00:00</span></div>
+              <div className="dp-team"><span className="dp-fl">🇫🇷</span><span className="dp-nm">צרפת</span><div className="dp-inp">2</div></div>
+              <div className="dp-team"><span className="dp-fl">🇸🇪</span><span className="dp-nm">שבדיה</span><div className="dp-inp">1</div></div>
+              <div className="dp-foot"><span className="lab">הניחוש שלך:</span><span className="pred">🇫🇷 2 – 1 🇸🇪</span></div>
+            </div>
+          </div>
+          <div className="dp-acts"><span className="dp-act l">👕 הרכב</span><span className="dp-act h">⚔️ ראש בראש</span></div>
+        </div>
+      )}
+
+      {/* ===== LIVE FULL ===== */}
+      {view === "live" && (
+        <div>
+          <div className="dp-neon live">
+            <div className="dp-in">
+              <div className="dp-head"><span className="dp-pill">🏆 שמינית גמר 32</span><span className="dp-live"><span className="dd"></span> 67'</span></div>
+              <div className="dp-team lead"><span className="dp-fl">🇩🇪</span><span className="dp-nm">גרמניה</span><div className="dp-sc"><span className="dp-big">2</span><span className="dp-par">(<b>2</b>)</span></div></div>
+              <div className="dp-team"><span className="dp-fl">🇵🇾</span><span className="dp-nm">פרגוואי</span><div className="dp-sc"><span className="dp-big">1</span><span className="dp-par">(<b>1</b>)</span></div></div>
+              <div className="dp-foot"><span className="lab">הניחוש שלך:</span><span className="pred">🇩🇪 2 – 1 🇵🇾</span><span style={{marginInlineStart:"auto",fontSize:9,color:"#34d399",fontWeight:800}}>🎯 בדרך לבול</span></div>
+              <div className="dp-ins">
+                <div className="il"><span>🇩🇪 64%</span><span>הליגה שלך ניחשה</span><span>23% 🇵🇾</span></div>
+                <div className="dp-ibar"><div className="a" style={{width:"64%"}}></div><div className="dr" style={{width:"13%"}}></div><div className="b2" style={{width:"23%"}}></div></div>
+              </div>
+            </div>
+          </div>
+          <div className="dp-acts"><span className="dp-act l">👕 הרכב</span><span className="dp-act h">⚔️ ראש בראש</span><span className="dp-act d">📊 פרטים</span></div>
+        </div>
+      )}
+
+      {/* ===== RESULT STATES ===== */}
+      {view === "states" && (
+        <div>
+          {/* exact */}
+          <div className="dp-neon gold">
+            <div className="dp-in"><span className="dp-ghost" style={{color:"#fbbf24"}}>BULLSEYE</span>
+              <div className="dp-head"><span className="dp-pill">🏆 שמינית גמר 32</span><span className="dp-tag gold">🎯 פגיעה בול</span></div>
+              <div className="dp-team lead"><span className="dp-fl">🇫🇷</span><span className="dp-nm">צרפת</span><div className="dp-sc"><span className="dp-big">2</span><span className="dp-par">(<b>2</b>)</span></div></div>
+              <div className="dp-team dim"><span className="dp-fl">🇸🇪</span><span className="dp-nm">שבדיה</span><div className="dp-sc"><span className="dp-big">1</span><span className="dp-par">(<b>1</b>)</span></div></div>
+              <div className="dp-foot"><span className="lab">ניחשת 2:1 · מדויק!</span><span className="pts dp-pts-gold">+8 נק׳</span></div>
+            </div>
+          </div>
+          {/* winner */}
+          <div className="dp-neon green">
+            <div className="dp-in"><span className="dp-ghost" style={{color:"#22c55e"}}>WINNER</span>
+              <div className="dp-head"><span className="dp-pill">🏆 שמינית גמר 32</span><span className="dp-tag green">✅ כיוון נכון</span></div>
+              <div className="dp-team lead"><span className="dp-fl">🇧🇷</span><span className="dp-nm">ברזיל</span><div className="dp-sc"><span className="dp-big">3</span><span className="dp-par">(<b>2</b>)</span></div></div>
+              <div className="dp-team dim"><span className="dp-fl">🇯🇵</span><span className="dp-nm">יפן</span><div className="dp-sc"><span className="dp-big">0</span><span className="dp-par">(<b>1</b>)</span></div></div>
+              <div className="dp-foot"><span className="lab">ניחשת 2:1 · המנצח נכון</span><span className="pts dp-pts-green">+4 נק׳</span></div>
+            </div>
+          </div>
+          {/* miss */}
+          <div className="dp-neon red">
+            <div className="dp-in"><span className="dp-ghost" style={{color:"#ef4444"}}>MISS</span>
+              <div className="dp-head"><span className="dp-pill">🏆 שמינית גמר 32</span><span className="dp-tag red">❌ פספוס</span></div>
+              <div className="dp-team dim"><span className="dp-fl">🏴󠁧󠁢󠁥󠁮󠁧󠁿</span><span className="dp-nm">אנגליה</span><div className="dp-sc"><span className="dp-big">0</span><span className="dp-par">(<b>1</b>)</span></div></div>
+              <div className="dp-team lead"><span className="dp-fl">🇸🇳</span><span className="dp-nm">סנגל</span><div className="dp-sc"><span className="dp-big">2</span><span className="dp-par">(<b>0</b>)</span></div></div>
+              <div className="dp-foot"><span className="lab">ניחשת 1:0 · לא קלע</span><span className="pts dp-pts-red">0 נק׳</span></div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ===== ALL SCREENS ===== */}
+      {view === "screens" && (
+        <div>
+          <div style={{fontSize:10,color:"#a855f7",fontWeight:800,letterSpacing:1,margin:"4px 2px 10px"}}>📊 טבלת הבתים</div>
+          <div className="dp-neon still">
+            <div className="dp-in">
+              <div className="dp-head"><span className="dp-pill">בית A</span></div>
+              <div className="dp-trow head"><span>#</span><span>נבחרת</span><span>הפרש</span><span>נק</span></div>
+              <div className="dp-trow qual"><span className="dp-tpos">1</span><span className="dp-ttm"><span className="f">🇲🇽</span>מקסיקו</span><span className="dp-tval">+5</span><span className="dp-tpts">9</span></div>
+              <div className="dp-trow qual"><span className="dp-tpos">2</span><span className="dp-ttm"><span className="f">🇿🇦</span>ד.אפריקה</span><span className="dp-tval">+1</span><span className="dp-tpts">6</span></div>
+              <div className="dp-trow"><span className="dp-tpos">3</span><span className="dp-ttm"><span className="f">🇰🇷</span>קוריאה</span><span className="dp-tval">-1</span><span className="dp-tpts">3</span></div>
+            </div>
+          </div>
+
+          <div style={{fontSize:10,color:"#a855f7",fontWeight:800,letterSpacing:1,margin:"14px 2px 10px"}}>👥 טבלת הליגה</div>
+          <div className="dp-neon still">
+            <div className="dp-in">
+              <div className="dp-head"><span className="dp-pill">⚡ SWIFT-BULL-150</span></div>
+              <div className="dp-lrow"><div className="dp-lrank dp-g1">1</div><div className="dp-lav" style={{background:"linear-gradient(135deg,#fbbf24,#d97706)"}}>🦁</div><span className="dp-lnm">שי בן הרוש</span><span className="dp-lpts">142<span> נק׳</span></span></div>
+              <div className="dp-lrow me"><div className="dp-lrank dp-g2">2</div><div className="dp-lav" style={{background:"linear-gradient(135deg,#3b82f6,#1e40af)"}}>😎</div><span className="dp-lnm">Chen (אתה)</span><span className="dp-lpts">138<span> נק׳</span></span></div>
+              <div className="dp-lrow"><div className="dp-lrank dp-g3">3</div><div className="dp-lav" style={{background:"linear-gradient(135deg,#a855f7,#6d28d9)"}}>🔥</div><span className="dp-lnm">Adiv</span><span className="dp-lpts">131<span> נק׳</span></span></div>
+            </div>
+          </div>
+
+          <div style={{fontSize:10,color:"#a855f7",fontWeight:800,letterSpacing:1,margin:"14px 2px 10px"}}>📈 סטטיסטיקות</div>
+          <div className="dp-neon still">
+            <div className="dp-in">
+              <div className="dp-head"><span className="dp-pill">📊 הביצועים שלך</span></div>
+              <div className="dp-sgrid">
+                <div className="dp-sbox"><div className="dp-snum">138</div><div className="dp-slbl">סך נקודות</div></div>
+                <div className="dp-sbox"><div className="dp-snum" style={{color:"#34d399"}}>12</div><div className="dp-slbl">🎯 פגיעות בול</div></div>
+                <div className="dp-sbox"><div className="dp-snum" style={{color:"#3b82f6"}}>28</div><div className="dp-slbl">✅ כיוון נכון</div></div>
+                <div className="dp-sbox"><div className="dp-snum" style={{color:"#f43f5e"}}>2</div><div className="dp-slbl">🏆 מיקום בליגה</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── 🌍 GLOBAL ADMIN MODAL — manage all users in Firebase (requires secret code) ─
 function GlobalAdminModal({ onClose, galaxyTestMode, setGalaxyTestMode, onGiveCoins, adsLeagueCode, adsLeagueData, adsName, adsUserId }) {
   const [unlocked, setUnlocked] = useState(false);
@@ -10354,9 +10562,23 @@ function GlobalAdminModal({ onClose, galaxyTestMode, setGalaxyTestMode, onGiveCo
                 }}>
                 📢 פרסומות
               </button>
+              <button
+                onClick={() => setAdminTab("design")}
+                style={{
+                  flex:1,padding:"10px 8px",
+                  background: adminTab === "design" ? "rgba(244,63,94,0.2)" : "rgba(36,49,80,0.4)",
+                  border: `1px solid ${adminTab === "design" ? "rgba(244,63,94,0.6)" : "rgba(71,85,105,0.4)"}`,
+                  borderRadius:10,
+                  color: adminTab === "design" ? "#fda4af" : "#94a3b8",
+                  fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"inherit",
+                }}>
+                🎨 עיצוב
+              </button>
             </div>
 
-            {adminTab === "quiz" ? (
+            {adminTab === "design" ? (
+              <DesignPreviewPanel />
+            ) : adminTab === "quiz" ? (
               // 🧠 QUIZ TEST PANEL
               <div>
                 <div style={{background:"linear-gradient(135deg,rgba(34,197,94,0.15),rgba(34,197,94,0.05))",border:"1px solid rgba(34,197,94,0.4)",borderRadius:12,padding:"14px",marginBottom:14,textAlign:"center"}}>
