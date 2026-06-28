@@ -15,7 +15,7 @@ import { R32_THIRD_TABLE } from "./r32table";
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "5.12.2";
+const APP_VERSION = "5.12.3";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -21019,7 +21019,7 @@ function AppInner() {
       {matchDetailsFor && (
         <MatchDetailsModal
           fixture={matchDetailsFor}
-          apiFixtureId={getApiFixtureId(liveData, matchDetailsFor)}
+          apiFixtureId={(() => { try { return getApiFixtureId(liveData, matchDetailsFor); } catch { return null; } })()}
           onClose={() => setMatchDetailsFor(null)}
         />
       )}
