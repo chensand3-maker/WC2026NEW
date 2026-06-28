@@ -15,7 +15,7 @@ import { R32_THIRD_TABLE } from "./r32table";
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "5.12.5";
+const APP_VERSION = "5.12.6";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -1919,6 +1919,8 @@ function totalKoScore(koPicks, actualKoScores) {
     const p = koPicks?.[matchId];
     if (!a || a.h === undefined || a.h === "") return;
     if (!p || p.h === undefined || p.h === "") return;
+    // ⛔ Only score FINISHED KO matches — never a live one.
+    if (a.isLive === true) return;
     played++;
     const s = scoreKoMatch(p, a);
     total += s.points;
@@ -1937,6 +1939,14 @@ function totalScore(picks, actuals) {
     const a = actuals[f.id];
     if (!a || a.h === undefined || a.h === "") return;
     if (!p || p.h === undefined || p.h === "") return;
+    // ⛔ Only score FINISHED matches — never a live one (partial score must not count).
+    if (a.isLive === true) return;
+    if (a.isFinished === false && a.isLive !== false) {
+      // Unknown finish state: fall back to time — needs >120 min since kickoff.
+      const started = f.kickoff ? Date.now() >= new Date(f.kickoff).getTime() : false;
+      const mins = f.kickoff ? (Date.now() - new Date(f.kickoff).getTime()) / 60000 : 999;
+      if (started && mins <= 120) return;
+    }
     played++;
     const s = scoreMatch(p, a);
     total += s.points;

@@ -315,9 +315,9 @@ export function mapKnockoutToBracket(liveData, bracketMatches) {
     if (!result) continue;
 
     if (swapped) {
-      scores[m.id] = { h: String(result.a), a: String(result.h) };
+      scores[m.id] = { h: String(result.a), a: String(result.h), isLive: result.isLive === true, isFinished: result.isFinished === true, status: result.status };
     } else {
-      scores[m.id] = { h: String(result.h), a: String(result.a) };
+      scores[m.id] = { h: String(result.h), a: String(result.a), isLive: result.isLive === true, isFinished: result.isFinished === true, status: result.status };
     }
 
     if (result.winnerName) {
