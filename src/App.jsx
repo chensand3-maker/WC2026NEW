@@ -15,7 +15,7 @@ import { R32_THIRD_TABLE } from "./r32table";
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "5.12.0";
+const APP_VERSION = "5.12.1";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -12947,7 +12947,7 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
       <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:11}}>
         <span style={{fontSize:8,fontWeight:700,letterSpacing:1.5,color:"#c9a961",textTransform:"uppercase",
           background:"rgba(201,169,97,0.07)",padding:"3px 10px",borderRadius:20,border:"1px solid rgba(201,169,97,0.18)",whiteSpace:"nowrap"}}>
-          {fixture.isKnockout ? (fixture.koLabel || "🏆 נוקאאוט") : `🏆 ${t("matchcard.matchday") || "מחזור"} ${fixture.matchday}`}
+          {fixture.isKnockout ? (fixture.koLabel || "🏆 נוקאאוט") : `🏆 מחזור ${fixture.matchday || ""}`}
         </span>
         {(() => {
           const k = formatKickoff(fixture.kickoff);
