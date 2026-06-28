@@ -15,7 +15,7 @@ import { R32_THIRD_TABLE } from "./r32table";
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "5.11.0";
+const APP_VERSION = "5.11.1";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -14925,13 +14925,12 @@ function TodayScreen({ picks, actuals, onPick, onBack, onGoToBracket, leagueMemb
       </div>
 
       <div style={{textAlign:"center",marginBottom:18}}>
-        <div style={{fontSize:10,color:"var(--accent)",letterSpacing:3,opacity:0.8}}>{t("today.upcoming")}</div>
+        <div style={{fontSize:10,color:"#c9a961",letterSpacing:3,opacity:0.9}}>{t("today.upcoming")}</div>
         <h2 style={{
-          fontSize:26,margin:"4px 0",
-          color:"#fff",fontWeight:900,
-          textShadow:"0 0 24px color-mix(in srgb, var(--accent) 50%, transparent)",
+          fontSize:26,margin:"4px 0",fontWeight:900,
+          background:"linear-gradient(180deg,#f4e4b0,#c9a961)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text",
         }}>{t("today.title")} ⚽</h2>
-        <p style={{fontSize:12,color:"#86efac",margin:0,opacity:0.7}}>{t("today.subtitle")}</p>
+        <p style={{fontSize:12,color:"#8a8472",margin:0,opacity:0.85}}>{t("today.subtitle")}</p>
       </div>
 
       {/* Missing picks warning */}
@@ -14978,18 +14977,14 @@ function TodayScreen({ picks, actuals, onPick, onBack, onGoToBracket, leagueMemb
           <div key={dk} style={{marginBottom:8,scrollMarginTop:12}}>
             <div style={{
               position:"sticky",top:0,zIndex:5,
-              margin:"16px -14px 11px",padding:"9px 16px",
-              display:"flex",alignItems:"center",justifyContent:"space-between",
-              background: isToday
-                ? "linear-gradient(90deg, color-mix(in srgb, var(--accent) 18%, transparent), rgba(10,14,26,0.95) 70%)"
-                : "linear-gradient(90deg, rgba(100,116,139,0.12), rgba(10,14,26,0.95) 70%)",
-              borderTop: isToday ? "1px solid color-mix(in srgb, var(--accent) 40%, transparent)" : "1px solid rgba(100,116,139,0.2)",
-              borderBottom: isToday ? "1px solid color-mix(in srgb, var(--accent) 20%, transparent)" : "1px solid rgba(100,116,139,0.1)",
+              margin:"16px 2px 13px",padding:"6px 2px",
+              display:"flex",alignItems:"center",gap:11,
             }}>
-              <span style={{fontSize:14,fontWeight:900,color: isToday ? "var(--accent)" : "#94a3b8"}}>{label}</span>
+              <span style={{fontSize:13,fontWeight:800,color: isToday ? "#f4e4b0" : "#8a8472",letterSpacing:0.5,whiteSpace:"nowrap"}}>{label}</span>
+              <span style={{flex:1,height:1,background:"linear-gradient(90deg,rgba(201,169,97,0.25),transparent)"}}/>
               {isToday
-                ? <span style={{fontSize:9,fontWeight:900,color:"#0a0e1a",background:"var(--accent)",padding:"2px 8px",borderRadius:6}}>עכשיו</span>
-                : <span style={{fontSize:10,color:"#8b9cc0",fontWeight:700,background:"rgba(0,0,0,0.3)",padding:"3px 9px",borderRadius:20}}>{dayMatches.length} משחקים</span>}
+                ? <span style={{fontSize:9,fontWeight:900,color:"#1a1400",background:"linear-gradient(135deg,#f4e4b0,#c9a961)",padding:"2px 9px",borderRadius:20,whiteSpace:"nowrap"}}>עכשיו</span>
+                : <span style={{fontSize:10,color:"#6b6655",fontWeight:700,whiteSpace:"nowrap"}}>{dayMatches.length} משחקים</span>}
             </div>
             {dayMatches.map(m => {
               const mk = new Date(m.kickoff).getTime();
