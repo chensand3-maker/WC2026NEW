@@ -15,7 +15,7 @@ import { R32_THIRD_TABLE } from "./r32table";
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "5.9.3";
+const APP_VERSION = "5.10.2";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -10182,79 +10182,84 @@ function DesignPreviewPanel() {
   const [view, setView] = useState("matches"); // matches | states | live | screens
 
   const css = `
-@property --dpa { syntax: "<angle>"; initial-value: 0deg; inherits: false; }
-@keyframes dpspin { 0% { --dpa:0deg; } 100% { --dpa:360deg; } }
-@keyframes dpblink { 0%,100%{opacity:1} 50%{opacity:0.25} }
-.dp-neon { position:relative; border-radius:16px; padding:1.5px; margin-bottom:11px; box-shadow:0 6px 20px rgba(0,0,0,0.5);
-  background:conic-gradient(from var(--dpa), #fbbf24, #3b82f6, #f43f5e, #fbbf24);
-  animation:dpspin 6s linear infinite; }
-.dp-neon.live { background:conic-gradient(from var(--dpa), #f43f5e, #fbbf24, #f43f5e, #fb7185); animation:dpspin 4s linear infinite; }
-.dp-neon.still { background:conic-gradient(from 0deg, #fbbf24, #3b82f6, #f43f5e, #fbbf24); animation:none; }
-.dp-neon.gold { background:linear-gradient(135deg,#fde047,#f59e0b); animation:none; }
-.dp-neon.green { background:linear-gradient(135deg,#34d399,#16a34a); animation:none; }
-.dp-neon.red { background:linear-gradient(135deg,#ef4444,#991b1b); animation:none; }
-.dp-in { position:relative; background:rgba(11,15,24,0.97); backdrop-filter:blur(18px); border-radius:14.5px; padding:13px 15px; overflow:hidden; }
+@keyframes dpblink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+@keyframes dpsheen { 0%{transform:translateX(-160%) skewX(-18deg)} 100%{transform:translateX(300%) skewX(-18deg)} }
+.dp-neon { position:relative; border-radius:18px; margin-bottom:13px; overflow:hidden;
+  background:linear-gradient(165deg,#0e0e13,#08080c); border:1px solid transparent;
+  background-image:linear-gradient(165deg,#0e0e13,#08080c), linear-gradient(135deg,#5e4e26,#c9a961 38%,#f4e4b0 50%,#c9a961 62%,#5e4e26);
+  background-origin:border-box; background-clip:padding-box,border-box; box-shadow:0 16px 42px -14px rgba(0,0,0,0.8); }
+.dp-neon.live { }
+.dp-neon.still { }
+.dp-neon.gold { background-image:linear-gradient(165deg,#1a1408,#0e0a04), linear-gradient(135deg,#f4e4b0,#c9a961,#8a6d2e); }
+.dp-neon.green { background-image:linear-gradient(165deg,#08120d,#040a07), linear-gradient(135deg,#6ee7b7,#10b981,#065f46); }
+.dp-neon.red { background-image:linear-gradient(165deg,#140808,#0a0404), linear-gradient(135deg,#fca5a5,#e0524d,#7f1d1d); }
+.dp-sheen { position:absolute; inset:0; overflow:hidden; pointer-events:none; z-index:1; border-radius:18px; }
+.dp-sheen::after { content:""; position:absolute; top:0; bottom:0; width:55px; background:linear-gradient(90deg,transparent,rgba(244,228,176,0.05),transparent); animation:dpsheen 8s ease-in-out infinite; }
+.dp-in { position:relative; background:transparent; border-radius:16.5px; padding:0; overflow:hidden; z-index:2; }
 .dp-row2 { display:flex; }
-.dp-main { flex:1; min-width:0; }
-.dp-stub { width:64px; flex-shrink:0; position:relative; border-inline-start:2px dashed rgba(255,255,255,0.14); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; margin-inline-start:12px; padding-inline-start:4px; }
-.dp-stub .ico { font-size:14px; margin-bottom:3px; opacity:0.75; }
-.dp-stub .hr { font-size:14px; font-weight:900; color:#fff; letter-spacing:-0.5px; }
-.dp-stub .dy { font-size:8px; color:#7c8699; font-weight:700; }
-.dp-stub.live { border-inline-start-color:rgba(244,63,94,0.3); }
-.dp-stub.live .hr { color:#f43f5e; font-size:18px; } .dp-stub.live .dy { color:#fb7185; }
-.dp-pill { font-size:8px; font-weight:800; letter-spacing:1px; color:#fde68a; background:rgba(251,191,36,0.1); padding:3px 9px; border-radius:20px; border:1px solid rgba(251,191,36,0.22); }
-.dp-head { display:flex; align-items:center; gap:7px; margin-bottom:12px; }
-.dp-live { font-size:8px; font-weight:900; color:#fff; background:#f43f5e; padding:3px 9px; border-radius:20px; margin-inline-start:auto; display:flex; align-items:center; gap:4px; }
+.dp-main { flex:1; min-width:0; padding:14px 16px; position:relative; }
+.dp-stub { width:60px; flex-shrink:0; position:relative; border-inline-start:1.5px dashed rgba(201,169,97,0.22); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; }
+.dp-stub .ico { font-size:13px; margin-bottom:3px; opacity:0.7; }
+.dp-stub .hr { font-size:14px; font-weight:800; color:#f4e4b0; letter-spacing:-0.3px; }
+.dp-stub .dy { font-size:7px; color:#8a8472; font-weight:600; }
+.dp-stub.live { }
+.dp-stub.live .hr { font-size:18px; color:#f4e4b0; }
+.dp-golddot { width:7px; height:7px; border-radius:50%; background:#c9a961; margin-top:4px; animation:dpblink 1.2s infinite; }
+.dp-pill { font-size:8px; font-weight:700; letter-spacing:1.5px; color:#c9a961; text-transform:uppercase; background:rgba(201,169,97,0.07); padding:3px 10px; border-radius:20px; border:1px solid rgba(201,169,97,0.18); }
+.dp-head { display:flex; align-items:center; gap:8px; margin-bottom:13px; }
+.dp-live { font-size:8px; font-weight:800; color:#fff; background:#e0524d; padding:3px 10px; border-radius:20px; margin-inline-start:auto; display:flex; align-items:center; gap:4px; }
 .dp-live .dd { width:4px; height:4px; border-radius:50%; background:#fff; animation:dpblink 1.1s infinite; }
-.dp-time { font-size:9px; color:#7c8699; font-weight:700; margin-inline-start:auto; }
-.dp-tag { font-size:8px; font-weight:900; padding:3px 9px; border-radius:20px; margin-inline-start:auto; }
-.dp-tag.gold { color:#1a1400; background:linear-gradient(135deg,#fde047,#fbbf24); }
-.dp-tag.green { color:#fff; background:linear-gradient(135deg,#34d399,#16a34a); }
-.dp-tag.red { color:#fff; background:linear-gradient(135deg,#f87171,#dc2626); }
-.dp-team { display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:10px; margin-bottom:6px; background:rgba(255,255,255,0.025); border:1px solid rgba(255,255,255,0.05); }
+.dp-time { font-size:9px; color:#8a8472; font-weight:600; margin-inline-start:auto; }
+.dp-tag { font-size:8px; font-weight:800; padding:3px 11px; border-radius:20px; margin-inline-start:auto; }
+.dp-tag.gold { color:#1a1400; background:linear-gradient(135deg,#f4e4b0,#c9a961); }
+.dp-tag.green { color:#fff; background:linear-gradient(135deg,#10b981,#047857); }
+.dp-tag.red { color:#fff; background:linear-gradient(135deg,#e0524d,#991b1b); }
+.dp-team { display:flex; align-items:center; gap:12px; padding:8px 11px; border-radius:11px; margin-bottom:7px; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.05); }
 .dp-team:last-of-type { margin-bottom:0; }
-.dp-team.lead { background:rgba(52,211,153,0.08); border-color:rgba(52,211,153,0.25); }
-.dp-team.dim { opacity:0.55; }
-.dp-fl { font-size:23px; } .dp-nm { font-size:13px; font-weight:700; flex:1; }
-.dp-team.lead .dp-nm { color:#34d399; font-weight:850; }
-.dp-sc { display:flex; align-items:center; gap:6px; }
-.dp-big { font-size:20px; font-weight:900; } .dp-team.lead .dp-big { color:#34d399; }
-.dp-par { font-size:11px; font-weight:800; color:#a8935a; } .dp-par b { color:#fde68a; }
-.dp-inp { width:32px; height:37px; border-radius:9px; background:rgba(251,191,36,0.06); border:1.5px solid rgba(251,191,36,0.5); display:flex; align-items:center; justify-content:center; font-size:17px; font-weight:900; color:#fde68a; }
-.dp-foot { margin-top:11px; padding-top:9px; border-top:1px solid rgba(255,255,255,0.07); display:flex; align-items:center; gap:7px; }
-.dp-foot .lab { font-size:9px; color:#7c8699; font-weight:600; }
-.dp-foot .pred { font-size:11px; font-weight:800; color:#fde68a; }
-.dp-foot .pts { margin-inline-start:auto; font-size:10px; font-weight:900; padding:2px 8px; border-radius:7px; }
-.dp-pts-gold { color:#1a1400; background:linear-gradient(135deg,#fde047,#fbbf24); }
-.dp-pts-green { color:#fff; background:linear-gradient(135deg,#34d399,#16a34a); }
-.dp-pts-red { color:#fff; background:linear-gradient(135deg,#f87171,#dc2626); }
-.dp-ins { margin-top:10px; padding:9px 11px; background:rgba(255,255,255,0.02); border-radius:10px; }
-.dp-ins .il { font-size:8px; color:#5a6478; font-weight:700; margin-bottom:6px; display:flex; justify-content:space-between; }
-.dp-ibar { display:flex; height:6px; border-radius:3px; overflow:hidden; background:rgba(255,255,255,0.05); }
-.dp-ibar .a { background:linear-gradient(90deg,#34d399,#16a34a); } .dp-ibar .dr { background:#475569; } .dp-ibar .b2 { background:linear-gradient(90deg,#60a5fa,#2563eb); }
-.dp-acts { display:flex; gap:7px; margin-bottom:10px; }
-.dp-act { flex:1; padding:9px; border-radius:11px; font-size:11px; font-weight:700; text-align:center; }
-.dp-act.l { background:rgba(59,130,246,0.1); border:1px solid rgba(59,130,246,0.3); color:#93c5fd; }
-.dp-act.h { background:rgba(168,85,247,0.1); border:1px solid rgba(168,85,247,0.3); color:#c4b5fd; }
-.dp-act.d { background:rgba(251,191,36,0.1); border:1px solid rgba(251,191,36,0.3); color:#fde68a; }
-.dp-ghost { position:absolute; left:-6px; bottom:-14px; font-size:50px; font-weight:900; opacity:0.07; letter-spacing:-2px; z-index:0; white-space:nowrap; }
-.dp-day { display:flex; align-items:center; gap:10px; margin:14px 2px 11px; }
-.dp-day .d { font-size:11px; font-weight:800; color:#9aa6bd; } .dp-day .ln { flex:1; height:1px; background:rgba(255,255,255,0.07); }
-.dp-trow { display:grid; grid-template-columns:22px 1fr 26px 30px; gap:6px; align-items:center; padding:8px 5px; font-size:11px; border-bottom:1px solid rgba(255,255,255,0.04); }
-.dp-trow.head { font-size:8px; color:#5a6478; font-weight:800; border-bottom:1px solid rgba(255,255,255,0.1); }
-.dp-trow.qual { background:rgba(52,211,153,0.05); }
-.dp-tpos { font-weight:900; color:#fbbf24; text-align:center; } .dp-ttm { display:flex; align-items:center; gap:6px; font-weight:700; } .dp-ttm .f { font-size:15px; }
-.dp-tval { text-align:center; color:#9aa6bd; } .dp-tpts { text-align:center; font-weight:900; color:#fff; }
-.dp-lrow { display:flex; align-items:center; gap:10px; padding:10px 11px; border-radius:12px; margin-bottom:7px; background:rgba(255,255,255,0.025); border:1px solid rgba(255,255,255,0.05); }
-.dp-lrow.me { background:rgba(251,191,36,0.08); border-color:rgba(251,191,36,0.3); }
+.dp-team.lead { background:linear-gradient(90deg,rgba(201,169,97,0.1),rgba(201,169,97,0.015)); border-color:rgba(201,169,97,0.3); }
+.dp-team.dim { opacity:0.48; }
+.dp-fl { font-size:25px; } .dp-nm { font-size:14.5px; font-weight:600; flex:1; letter-spacing:0.2px; }
+.dp-team.lead .dp-nm { color:#f4e4b0; font-weight:700; }
+.dp-sc { display:flex; align-items:center; gap:7px; }
+.dp-big { font-size:21px; font-weight:800; color:#f5f3ee; } .dp-team.lead .dp-big { color:#f4e4b0; }
+.dp-par { font-size:11px; font-weight:700; color:#8a8472; } .dp-par b { color:#f4e4b0; }
+.dp-inp { width:35px; height:40px; border-radius:9px; background:rgba(0,0,0,0.5); border:1px solid rgba(201,169,97,0.4); display:flex; align-items:center; justify-content:center; font-size:18px; font-weight:800; color:#f4e4b0; }
+.dp-foot { margin-top:11px; padding-top:10px; border-top:1px solid rgba(201,169,97,0.12); display:flex; align-items:center; gap:7px; }
+.dp-foot .lab { font-size:9px; color:#8a8472; font-weight:600; }
+.dp-foot .pts { margin-inline-start:auto; font-size:10px; font-weight:800; padding:3px 11px; border-radius:7px; }
+.dp-pts-gold { color:#1a1400; background:linear-gradient(135deg,#f4e4b0,#c9a961); }
+.dp-pts-green { color:#fff; background:linear-gradient(135deg,#10b981,#047857); }
+.dp-pts-red { color:#fff; background:linear-gradient(135deg,#e0524d,#991b1b); }
+.dp-ins { margin-top:10px; }
+.dp-ins .icap { font-size:8px; color:#8a8472; font-weight:700; letter-spacing:1px; margin-bottom:8px; text-align:center; }
+.dp-iseg { display:flex; gap:4px; }
+.dp-iitem { border-radius:8px; padding:8px 6px; text-align:center; }
+.dp-iitem.g { background:linear-gradient(135deg,rgba(201,169,97,0.25),rgba(201,169,97,0.1)); border:1px solid rgba(201,169,97,0.4); }
+.dp-iitem.d { background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); }
+.dp-iitem.b { background:linear-gradient(135deg,rgba(107,155,209,0.25),rgba(107,155,209,0.1)); border:1px solid rgba(107,155,209,0.4); }
+.dp-ifl { font-size:15px; } .dp-ipct { font-size:15px; font-weight:900; margin-top:2px; }
+.dp-ipct.g{color:#f4e4b0} .dp-ipct.d{color:#94a3b8} .dp-ipct.b{color:#9cc3ed}
+.dp-ilbl { font-size:7px; color:#8a8472; margin-top:1px; }
+.dp-acts { display:flex; gap:7px; margin-bottom:13px; }
+.dp-act { flex:1; padding:9px; border-radius:11px; font-size:11px; font-weight:700; text-align:center; background:rgba(201,169,97,0.06); border:1px solid rgba(201,169,97,0.2); color:#d4b977; }
+.dp-ghost { position:absolute; left:-4px; bottom:-12px; font-size:46px; font-weight:900; opacity:0.05; letter-spacing:-2px; z-index:0; }
+.dp-day { display:flex; align-items:center; gap:11px; margin:6px 2px 14px; }
+.dp-day .d { font-size:11px; font-weight:700; color:#8a8472; letter-spacing:1px; } .dp-day .ln { flex:1; height:1px; background:linear-gradient(90deg,transparent,rgba(201,169,97,0.2),transparent); }
+.dp-trow { display:grid; grid-template-columns:22px 1fr 26px 30px; gap:6px; align-items:center; padding:8px 5px; font-size:11px; border-bottom:1px solid rgba(201,169,97,0.08); }
+.dp-trow.head { font-size:8px; color:#8a8472; font-weight:800; border-bottom:1px solid rgba(201,169,97,0.2); }
+.dp-trow.qual { background:rgba(201,169,97,0.05); }
+.dp-tpos { font-weight:900; color:#c9a961; text-align:center; } .dp-ttm { display:flex; align-items:center; gap:6px; font-weight:700; } .dp-ttm .f { font-size:15px; }
+.dp-tval { text-align:center; color:#8a8472; } .dp-tpts { text-align:center; font-weight:900; color:#f4e4b0; }
+.dp-lrow { display:flex; align-items:center; gap:10px; padding:10px 11px; border-radius:12px; margin-bottom:7px; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.05); }
+.dp-lrow.me { background:linear-gradient(90deg,rgba(201,169,97,0.1),rgba(201,169,97,0.015)); border-color:rgba(201,169,97,0.3); }
 .dp-lrank { width:24px; height:24px; border-radius:7px; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:900; }
-.dp-g1 { background:linear-gradient(135deg,#fde047,#f59e0b); color:#1a1400; } .dp-g2 { background:linear-gradient(135deg,#e2e8f0,#94a3b8); color:#1a1400; } .dp-g3 { background:linear-gradient(135deg,#fdba74,#c2410c); color:#1a1400; } .dp-gx { background:rgba(255,255,255,0.06); color:#8b9cc0; }
+.dp-g1 { background:linear-gradient(135deg,#f4e4b0,#c9a961); color:#1a1400; } .dp-g2 { background:linear-gradient(135deg,#e2e8f0,#94a3b8); color:#1a1400; } .dp-g3 { background:linear-gradient(135deg,#d4a574,#a16207); color:#1a1400; } .dp-gx { background:rgba(255,255,255,0.06); color:#8a8472; }
 .dp-lav { width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:14px; }
-.dp-lnm { flex:1; font-size:13px; font-weight:700; } .dp-lrow.me .dp-lnm { color:#fde68a; }
-.dp-lpts { font-size:15px; font-weight:900; color:#fff; } .dp-lpts span { font-size:8px; color:#5a6478; }
+.dp-lnm { flex:1; font-size:13px; font-weight:700; } .dp-lrow.me .dp-lnm { color:#f4e4b0; }
+.dp-lpts { font-size:15px; font-weight:900; color:#f4e4b0; } .dp-lpts span { font-size:8px; color:#8a8472; }
 .dp-sgrid { display:grid; grid-template-columns:1fr 1fr; gap:9px; }
-.dp-sbox { background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); border-radius:12px; padding:13px; text-align:center; }
-.dp-snum { font-size:24px; font-weight:900; color:#fbbf24; line-height:1; } .dp-slbl { font-size:9px; color:#7c8699; margin-top:5px; }
+.dp-sbox { background:rgba(255,255,255,0.03); border:1px solid rgba(201,169,97,0.15); border-radius:12px; padding:13px; text-align:center; }
+.dp-snum { font-size:24px; font-weight:900; color:#c9a961; line-height:1; } .dp-slbl { font-size:9px; color:#8a8472; margin-top:5px; }
   `;
 
   const subTab = (id, label) => (
@@ -10286,8 +10291,9 @@ function DesignPreviewPanel() {
       {view === "matches" && (
         <div>
           <div className="dp-day"><span className="d">היום · ראשון 28.6</span><span className="ln"></span></div>
-          {/* upcoming — X+Y: neon frame + ticket stub, no prediction line (score is shown big) */}
+          {/* upcoming — gold-black elegant frame + ticket stub */}
           <div className="dp-neon">
+            <div className="dp-sheen"></div>
             <div className="dp-in">
               <div className="dp-row2">
                 <div className="dp-main">
@@ -10295,35 +10301,40 @@ function DesignPreviewPanel() {
                   <div className="dp-team"><span className="dp-fl">🇫🇷</span><span className="dp-nm">צרפת</span><div className="dp-inp">2</div></div>
                   <div className="dp-team"><span className="dp-fl">🇸🇪</span><span className="dp-nm">שבדיה</span><div className="dp-inp">1</div></div>
                 </div>
-                <div className="dp-stub"><span className="ico">🎟️</span><span className="hr">00:00</span><span className="dy">רביעי</span></div>
+                <div className="dp-stub"><span className="ico">🎟️</span><span className="hr">22:00</span><span className="dy">רביעי</span></div>
               </div>
             </div>
           </div>
-          <div className="dp-acts"><span className="dp-act l">👕 הרכב</span><span className="dp-act h">⚔️ ראש בראש</span></div>
+          <div className="dp-acts"><span className="dp-act">👕 הרכב</span><span className="dp-act">⚔️ ראש בראש</span></div>
         </div>
       )}
 
       {/* ===== LIVE FULL ===== */}
       {view === "live" && (
         <div>
-          <div className="dp-neon live">
+          <div className="dp-neon">
+            <div className="dp-sheen"></div>
             <div className="dp-in">
               <div className="dp-row2">
                 <div className="dp-main">
-                  <div className="dp-head"><span className="dp-pill">🏆 שמינית גמר 32</span><span className="dp-live"><span className="dd"></span> LIVE</span></div>
+                  <div className="dp-head"><span className="dp-pill">🏆 שמינית גמר 32</span><span className="dp-live"><span className="dd"></span> חי</span></div>
                   <div className="dp-team lead"><span className="dp-fl">🇩🇪</span><span className="dp-nm">גרמניה</span><div className="dp-sc"><span className="dp-big">2</span><span className="dp-par">(<b>2</b>)</span></div></div>
                   <div className="dp-team"><span className="dp-fl">🇵🇾</span><span className="dp-nm">פרגוואי</span><div className="dp-sc"><span className="dp-big">1</span><span className="dp-par">(<b>1</b>)</span></div></div>
                   <div className="dp-ins">
-                    <div className="il"><span>🇩🇪 64%</span><span>הליגה שלך ניחשה</span><span>23% 🇵🇾</span></div>
-                    <div className="dp-ibar"><div className="a" style={{width:"64%"}}></div><div className="dr" style={{width:"13%"}}></div><div className="b2" style={{width:"23%"}}></div></div>
+                    <div className="icap">הליגה שלך ניחשה</div>
+                    <div className="dp-iseg">
+                      <div className="dp-iitem g" style={{flex:64}}><div className="dp-ifl">🇩🇪</div><div className="dp-ipct g">64%</div><div className="dp-ilbl">גרמניה</div></div>
+                      <div className="dp-iitem d" style={{flex:13}}><div className="dp-ifl">🤝</div><div className="dp-ipct d">13%</div><div className="dp-ilbl">תיקו</div></div>
+                      <div className="dp-iitem b" style={{flex:23}}><div className="dp-ifl">🇵🇾</div><div className="dp-ipct b">23%</div><div className="dp-ilbl">פרגוואי</div></div>
+                    </div>
                   </div>
                 </div>
-                <div className="dp-stub live"><span className="ico">🔴</span><span className="hr">67'</span><span className="dy">דקה</span></div>
+                <div className="dp-stub live"><span className="hr">67'</span><span className="dy">דקה</span><span className="dp-golddot"></span></div>
               </div>
             </div>
           </div>
-          <div style={{fontSize:9,color:"#5a6478",textAlign:"center",marginTop:-4,marginBottom:8}}>המספר הגדול = התוצאה החיה · בסוגריים = הניחוש שלך</div>
-          <div className="dp-acts"><span className="dp-act l">👕 הרכב</span><span className="dp-act h">⚔️ ראש בראש</span><span className="dp-act d">📊 פרטים</span></div>
+          <div style={{fontSize:9,color:"#6b6655",textAlign:"center",marginTop:-4,marginBottom:8}}>המספר הגדול = התוצאה החיה · בסוגריים = הניחוש שלך</div>
+          <div className="dp-acts"><span className="dp-act">👕 הרכב</span><span className="dp-act">⚔️ ראש בראש</span><span className="dp-act">📊 פרטים</span></div>
         </div>
       )}
 
@@ -10363,7 +10374,7 @@ function DesignPreviewPanel() {
       {/* ===== ALL SCREENS ===== */}
       {view === "screens" && (
         <div>
-          <div style={{fontSize:10,color:"#a855f7",fontWeight:800,letterSpacing:1,margin:"4px 2px 10px"}}>📊 טבלת הבתים</div>
+          <div style={{fontSize:10,color:"#c9a961",fontWeight:800,letterSpacing:1,margin:"4px 2px 10px"}}>📊 טבלת הבתים</div>
           <div className="dp-neon still">
             <div className="dp-in">
               <div className="dp-head"><span className="dp-pill">בית A</span></div>
@@ -10374,7 +10385,7 @@ function DesignPreviewPanel() {
             </div>
           </div>
 
-          <div style={{fontSize:10,color:"#a855f7",fontWeight:800,letterSpacing:1,margin:"14px 2px 10px"}}>👥 טבלת הליגה</div>
+          <div style={{fontSize:10,color:"#c9a961",fontWeight:800,letterSpacing:1,margin:"14px 2px 10px"}}>👥 טבלת הליגה</div>
           <div className="dp-neon still">
             <div className="dp-in">
               <div className="dp-head"><span className="dp-pill">⚡ SWIFT-BULL-150</span></div>
@@ -10384,7 +10395,7 @@ function DesignPreviewPanel() {
             </div>
           </div>
 
-          <div style={{fontSize:10,color:"#a855f7",fontWeight:800,letterSpacing:1,margin:"14px 2px 10px"}}>📈 סטטיסטיקות</div>
+          <div style={{fontSize:10,color:"#c9a961",fontWeight:800,letterSpacing:1,margin:"14px 2px 10px"}}>📈 סטטיסטיקות</div>
           <div className="dp-neon still">
             <div className="dp-in">
               <div className="dp-head"><span className="dp-pill">📊 הביצועים שלך</span></div>
@@ -12862,25 +12873,37 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
     ? (fixture.isKnockout ? scoreKoMatch(pick, actual) : scoreMatch(pick, actual))
     : null;
   const scoreColors = {
-    exact: {bg:"rgba(251,191,36,0.15)", border:"#fbbf24", text:"#fbbf24", label:"🎯 EXACT"},
-    result: {bg:"rgba(34,197,94,0.15)", border:"#22c55e", text:"#22c55e", label:"✅ WINNER"},
-    wrong: {bg:"rgba(248,113,113,0.1)", border:"#f87171", text:"#f87171", label:"❌ WRONG"},
+    exact: {bg:"linear-gradient(160deg,#1a1408,#0e0a04)", border:"#f4e4b0", text:"#f4e4b0", label:"🎯 בול"},
+    result: {bg:"linear-gradient(160deg,#08120d,#040a07)", border:"#10b981", text:"#34d399", label:"✅ ניצחון"},
+    wrong: {bg:"linear-gradient(160deg,#140808,#0a0404)", border:"#e0524d", text:"#fca5a5", label:"❌ פספוס"},
     none: null,
   };
   const sc = score && scoreColors[score.type];
 
+  // 🎨 Gold-black elegant frame. Finished matches get a colored gradient border
+  // (gold/green/red); upcoming + live matches get the elegant gold hairline.
+  const frameGradient = sc
+    ? (score.type === "exact" ? "linear-gradient(135deg,#fff4cc,#f4e4b0 35%,#c9a961 50%,#f4e4b0 65%,#fff4cc)"
+      : score.type === "result" ? "linear-gradient(135deg,#6ee7b7,#10b981,#065f46)"
+      : "linear-gradient(135deg,#fca5a5,#e0524d,#7f1d1d)")
+    : "linear-gradient(135deg,#5e4e26,#c9a961 38%,#f4e4b0 50%,#c9a961 62%,#5e4e26)";
+  const innerBg = sc ? sc.bg : "linear-gradient(165deg,#0e0e13,#08080c)";
+
   return (
     <div style={{
-      background: sc ? sc.bg : (hasResult ? "color-mix(in srgb, var(--accent) 8%, transparent)" : "linear-gradient(160deg,rgba(6,24,14,0.92),rgba(2,15,8,0.96))"),
-      border:`1px solid ${sc ? sc.border : (hasResult ? "color-mix(in srgb, var(--accent) 40%, transparent)" : "color-mix(in srgb, var(--accent) 22%, transparent)")}`,
-      borderRadius:14,padding:"12px 14px",marginBottom:10,transition:"all 0.25s",
+      background: innerBg,
+      border:"1px solid transparent",
+      backgroundImage:`${innerBg}, ${frameGradient}`,
+      backgroundOrigin:"border-box",
+      backgroundClip:"padding-box, border-box",
+      borderRadius:16,padding:"12px 14px",marginBottom:10,transition:"all 0.25s",
       position:"relative",overflow:"visible",
-      animation: reaction ? "matchFlash 0.5s ease-out" : "none",
+      animation: reaction ? "matchFlash 0.5s ease-out" : (score && score.type === "exact" ? "goldPulse 2.5s ease-in-out infinite" : "none"),
       boxShadow: sc
-        ? (score.type === "exact" ? "0 0 20px rgba(251,191,36,0.25), 0 4px 12px rgba(0,0,0,0.2)"
-          : score.type === "result" ? "0 0 16px rgba(34,197,94,0.22), 0 4px 12px rgba(0,0,0,0.2)"
-          : "0 0 14px rgba(248,113,113,0.18), 0 4px 12px rgba(0,0,0,0.2)")
-        : "0 2px 8px rgba(0,0,0,0.15)",
+        ? (score.type === "exact" ? "0 0 22px -2px rgba(244,228,176,0.3), 0 12px 30px -10px rgba(0,0,0,0.7)"
+          : score.type === "result" ? "0 0 16px -2px rgba(16,185,129,0.22), 0 12px 30px -10px rgba(0,0,0,0.7)"
+          : "0 0 14px -2px rgba(224,82,77,0.2), 0 12px 30px -10px rgba(0,0,0,0.7)")
+        : "0 14px 38px -14px rgba(0,0,0,0.78)",
     }}>
       {/* Floating reaction */}
       {reaction && (
@@ -12986,61 +13009,77 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
           </div>
           <span style={{fontSize:13,fontWeight:700,color:"#f1f5f9",textAlign:"left",display:"flex",alignItems:"center",justifyContent:"flex-start",gap:6}}><span style={{fontSize:24}}>{away.f}</span> {away.n}</span>
         </div>
-      ) : (
-      <div style={{display:"grid",gridTemplateColumns:"1fr auto 1fr",alignItems:"center",gap:8,direction:"ltr"}}>
-        <div onClick={onTeamClick ? (e)=>{e.stopPropagation(); onTeamClick(home.n);} : undefined}
-          style={{display:"flex",alignItems:"center",gap:8,justifyContent:"flex-end",opacity:(result==="away" && showHighlight)?0.5:1,cursor:onTeamClick?"pointer":"default"}}>
-          <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",minWidth:0}}>
-            <span style={{fontSize:13,fontWeight:result==="home"?800:500,color:"#f1f5f9",textAlign:"right",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{home.n}</span>
-            {fifaRank(home.n) && (
-              <span style={{fontSize:9,color:"#64748b",letterSpacing:0.5,marginTop:1}}>#{fifaRank(home.n)}</span>
-            )}
+      ) : (() => {
+        const hasActual = actual && actual.h !== undefined && actual.h !== "";
+        const aH = hasActual ? Number(actual.h) : null;
+        const aA = hasActual ? Number(actual.a) : null;
+        const homeLead = hasActual && aH > aA;
+        const awayLead = hasActual && aA > aH;
+        // score cell for a team row: live result big + prediction in parens, OR input box
+        const scoreCell = (side) => {
+          if (hasActual) {
+            const real = side === "h" ? actual.h : actual.a;
+            const predVal = side === "h" ? h : a;
+            const lead = side === "h" ? homeLead : awayLead;
+            return (
+              <div style={{display:"flex",alignItems:"center",gap:7,flexShrink:0}}>
+                <span style={{fontSize:21,fontWeight:800,color:lead?"#f4e4b0":"#f5f3ee",minWidth:16,textAlign:"center"}}>{real}</span>
+                {predVal !== "" && (<span style={{fontSize:11,fontWeight:700,color:"#8a8472"}}>(<b style={{color:"#f4e4b0"}}>{predVal}</b>)</span>)}
+              </div>
+            );
+          }
+          const inputId = side === "h" ? homeInputId : awayInputId;
+          const val = side === "h" ? h : a;
+          const isHi = (side === "h" ? result==="home" : result==="away") && showHighlight;
+          return (
+            <input id={inputId} type="text" inputMode="numeric" value={val}
+              onChange={e=>handleInput(side, e)} onKeyDown={e=>handleKeyDown(side, e)} onFocus={e=>e.target.select()}
+              readOnly={isLocked} placeholder={isLocked?"·":"–"}
+              style={{width:35,height:40,textAlign:"center",flexShrink:0,
+                background: isLocked?"rgba(40,40,46,0.5)":"rgba(0,0,0,0.5)",
+                border:`1px solid ${isLocked?"rgba(138,116,52,0.35)":(isHi?"#34d399":"rgba(201,169,97,0.4)")}`,
+                borderRadius:9, color: isLocked?"#8a7434":(isHi?"#34d399":"#f4e4b0"),
+                fontSize:18,fontWeight:800,fontFamily:"inherit",outline:"none",
+                cursor: isLocked?"not-allowed":"text",textShadow:isLocked?"none":"0 0 8px rgba(244,228,176,0.3)"}}/>
+          );
+        };
+        const homeIsLead = hasActual ? homeLead : (result==="home");
+        const awayIsLead = hasActual ? awayLead : (result==="away");
+        const homeDim = hasActual ? (awayLead) : (result==="away" && showHighlight);
+        const awayDim = hasActual ? (homeLead) : (result==="home" && showHighlight);
+        return (
+      <div style={{display:"flex",flexDirection:"column",gap:6}}>
+        {/* HOME team row */}
+        <div style={{display:"flex",alignItems:"center",gap:11,padding:"8px 11px",borderRadius:11,
+          background:homeIsLead?"linear-gradient(90deg,rgba(201,169,97,0.1),rgba(201,169,97,0.015))":"rgba(255,255,255,0.02)",
+          border:`1px solid ${homeIsLead?"rgba(201,169,97,0.3)":"rgba(255,255,255,0.05)"}`,
+          opacity:homeDim?0.5:1,transition:"all 0.2s"}}>
+          <span className="flag-wave" onClick={onTeamClick ? (e)=>{e.stopPropagation(); onTeamClick(home.n);} : undefined}
+            style={{fontSize:25,cursor:onTeamClick?"pointer":"default",flexShrink:0}}>{home.f}</span>
+          <div onClick={onTeamClick ? (e)=>{e.stopPropagation(); onTeamClick(home.n);} : undefined}
+            style={{flex:1,minWidth:0,cursor:onTeamClick?"pointer":"default"}}>
+            <span style={{fontSize:14.5,fontWeight:homeIsLead?700:600,color:homeIsLead?"#f4e4b0":"#f5f3ee",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",display:"block"}}>{home.n}</span>
+            {fifaRank(home.n) && (<span style={{fontSize:9,color:"#8a8472",letterSpacing:0.5}}>#{fifaRank(home.n)}</span>)}
           </div>
-          <span className="flag-wave" style={{fontSize:26}}>{home.f}</span>
+          {scoreCell("h")}
         </div>
-        <div style={{display:"flex",alignItems:"center",gap:4}}>
-          <input id={homeInputId} type="text" inputMode="numeric" value={h}
-            onChange={e=>handleInput("h", e)}
-            onKeyDown={e=>handleKeyDown("h", e)}
-            onFocus={e=>e.target.select()}
-            readOnly={isLocked}
-            placeholder={isLocked?"·":"—"}
-            style={{width:36,height:38,textAlign:"center",
-              background: isLocked?"rgba(71,85,105,0.2)":"rgba(0,0,0,0.55)",
-              border:`1px solid ${isLocked?"rgba(71,85,105,0.4)":((result==="home" && showHighlight)?"#22c55e":"color-mix(in srgb, var(--accent) 35%, transparent)")}`,
-              borderRadius:9,
-              color: isLocked?"#64748b":((result==="home" && showHighlight)?"#22c55e":"#f1f5f9"),
-              fontSize:18,fontWeight:800,fontFamily:"inherit",outline:"none",
-              cursor: isLocked?"not-allowed":"text",
-            }}/>
-          <span style={{color:"var(--accent2)",fontSize:11}}>:</span>
-          <input id={awayInputId} type="text" inputMode="numeric" value={a}
-            onChange={e=>handleInput("a", e)}
-            onKeyDown={e=>handleKeyDown("a", e)}
-            onFocus={e=>e.target.select()}
-            readOnly={isLocked}
-            placeholder={isLocked?"·":"—"}
-            style={{width:36,height:38,textAlign:"center",
-              background: isLocked?"rgba(71,85,105,0.2)":"rgba(0,0,0,0.55)",
-              border:`1px solid ${isLocked?"rgba(71,85,105,0.4)":((result==="away" && showHighlight)?"#22c55e":"color-mix(in srgb, var(--accent) 35%, transparent)")}`,
-              borderRadius:9,
-              color: isLocked?"#64748b":((result==="away" && showHighlight)?"#22c55e":"#f1f5f9"),
-              fontSize:18,fontWeight:800,fontFamily:"inherit",outline:"none",
-              cursor: isLocked?"not-allowed":"text",
-            }}/>
-        </div>
-        <div onClick={onTeamClick ? (e)=>{e.stopPropagation(); onTeamClick(away.n);} : undefined}
-          style={{display:"flex",alignItems:"center",gap:8,opacity:(result==="home" && showHighlight)?0.5:1,cursor:onTeamClick?"pointer":"default"}}>
-          <span className="flag-wave" style={{fontSize:26, animationDelay:"1.5s"}}>{away.f}</span>
-          <div style={{display:"flex",flexDirection:"column",alignItems:"flex-start",minWidth:0}}>
-            <span style={{fontSize:13,fontWeight:result==="away"?800:500,color:"#f1f5f9",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{away.n}</span>
-            {fifaRank(away.n) && (
-              <span style={{fontSize:9,color:"#64748b",letterSpacing:0.5,marginTop:1}}>#{fifaRank(away.n)}</span>
-            )}
+        {/* AWAY team row */}
+        <div style={{display:"flex",alignItems:"center",gap:11,padding:"8px 11px",borderRadius:11,
+          background:awayIsLead?"linear-gradient(90deg,rgba(201,169,97,0.1),rgba(201,169,97,0.015))":"rgba(255,255,255,0.02)",
+          border:`1px solid ${awayIsLead?"rgba(201,169,97,0.3)":"rgba(255,255,255,0.05)"}`,
+          opacity:awayDim?0.5:1,transition:"all 0.2s"}}>
+          <span className="flag-wave" onClick={onTeamClick ? (e)=>{e.stopPropagation(); onTeamClick(away.n);} : undefined}
+            style={{fontSize:25,cursor:onTeamClick?"pointer":"default",flexShrink:0,animationDelay:"1.5s"}}>{away.f}</span>
+          <div onClick={onTeamClick ? (e)=>{e.stopPropagation(); onTeamClick(away.n);} : undefined}
+            style={{flex:1,minWidth:0,cursor:onTeamClick?"pointer":"default"}}>
+            <span style={{fontSize:14.5,fontWeight:awayIsLead?700:600,color:awayIsLead?"#f4e4b0":"#f5f3ee",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",display:"block"}}>{away.n}</span>
+            {fifaRank(away.n) && (<span style={{fontSize:9,color:"#8a8472",letterSpacing:0.5}}>#{fifaRank(away.n)}</span>)}
           </div>
+          {scoreCell("a")}
         </div>
       </div>
-      )}
+        );
+      })()}
       {/* 💡 Editable hint — only when not locked + has pick */}
       {!collapsed && !isLocked && hasResult && (
         <div style={{
@@ -13087,56 +13126,28 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
         // 🔴 Use the API's isLive flag if present, fallback to time-based
         const isLive = actual.isLive === true || (matchStarted && minSinceKickoff <= 120 && actual.isFinished !== true);
         return (
-        <div style={{
-          marginTop:8,paddingTop:8,
-          borderTop:"1px solid rgba(71,85,105,0.3)",
-        }}>
-          <div style={{
-            display:"grid",gridTemplateColumns:"1fr auto 1fr",alignItems:"center",gap:8,
-            padding:"6px 4px",direction:"ltr",
-            background: sc?.bg || "rgba(36,49,80,0.5)",
-            borderRadius:8,
-            border: `1px solid ${sc?.border || "rgba(71,85,105,0.4)"}`,
-          }}>
-            <div style={{textAlign:"right",fontSize:10,color: isLive ? "#ef4444" : "#94a3b8",letterSpacing:1,fontWeight:700,display:"flex",alignItems:"center",gap:4,justifyContent:"flex-end"}}>
-              {isLive && (
-                <span style={{
-                  width:6,height:6,borderRadius:"50%",
-                  background:"#ef4444",
-                  boxShadow:"0 0 8px #ef4444",
-                  animation:"livePulse 1.2s ease-in-out infinite",
-                  display:"inline-block",
-                }}/>
-              )}
-              {isLive ? "LIVE" : "FINAL SCORE"}
-            </div>
-            <div style={{
-              display:"flex",alignItems:"center",gap:4,
-              background:"#1e2940",border:`1px solid ${sc?.border || (isLive ? "#ef4444" : "#22c55e")}`,
-              borderRadius:6,padding:"3px 10px",justifyContent:"center",
-              color: sc?.text || (isLive ? "#ef4444" : "#22c55e"),fontWeight:900,fontSize:16,
-            }}>
-              {actual.h} – {actual.a}
-            </div>
-            <div style={{textAlign:"left",fontSize:10,fontWeight:700,letterSpacing:1}}>
-              {hasResult ? (
-                score?.points > 0 ? (
-                  <span style={{color: sc?.text}}>+{score.points} PTS</span>
-                ) : (
-                  <span style={{color:"#f87171"}}>0 PTS</span>
-                )
-              ) : (
-                <span style={{color:"#64748b"}}>NO PICK</span>
-              )}
-            </div>
-          </div>
-          {hasResult && (
-            <div style={{fontSize:9,color:"#64748b",textAlign:"center",marginTop:4,letterSpacing:1}}>
-              You picked <strong style={{color:"#cbd5e1"}}>{h}–{a}</strong>
-              {score?.type === "exact" && " · perfect call! 🎯"}
-              {score?.type === "result" && " · right winner ✅"}
-              {score?.type === "wrong" && " · missed this one"}
-            </div>
+        <div style={{marginTop:10,paddingTop:9,borderTop:"1px solid rgba(201,169,97,0.12)",
+          display:"flex",alignItems:"center",gap:8}}>
+          {isLive ? (
+            <span style={{fontSize:9,fontWeight:800,color:"#fff",background:"#e0524d",padding:"3px 10px",borderRadius:20,display:"flex",alignItems:"center",gap:4}}>
+              <span style={{width:4,height:4,borderRadius:"50%",background:"#fff",animation:"livePulse 1.1s ease-in-out infinite",display:"inline-block"}}/>
+              חי
+            </span>
+          ) : (
+            <span style={{fontSize:9,fontWeight:700,color:"#8a8472"}}>
+              {score?.type === "exact" ? "🎯 תוצאה מדויקת!" : score?.type === "result" ? "✅ צדקת במנצח" : score?.type === "wrong" ? "❌ לא קלעת הפעם" : "המשחק הסתיים"}
+            </span>
+          )}
+          {hasResult && !isLive && (
+            <span style={{marginInlineStart:"auto",fontSize:11,fontWeight:900,padding:"3px 11px",borderRadius:7,
+              color: score?.points > 0 ? (score.type === "exact" ? "#1a1400" : "#fff") : "#fff",
+              background: score?.points > 0
+                ? (score.type === "exact" ? "linear-gradient(135deg,#f4e4b0,#c9a961)" : "linear-gradient(135deg,#10b981,#047857)")
+                : "linear-gradient(135deg,#e0524d,#991b1b)",
+            }}>{score?.points > 0 ? `+${score.points} נק׳` : "0 נק׳"}</span>
+          )}
+          {isLive && hasResult && (
+            <span style={{marginInlineStart:"auto",fontSize:9,color:"#8a8472"}}>הניחוש שלך מוצג בסוגריים</span>
           )}
         </div>
         );
@@ -20842,6 +20853,10 @@ function AppInner() {
           0% { box-shadow: 0 0 0 0 rgba(251,191,36,0); }
           30% { box-shadow: 0 0 0 4px rgba(251,191,36,0.4); }
           100% { box-shadow: 0 0 0 0 rgba(251,191,36,0); }
+        }
+        @keyframes goldPulse {
+          0%, 100% { box-shadow: 0 0 22px -6px rgba(244,228,176,0.25), 0 12px 30px -10px rgba(0,0,0,0.7); }
+          50% { box-shadow: 0 0 26px -2px rgba(244,228,176,0.5), 0 12px 30px -10px rgba(0,0,0,0.7); }
         }
         @keyframes championPop {
           0% { transform: scale(0) rotate(-180deg); opacity: 0; }
