@@ -15,7 +15,7 @@ import { R32_THIRD_TABLE } from "./r32table";
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "5.5.0";
+const APP_VERSION = "5.6.0";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -14174,14 +14174,25 @@ function TodayScreen({ picks, actuals, onPick, onBack, onGoToBracket, leagueMemb
     r32arr.forEach((mm, i) => { map[`R32-${i+1}`] = mm; });
 
     // Winner of an R32 match by index (0..15). Uses koWinners (my pick) if set.
+    // When no pick yet, return a placeholder that still shows BOTH possible teams' flags.
     const ph = (label) => ({ name: label, n: label, flag: "", f: "", placeholder: true });
+    const phPair = (mm, idx) => {
+      // both teams known (from groups) but no winner picked → show "🇩🇪/🇵🇾 גרמניה/פרגוואי"
+      if (mm && mm.a && mm.b) {
+        const fa = mm.a.flag || mm.a.f || "", fb = mm.b.flag || mm.b.f || "";
+        const na = mm.a.name || mm.a.n || "", nb = mm.b.name || mm.b.n || "";
+        return { name: `${na}/${nb}`, n: `${na}/${nb}`, flag: `${fa}/${fb}`, f: `${fa}/${fb}`,
+                 pairFlags: [fa, fb], pairNames: [na, nb], placeholder: true, isPair: true };
+      }
+      return ph(`מנצח M${73+idx}`);
+    };
     const W32 = (idx) => {
       const mm = r32arr[idx];
       if (!mm) return ph(`מנצח M${73+idx}`);
       const pick = koWinners[mm.id];
       if (pick === "a" && mm.a) return mm.a;
       if (pick === "b" && mm.b) return mm.b;
-      return ph(`מנצח M${73+idx}`);
+      return phPair(mm, idx);
     };
     // R16 official pairings (M89..M96)
     const r16def = [
@@ -14437,8 +14448,12 @@ function TodayScreen({ picks, actuals, onPick, onBack, onGoToBracket, leagueMemb
     };
     const koRow = (team, side) => (
       <div style={{display:"flex",alignItems:"center",gap:8}}>
-        <span style={{fontSize:20,flexShrink:0,opacity: team?.placeholder ? 0.5 : 1}}>{team?.placeholder ? "🏳️" : (team?.flag||team?.f||"❓")}</span>
-        <span style={{flex:1,fontSize:team?.placeholder?11:13,fontWeight:team?.placeholder?500:700,color:team?.placeholder?"#94a3b8":"#e2e8f0",fontStyle:team?.placeholder?"italic":"normal",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{team?.name||team?.n||"טרם נקבע"}</span>
+        {team?.isPair ? (
+          <span style={{fontSize:17,flexShrink:0,letterSpacing:-2}}>{team.pairFlags?.[0]}<span style={{fontSize:10,opacity:0.5,margin:"0 1px"}}>/</span>{team.pairFlags?.[1]}</span>
+        ) : (
+          <span style={{fontSize:20,flexShrink:0,opacity: team?.placeholder ? 0.5 : 1}}>{team?.placeholder ? "🏳️" : (team?.flag||team?.f||"❓")}</span>
+        )}
+        <span style={{flex:1,fontSize:team?.placeholder?11:13,fontWeight:team?.placeholder?500:700,color:team?.placeholder?"#a5b4cf":"#e2e8f0",fontStyle:team?.isPair?"normal":team?.placeholder?"italic":"normal",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{team?.name||team?.n||"טרם נקבע"}</span>
         {ready && !koLocked && !hasKoReal ? (
           <input id={`ko-${side}-${m.slotId}`} value={kp[side]} onChange={e=>handleKoChange(side, e.target.value)} inputMode="numeric"
             onFocus={e=>e.target.select()}
@@ -14481,7 +14496,12 @@ function TodayScreen({ picks, actuals, onPick, onBack, onGoToBracket, leagueMemb
             תוצאה: <b style={{color:"#c3d0e8"}}>{koReal.h}–{koReal.a}</b>
           </div>
         )}
-        {!ready && (teamA?.placeholder || teamB?.placeholder) && (
+        {!ready && (teamA?.isPair || teamB?.isPair) && (
+          <div style={{fontSize:9,color:"#7c8db0",textAlign:"center",marginTop:6}}>
+            ההצטלבות הצפויה — נחש את 1/32 כדי לפתוח ניחוש כאן
+          </div>
+        )}
+        {!ready && !(teamA?.isPair || teamB?.isPair) && (teamA?.placeholder || teamB?.placeholder) && (
           <div style={{fontSize:9,color:"#64748b",textAlign:"center",marginTop:6}}>
             נחש את השלב הקודם כדי לפתוח את הניחוש כאן
           </div>
