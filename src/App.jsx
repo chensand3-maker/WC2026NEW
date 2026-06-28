@@ -15,7 +15,7 @@ import { R32_THIRD_TABLE } from "./r32table";
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "5.7.1";
+const APP_VERSION = "5.8.1";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -72,7 +72,7 @@ const TRANSLATIONS = {
     "welcome.exactScore": "🎯 Exact score",
     "welcome.resultGd": "✓ Right winner (deprecated)",
     "welcome.rightResultOnly": "✅ Correct winner",
-    "welcome.knockoutDouble": "🔥 KNOCKOUT — DOUBLE POINTS",
+    "welcome.knockoutDouble": "🔥 KNOCKOUT — EXACT +8 · WINNER +4",
     "welcome.r16Qfsf": "R16 pick · QF · SF",
     "welcome.finalistPick": "🏟️ Finalist pick",
     "welcome.championBonus": "👑 Champion bonus",
@@ -106,7 +106,7 @@ const TRANSLATIONS = {
     "bracket.knockoutStage": "KNOCKOUT STAGE",
     "bracket.title": "🏆 The Bracket",
     "bracket.tapToAdvance": "Type your score predictions. Teams advance based on real results.",
-    "bracket.doublePoints": "🔥 DOUBLE POINTS PER MATCH",
+    "bracket.doublePoints": "🔥 KNOCKOUT: EXACT +8 · WINNER +4",
     "bracket.r16": "R16",
     "bracket.qf": "QF",
     "bracket.sf": "SF",
@@ -292,7 +292,7 @@ const TRANSLATIONS = {
     "onboarding.exact": "Exact score",
     "onboarding.winner": "Correct winner",
     "onboarding.wrong": "Wrong",
-    "onboarding.koDouble": "Double points in the knockout stage (+10 / +6)",
+    "onboarding.koDouble": "Knockout: exact +8 · correct winner +4",
     "onboarding.lockHour": "Each match locks 1 hour before kickoff",
     "onboarding.champion": "TOURNAMENT CHAMPION",
     "onboarding.topScorer": "TOP SCORER",
@@ -553,7 +553,7 @@ const TRANSLATIONS = {
     "profile.menuItem": "📊 My stats",
     // Scoring rules modal
     "rules.groupStage": "GROUP STAGE",
-    "rules.knockoutDouble": "KNOCKOUT — DOUBLE POINTS",
+    "rules.knockoutDouble": "KNOCKOUT — EXACT 8 / WINNER 4",
     "rules.advancement": "BRACKET ADVANCEMENT BONUSES",
     "rules.r16Team": "Team in Round of 16",
     "rules.qfTeam": "Team in Quarter-final",
@@ -598,7 +598,7 @@ const TRANSLATIONS = {
     "welcome.exactScore": "🎯 תוצאה מדויקת",
     "welcome.resultGd": "✓ מנצח נכון (deprecated)",
     "welcome.rightResultOnly": "✅ מנצח נכון",
-    "welcome.knockoutDouble": "🔥 נוקאאוט — נקודות כפולות",
+    "welcome.knockoutDouble": "🔥 נוקאאוט — בול +8 · ניצחון +4",
     "welcome.r16Qfsf": "שמינית · רבע · חצי",
     "welcome.finalistPick": "🏟️ ניחוש פיינליסט",
     "welcome.championBonus": "👑 בונוס אלוף",
@@ -632,7 +632,7 @@ const TRANSLATIONS = {
     "bracket.knockoutStage": "שלב הנוקאאוט",
     "bracket.title": "🏆 העץ",
     "bracket.tapToAdvance": "הקלד תוצאות. הקבוצות עולות לפי התוצאות האמיתיות.",
-    "bracket.doublePoints": "🔥 כל ניחוש שווה כפול בנוקאאוט!",
+    "bracket.doublePoints": "🔥 נוקאאוט: בול +8 · כיוון נכון +4!",
     "bracket.r16": "שמינית",
     "bracket.qf": "רבע",
     "bracket.sf": "חצי",
@@ -818,7 +818,7 @@ const TRANSLATIONS = {
     "onboarding.exact": "תוצאה מדויקת",
     "onboarding.winner": "מנצח נכון",
     "onboarding.wrong": "פספסת",
-    "onboarding.koDouble": "בנוקאאוט הנקודות כפולות (+10 / +6)",
+    "onboarding.koDouble": "בנוקאאוט: בול +8 · כיוון נכון +4",
     "onboarding.lockHour": "כל משחק ננעל שעה לפני שריקת הפתיחה",
     "onboarding.champion": "אלוף הטורניר",
     "onboarding.topScorer": "מלך השערים",
@@ -1079,7 +1079,7 @@ const TRANSLATIONS = {
     "profile.menuItem": "📊 הסטטיסטיקה שלי",
     // Scoring rules modal
     "rules.groupStage": "שלב הבתים",
-    "rules.knockoutDouble": "נוקאאוט — נקודות כפול",
+    "rules.knockoutDouble": "נוקאאוט — בול 8 / ניצחון 4",
     "rules.advancement": "בונוסים על העברת קבוצות",
     "rules.r16Team": "קבוצה ב-1/8 הגמר",
     "rules.qfTeam": "קבוצה ברבע גמר",
@@ -1346,9 +1346,9 @@ const POINTS = {
   EXACT: 5,         // exact score correct (group stage)
   RESULT: 3,        // correct winner only (group stage)
   WRONG: 0,
-  // Knockout: per-match scoring (DOUBLED vs group stage)
-  KO_EXACT: 10,     // exact score in a knockout match
-  KO_RESULT: 6,     // correct winner only in a knockout match
+  // Knockout: per-match scoring
+  KO_EXACT: 8,      // exact score in a knockout match
+  KO_RESULT: 4,     // correct winner only in a knockout match
   // Advancement bonuses — DISABLED (per user request). Per-match scoring is the only way to earn knockout points now.
   R16_PICK: 0,
   QF_PICK: 0,
@@ -4447,7 +4447,7 @@ function ProfileStats({ name, picks, koWinners, koPicks = {}, actuals, actualKo,
           <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:9}}>
             <span style={{fontSize:16}}>🏆</span>
             <div style={{flex:1,minWidth:0}}>
-              <div style={{fontSize:12,color:"#f1f5f9",fontWeight:600}}>נוקאאוט <span style={{fontSize:9,color:"#fbbf24"}}>×2</span></div>
+              <div style={{fontSize:12,color:"#f1f5f9",fontWeight:600}}>נוקאאוט <span style={{fontSize:9,color:"#fbbf24"}}>8 / 4</span></div>
               <div style={{fontSize:9,color:"#64748b"}}>{stats.koExact} בול · {stats.koResult} מנצח</div>
             </div>
             <div style={{fontFamily:"inherit",fontSize:18,fontWeight:900,color:"#fbbf24"}}>{stats.koPoints}</div>
@@ -11767,11 +11767,11 @@ function ScoringRulesModal({ onClose }) {
           <div style={{fontSize:10,color:"#a855f7",letterSpacing:2,marginBottom:8,fontWeight:700}}>🔥 {t("rules.knockoutDouble")}</div>
           <div style={{display:"flex",justifyContent:"space-between",fontSize:13,color:"#cbd5e1",marginBottom:6}}>
             <span>{t("welcome.exactScore")}</span>
-            <span style={{color:"#fbbf24",fontWeight:800}}>+10 {t("welcome.pts")}</span>
+            <span style={{color:"#fbbf24",fontWeight:800}}>+8 {t("welcome.pts")}</span>
           </div>
           <div style={{display:"flex",justifyContent:"space-between",fontSize:13,color:"#cbd5e1"}}>
             <span>{t("welcome.rightResultOnly")}</span>
-            <span style={{color:"#22c55e",fontWeight:800}}>+6 {t("welcome.pts")}</span>
+            <span style={{color:"#22c55e",fontWeight:800}}>+4 {t("welcome.pts")}</span>
           </div>
         </div>
 
@@ -12194,10 +12194,10 @@ function Welcome({ onStart, onImport, onRecoverUserId }) {
               <span>{t("welcome.knockoutDouble")}</span>
             </div>
             <div style={{display:"flex",justifyContent:"space-between",fontSize:11,color:"#cbd5e1",marginBottom:2}}>
-              <span>{t("welcome.exactScore")}</span><span style={{color:"#fbbf24",fontWeight:700}}>+10 {t("welcome.pts")}</span>
+              <span>{t("welcome.exactScore")}</span><span style={{color:"#fbbf24",fontWeight:700}}>+8 {t("welcome.pts")}</span>
             </div>
             <div style={{display:"flex",justifyContent:"space-between",fontSize:11,color:"#cbd5e1"}}>
-              <span>{t("welcome.rightResultOnly")}</span><span style={{color:"#22c55e",fontWeight:700}}>+6 {t("welcome.pts")}</span>
+              <span>{t("welcome.rightResultOnly")}</span><span style={{color:"#22c55e",fontWeight:700}}>+4 {t("welcome.pts")}</span>
             </div>
           </div>
         </div>
@@ -15389,7 +15389,7 @@ function KnockoutBracket({ standings, bestThirds, liveStandings, liveBestThirds,
           <div style={{fontSize:9,color:"#fbbf24",letterSpacing:1,fontWeight:700,marginBottom:2}}>
             🎯 {t("welcome.exactScore").replace(/^🎯\s*/, "")}
           </div>
-          <div style={{fontSize:18,color:"#fbbf24",fontWeight:900,lineHeight:1}}>+10</div>
+          <div style={{fontSize:18,color:"#fbbf24",fontWeight:900,lineHeight:1}}>+8</div>
         </div>
         <div style={{
           background:"linear-gradient(135deg,rgba(34,197,94,0.15),rgba(36,49,80,0.5))",
@@ -15400,7 +15400,7 @@ function KnockoutBracket({ standings, bestThirds, liveStandings, liveBestThirds,
           <div style={{fontSize:9,color:"#22c55e",letterSpacing:1,fontWeight:700,marginBottom:2}}>
             ✅ {t("welcome.rightResultOnly").replace(/^✅\s*/, "")}
           </div>
-          <div style={{fontSize:18,color:"#22c55e",fontWeight:900,lineHeight:1}}>+6</div>
+          <div style={{fontSize:18,color:"#22c55e",fontWeight:900,lineHeight:1}}>+4</div>
         </div>
       </div>
 
