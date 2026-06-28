@@ -15,7 +15,7 @@ import { R32_THIRD_TABLE } from "./r32table";
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "5.4.0";
+const APP_VERSION = "5.5.0";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -14162,17 +14162,73 @@ function H2HInline({ homeTeam, awayTeam, actuals, teamMatchStats }) {
 function TodayScreen({ picks, actuals, onPick, onBack, onGoToBracket, leagueMembers = null, onRefresh, lastFetchAt, onShowDetails = null, liveData = null, onTeamClick = null, teamMatchStats = {}, standings = null, koPicks = {}, setKoPicks = ()=>{}, koWinners = {}, setKoWinners = ()=>{}, actualKoScores = {} }) {
   const t = useT();
 
-  // 🏆 Build the knockout bracket so KO matches can be predicted inline here.
+  // 🏆 Build the FULL knockout bracket so KO matches can be predicted inline here.
+  // R16+ show the actual qualified teams when known, otherwise a "Winner Mxx" placeholder
+  // so the projected matchup (which flags meet which) is visible from the start.
   const koBracket = useMemo(() => {
     if (!standings) return {};
     const thirds = getBestThirds(standings);
-    const r32 = buildR32(standings, thirds);
+    const r32arr = buildR32(standings, thirds);
     const map = {};
-    if (Array.isArray(r32)) {
-      r32.forEach((mm, i) => { map[`R32-${i+1}`] = mm; });
-    }
+    if (!Array.isArray(r32arr)) return map;
+    r32arr.forEach((mm, i) => { map[`R32-${i+1}`] = mm; });
+
+    // Winner of an R32 match by index (0..15). Uses koWinners (my pick) if set.
+    const ph = (label) => ({ name: label, n: label, flag: "", f: "", placeholder: true });
+    const W32 = (idx) => {
+      const mm = r32arr[idx];
+      if (!mm) return ph(`מנצח M${73+idx}`);
+      const pick = koWinners[mm.id];
+      if (pick === "a" && mm.a) return mm.a;
+      if (pick === "b" && mm.b) return mm.b;
+      return ph(`מנצח M${73+idx}`);
+    };
+    // R16 official pairings (M89..M96)
+    const r16def = [
+      ["R16-0", 1, 4, 89], ["R16-1", 0, 2, 90], ["R16-2", 3, 5, 91], ["R16-3", 6, 7, 92],
+      ["R16-4", 10, 11, 93], ["R16-5", 8, 9, 94], ["R16-6", 13, 15, 95], ["R16-7", 12, 14, 96],
+    ];
+    r16def.forEach(([id, ai, bi]) => { map[id] = { id, a: W32(ai), b: W32(bi) }; });
+
+    const W16 = (id, mNum) => {
+      const mm = map[id];
+      if (!mm) return ph(`מנצח M${mNum}`);
+      const pick = koWinners[id];
+      if (pick === "a" && mm.a && !mm.a.placeholder) return mm.a;
+      if (pick === "b" && mm.b && !mm.b.placeholder) return mm.b;
+      return ph(`מנצח M${mNum}`);
+    };
+    // QF (M97..M100): W89vsW90, W93vsW94, W91vsW92, W95vsW96
+    map["QF-0"] = { id:"QF-0", a: W16("R16-0",89), b: W16("R16-1",90) };
+    map["QF-1"] = { id:"QF-1", a: W16("R16-4",93), b: W16("R16-5",94) };
+    map["QF-2"] = { id:"QF-2", a: W16("R16-2",91), b: W16("R16-3",92) };
+    map["QF-3"] = { id:"QF-3", a: W16("R16-6",95), b: W16("R16-7",96) };
+
+    const WQF = (id, mNum) => {
+      const mm = map[id];
+      if (!mm) return ph(`מנצח M${mNum}`);
+      const pick = koWinners[id];
+      if (pick === "a" && mm.a && !mm.a.placeholder) return mm.a;
+      if (pick === "b" && mm.b && !mm.b.placeholder) return mm.b;
+      return ph(`מנצח M${mNum}`);
+    };
+    // SF (M101,M102): W97vsW98, W99vsW100
+    map["SF-0"] = { id:"SF-0", a: WQF("QF-0",97), b: WQF("QF-1",98) };
+    map["SF-1"] = { id:"SF-1", a: WQF("QF-2",99), b: WQF("QF-3",100) };
+
+    const WSF = (id, mNum) => {
+      const mm = map[id];
+      if (!mm) return ph(`מנצח M${mNum}`);
+      const pick = koWinners[id];
+      if (pick === "a" && mm.a && !mm.a.placeholder) return mm.a;
+      if (pick === "b" && mm.b && !mm.b.placeholder) return mm.b;
+      return ph(`מנצח M${mNum}`);
+    };
+    // FINAL (M104): W101 vs W102
+    map["FINAL"] = { id:"FINAL", a: WSF("SF-0",101), b: WSF("SF-1",102) };
+
     return map;
-  }, [standings]);
+  }, [standings, koWinners]);
 
   // ─── Pull-to-refresh ───
   const [ptrDist, setPtrDist] = useState(0);
@@ -14299,8 +14355,12 @@ function TodayScreen({ picks, actuals, onPick, onBack, onGoToBracket, leagueMemb
     for (const m of ordered) {
       const mk = new Date(m.kickoff).getTime();
       const mActual = m.type === "group" ? actuals[m.fixture?.id] : null;
+      const minsSince = (now - mk) / (60 * 1000);
+      // Finished if: API says so, OR has a score and not live, OR simply enough
+      // time has passed since kickoff (covers played matches without API data).
       const finished = (mActual && mActual.isFinished === true) ||
-        (mActual && mActual.h !== "" && mActual.h !== undefined && mActual.isLive !== true && (now - mk)/(60*1000) > 95);
+        (mActual && mActual.h !== "" && mActual.h !== undefined && mActual.isLive !== true && minsSince > 95) ||
+        (minsSince > 130); // ~2h+ after kickoff: assume done even without data
       if (!finished) { anchorFixtureId = m.type === "group" ? `m-${m.fixture.id}` : `m-ko-${m.slotId}`; break; }
     }
     // If everything finished, anchor to the very last match.
@@ -14356,7 +14416,7 @@ function TodayScreen({ picks, actuals, onPick, onBack, onGoToBracket, leagueMemb
     const koMatch = koBracket[m.slotId];
     const teamA = koMatch?.a;
     const teamB = koMatch?.b;
-    const ready = teamA && teamB;
+    const ready = teamA && teamB && !teamA.placeholder && !teamB.placeholder;
     const kp = koPicks[m.slotId] || { h: "", a: "" };
     const hasKoPick = kp.h !== "" && kp.a !== "";
     const koReal = actualKoScores?.[m.slotId];
@@ -14377,8 +14437,8 @@ function TodayScreen({ picks, actuals, onPick, onBack, onGoToBracket, leagueMemb
     };
     const koRow = (team, side) => (
       <div style={{display:"flex",alignItems:"center",gap:8}}>
-        <span style={{fontSize:20,flexShrink:0}}>{team?.flag||team?.f||"❓"}</span>
-        <span style={{flex:1,fontSize:13,fontWeight:700,color:"#e2e8f0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{team?.name||team?.n||"טרם נקבע"}</span>
+        <span style={{fontSize:20,flexShrink:0,opacity: team?.placeholder ? 0.5 : 1}}>{team?.placeholder ? "🏳️" : (team?.flag||team?.f||"❓")}</span>
+        <span style={{flex:1,fontSize:team?.placeholder?11:13,fontWeight:team?.placeholder?500:700,color:team?.placeholder?"#94a3b8":"#e2e8f0",fontStyle:team?.placeholder?"italic":"normal",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{team?.name||team?.n||"טרם נקבע"}</span>
         {ready && !koLocked && !hasKoReal ? (
           <input id={`ko-${side}-${m.slotId}`} value={kp[side]} onChange={e=>handleKoChange(side, e.target.value)} inputMode="numeric"
             onFocus={e=>e.target.select()}
@@ -14393,16 +14453,17 @@ function TodayScreen({ picks, actuals, onPick, onBack, onGoToBracket, leagueMemb
             style={{width:38,height:38,borderRadius:9,background:"rgba(13,20,36,0.85)",
               border:`1.5px solid ${hasKoPick?"#fbbf24":"rgba(255,255,255,0.12)"}`,color:"#f1f5f9",
               fontFamily:"inherit",fontSize:17,fontWeight:800,textAlign:"center",outline:"none",flexShrink:0}}/>
-        ) : (
+        ) : team?.placeholder ? null : (
           <span style={{width:38,height:38,borderRadius:9,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",
             background:"rgba(13,20,36,0.7)",fontSize:16,fontWeight:800,color: hasKoPick ? "#f1f5f9" : "#3e4a64"}}>
-            {!ready ? "❓" : koLocked && !hasKoPick ? "🔒" : hasKoPick ? kp[side] : "–"}
+            {!ready ? "·" : koLocked && !hasKoPick ? "🔒" : hasKoPick ? kp[side] : "–"}
           </span>
         )}
       </div>
     );
     return (
-      <div key={m.slotId} style={{
+      <div key={m.slotId} ref={anchorFixtureId === `m-ko-${m.slotId}` ? todayAnchorRef : null} style={{
+        scrollMarginTop:60,
         background:"linear-gradient(160deg,rgba(99,102,241,0.1),rgba(6,20,12,0.85))",
         border:`1px solid ${hasKoPick?"rgba(251,191,36,0.4)":"rgba(129,140,248,0.35)"}`,
         borderRadius:14,padding:"12px 14px",marginBottom:10,
@@ -14420,9 +14481,9 @@ function TodayScreen({ picks, actuals, onPick, onBack, onGoToBracket, leagueMemb
             תוצאה: <b style={{color:"#c3d0e8"}}>{koReal.h}–{koReal.a}</b>
           </div>
         )}
-        {!ready && (
+        {!ready && (teamA?.placeholder || teamB?.placeholder) && (
           <div style={{fontSize:9,color:"#64748b",textAlign:"center",marginTop:6}}>
-            הנבחרות ייקבעו לפי תוצאות השלב הקודם
+            נחש את השלב הקודם כדי לפתוח את הניחוש כאן
           </div>
         )}
       </div>
