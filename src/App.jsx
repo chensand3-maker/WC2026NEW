@@ -15,7 +15,7 @@ import { R32_THIRD_TABLE } from "./r32table";
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "5.12.4";
+const APP_VERSION = "5.12.5";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -13157,7 +13157,32 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
           </div>
         );
       })()}
+      {/* ⏱️ Phase timeline — only for KO matches that went to extra-time / penalties */}
+      {!collapsed && (matchPhase === "et" || matchPhase === "pens" || matchPhase === "aet") && actual && (() => {
+        const ph90 = actual.ft90;
+        const phET = actual.etRes;
+        const phPK = actual.pkRes;
+        if (!ph90) return null;
+        const cell = (label, val, kind) => (
+          <div style={{flex:1,textAlign:"center",padding:"6px 4px",borderRadius:8,
+            background: kind==="scored" ? "rgba(201,169,97,0.1)" : kind==="now" ? "rgba(139,92,246,0.1)" : "rgba(255,255,255,0.025)",
+            border: `1px solid ${kind==="scored" ? "rgba(201,169,97,0.45)" : kind==="now" ? "rgba(139,92,246,0.45)" : "rgba(255,255,255,0.05)"}`}}>
+            <div style={{fontSize:7,fontWeight:700,letterSpacing:0.5,color: kind==="scored" ? "#c9a961" : kind==="now" ? "#a78bfa" : "#6b6655"}}>{label}</div>
+            <div style={{fontSize:13,fontWeight:800,marginTop:2,color: kind==="scored" ? "#f4e4b0" : "#f5f3ee"}}>{val.h} : {val.a}</div>
+          </div>
+        );
+        return (
+          <div style={{marginTop:10,display:"flex",gap:5}}>
+            {cell("90 דקות ✓", ph90, "scored")}
+            {phET && cell("הארכה", phET, (matchPhase==="et") ? "now" : "")}
+            {phPK && cell("פנדלים", phPK, (matchPhase==="pens") ? "now" : "")}
+          </div>
+        );
+      })()}
       {!collapsed && actual && actual.h !== undefined && actual.h !== "" && (() => {
+        const matchStarted = Date.now() >= new Date(fixture.kickoff).getTime();
+        const minSinceKickoff = (Date.now() - new Date(fixture.kickoff).getTime()) / (60 * 1000);
+        const isLive = actual.isLive === true || (matchStarted && minSinceKickoff <= 120 && actual.isFinished !== true);
         // While live, the "חי" chip is already shown in the header — don't repeat it here.
         if (isLive) {
           if (!hasResult) return null;
@@ -18906,8 +18931,7 @@ class AppErrorBoundary extends React.Component {
       },
         React.createElement("div", { style: { fontSize: 48, marginBottom: 16 } }, "⚽"),
         React.createElement("div", { style: { fontSize: 18, color: "#fbbf24", fontWeight: 900, marginBottom: 8 } }, "רגע, טוענים מחדש..."),
-        React.createElement("div", { style: { fontSize: 13, color: "#94a3b8", marginBottom: 16, maxWidth: 280, lineHeight: 1.5 } }, "משהו קטן השתבש. לחץ רענון והכל יחזור לעבוד."),
-        React.createElement("div", { style: { fontSize: 11, color: "#f87171", marginBottom: 24, maxWidth: 320, lineHeight: 1.5, fontFamily: "monospace", background: "rgba(239,68,68,0.1)", padding: "10px 12px", borderRadius: 8, wordBreak: "break-word", direction: "ltr", textAlign: "left" } }, String(this.state.error?.message || this.state.error || "")),
+        React.createElement("div", { style: { fontSize: 13, color: "#94a3b8", marginBottom: 24, maxWidth: 280, lineHeight: 1.5 } }, "משהו קטן השתבש. לחץ רענון והכל יחזור לעבוד."),
         React.createElement("button", {
           onClick: () => { try { window.location.reload(); } catch {} },
           style: { padding: "12px 28px", background: "linear-gradient(135deg,#fbbf24,#d97706)", color: "#1a1206", border: "none", borderRadius: 10, fontWeight: 800, fontSize: 15, cursor: "pointer", fontFamily: "inherit" }
