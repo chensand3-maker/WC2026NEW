@@ -15,7 +15,7 @@ import { R32_THIRD_TABLE } from "./r32table";
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "5.6.0";
+const APP_VERSION = "5.6.1";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -14186,12 +14186,11 @@ function TodayScreen({ picks, actuals, onPick, onBack, onGoToBracket, leagueMemb
       }
       return ph(`מנצח M${73+idx}`);
     };
+    // For R16 display we ALWAYS show both possible teams from each R32 match
+    // (the projected matchup), regardless of the user's R32 pick.
     const W32 = (idx) => {
       const mm = r32arr[idx];
       if (!mm) return ph(`מנצח M${73+idx}`);
-      const pick = koWinners[mm.id];
-      if (pick === "a" && mm.a) return mm.a;
-      if (pick === "b" && mm.b) return mm.b;
       return phPair(mm, idx);
     };
     // R16 official pairings (M89..M96)
