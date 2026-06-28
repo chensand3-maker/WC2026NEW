@@ -15,7 +15,7 @@ import { R32_THIRD_TABLE } from "./r32table";
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "5.10.2";
+const APP_VERSION = "5.10.3";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -12868,8 +12868,17 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
     }
   };
 
-  // Score this match if actuals are present. KO matches use KO scoring (10/6).
-  const score = actual && actual.h !== undefined && actual.h !== "" && hasResult
+  // Score this match ONLY when finished (not live). A live match has a partial
+  // score but must NOT show points/colors yet.
+  const matchIsLiveNow = (() => {
+    if (!actual || actual.h === undefined || actual.h === "") return false;
+    if (actual.isLive === true) return true;
+    if (actual.isFinished === true) return false;
+    const started = Date.now() >= new Date(fixture.kickoff).getTime();
+    const minsSince = (Date.now() - new Date(fixture.kickoff).getTime()) / (60 * 1000);
+    return started && minsSince <= 120;
+  })();
+  const score = actual && actual.h !== undefined && actual.h !== "" && hasResult && !matchIsLiveNow
     ? (fixture.isKnockout ? scoreKoMatch(pick, actual) : scoreMatch(pick, actual))
     : null;
   const scoreColors = {
