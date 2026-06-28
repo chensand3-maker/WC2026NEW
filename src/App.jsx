@@ -15,7 +15,7 @@ import { R32_THIRD_TABLE } from "./r32table";
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "5.6.1";
+const APP_VERSION = "5.7.0";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -12617,8 +12617,10 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
     }
   };
 
-  // Score this match if actuals are present
-  const score = actual && actual.h !== undefined && actual.h !== "" && hasResult ? scoreMatch(pick, actual) : null;
+  // Score this match if actuals are present. KO matches use KO scoring (10/6).
+  const score = actual && actual.h !== undefined && actual.h !== "" && hasResult
+    ? (fixture.isKnockout ? scoreKoMatch(pick, actual) : scoreMatch(pick, actual))
+    : null;
   const scoreColors = {
     exact: {bg:"rgba(251,191,36,0.15)", border:"#fbbf24", text:"#fbbf24", label:"🎯 EXACT"},
     result: {bg:"rgba(34,197,94,0.15)", border:"#22c55e", text:"#22c55e", label:"✅ WINNER"},
@@ -14427,6 +14429,65 @@ function TodayScreen({ picks, actuals, onPick, onBack, onGoToBracket, leagueMemb
     const teamA = koMatch?.a;
     const teamB = koMatch?.b;
     const ready = teamA && teamB && !teamA.placeholder && !teamB.placeholder;
+
+    // ✅ When both teams are KNOWN, reuse the full MatchCard so KO matches get the
+    // exact same features as group matches (live score, league insights, details,
+    // team click, lineup, H2H, auto-jump, collapse).
+    if (ready) {
+      const koFixture = {
+        id: `ko-${m.slotId}`,
+        home: teamA.name || teamA.n,
+        away: teamB.name || teamB.n,
+        kickoff: m.kickoff,
+        venue: m.venue,
+        isKnockout: true,
+        slotId: m.slotId,
+      };
+      const koPickObj = koPicks[m.slotId] || { h:"", a:"" };
+      const koActual = actualKoScores?.[m.slotId] || null;
+      const koHasResult = koActual && koActual.h !== "" && koActual.h !== undefined;
+      const onKoPick = (p) => {
+        setKoPicks(prev => {
+          const next = { ...prev, [m.slotId]: { h: p.h, a: p.a } };
+          const hh = parseInt(p.h), aa = parseInt(p.a);
+          if (!isNaN(hh) && !isNaN(aa) && hh !== aa) {
+            setKoWinners(w => ({ ...w, [m.slotId]: hh > aa ? "a" : "b" }));
+          }
+          return next;
+        });
+      };
+      return (
+        <div key={m.slotId} ref={anchorFixtureId === `m-ko-${m.slotId}` ? todayAnchorRef : null} style={{scrollMarginTop:60}}>
+          <div style={{display:"flex",alignItems:"center",gap:6,margin:"0 2px 4px"}}>
+            <span style={{fontSize:10,color:"#a5b4fc",letterSpacing:1,fontWeight:800}}>🏆 {m.slotId.startsWith("R32")?"שמינית 32":m.slotId.startsWith("R16")?"שמינית גמר":m.slotId.startsWith("QF")?"רבע גמר":m.slotId.startsWith("SF")?"חצי גמר":m.slotId==="FINAL"?"גמר":"נוקאאוט"}</span>
+          </div>
+          <MatchCard
+            fixture={koFixture}
+            pick={koPickObj}
+            actual={koActual}
+            onPick={onKoPick}
+            showResults={koHasResult}
+            homeInputId={`today-h-ko-${m.slotId}`}
+            awayInputId={`today-a-ko-${m.slotId}`}
+            nextInputId={null}
+            lockable={true}
+            leagueMembers={leagueMembers}
+            onShowDetails={koHasResult ? onShowDetails : null}
+            defaultCollapsed={isFinishedSection}
+            apiFixtureId={null}
+            onTeamClick={onTeamClick}
+          />
+          {!isFinishedSection && (
+            <div style={{marginBottom:12}}>
+              <LineupButton homeTeam={koFixture.home} awayTeam={koFixture.away} />
+              <H2HInline homeTeam={koFixture.home} awayTeam={koFixture.away} actuals={actuals} teamMatchStats={teamMatchStats} />
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // Not ready yet (teams unknown) → projected-matchup placeholder card.
     const kp = koPicks[m.slotId] || { h: "", a: "" };
     const hasKoPick = kp.h !== "" && kp.a !== "";
     const koReal = actualKoScores?.[m.slotId];
