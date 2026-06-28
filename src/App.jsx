@@ -15,7 +15,7 @@ import { R32_THIRD_TABLE } from "./r32table";
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "5.10.3";
+const APP_VERSION = "5.10.4";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -12934,28 +12934,42 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
           </div>
         </div>
       )}
-      <div style={{fontSize:9,color:"#64748b",letterSpacing:2,marginBottom:6,display:"flex",justifyContent:"space-between",alignItems:"center",gap:6}}>
-        <span style={{whiteSpace:"nowrap"}}>MD {fixture.matchday}</span>
+      <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:11}}>
+        <span style={{fontSize:8,fontWeight:700,letterSpacing:1.5,color:"#c9a961",textTransform:"uppercase",
+          background:"rgba(201,169,97,0.07)",padding:"3px 10px",borderRadius:20,border:"1px solid rgba(201,169,97,0.18)",whiteSpace:"nowrap"}}>
+          {fixture.isKnockout ? (fixture.koLabel || "🏆 נוקאאוט") : `🏆 ${t("matchcard.matchday") || "מחזור"} ${fixture.matchday}`}
+        </span>
         {(() => {
           const k = formatKickoff(fixture.kickoff);
           if (!k) return null;
           const isPast = k.dateObj.getTime() < Date.now();
+          if (isPast) return null;
           return (
-            <span style={{
-              flex:1,textAlign:"center",
-              color: isPast ? "#475569" : "#cbd5e1",
-              fontWeight: 600, letterSpacing: 1,
-              overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-            }}>
-              📅 {k.day} · 🕐 {k.time}
+            <span style={{fontSize:9,color:"#8a8472",fontWeight:600,letterSpacing:0.5,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+              📅 {k.day} · {k.time}
             </span>
           );
         })()}
-        {isLocked && <span style={{color:"#f87171",fontWeight:700,whiteSpace:"nowrap"}}>🔒 LOCKED</span>}
-        {!isLocked && isLockingSoon && <span style={{color:"#fbbf24",fontWeight:700,whiteSpace:"nowrap"}}>⏰ LOCKS SOON</span>}
-        {sc && <span style={{color:sc.text,fontWeight:700,whiteSpace:"nowrap"}}>{sc.label} +{score.points}</span>}
-        {!sc && !isLocked && hasResult && <span style={{color:"#22c55e"}} title={t("matchcard.predicted")}>✓</span>}
-        {!sc && !isLocked && !hasResult && <span style={{color:"#64748b",opacity:0.5}} title={t("matchcard.noPick")}>⚪</span>}
+        {/* status chip on the right */}
+        {matchIsLiveNow ? (
+          <span style={{marginInlineStart:"auto",fontSize:8,fontWeight:800,color:"#fff",background:"#e0524d",padding:"3px 10px",borderRadius:20,display:"flex",alignItems:"center",gap:4,whiteSpace:"nowrap"}}>
+            <span style={{width:4,height:4,borderRadius:"50%",background:"#fff",animation:"livePulse 1.1s ease-in-out infinite",display:"inline-block"}}/> חי
+          </span>
+        ) : sc ? (
+          <span style={{marginInlineStart:"auto",fontSize:8,fontWeight:800,padding:"3px 11px",borderRadius:20,whiteSpace:"nowrap",
+            color: score.type==="exact"?"#1a1400":"#fff",
+            background: score.type==="exact"?"linear-gradient(135deg,#fff4cc,#f4e4b0,#c9a961)":score.type==="result"?"linear-gradient(135deg,#10b981,#047857)":"linear-gradient(135deg,#e0524d,#991b1b)"}}>
+            {sc.label}
+          </span>
+        ) : isLocked ? (
+          <span style={{marginInlineStart:"auto",fontSize:8,color:"#8a7434",fontWeight:700,whiteSpace:"nowrap"}}>🔒 נעול</span>
+        ) : isLockingSoon ? (
+          <span style={{marginInlineStart:"auto",fontSize:8,color:"#c9a961",fontWeight:700,whiteSpace:"nowrap"}}>⏰ ננעל בקרוב</span>
+        ) : hasResult ? (
+          <span style={{marginInlineStart:"auto",fontSize:10,color:"#c9a961"}} title={t("matchcard.predicted")}>✓</span>
+        ) : (
+          <span style={{marginInlineStart:"auto",fontSize:10,color:"#8a8472",opacity:0.5}} title={t("matchcard.noPick")}>⚪</span>
+        )}
         {/* 🗜️ Collapse toggle — only for finished matches */}
         {actual && actual.h !== undefined && actual.h !== "" && actual.isLive !== true && (
           <button
@@ -13174,10 +13188,10 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
           style={{
             marginTop:10,width:"100%",
             padding:"10px 12px",
-            background:"linear-gradient(135deg,rgba(168,85,247,0.15),rgba(168,85,247,0.05))",
-            border:"1px solid rgba(168,85,247,0.4)",
-            borderRadius:8,
-            color:"#a855f7",fontSize:12,fontWeight:700,
+            background:"rgba(201,169,97,0.06)",
+            border:"1px solid rgba(201,169,97,0.25)",
+            borderRadius:11,
+            color:"#d4b977",fontSize:12,fontWeight:700,
             cursor:"pointer",fontFamily:"inherit",
             display:"flex",alignItems:"center",justifyContent:"center",gap:6,
           }}>
@@ -13195,10 +13209,10 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
           style={{
             marginTop:8,width:"100%",
             padding:"10px 12px",
-            background:"linear-gradient(135deg,rgba(239,68,68,0.15),rgba(239,68,68,0.05))",
-            border:"1px solid rgba(239,68,68,0.4)",
-            borderRadius:8,
-            color:"#ef4444",fontSize:12,fontWeight:700,
+            background:"rgba(255,255,255,0.03)",
+            border:"1px solid rgba(255,255,255,0.1)",
+            borderRadius:11,
+            color:"#aeb8cc",fontSize:12,fontWeight:700,
             cursor:"pointer",fontFamily:"inherit",
             display:"flex",alignItems:"center",justifyContent:"center",gap:6,
           }}>
@@ -13208,66 +13222,34 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
 
       {/* 🧠 LEAGUE INSIGHTS: % pick distribution, shown after kickoff */}
       {!collapsed && insights && (
-        <div style={{
-          marginTop:10,padding:"8px 10px",
-          background:"linear-gradient(135deg,rgba(168,85,247,0.08),rgba(36,49,80,0.4))",
-          border:"1px solid rgba(168,85,247,0.25)",
-          borderRadius:8,
-        }}>
-          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:6}}>
-            <span style={{fontSize:9,color:"#a855f7",letterSpacing:2,fontWeight:700}}>🧠 {t("insights.yourLeague")}</span>
-            <div style={{display:"flex",alignItems:"center",gap:8}}>
-              <span style={{fontSize:9,color:"#64748b"}}>{insights.total} {insights.total===1 ? t("insights.pick") : t("insights.picks")}</span>
-              <button
-                onClick={() => setShowAllPicks(true)}
-                style={{
-                  width:18,height:18,borderRadius:"50%",
-                  background:"linear-gradient(135deg,#a855f7,#7c3aed)",
-                  color:"#fff",border:"none",fontSize:11,fontWeight:900,
-                  cursor:"pointer",fontFamily:"inherit",
-                  display:"flex",alignItems:"center",justifyContent:"center",
-                  lineHeight:1,boxShadow:"0 2px 6px rgba(168,85,247,0.5)",
-                }}
-                title="כל הניחושים"
-              >!</button>
-            </div>
+        <div style={{marginTop:10}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8,marginBottom:8}}>
+            <span style={{fontSize:8,color:"#8a8472",letterSpacing:1,fontWeight:700}}>🧠 {t("insights.yourLeague")}</span>
+            <span style={{fontSize:8,color:"#6b6655"}}>· {insights.total} {insights.total===1 ? t("insights.pick") : t("insights.picks")}</span>
+            <button
+              onClick={() => setShowAllPicks(true)}
+              style={{width:16,height:16,borderRadius:"50%",background:"rgba(201,169,97,0.2)",
+                color:"#f4e4b0",border:"1px solid rgba(201,169,97,0.4)",fontSize:10,fontWeight:900,
+                cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",lineHeight:1}}
+              title="כל הניחושים"
+            >!</button>
           </div>
-          {/* Three-segment bar showing %s — order flipped in RTL so home aligns right */}
-          <div style={{display:"flex",height:8,borderRadius:4,overflow:"hidden",background:"rgba(36,49,80,0.6)",marginBottom:5,flexDirection: isRTL ? "row-reverse" : "row"}}>
-            {insights.home > 0 && (
-              <div style={{
-                width:`${insights.home}%`,
-                background:"linear-gradient(90deg,#22c55e,#16a34a)",
-                transition:"width 0.5s",
-              }}/>
-            )}
-            {insights.draw > 0 && (
-              <div style={{
-                width:`${insights.draw}%`,
-                background:"linear-gradient(90deg,#64748b,#475569)",
-                transition:"width 0.5s",
-              }}/>
-            )}
-            {insights.away > 0 && (
-              <div style={{
-                width:`${insights.away}%`,
-                background:"linear-gradient(90deg,#3b82f6,#2563eb)",
-                transition:"width 0.5s",
-              }}/>
-            )}
-          </div>
-          {/* Three-column legend — order also flipped in RTL */}
-          <div style={{display:"flex",justifyContent:"space-between",fontSize:10,fontVariantNumeric:"tabular-nums",flexDirection: isRTL ? "row-reverse" : "row"}}>
-            <div style={{display:"flex",alignItems:"center",gap:4}}>
-              <span style={{fontSize:11}}>{home?.f}</span>
-              <span style={{color:"#22c55e",fontWeight:700}}>{insights.home}%</span>
+          {/* Three separate cells, sized by % — RTL keeps home on the right */}
+          <div style={{display:"flex",gap:4,flexDirection: isRTL ? "row-reverse" : "row"}}>
+            <div style={{flex:Math.max(insights.home,8),borderRadius:8,padding:"8px 4px",textAlign:"center",
+              background:"linear-gradient(135deg,rgba(201,169,97,0.25),rgba(201,169,97,0.1))",border:"1px solid rgba(201,169,97,0.4)"}}>
+              <div style={{fontSize:14}}>{home?.f}</div>
+              <div style={{fontSize:14,fontWeight:900,color:"#f4e4b0",marginTop:2}}>{insights.home}%</div>
             </div>
-            <div style={{display:"flex",alignItems:"center",gap:4}}>
-              <span style={{color:"#94a3b8",fontWeight:700}}>{t("insights.draw")} {insights.draw}%</span>
+            <div style={{flex:Math.max(insights.draw,8),borderRadius:8,padding:"8px 4px",textAlign:"center",
+              background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.08)"}}>
+              <div style={{fontSize:14}}>🤝</div>
+              <div style={{fontSize:14,fontWeight:900,color:"#94a3b8",marginTop:2}}>{insights.draw}%</div>
             </div>
-            <div style={{display:"flex",alignItems:"center",gap:4}}>
-              <span style={{color:"#3b82f6",fontWeight:700}}>{insights.away}%</span>
-              <span style={{fontSize:11}}>{away?.f}</span>
+            <div style={{flex:Math.max(insights.away,8),borderRadius:8,padding:"8px 4px",textAlign:"center",
+              background:"linear-gradient(135deg,rgba(107,155,209,0.25),rgba(107,155,209,0.1))",border:"1px solid rgba(107,155,209,0.4)"}}>
+              <div style={{fontSize:14}}>{away?.f}</div>
+              <div style={{fontSize:14,fontWeight:900,color:"#9cc3ed",marginTop:2}}>{insights.away}%</div>
             </div>
           </div>
         </div>
