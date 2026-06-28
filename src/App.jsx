@@ -15,7 +15,7 @@ import { R32_THIRD_TABLE } from "./r32table";
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "5.2.0";
+const APP_VERSION = "5.3.0";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -14142,8 +14142,20 @@ function H2HInline({ homeTeam, awayTeam, actuals, teamMatchStats }) {
   );
 }
 
-function TodayScreen({ picks, actuals, onPick, onBack, onGoToBracket, leagueMembers = null, onRefresh, lastFetchAt, onShowDetails = null, liveData = null, onTeamClick = null, teamMatchStats = {} }) {
+function TodayScreen({ picks, actuals, onPick, onBack, onGoToBracket, leagueMembers = null, onRefresh, lastFetchAt, onShowDetails = null, liveData = null, onTeamClick = null, teamMatchStats = {}, standings = null, koPicks = {}, setKoPicks = ()=>{}, koWinners = {}, setKoWinners = ()=>{}, actualKoScores = {} }) {
   const t = useT();
+
+  // 🏆 Build the knockout bracket so KO matches can be predicted inline here.
+  const koBracket = useMemo(() => {
+    if (!standings) return {};
+    const thirds = getBestThirds(standings);
+    const r32 = buildR32(standings, thirds);
+    const map = {};
+    if (Array.isArray(r32)) {
+      r32.forEach((mm, i) => { map[`R32-${i+1}`] = mm; });
+    }
+    return map;
+  }, [standings]);
 
   // ─── Pull-to-refresh ───
   const [ptrDist, setPtrDist] = useState(0);
@@ -14249,6 +14261,19 @@ function TodayScreen({ picks, actuals, onPick, onBack, onGoToBracket, leagueMemb
   const sortedDays = [...byDay.keys()].sort((a,b)=>a-b);
   const todayKey = todayStart.getTime();
 
+  // ⌨️ Build a flat ordered list of GROUP fixtures so each match's away-input can
+  // auto-jump to the next match's home-input after both scores are filled.
+  const orderedGroupIds = [];
+  for (const dk of sortedDays) {
+    for (const m of byDay.get(dk)) {
+      if (m.type === "group" && m.fixture?.id) orderedGroupIds.push(m.fixture.id);
+    }
+  }
+  const nextHomeInputId = {};
+  for (let i = 0; i < orderedGroupIds.length - 1; i++) {
+    nextHomeInputId[orderedGroupIds[i]] = `today-h-${orderedGroupIds[i + 1]}`;
+  }
+
   // 🎯 Find the FIRST match that hasn't finished yet (live or upcoming) — that's
   // where we auto-scroll, so already-played matches from earlier today are skipped.
   let anchorFixtureId = null;
@@ -14292,7 +14317,7 @@ function TodayScreen({ picks, actuals, onPick, onBack, onGoToBracket, leagueMemb
             showResults={hasResult}
             homeInputId={`today-h-${f.id}`}
             awayInputId={`today-a-${f.id}`}
-            nextInputId={null}
+            nextInputId={nextHomeInputId[f.id] || null}
             lockable={true}
             leagueMembers={leagueMembers}
             onShowDetails={hasResult ? onShowDetails : null}
@@ -14309,26 +14334,80 @@ function TodayScreen({ picks, actuals, onPick, onBack, onGoToBracket, leagueMemb
         </div>
       );
     }
-    // KO match — read-only summary card (can't easily predict score here without slot context)
+    // KO match — predict inline with score boxes (each team its own row)
     const k = formatKickoff(m.kickoff);
+    const koMatch = koBracket[m.slotId];
+    const teamA = koMatch?.a;
+    const teamB = koMatch?.b;
+    const ready = teamA && teamB;
+    const kp = koPicks[m.slotId] || { h: "", a: "" };
+    const hasKoPick = kp.h !== "" && kp.a !== "";
+    const koReal = actualKoScores?.[m.slotId];
+    const hasKoReal = koReal && koReal.h !== "" && koReal.h !== undefined;
+    const kickMs = new Date(m.kickoff).getTime();
+    const koLocked = (kickMs - Date.now()) < 60 * 60 * 1000;
+    const handleKoChange = (side, val) => {
+      const cleaned = val.replace(/\D/g, "").slice(0, 1);
+      setKoPicks(prev => {
+        const updated = { ...(prev[m.slotId] || { h:"", a:"" }), [side]: cleaned };
+        const next = { ...prev, [m.slotId]: updated };
+        const hh = parseInt(updated.h), aa = parseInt(updated.a);
+        if (!isNaN(hh) && !isNaN(aa) && hh !== aa) {
+          setKoWinners(w => ({ ...w, [m.slotId]: hh > aa ? "a" : "b" }));
+        }
+        return next;
+      });
+    };
+    const koRow = (team, side) => (
+      <div style={{display:"flex",alignItems:"center",gap:8}}>
+        <span style={{fontSize:20,flexShrink:0}}>{team?.flag||team?.f||"❓"}</span>
+        <span style={{flex:1,fontSize:13,fontWeight:700,color:"#e2e8f0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{team?.name||team?.n||"טרם נקבע"}</span>
+        {ready && !koLocked && !hasKoReal ? (
+          <input id={`ko-${side}-${m.slotId}`} value={kp[side]} onChange={e=>handleKoChange(side, e.target.value)} inputMode="numeric"
+            onFocus={e=>e.target.select()}
+            onInput={e=>{
+              // auto-jump: home → away within the same match
+              if (side === "h" && e.target.value !== "") {
+                const el = document.getElementById(`ko-a-${m.slotId}`);
+                if (el) { el.focus(); el.select(); }
+              }
+            }}
+            placeholder="–"
+            style={{width:38,height:38,borderRadius:9,background:"rgba(13,20,36,0.85)",
+              border:`1.5px solid ${hasKoPick?"#fbbf24":"rgba(255,255,255,0.12)"}`,color:"#f1f5f9",
+              fontFamily:"inherit",fontSize:17,fontWeight:800,textAlign:"center",outline:"none",flexShrink:0}}/>
+        ) : (
+          <span style={{width:38,height:38,borderRadius:9,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",
+            background:"rgba(13,20,36,0.7)",fontSize:16,fontWeight:800,color: hasKoPick ? "#f1f5f9" : "#3e4a64"}}>
+            {!ready ? "❓" : koLocked && !hasKoPick ? "🔒" : hasKoPick ? kp[side] : "–"}
+          </span>
+        )}
+      </div>
+    );
     return (
       <div key={m.slotId} style={{
         background:"linear-gradient(160deg,rgba(99,102,241,0.1),rgba(6,20,12,0.85))",
-        border:"1px solid rgba(129,140,248,0.35)",
+        border:`1px solid ${hasKoPick?"rgba(251,191,36,0.4)":"rgba(129,140,248,0.35)"}`,
         borderRadius:14,padding:"12px 14px",marginBottom:10,
       }}>
-        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:4}}>
-          <span style={{fontSize:10,color:"#a5b4fc",letterSpacing:2,fontWeight:800}}>🏆 KNOCKOUT · {m.slotId}</span>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
+          <span style={{fontSize:10,color:"#a5b4fc",letterSpacing:1,fontWeight:800}}>🏆 {m.slotId.startsWith("R32")?"שמינית 32":m.slotId.startsWith("R16")?"שמינית גמר":m.slotId.startsWith("QF")?"רבע גמר":m.slotId.startsWith("SF")?"חצי גמר":m.slotId==="FINAL"?"גמר":"נוקאאוט"}</span>
           <span style={{fontSize:10,color:"#86efac"}}>📅 {k.day} · 🕐 {k.time}</span>
         </div>
-        {m.venue && <div style={{fontSize:10,color:"#4d7c5a"}}>📍 {m.venue}</div>}
-        <button onClick={onGoToBracket} style={{
-          marginTop:8,width:"100%",
-          padding:"8px 10px",background:"rgba(99,102,241,0.18)",
-          border:"1px solid rgba(129,140,248,0.4)",borderRadius:8,
-          color:"#c7d2fe",fontSize:11,fontWeight:800,cursor:"pointer",
-          fontFamily:"inherit",
-        }}>{t("today.openBracket")}</button>
+        <div style={{display:"flex",flexDirection:"column",gap:6}}>
+          {koRow(teamA, "h")}
+          {koRow(teamB, "a")}
+        </div>
+        {hasKoReal && (
+          <div style={{fontSize:10,color:"#5b6b8c",textAlign:"center",marginTop:7}}>
+            תוצאה: <b style={{color:"#c3d0e8"}}>{koReal.h}–{koReal.a}</b>
+          </div>
+        )}
+        {!ready && (
+          <div style={{fontSize:9,color:"#64748b",textAlign:"center",marginTop:6}}>
+            הנבחרות ייקבעו לפי תוצאות השלב הקודם
+          </div>
+        )}
       </div>
     );
   };
@@ -20508,6 +20587,12 @@ function AppInner() {
           onShowDetails={(fix) => setMatchDetailsFor(fix)}
           onTeamClick={(teamName) => { setStatsTeam(teamName); setScreen("stats"); }}
           teamMatchStats={teamMatchStats}
+          standings={liveStandings}
+          koPicks={koPicks}
+          setKoPicks={setKoPicks}
+          koWinners={koWinners}
+          setKoWinners={setKoWinners}
+          actualKoScores={actualKoScores}
         />
       )}
 
