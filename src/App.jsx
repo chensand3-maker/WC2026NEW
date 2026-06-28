@@ -15,7 +15,7 @@ import { R32_THIRD_TABLE } from "./r32table";
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "5.9.0";
+const APP_VERSION = "5.9.1";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -10194,6 +10194,14 @@ function DesignPreviewPanel() {
 .dp-neon.green { background:linear-gradient(135deg,#34d399,#16a34a); animation:none; }
 .dp-neon.red { background:linear-gradient(135deg,#ef4444,#991b1b); animation:none; }
 .dp-in { background:rgba(11,15,24,0.97); backdrop-filter:blur(18px); border-radius:14.8px; padding:13px 15px; position:relative; overflow:hidden; }
+.dp-row2 { display:flex; }
+.dp-main { flex:1; min-width:0; }
+.dp-stub { width:64px; flex-shrink:0; position:relative; border-inline-start:2px dashed rgba(255,255,255,0.14); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; margin-inline-start:12px; padding-inline-start:4px; }
+.dp-stub .ico { font-size:14px; margin-bottom:3px; opacity:0.75; }
+.dp-stub .hr { font-size:14px; font-weight:900; color:#fff; letter-spacing:-0.5px; }
+.dp-stub .dy { font-size:8px; color:#7c8699; font-weight:700; }
+.dp-stub.live { border-inline-start-color:rgba(244,63,94,0.3); }
+.dp-stub.live .hr { color:#f43f5e; font-size:18px; } .dp-stub.live .dy { color:#fb7185; }
 .dp-pill { font-size:8px; font-weight:800; letter-spacing:1px; color:#fde68a; background:rgba(251,191,36,0.1); padding:3px 9px; border-radius:20px; border:1px solid rgba(251,191,36,0.22); }
 .dp-head { display:flex; align-items:center; gap:7px; margin-bottom:12px; }
 .dp-live { font-size:8px; font-weight:900; color:#fff; background:#f43f5e; padding:3px 9px; border-radius:20px; margin-inline-start:auto; display:flex; align-items:center; gap:4px; }
@@ -10278,13 +10286,17 @@ function DesignPreviewPanel() {
       {view === "matches" && (
         <div>
           <div className="dp-day"><span className="d">היום · ראשון 28.6</span><span className="ln"></span></div>
-          {/* upcoming */}
+          {/* upcoming — X+Y: neon frame + ticket stub, no prediction line (score is shown big) */}
           <div className="dp-neon still">
             <div className="dp-in">
-              <div className="dp-head"><span className="dp-pill">🏆 שמינית גמר 32</span><span className="dp-time">📅 00:00</span></div>
-              <div className="dp-team"><span className="dp-fl">🇫🇷</span><span className="dp-nm">צרפת</span><div className="dp-inp">2</div></div>
-              <div className="dp-team"><span className="dp-fl">🇸🇪</span><span className="dp-nm">שבדיה</span><div className="dp-inp">1</div></div>
-              <div className="dp-foot"><span className="lab">הניחוש שלך:</span><span className="pred">🇫🇷 2 – 1 🇸🇪</span></div>
+              <div className="dp-row2">
+                <div className="dp-main">
+                  <div className="dp-head"><span className="dp-pill">🏆 שמינית גמר 32</span></div>
+                  <div className="dp-team"><span className="dp-fl">🇫🇷</span><span className="dp-nm">צרפת</span><div className="dp-inp">2</div></div>
+                  <div className="dp-team"><span className="dp-fl">🇸🇪</span><span className="dp-nm">שבדיה</span><div className="dp-inp">1</div></div>
+                </div>
+                <div className="dp-stub"><span className="ico">🎟️</span><span className="hr">00:00</span><span className="dy">רביעי</span></div>
+              </div>
             </div>
           </div>
           <div className="dp-acts"><span className="dp-act l">👕 הרכב</span><span className="dp-act h">⚔️ ראש בראש</span></div>
@@ -10296,16 +10308,21 @@ function DesignPreviewPanel() {
         <div>
           <div className="dp-neon live">
             <div className="dp-in">
-              <div className="dp-head"><span className="dp-pill">🏆 שמינית גמר 32</span><span className="dp-live"><span className="dd"></span> 67'</span></div>
-              <div className="dp-team lead"><span className="dp-fl">🇩🇪</span><span className="dp-nm">גרמניה</span><div className="dp-sc"><span className="dp-big">2</span><span className="dp-par">(<b>2</b>)</span></div></div>
-              <div className="dp-team"><span className="dp-fl">🇵🇾</span><span className="dp-nm">פרגוואי</span><div className="dp-sc"><span className="dp-big">1</span><span className="dp-par">(<b>1</b>)</span></div></div>
-              <div className="dp-foot"><span className="lab">הניחוש שלך:</span><span className="pred">🇩🇪 2 – 1 🇵🇾</span><span style={{marginInlineStart:"auto",fontSize:9,color:"#34d399",fontWeight:800}}>🎯 בדרך לבול</span></div>
-              <div className="dp-ins">
-                <div className="il"><span>🇩🇪 64%</span><span>הליגה שלך ניחשה</span><span>23% 🇵🇾</span></div>
-                <div className="dp-ibar"><div className="a" style={{width:"64%"}}></div><div className="dr" style={{width:"13%"}}></div><div className="b2" style={{width:"23%"}}></div></div>
+              <div className="dp-row2">
+                <div className="dp-main">
+                  <div className="dp-head"><span className="dp-pill">🏆 שמינית גמר 32</span><span className="dp-live"><span className="dd"></span> LIVE</span></div>
+                  <div className="dp-team lead"><span className="dp-fl">🇩🇪</span><span className="dp-nm">גרמניה</span><div className="dp-sc"><span className="dp-big">2</span><span className="dp-par">(<b>2</b>)</span></div></div>
+                  <div className="dp-team"><span className="dp-fl">🇵🇾</span><span className="dp-nm">פרגוואי</span><div className="dp-sc"><span className="dp-big">1</span><span className="dp-par">(<b>1</b>)</span></div></div>
+                  <div className="dp-ins">
+                    <div className="il"><span>🇩🇪 64%</span><span>הליגה שלך ניחשה</span><span>23% 🇵🇾</span></div>
+                    <div className="dp-ibar"><div className="a" style={{width:"64%"}}></div><div className="dr" style={{width:"13%"}}></div><div className="b2" style={{width:"23%"}}></div></div>
+                  </div>
+                </div>
+                <div className="dp-stub live"><span className="ico">🔴</span><span className="hr">67'</span><span className="dy">דקה</span></div>
               </div>
             </div>
           </div>
+          <div style={{fontSize:9,color:"#5a6478",textAlign:"center",marginTop:-4,marginBottom:8}}>המספר הגדול = התוצאה החיה · בסוגריים = הניחוש שלך</div>
           <div className="dp-acts"><span className="dp-act l">👕 הרכב</span><span className="dp-act h">⚔️ ראש בראש</span><span className="dp-act d">📊 פרטים</span></div>
         </div>
       )}
@@ -10319,7 +10336,7 @@ function DesignPreviewPanel() {
               <div className="dp-head"><span className="dp-pill">🏆 שמינית גמר 32</span><span className="dp-tag gold">🎯 פגיעה בול</span></div>
               <div className="dp-team lead"><span className="dp-fl">🇫🇷</span><span className="dp-nm">צרפת</span><div className="dp-sc"><span className="dp-big">2</span><span className="dp-par">(<b>2</b>)</span></div></div>
               <div className="dp-team dim"><span className="dp-fl">🇸🇪</span><span className="dp-nm">שבדיה</span><div className="dp-sc"><span className="dp-big">1</span><span className="dp-par">(<b>1</b>)</span></div></div>
-              <div className="dp-foot"><span className="lab">ניחשת 2:1 · מדויק!</span><span className="pts dp-pts-gold">+8 נק׳</span></div>
+              <div className="dp-foot"><span className="lab">🎯 פגעת בול — תוצאה מדויקת!</span><span className="pts dp-pts-gold">+8 נק׳</span></div>
             </div>
           </div>
           {/* winner */}
@@ -10328,7 +10345,7 @@ function DesignPreviewPanel() {
               <div className="dp-head"><span className="dp-pill">🏆 שמינית גמר 32</span><span className="dp-tag green">✅ כיוון נכון</span></div>
               <div className="dp-team lead"><span className="dp-fl">🇧🇷</span><span className="dp-nm">ברזיל</span><div className="dp-sc"><span className="dp-big">3</span><span className="dp-par">(<b>2</b>)</span></div></div>
               <div className="dp-team dim"><span className="dp-fl">🇯🇵</span><span className="dp-nm">יפן</span><div className="dp-sc"><span className="dp-big">0</span><span className="dp-par">(<b>1</b>)</span></div></div>
-              <div className="dp-foot"><span className="lab">ניחשת 2:1 · המנצח נכון</span><span className="pts dp-pts-green">+4 נק׳</span></div>
+              <div className="dp-foot"><span className="lab">✅ צדקת במנצח</span><span className="pts dp-pts-green">+4 נק׳</span></div>
             </div>
           </div>
           {/* miss */}
@@ -10337,7 +10354,7 @@ function DesignPreviewPanel() {
               <div className="dp-head"><span className="dp-pill">🏆 שמינית גמר 32</span><span className="dp-tag red">❌ פספוס</span></div>
               <div className="dp-team dim"><span className="dp-fl">🏴󠁧󠁢󠁥󠁮󠁧󠁿</span><span className="dp-nm">אנגליה</span><div className="dp-sc"><span className="dp-big">0</span><span className="dp-par">(<b>1</b>)</span></div></div>
               <div className="dp-team lead"><span className="dp-fl">🇸🇳</span><span className="dp-nm">סנגל</span><div className="dp-sc"><span className="dp-big">2</span><span className="dp-par">(<b>0</b>)</span></div></div>
-              <div className="dp-foot"><span className="lab">ניחשת 1:0 · לא קלע</span><span className="pts dp-pts-red">0 נק׳</span></div>
+              <div className="dp-foot"><span className="lab">❌ לא קלעת הפעם</span><span className="pts dp-pts-red">0 נק׳</span></div>
             </div>
           </div>
         </div>
