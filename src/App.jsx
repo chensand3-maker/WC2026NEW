@@ -15,7 +15,7 @@ import { R32_THIRD_TABLE } from "./r32table";
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "5.13.3";
+const APP_VERSION = "5.13.5";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -17904,7 +17904,6 @@ function LeagueHub({
                     <div style={{width:55,height:55,borderRadius:"50%",background:avatarBg(m),display:"flex",alignItems:"center",justifyContent:"center",fontSize:23,fontWeight:900,color:"#fff",border:"2px solid #d8dde4"}}>{avatarInner(m)}</div>
                     <div style={{fontSize:12,fontWeight:800,color:"#f5f3ee",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:108}}>{m.name}</div>
                     <div style={{fontSize:15,fontWeight:900,color:"#d8dde4"}}>{m.totalPoints}</div>
-                    <div style={{fontSize:7.5,color:"#8a8472",fontWeight:700}}>🏠 {m.matchScore.total} · 🏆 {m.koScore.total}</div>
                     <div style={{width:"100%",height:46,borderRadius:"9px 9px 0 0",background:"linear-gradient(180deg,rgba(216,221,228,0.2),transparent)",display:"flex",alignItems:"flex-start",justifyContent:"center",paddingTop:7,fontSize:22,fontWeight:900,color:"rgba(216,221,228,0.4)",border:"1px solid rgba(216,221,228,0.22)",borderBottom:"none"}}>2</div>
                   </div>
                 );
@@ -17922,7 +17921,6 @@ function LeagueHub({
                     </div>
                     <div style={{fontSize:12,fontWeight:800,color:"#f4e4b0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:108}}>{m.name}</div>
                     <div style={{fontSize:19,fontWeight:900,color:"#f4e4b0"}}>{m.totalPoints}</div>
-                    <div style={{fontSize:7.5,color:"#8a8472",fontWeight:700}}>🏠 {m.matchScore.total} · 🏆 {m.koScore.total}</div>
                     <div style={{width:"100%",height:64,borderRadius:"9px 9px 0 0",background:"linear-gradient(180deg,rgba(244,228,176,0.32),transparent)",display:"flex",alignItems:"flex-start",justifyContent:"center",paddingTop:7,fontSize:23,fontWeight:900,color:"rgba(244,228,176,0.45)",border:"1px solid rgba(244,228,176,0.35)",borderBottom:"none"}}>1</div>
                   </div>
                 );
@@ -17935,7 +17933,6 @@ function LeagueHub({
                     <div style={{width:55,height:55,borderRadius:"50%",background:avatarBg(m),display:"flex",alignItems:"center",justifyContent:"center",fontSize:23,fontWeight:900,color:"#fff",border:"2px solid #c9883e"}}>{avatarInner(m)}</div>
                     <div style={{fontSize:12,fontWeight:800,color:"#f5f3ee",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:108}}>{m.name}</div>
                     <div style={{fontSize:15,fontWeight:900,color:"#d8923e"}}>{m.totalPoints}</div>
-                    <div style={{fontSize:7.5,color:"#8a8472",fontWeight:700}}>🏠 {m.matchScore.total} · 🏆 {m.koScore.total}</div>
                     <div style={{width:"100%",height:34,borderRadius:"9px 9px 0 0",background:"linear-gradient(180deg,rgba(216,146,62,0.2),transparent)",display:"flex",alignItems:"flex-start",justifyContent:"center",paddingTop:7,fontSize:22,fontWeight:900,color:"rgba(216,146,62,0.45)",border:"1px solid rgba(216,146,62,0.28)",borderBottom:"none"}}>3</div>
                   </div>
                 );
@@ -18032,33 +18029,39 @@ function LeagueHub({
         )}
         {members.map((p, i) => {
           const showPoints = hasActuals;
-          const isPodium = i < 3;
-          const icon = i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `${i+1}`;
-          // Top-3 get a spinning gold frame; the rest get a static gold hairline.
-          const spinning = isPodium && showPoints;
-          return (
-            <div key={p.uid} style={{
-              position:"relative",borderRadius:16,padding:spinning?1.5:1,marginBottom:9,
-              background: spinning
-                ? "conic-gradient(from var(--lbspin,0deg), #5e4e26, #c9a961, #f4e4b0, #fff4cc, #f4e4b0, #c9a961, #5e4e26)"
-                : p.isMe ? "linear-gradient(135deg,#f4e4b0,#c9a961,#8a6d2e)" : "linear-gradient(135deg,#5e4e26,#c9a961 45%,#5e4e26)",
-              animation: spinning ? "lbSpin 6s linear infinite" : "none",
-              boxShadow: spinning ? "0 12px 30px -12px rgba(0,0,0,0.8)" : "none",
-            }}>
-              <button onClick={()=>setViewing(p.uid)} style={{
-                width:"100%",display:"block",textAlign:"start",cursor:"pointer",fontFamily:"inherit",
-                background:"linear-gradient(165deg,#0e0e13,#08080c)",border:"none",borderRadius:14.5,padding:"12px 13px",
+          const isTop3 = i < 3 && showPoints;
+          const medal = i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : null;
+          // Stripe + points color by place
+          const stripe = i === 0 ? "linear-gradient(180deg,#fff4cc,#c9a961)"
+                       : i === 1 ? "linear-gradient(180deg,#e8e8ee,#9ca3af)"
+                       : "linear-gradient(180deg,#e0b888,#a16207)";
+          const ptsColor = i === 0 ? "#f4e4b0" : i === 1 ? "#d8dde4" : i === 2 ? "#d8923e" : "#c9a961";
+
+          if (isTop3) {
+            // ⭐ Top-3: big medal + colored side stripe + full breakdown
+            return (
+              <div key={p.uid} style={{
+                position:"relative",borderRadius:14,marginBottom:9,overflow:"hidden",
+                background:"linear-gradient(165deg,#0e0e13,#08080c)",border:"1px solid transparent",
+                backgroundImage: p.isMe
+                  ? "linear-gradient(165deg,#1a1408,#0e0a04), linear-gradient(135deg,#f4e4b0,#c9a961,#8a6d2e)"
+                  : "linear-gradient(165deg,#0e0e13,#08080c), linear-gradient(135deg,#5e4e26,#c9a961 45%,#5e4e26)",
+                backgroundOrigin:"border-box",backgroundClip:"padding-box, border-box",
               }}>
-                <div style={{display:"flex",alignItems:"center",gap:11}}>
-                  <span style={{width:24,fontSize:isPodium?16:15,fontWeight:900,color:isPodium?"#f4e4b0":"#8a8472",textAlign:"center",flexShrink:0}}>{showPoints?icon:`${i+1}`}</span>
-                  <div style={{width:40,height:40,borderRadius:"50%",background:avatarBg(p),display:"flex",alignItems:"center",justifyContent:"center",fontSize:19,fontWeight:900,color:"#fff",flexShrink:0}}>{avatarInner(p)}</div>
-                  <span style={{flex:1,fontSize:15,fontWeight:800,color:p.isMe?"#f4e4b0":"#f5f3ee",minWidth:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.name}{p.isMe?t("league.you"):""}</span>
-                  <div style={{textAlign:"center",flexShrink:0}}>
-                    <div style={{fontSize:23,fontWeight:900,color:showPoints?"#f4e4b0":"#5e5640",lineHeight:1}}><AnimatedNumber value={p.totalPoints} /></div>
-                    <div style={{fontSize:7,color:"#8a8472",letterSpacing:1}}>נק׳</div>
+                <div style={{position:"absolute",insetInlineStart:0,top:0,bottom:0,width:5,background:stripe}}/>
+                <button onClick={()=>setViewing(p.uid)} style={{
+                  width:"100%",display:"block",textAlign:"start",cursor:"pointer",fontFamily:"inherit",
+                  background:"transparent",border:"none",padding:"12px 13px 12px 16px",
+                }}>
+                  <div style={{display:"flex",alignItems:"center",gap:11}}>
+                    <span style={{fontSize:26,width:34,textAlign:"center",flexShrink:0}}>{medal}</span>
+                    <div style={{width:40,height:40,borderRadius:"50%",background:avatarBg(p),display:"flex",alignItems:"center",justifyContent:"center",fontSize:19,fontWeight:900,color:"#fff",flexShrink:0}}>{avatarInner(p)}</div>
+                    <span style={{flex:1,fontSize:15,fontWeight:800,color:p.isMe?"#f4e4b0":"#f5f3ee",minWidth:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.name}{p.isMe?t("league.you"):""}</span>
+                    <div style={{textAlign:"center",flexShrink:0}}>
+                      <div style={{fontSize:24,fontWeight:900,color:ptsColor,lineHeight:1}}><AnimatedNumber value={p.totalPoints} /></div>
+                      <div style={{fontSize:7,color:"#8a8472",letterSpacing:1}}>נק׳</div>
+                    </div>
                   </div>
-                </div>
-                {showPoints ? (
                   <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginTop:10,paddingTop:10,borderTop:"1px solid rgba(201,169,97,0.15)"}}>
                     <span style={{display:"flex",alignItems:"center",gap:4,fontSize:11}}>🏠<b style={{color:"#c9a961",fontWeight:900}}>{p.matchScore.total}</b></span>
                     <span style={{display:"flex",alignItems:"center",gap:4,fontSize:11}}>🏆<b style={{color:"#fff4cc",fontWeight:900}}>{p.koScore.total}</b></span>
@@ -18066,13 +18069,31 @@ function LeagueHub({
                     <span style={{display:"flex",alignItems:"center",gap:4,fontSize:11}}>🎯<b style={{color:"#f4e4b0",fontWeight:900}}>{p.matchScore.exact}</b></span>
                     <span style={{display:"flex",alignItems:"center",gap:4,fontSize:11}}>✅<b style={{color:"#34d399",fontWeight:900}}>{p.matchScore.result}</b></span>
                   </div>
-                ) : (
-                  <div style={{fontSize:10,color:"#8a8472",marginTop:8,paddingTop:8,borderTop:"1px solid rgba(201,169,97,0.12)"}}>
-                    {p.predictedCount}/{FIXTURES.length} {t("league.predicted")}
-                  </div>
-                )}
-              </button>
-            </div>
+                </button>
+              </div>
+            );
+          }
+
+          // 🔹 Everyone else: clean single line — rank + avatar + name + points
+          return (
+            <button key={p.uid} onClick={()=>setViewing(p.uid)} style={{
+              width:"100%",display:"flex",alignItems:"center",gap:11,
+              background: p.isMe ? "linear-gradient(135deg,rgba(201,169,97,0.1),rgba(138,109,46,0.04))" : "rgba(255,255,255,0.022)",
+              border: p.isMe ? "1px solid rgba(201,169,97,0.4)" : "1px solid rgba(255,255,255,0.05)",
+              borderRadius:12,padding:"11px 13px",marginBottom:7,cursor:"pointer",fontFamily:"inherit",textAlign:"start",
+            }}>
+              <span style={{width:22,fontSize:14,fontWeight:900,color:"#8a8472",textAlign:"center",flexShrink:0}}>{i+1}</span>
+              <div style={{width:34,height:34,borderRadius:"50%",background:avatarBg(p),display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,fontWeight:900,color:"#fff",flexShrink:0}}>{avatarInner(p)}</div>
+              <span style={{flex:1,fontSize:14,fontWeight:700,color:p.isMe?"#f4e4b0":"#e8e4da",minWidth:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.name}{p.isMe?t("league.you"):""}</span>
+              {showPoints ? (
+                <div style={{textAlign:"center",flexShrink:0}}>
+                  <span style={{fontSize:18,fontWeight:900,color:"#c9a961"}}><AnimatedNumber value={p.totalPoints} /></span>
+                  <span style={{fontSize:9,color:"#8a8472",marginInlineStart:3}}>נק׳</span>
+                </div>
+              ) : (
+                <span style={{fontSize:10,color:"#8a8472",flexShrink:0}}>{p.predictedCount}/{FIXTURES.length}</span>
+              )}
+            </button>
           );
         })}
 
