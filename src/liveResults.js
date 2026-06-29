@@ -285,11 +285,21 @@ export function mapResultsToFixtures(liveData, FIXTURES) {
 }
 
 export function getApiFixtureId(liveData, fixture) {
-  if (!liveData?.byTeamPair) return null;
-  const direct = liveData.byTeamPair[`${fixture.home}|${fixture.away}`];
-  if (direct?.fixtureId) return direct.fixtureId;
-  const reverse = liveData.byTeamPair[`${fixture.away}|${fixture.home}`];
-  if (reverse?.fixtureId) return reverse.fixtureId;
+  if (!liveData) return null;
+  // Group matches live under byTeamPair
+  if (liveData.byTeamPair) {
+    const direct = liveData.byTeamPair[`${fixture.home}|${fixture.away}`];
+    if (direct?.fixtureId) return direct.fixtureId;
+    const reverse = liveData.byTeamPair[`${fixture.away}|${fixture.home}`];
+    if (reverse?.fixtureId) return reverse.fixtureId;
+  }
+  // Knockout matches live under knockout
+  if (liveData.knockout) {
+    const kDirect = liveData.knockout[`${fixture.home}|${fixture.away}`];
+    if (kDirect?.fixtureId) return kDirect.fixtureId;
+    const kReverse = liveData.knockout[`${fixture.away}|${fixture.home}`];
+    if (kReverse?.fixtureId) return kReverse.fixtureId;
+  }
   return null;
 }
 

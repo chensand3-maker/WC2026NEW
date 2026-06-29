@@ -15,7 +15,7 @@ import { R32_THIRD_TABLE } from "./r32table";
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "5.14.3";
+const APP_VERSION = "5.14.4";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -14752,7 +14752,7 @@ function TodayScreen({ picks, actuals, onPick, onBack, onGoToBracket, leagueMemb
             leagueMembers={leagueMembers}
             onShowDetails={koHasResult ? onShowDetails : null}
             defaultCollapsed={isFinishedSection}
-            apiFixtureId={null}
+            apiFixtureId={(() => { try { return getApiFixtureId(liveData, koFixture); } catch { return null; } })()}
             onTeamClick={onTeamClick}
           />
           {!isFinishedSection && (
