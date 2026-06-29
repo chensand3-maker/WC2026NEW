@@ -15,7 +15,7 @@ import { R32_THIRD_TABLE } from "./r32table";
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "5.16.2";
+const APP_VERSION = "5.16.3";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -13061,14 +13061,13 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
               <span style={{fontSize:16,fontWeight:900,color: awayLead?"#f4e4b0":"#8a8472",minWidth:16,textAlign:"center"}}>{actual.a}</span>
             </div>
           </div>
-          {/* badge column */}
-          <div style={{flexShrink:0,display:"flex",flexDirection:"column",alignItems:"center",gap:3}}>
-            {sc && <span style={{fontSize:9,fontWeight:800,padding:"3px 11px",borderRadius:20,
-              color: score.type==="exact"?"#1a1400":"#fff",
-              background: score.type==="exact"?"linear-gradient(135deg,#fff4cc,#f4e4b0,#c9a961)":score.type==="result"?"linear-gradient(135deg,#10b981,#047857)":"linear-gradient(135deg,#e0524d,#991b1b)"}}>
-              {sc.label}</span>}
-            {score && <span style={{fontSize:9,color:"#8a8472",fontWeight:700}}>{score.points>0?`+${score.points}`:"0"}</span>}
-          </div>
+          {/* points badge column (no chip — that's already in the header) */}
+          {score && (
+            <div style={{flexShrink:0,textAlign:"center"}}>
+              <span style={{fontSize:14,fontWeight:900,color: score.points>0?(score.type==="exact"?"#f4e4b0":"#34d399"):"#fca5a5"}}>{score.points>0?`+${score.points}`:"0"}</span>
+              <div style={{fontSize:7,color:"#8a8472",letterSpacing:1}}>נק׳</div>
+            </div>
+          )}
           <span style={{fontSize:13,color:"#8a8472",flexShrink:0}}>‹</span>
         </div>
         );
