@@ -15,7 +15,7 @@ import { R32_THIRD_TABLE } from "./r32table";
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "5.15.0";
+const APP_VERSION = "5.16.0";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -12910,17 +12910,21 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
   const sc = score && scoreColors[score.type];
 
   // 🎨 Gold-black elegant frame. Finished matches get a colored gradient border
-  // (gold/green/red); upcoming matches get the elegant gold hairline; LIVE matches
-  // get a spinning red-gold conic frame to draw attention.
+  // (gold/green/red); LIVE matches get a spinning red-gold conic frame; UPCOMING
+  // (not started, not locked) get a spinning gold conic frame to invite a pick.
   const isLiveFrame = matchIsLiveNow;
+  const isUpcomingFrame = !isLiveFrame && !sc && !isLocked && !(actual && actual.h !== undefined && actual.h !== "");
   const frameGradient = isLiveFrame
     ? "conic-gradient(from var(--lbspin,0deg), #7f1d1d, #e0524d, #fca5a5, #f4e4b0, #fca5a5, #e0524d, #7f1d1d)"
+    : isUpcomingFrame
+    ? "conic-gradient(from var(--lbspin,0deg), #5e4e26, #c9a961, #f4e4b0, #fff4cc, #f4e4b0, #c9a961, #5e4e26)"
     : sc
     ? (score.type === "exact" ? "linear-gradient(135deg,#fff4cc,#f4e4b0 35%,#c9a961 50%,#f4e4b0 65%,#fff4cc)"
       : score.type === "result" ? "linear-gradient(135deg,#6ee7b7,#10b981,#065f46)"
       : "linear-gradient(135deg,#fca5a5,#e0524d,#7f1d1d)")
     : "linear-gradient(135deg,#5e4e26,#c9a961 38%,#f4e4b0 50%,#c9a961 62%,#5e4e26)";
   const innerBg = sc ? sc.bg : "linear-gradient(165deg,#0e0e13,#08080c)";
+  const isSpinning = isLiveFrame || isUpcomingFrame;
 
   return (
     <div style={{
@@ -12932,7 +12936,7 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
       borderRadius:16,padding:"12px 14px",marginBottom:10,transition:"all 0.25s",
       position:"relative",overflow:"hidden",
       animation: reaction ? "matchFlash 0.5s ease-out"
-        : isLiveFrame ? "lbSpin 5s linear infinite"
+        : isSpinning ? "lbSpin 5s linear infinite"
         : (score && score.type === "exact" ? "goldPulse 2.5s ease-in-out infinite" : "none"),
       boxShadow: isLiveFrame
         ? "0 0 18px -3px rgba(224,82,77,0.35), 0 12px 30px -10px rgba(0,0,0,0.7)"
@@ -12942,6 +12946,24 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
           : "0 0 14px -2px rgba(224,82,77,0.2), 0 12px 30px -10px rgba(0,0,0,0.7)")
         : "0 14px 38px -14px rgba(0,0,0,0.78)",
     }}>
+      {/* 🎯 Background effect by score type — bullseye for exact, ✓ for win, ✗ for miss */}
+      {sc && !collapsed && (
+        <div style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",
+          width:200,height:200,pointerEvents:"none",zIndex:1,
+          ...(score.type === "exact" ? {
+            background:"radial-gradient(circle, transparent 18%, rgba(244,228,176,0.08) 19%, rgba(244,228,176,0.08) 23%, transparent 24%), radial-gradient(circle, transparent 34%, rgba(244,228,176,0.06) 35%, rgba(244,228,176,0.06) 40%, transparent 41%), radial-gradient(circle, transparent 50%, rgba(244,228,176,0.04) 51%, rgba(244,228,176,0.04) 57%, transparent 58%)",
+            animation:"goldPulse 3s ease-in-out infinite",
+          } : {}),
+        }}/>
+      )}
+      {/* Big faded icon in corner for win/miss/exact */}
+      {sc && !collapsed && (
+        <span style={{position:"absolute",top:10,insetInlineStart:12,fontSize:46,zIndex:1,pointerEvents:"none",
+          opacity: score.type === "exact" ? 0.12 : 0.1,
+          color: score.type === "result" ? "#34d399" : score.type === "wrong" ? "#fca5a5" : "#f4e4b0"}}>
+          {score.type === "exact" ? "🎯" : score.type === "result" ? "✓" : "✗"}
+        </span>
+      )}
       {/* Floating reaction */}
       {reaction && (
         <div key={reaction.key} style={{
