@@ -15,7 +15,7 @@ import { R32_THIRD_TABLE } from "./r32table";
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "5.16.1";
+const APP_VERSION = "5.16.2";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -12948,18 +12948,18 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
     }}>
       {/* 🎯 Subtle background effect by score — bullseye / ✓ / ✗ (shown even when collapsed) */}
       {score && score.type === "exact" && (
-        <div style={{position:"absolute",top:"50%",insetInlineStart:42,transform:"translateY(-50%)",
-          width:130,height:130,pointerEvents:"none",zIndex:0,
-          background:"radial-gradient(circle, transparent 16%, rgba(244,228,176,0.09) 17%, rgba(244,228,176,0.09) 21%, transparent 22%), radial-gradient(circle, transparent 32%, rgba(244,228,176,0.06) 33%, rgba(244,228,176,0.06) 38%, transparent 39%), radial-gradient(circle, transparent 48%, rgba(244,228,176,0.04) 49%, rgba(244,228,176,0.04) 55%, transparent 56%)",
+        <div style={{position:"absolute",top:"50%",insetInlineStart:"50%",transform:"translate(-50%,-50%)",
+          width:170,height:170,borderRadius:"50%",pointerEvents:"none",zIndex:0,
+          background:"radial-gradient(circle, transparent 15%, rgba(244,228,176,0.10) 16%, rgba(244,228,176,0.10) 20%, transparent 21%, transparent 31%, rgba(244,228,176,0.07) 32%, rgba(244,228,176,0.07) 37%, transparent 38%, transparent 48%, rgba(244,228,176,0.045) 49%, rgba(244,228,176,0.045) 55%, transparent 56%)",
           animation:"goldPulse 3s ease-in-out infinite"}}/>
       )}
       {score && score.type === "result" && (
-        <span style={{position:"absolute",top:"50%",insetInlineStart:28,transform:"translateY(-50%)",
-          fontSize:70,opacity:0.06,zIndex:0,pointerEvents:"none",color:"#34d399",fontWeight:900}}>✓</span>
+        <span style={{position:"absolute",top:"50%",insetInlineStart:"50%",transform:"translate(-50%,-50%)",
+          fontSize:90,opacity:0.055,zIndex:0,pointerEvents:"none",color:"#34d399",fontWeight:900,lineHeight:1}}>✓</span>
       )}
       {score && score.type === "wrong" && (
-        <span style={{position:"absolute",top:"50%",insetInlineStart:28,transform:"translateY(-50%)",
-          fontSize:70,opacity:0.05,zIndex:0,pointerEvents:"none",color:"#fca5a5",fontWeight:900}}>✗</span>
+        <span style={{position:"absolute",top:"50%",insetInlineStart:"50%",transform:"translate(-50%,-50%)",
+          fontSize:90,opacity:0.05,zIndex:0,pointerEvents:"none",color:"#fca5a5",fontWeight:900,lineHeight:1}}>✗</span>
       )}
       {/* Floating reaction */}
       {reaction && (
@@ -13037,51 +13037,59 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
           </button>
         )}
       </div>
-      {/* 🗜️ Compact view when collapsed */}
-      {collapsed && actual && actual.h !== undefined && actual.h !== "" ? (
-        <div
-          onClick={() => setCollapsed(false)}
-          style={{
-            display:"flex",flexDirection:"column",gap:6,
-            padding:"10px 8px",cursor:"pointer",
-            background:"rgba(20,26,40,0.6)",
-            borderRadius:8,
-            border:`1.5px solid ${sc?.border || "rgba(71,85,105,0.4)"}`,
-          }}
-        >
-          <div style={{display:"grid",gridTemplateColumns:"1fr auto 1fr",alignItems:"center",gap:8,direction:"ltr"}}>
-            <span style={{fontSize:13,fontWeight:700,color:"#f1f5f9",textAlign:"right",display:"flex",alignItems:"center",justifyContent:"flex-end",gap:6}}>{home.n} <span style={{fontSize:24}}>{home.f}</span></span>
-            <span style={{
-              fontSize:15,fontWeight:900,color: sc?.text || "#22c55e",
-              padding:"3px 10px",background:"#1e2940",borderRadius:6,
-              unicodeBidi:"isolate",whiteSpace:"nowrap",
-            }}>{actual.h} - {actual.a}</span>
-            <span style={{fontSize:13,fontWeight:700,color:"#f1f5f9",textAlign:"left",display:"flex",alignItems:"center",justifyContent:"flex-start",gap:6}}><span style={{fontSize:24}}>{away.f}</span> {away.n}</span>
-          </div>
-          {pick && pick.h !== undefined && pick.h !== "" && (
-            <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:5,fontSize:10,color:"#94a3b8"}}>
-              <span>הניחוש שלך:</span>
-              <span style={{direction:"ltr",fontWeight:800,color:"#93c5fd"}}>{pick.h} - {pick.a}</span>
+      {/* 🗜️ Compact view when collapsed — gold-black, finished match */}
+      {collapsed && actual && actual.h !== undefined && actual.h !== "" ? (() => {
+        const homeLead = Number(actual.h) > Number(actual.a);
+        const awayLead = Number(actual.a) > Number(actual.h);
+        return (
+        <div onClick={() => setCollapsed(false)} style={{
+          display:"flex",alignItems:"center",gap:12,cursor:"pointer",position:"relative",zIndex:2,
+        }}>
+          <div style={{flex:1,minWidth:0,display:"flex",flexDirection:"column",gap:5}}>
+            {/* home row */}
+            <div style={{display:"flex",alignItems:"center",gap:8}}>
+              <span style={{fontSize:19}}>{home.f}</span>
+              <span style={{flex:1,fontSize:13,fontWeight: homeLead?800:600,color: homeLead?"#f4e4b0":"#e8e4da",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{home.n}</span>
+              {pick && pick.h !== "" && <span style={{fontSize:10,color:"#8a8472",fontWeight:700}}>({pick.h})</span>}
+              <span style={{fontSize:16,fontWeight:900,color: homeLead?"#f4e4b0":"#8a8472",minWidth:16,textAlign:"center"}}>{actual.h}</span>
             </div>
-          )}
-        </div>
-      ) : collapsed && pick && pick.h !== undefined && pick.h !== "" && !(actual && actual.h !== undefined && actual.h !== "") ? (
-        // collapsed but no result yet — show the user's prediction compactly
-        <div
-          onClick={() => setCollapsed(false)}
-          style={{
-            display:"grid",gridTemplateColumns:"1fr auto 1fr",alignItems:"center",
-            gap:8,padding:"10px 8px",direction:"ltr",cursor:"pointer",
-            background:"rgba(20,26,40,0.6)",borderRadius:8,
-            border:"1.5px solid rgba(71,85,105,0.45)",
-          }}
-        >
-          <span style={{fontSize:13,fontWeight:700,color:"#f1f5f9",textAlign:"right",display:"flex",alignItems:"center",justifyContent:"flex-end",gap:6}}>{home.n} <span style={{fontSize:24}}>{home.f}</span></span>
-          <div style={{display:"flex",flexDirection:"column",alignItems:"center"}}>
-            <span style={{fontSize:13,fontWeight:800,color:"#93c5fd",padding:"3px 10px",background:"#1e2940",borderRadius:6,whiteSpace:"nowrap",direction:"ltr"}}>{pick.h} - {pick.a}</span>
-            <span style={{fontSize:8,color:"#64748b",marginTop:2}}>הניחוש שלך</span>
+            {/* away row */}
+            <div style={{display:"flex",alignItems:"center",gap:8}}>
+              <span style={{fontSize:19}}>{away.f}</span>
+              <span style={{flex:1,fontSize:13,fontWeight: awayLead?800:600,color: awayLead?"#f4e4b0":"#e8e4da",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{away.n}</span>
+              {pick && pick.a !== "" && <span style={{fontSize:10,color:"#8a8472",fontWeight:700}}>({pick.a})</span>}
+              <span style={{fontSize:16,fontWeight:900,color: awayLead?"#f4e4b0":"#8a8472",minWidth:16,textAlign:"center"}}>{actual.a}</span>
+            </div>
           </div>
-          <span style={{fontSize:13,fontWeight:700,color:"#f1f5f9",textAlign:"left",display:"flex",alignItems:"center",justifyContent:"flex-start",gap:6}}><span style={{fontSize:24}}>{away.f}</span> {away.n}</span>
+          {/* badge column */}
+          <div style={{flexShrink:0,display:"flex",flexDirection:"column",alignItems:"center",gap:3}}>
+            {sc && <span style={{fontSize:9,fontWeight:800,padding:"3px 11px",borderRadius:20,
+              color: score.type==="exact"?"#1a1400":"#fff",
+              background: score.type==="exact"?"linear-gradient(135deg,#fff4cc,#f4e4b0,#c9a961)":score.type==="result"?"linear-gradient(135deg,#10b981,#047857)":"linear-gradient(135deg,#e0524d,#991b1b)"}}>
+              {sc.label}</span>}
+            {score && <span style={{fontSize:9,color:"#8a8472",fontWeight:700}}>{score.points>0?`+${score.points}`:"0"}</span>}
+          </div>
+          <span style={{fontSize:13,color:"#8a8472",flexShrink:0}}>‹</span>
+        </div>
+        );
+      })() : collapsed && pick && pick.h !== undefined && pick.h !== "" && !(actual && actual.h !== undefined && actual.h !== "") ? (
+        // collapsed but no result yet — show prediction compactly, gold-black
+        <div onClick={() => setCollapsed(false)} style={{
+          display:"flex",alignItems:"center",gap:12,cursor:"pointer",position:"relative",zIndex:2,
+        }}>
+          <div style={{flex:1,minWidth:0,display:"flex",flexDirection:"column",gap:5}}>
+            <div style={{display:"flex",alignItems:"center",gap:8}}>
+              <span style={{fontSize:19}}>{home.f}</span>
+              <span style={{flex:1,fontSize:13,fontWeight:600,color:"#e8e4da",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{home.n}</span>
+              <span style={{fontSize:11,color:"#8a8472",fontWeight:700}}>ניחוש {pick.h}</span>
+            </div>
+            <div style={{display:"flex",alignItems:"center",gap:8}}>
+              <span style={{fontSize:19}}>{away.f}</span>
+              <span style={{flex:1,fontSize:13,fontWeight:600,color:"#e8e4da",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{away.n}</span>
+              <span style={{fontSize:11,color:"#8a8472",fontWeight:700}}>ניחוש {pick.a}</span>
+            </div>
+          </div>
+          <span style={{fontSize:13,color:"#8a8472",flexShrink:0}}>‹</span>
         </div>
       ) : (() => {
         const hasActual = actual && actual.h !== undefined && actual.h !== "";
