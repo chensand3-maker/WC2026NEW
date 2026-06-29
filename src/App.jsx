@@ -15,7 +15,7 @@ import { R32_THIRD_TABLE } from "./r32table";
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "5.12.6";
+const APP_VERSION = "5.13.0";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -15947,52 +15947,118 @@ function Leaderboard({ name, picks, koWinners, koPicks = {}, friends, actuals, a
     return (
       <div style={{padding:"30px 20px",textAlign:"center",maxWidth:420,margin:"0 auto"}}>
         <div style={{fontSize:48,marginBottom:12}}>📊</div>
-        <h2 style={{color:"#fbbf24",margin:"0 0 8px"}}>No results yet</h2>
-        <p style={{color:"#94a3b8",fontSize:13,lineHeight:1.5}}>Tap "📝 Enter actual results" to log real match scores. Then everyone's points will appear here!</p>
+        <h2 style={{color:"#f4e4b0",margin:"0 0 8px"}}>עדיין אין תוצאות</h2>
+        <p style={{color:"#8a8472",fontSize:13,lineHeight:1.5}}>ברגע שיוזנו תוצאות אמיתיות של המשחקים, הנקודות של כולם יופיעו כאן!</p>
       </div>
     );
   }
 
+  const top3 = everyone.slice(0, 3);
+  const avatarFor = (p) => {
+    // try to read profile emoji from friend object, fallback to first letter
+    return p.emoji || (p.name ? p.name[0].toUpperCase() : "?");
+  };
+
   return (
     <div style={{padding:"16px 14px 40px",maxWidth:600,margin:"0 auto"}}>
-      <div style={{textAlign:"center",marginBottom:16}}>
-        <div style={{fontSize:10,color:"#64748b",letterSpacing:3}}>SCOREBOARD</div>
-        <h2 style={{fontSize:24,margin:"4px 0",background:"linear-gradient(180deg,#fde68a,#f59e0b)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",fontWeight:900}}>🏅 LEADERBOARD</h2>
+      <style>{`
+        @keyframes lbSheen { 0%{transform:translateX(-160%) skewX(-18deg)} 100%{transform:translateX(320%) skewX(-18deg)} }
+        @keyframes lbCrown { 0%,100%{transform:translateY(0) rotate(-5deg)} 50%{transform:translateY(-4px) rotate(5deg)} }
+        @keyframes lbGlow { 0%,100%{box-shadow:0 0 26px rgba(244,228,176,0.5)} 50%{box-shadow:0 0 42px rgba(244,228,176,0.85)} }
+        @keyframes lbRise { from{transform:translateY(14px);opacity:0} to{transform:translateY(0);opacity:1} }
+        @keyframes lbSparkle { 0%,100%{opacity:0;transform:scale(0.5)} 50%{opacity:1;transform:scale(1)} }
+      `}</style>
+
+      {/* 🏆 League header + podium */}
+      <div style={{position:"relative",borderRadius:18,marginBottom:14,overflow:"hidden",textAlign:"center",padding:"18px 16px 22px",
+        background:"linear-gradient(165deg,#0e0e13,#08080c)",border:"1px solid transparent",
+        backgroundImage:"linear-gradient(165deg,#0e0e13,#08080c), linear-gradient(135deg,#5e4e26,#c9a961 38%,#f4e4b0 50%,#c9a961 62%,#5e4e26)",
+        backgroundOrigin:"border-box",backgroundClip:"padding-box, border-box",boxShadow:"0 16px 42px -14px rgba(0,0,0,0.8)"}}>
+        <div style={{position:"absolute",inset:0,overflow:"hidden",pointerEvents:"none"}}>
+          <div style={{position:"absolute",top:0,bottom:0,width:60,background:"linear-gradient(90deg,transparent,rgba(244,228,176,0.06),transparent)",animation:"lbSheen 7s ease-in-out infinite"}}/>
+        </div>
+        <div style={{fontSize:30,marginBottom:4,position:"relative",zIndex:2}}>🏆</div>
+        <div style={{fontSize:9,color:"#c9a961",letterSpacing:3,fontWeight:700,position:"relative",zIndex:2}}>טבלת הליגה</div>
+        <div style={{fontSize:11,color:"#8a8472",marginTop:5,position:"relative",zIndex:2}}>{everyone.length} מתחרים</div>
+
+        {/* Podium */}
+        {top3.length >= 3 && (
+          <div style={{display:"flex",alignItems:"flex-end",justifyContent:"center",gap:11,marginTop:24,position:"relative",zIndex:2}}>
+            {/* 2nd */}
+            <PodiumCol p={top3[1]} place={2} avatar={avatarFor(top3[1])} />
+            {/* 1st */}
+            <PodiumCol p={top3[0]} place={1} avatar={avatarFor(top3[0])} />
+            {/* 3rd */}
+            <PodiumCol p={top3[2]} place={3} avatar={avatarFor(top3[2])} />
+          </div>
+        )}
       </div>
 
+      <div style={{fontSize:10,color:"#c9a961",fontWeight:800,letterSpacing:1.5,margin:"18px 4px 10px"}}>📋 הטבלה המלאה</div>
+
       {everyone.map((p, i) => {
-        const medal = i===0?"🥇":i===1?"🥈":i===2?"🥉":`${i+1}.`;
         return (
           <div key={p.name} style={{
-            background: p.isMe ? "linear-gradient(135deg,rgba(251,191,36,0.1),rgba(217,119,6,0.05))" : "rgba(30,41,59,0.5)",
-            border: p.isMe ? "1px solid #fbbf24" : "1px solid rgba(71,85,105,0.3)",
-            borderRadius:14, padding:14, marginBottom:10,
+            position:"relative",borderRadius:14,marginBottom:9,overflow:"hidden",
+            background:"linear-gradient(165deg,#0e0e13,#08080c)",border:"1px solid transparent",
+            backgroundImage: p.isMe
+              ? "linear-gradient(165deg,#1a1408,#0e0a04), linear-gradient(135deg,#f4e4b0,#c9a961,#8a6d2e)"
+              : "linear-gradient(165deg,#0e0e13,#08080c), linear-gradient(135deg,#5e4e26,#c9a961 45%,#5e4e26)",
+            backgroundOrigin:"border-box",backgroundClip:"padding-box, border-box",
+            padding:"11px 13px",
           }}>
-            <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:8}}>
-              <span style={{fontSize:22,minWidth:32}}>{medal}</span>
-              <div style={{flex:1}}>
-                <div style={{fontSize:15,color:"#f1f5f9",fontWeight:800}}>{p.isMe ? `${p.name} (you)` : p.name}</div>
-                <div style={{fontSize:10,color:"#64748b",letterSpacing:1,marginTop:2}}>
-                  {p.matchScore.played}/{FIXTURES.length} group matches scored
+            <div style={{display:"flex",alignItems:"center",gap:11}}>
+              <span style={{width:26,fontSize:14,fontWeight:900,color:i<3?"#f4e4b0":"#8a8472",textAlign:"center",flexShrink:0}}>{i===0?"🥇":i===1?"🥈":i===2?"🥉":i+1}</span>
+              <div style={{width:36,height:36,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:17,flexShrink:0,background:"linear-gradient(135deg,#c9a961,#8a6d2e)"}}>{avatarFor(p)}</div>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontSize:13.5,fontWeight:800,color:p.isMe?"#f4e4b0":"#f5f3ee"}}>{p.isMe ? `${p.name} (אתה)` : p.name}</div>
+                <div style={{fontSize:8.5,color:"#8a8472",fontWeight:600,marginTop:1}}>
+                  🏠 בתים <b style={{color:"#c9a961"}}>{p.matchScore.total}</b> · 🏆 נוקאאוט <b style={{color:"#c9a961"}}>{p.koScore.total}</b>
                 </div>
               </div>
-              <div style={{textAlign:"right"}}>
-                <div style={{fontSize:24,fontWeight:900,color:"#fbbf24",lineHeight:1}}><AnimatedNumber value={p.totalPoints} /></div>
-                <div style={{fontSize:9,color:"#94a3b8",letterSpacing:1}}>POINTS</div>
+              <div style={{textAlign:"center",flexShrink:0}}>
+                <div style={{fontSize:19,fontWeight:900,color:"#f4e4b0",lineHeight:1}}><AnimatedNumber value={p.totalPoints} /></div>
+                <div style={{fontSize:7,color:"#8a8472",letterSpacing:1}}>נק׳</div>
               </div>
             </div>
-            
-            {/* Breakdown */}
-            <div style={{display:"flex",flexWrap:"wrap",gap:6,marginTop:8,paddingTop:8,borderTop:"1px dashed rgba(71,85,105,0.3)"}}>
-              {p.matchScore.exact > 0 && <Badge color="#fbbf24">🎯 {p.matchScore.exact} exact</Badge>}
-              {p.matchScore.result > 0 && <Badge color="#22c55e">✅ {p.matchScore.result} winner</Badge>}
-              {p.matchScore.wrong > 0 && <Badge color="#f87171">❌ {p.matchScore.wrong} miss</Badge>}
-              {p.koScore.exact > 0 && <Badge color="#a855f7">🏆 {p.koScore.exact} בול</Badge>}
-              {p.koScore.result > 0 && <Badge color="#ec4899">✓ {p.koScore.result} מנצח</Badge>}
-            </div>
+            {/* Breakdown badges */}
+            {(p.matchScore.exact > 0 || p.matchScore.result > 0 || p.koScore.exact > 0) && (
+              <div style={{display:"flex",flexWrap:"wrap",gap:5,marginTop:9,paddingTop:9,borderTop:"1px dashed rgba(201,169,97,0.18)"}}>
+                {p.matchScore.exact > 0 && <Badge color="#c9a961">🎯 {p.matchScore.exact} בול</Badge>}
+                {p.matchScore.result > 0 && <Badge color="#10b981">✅ {p.matchScore.result} ניצחון</Badge>}
+                {p.matchScore.wrong > 0 && <Badge color="#e0524d">❌ {p.matchScore.wrong} פספוס</Badge>}
+                {p.koScore.exact > 0 && <Badge color="#f4e4b0">🏆 {p.koScore.exact} בול נוקאאוט</Badge>}
+                {p.koScore.result > 0 && <Badge color="#c9a961">✓ {p.koScore.result} מנצח נוקאאוט</Badge>}
+              </div>
+            )}
           </div>
         );
       })}
+    </div>
+  );
+}
+
+// 🏆 One podium column (place 1/2/3)
+function PodiumCol({ p, place, avatar }) {
+  const cfg = {
+    1: { avSize:70, avFont:30, baseH:64, baseDelay:"0.2s", colDelay:"0.25s", ptsColor:"#f4e4b0", ptsSize:19, baseBg:"rgba(244,228,176,0.32)", baseBorder:"rgba(244,228,176,0.35)", baseColor:"rgba(244,228,176,0.45)", avBorder:"#f4e4b0", glow:true },
+    2: { avSize:55, avFont:23, baseH:46, baseDelay:"0s", colDelay:"0.05s", ptsColor:"#d8dde4", ptsSize:15, baseBg:"rgba(216,221,228,0.2)", baseBorder:"rgba(216,221,228,0.22)", baseColor:"rgba(216,221,228,0.4)", avBorder:"#d8dde4", glow:false },
+    3: { avSize:55, avFont:23, baseH:34, baseDelay:"0.1s", colDelay:"0.15s", ptsColor:"#d8923e", ptsSize:15, baseBg:"rgba(216,146,62,0.2)", baseBorder:"rgba(216,146,62,0.28)", baseColor:"rgba(216,146,62,0.45)", avBorder:"#c9883e", glow:false },
+  }[place];
+  const avBg = place === 1 ? "linear-gradient(135deg,#3b82f6,#1e40af)" : place === 2 ? "linear-gradient(135deg,#c9a961,#8a6d2e)" : "linear-gradient(135deg,#a855f7,#6d28d9)";
+  return (
+    <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:5,flex:1,maxWidth:118,animation:`lbRise 0.6s ease-out ${cfg.colDelay} backwards`}}>
+      <div style={{position:"relative",display:"flex",justifyContent:"center"}}>
+        {place === 1 && <span style={{position:"absolute",top:-22,fontSize:24,animation:"lbCrown 2s ease-in-out infinite",zIndex:3}}>👑</span>}
+        {place === 1 && <span style={{position:"absolute",top:-6,left:-4,fontSize:11,animation:"lbSparkle 1.8s ease-in-out infinite"}}>✨</span>}
+        {place === 1 && <span style={{position:"absolute",top:8,right:-8,fontSize:11,animation:"lbSparkle 1.8s ease-in-out 0.6s infinite"}}>⭐</span>}
+        <div style={{width:cfg.avSize,height:cfg.avSize,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:900,color:"#fff",fontSize:cfg.avFont,background:avBg,border:`2.5px solid ${cfg.avBorder}`,animation:cfg.glow?"lbGlow 2.5s ease-in-out infinite":"none"}}>{avatar}</div>
+      </div>
+      <div style={{fontSize:12,fontWeight:800,color:place===1?"#f4e4b0":"#f5f3ee",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:108}}>{p.isMe ? `${p.name} (אתה)` : p.name}</div>
+      <div style={{fontSize:cfg.ptsSize,fontWeight:900,color:cfg.ptsColor}}>{p.totalPoints}</div>
+      <div style={{fontSize:7.5,color:"#8a8472",fontWeight:700}}>🏠 {p.matchScore.total} · 🏆 {p.koScore.total}</div>
+      <div style={{width:"100%",height:cfg.baseH,borderRadius:"9px 9px 0 0",display:"flex",alignItems:"flex-start",justifyContent:"center",paddingTop:7,fontSize:23,fontWeight:900,
+        background:`linear-gradient(180deg,${cfg.baseBg},transparent)`,color:cfg.baseColor,border:`1px solid ${cfg.baseBorder}`,borderBottom:"none"}}>{place}</div>
     </div>
   );
 }
