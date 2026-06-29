@@ -15,7 +15,7 @@ import { R32_THIRD_TABLE } from "./r32table";
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "5.14.2";
+const APP_VERSION = "5.14.3";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -13253,27 +13253,6 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
             display:"flex",alignItems:"center",justifyContent:"center",gap:6,
           }}>
           ⚽ ראה מי הבקיע
-        </button>
-      )}
-
-      {/* 📺 FIFA highlights button — only for finished matches */}
-      {!collapsed && actual && actual.h !== undefined && actual.h !== "" && actual.isLive !== true && (
-        <button
-          onClick={() => {
-            const query = encodeURIComponent(`${home.n} vs ${away.n} FIFA highlights`);
-            window.open(`https://www.youtube.com/results?search_query=${query}`, "_blank");
-          }}
-          style={{
-            marginTop:8,width:"100%",
-            padding:"10px 12px",
-            background:"rgba(255,255,255,0.03)",
-            border:"1px solid rgba(255,255,255,0.1)",
-            borderRadius:11,
-            color:"#aeb8cc",fontSize:12,fontWeight:700,
-            cursor:"pointer",fontFamily:"inherit",
-            display:"flex",alignItems:"center",justifyContent:"center",gap:6,
-          }}>
-          📺 חפש את המשחק ב-YouTube
         </button>
       )}
 
