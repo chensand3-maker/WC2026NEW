@@ -15,7 +15,7 @@ import { R32_THIRD_TABLE } from "./r32table";
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "5.16.3";
+const APP_VERSION = "5.16.4";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -13007,10 +13007,11 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
             <span style={{width:4,height:4,borderRadius:"50%",background:"#fff",animation:"livePulse 1.1s ease-in-out infinite",display:"inline-block"}}/> חי
           </span>
         ) : sc ? (
-          <span style={{marginInlineStart:"auto",fontSize:8,fontWeight:800,padding:"3px 11px",borderRadius:20,whiteSpace:"nowrap",
-            color: score.type==="exact"?"#1a1400":"#fff",
-            background: score.type==="exact"?"linear-gradient(135deg,#fff4cc,#f4e4b0,#c9a961)":score.type==="result"?"linear-gradient(135deg,#10b981,#047857)":"linear-gradient(135deg,#e0524d,#991b1b)"}}>
-            {sc.label}
+          // Score type is shown via frame color + background effect; no chip needed.
+          // Just show the points earned, compactly.
+          <span style={{marginInlineStart:"auto",fontSize:9,fontWeight:900,whiteSpace:"nowrap",
+            color: score.type==="exact"?"#f4e4b0":score.type==="result"?"#34d399":"#fca5a5"}}>
+            {score.points>0?`+${score.points}`:"0"} נק׳
           </span>
         ) : isLocked ? (
           <span style={{marginInlineStart:"auto",fontSize:8,color:"#8a7434",fontWeight:700,whiteSpace:"nowrap"}}>🔒 נעול</span>
@@ -13244,15 +13245,10 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
         return (
         <div style={{marginTop:10,paddingTop:9,borderTop:"1px solid rgba(201,169,97,0.12)",
           display:"flex",alignItems:"center",gap:8}}>
-          <span style={{fontSize:9,fontWeight:700,color:"#8a8472"}}>
-            {score?.type === "exact" ? "🎯 תוצאה מדויקת!" : score?.type === "result" ? "✅ צדקת במנצח" : score?.type === "wrong" ? "❌ לא קלעת הפעם" : "המשחק הסתיים"}
-          </span>
+          <span style={{fontSize:9,fontWeight:700,color:"#8a8472"}}>המשחק הסתיים</span>
           {hasResult && (
-            <span style={{marginInlineStart:"auto",fontSize:11,fontWeight:900,padding:"3px 11px",borderRadius:7,
-              color: score?.points > 0 ? (score.type === "exact" ? "#1a1400" : "#fff") : "#fff",
-              background: score?.points > 0
-                ? (score.type === "exact" ? "linear-gradient(135deg,#f4e4b0,#c9a961)" : "linear-gradient(135deg,#10b981,#047857)")
-                : "linear-gradient(135deg,#e0524d,#991b1b)",
+            <span style={{marginInlineStart:"auto",fontSize:11,fontWeight:900,
+              color: score?.points > 0 ? (score.type === "exact" ? "#f4e4b0" : "#34d399") : "#fca5a5",
             }}>{score?.points > 0 ? `+${score.points} נק׳` : "0 נק׳"}</span>
           )}
         </div>
