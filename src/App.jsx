@@ -15,7 +15,7 @@ import { R32_THIRD_TABLE } from "./r32table";
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "5.13.5";
+const APP_VERSION = "5.13.6";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -18074,24 +18074,35 @@ function LeagueHub({
             );
           }
 
-          // 🔹 Everyone else: clean single line — rank + avatar + name + points
+          // 🔹 Everyone else: medal=🗑️, full breakdown kept, just без the side-stripe / big medal
           return (
             <button key={p.uid} onClick={()=>setViewing(p.uid)} style={{
-              width:"100%",display:"flex",alignItems:"center",gap:11,
+              width:"100%",display:"block",textAlign:"start",
               background: p.isMe ? "linear-gradient(135deg,rgba(201,169,97,0.1),rgba(138,109,46,0.04))" : "rgba(255,255,255,0.022)",
-              border: p.isMe ? "1px solid rgba(201,169,97,0.4)" : "1px solid rgba(255,255,255,0.05)",
-              borderRadius:12,padding:"11px 13px",marginBottom:7,cursor:"pointer",fontFamily:"inherit",textAlign:"start",
+              border: p.isMe ? "1px solid rgba(201,169,97,0.4)" : "1px solid rgba(255,255,255,0.06)",
+              borderRadius:12,padding:"11px 13px",marginBottom:8,cursor:"pointer",fontFamily:"inherit",
             }}>
-              <span style={{width:22,fontSize:14,fontWeight:900,color:"#8a8472",textAlign:"center",flexShrink:0}}>{i+1}</span>
-              <div style={{width:34,height:34,borderRadius:"50%",background:avatarBg(p),display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,fontWeight:900,color:"#fff",flexShrink:0}}>{avatarInner(p)}</div>
-              <span style={{flex:1,fontSize:14,fontWeight:700,color:p.isMe?"#f4e4b0":"#e8e4da",minWidth:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.name}{p.isMe?t("league.you"):""}</span>
-              {showPoints ? (
+              <div style={{display:"flex",alignItems:"center",gap:11}}>
+                <span style={{width:26,fontSize:18,textAlign:"center",flexShrink:0,opacity:0.85}}>{showPoints ? "🗑️" : (i+1)}</span>
+                <div style={{width:36,height:36,borderRadius:"50%",background:avatarBg(p),display:"flex",alignItems:"center",justifyContent:"center",fontSize:17,fontWeight:900,color:"#fff",flexShrink:0}}>{avatarInner(p)}</div>
+                <span style={{flex:1,fontSize:14,fontWeight:700,color:p.isMe?"#f4e4b0":"#e8e4da",minWidth:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.name}{p.isMe?t("league.you"):""}</span>
                 <div style={{textAlign:"center",flexShrink:0}}>
-                  <span style={{fontSize:18,fontWeight:900,color:"#c9a961"}}><AnimatedNumber value={p.totalPoints} /></span>
-                  <span style={{fontSize:9,color:"#8a8472",marginInlineStart:3}}>נק׳</span>
+                  <div style={{fontSize:19,fontWeight:900,color:showPoints?"#c9a961":"#5e5640",lineHeight:1}}><AnimatedNumber value={p.totalPoints} /></div>
+                  <div style={{fontSize:7,color:"#8a8472",letterSpacing:1}}>נק׳</div>
+                </div>
+              </div>
+              {showPoints ? (
+                <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginTop:9,paddingTop:9,borderTop:"1px solid rgba(201,169,97,0.12)"}}>
+                  <span style={{display:"flex",alignItems:"center",gap:4,fontSize:11}}>🏠<b style={{color:"#c9a961",fontWeight:900}}>{p.matchScore.total}</b></span>
+                  <span style={{display:"flex",alignItems:"center",gap:4,fontSize:11}}>🏆<b style={{color:"#fff4cc",fontWeight:900}}>{p.koScore.total}</b></span>
+                  <span style={{display:"flex",alignItems:"center",gap:4,fontSize:11}}>👟<b style={{color:"#a5b4fc",fontWeight:900}}>{p.tsPoints||0}</b></span>
+                  <span style={{display:"flex",alignItems:"center",gap:4,fontSize:11}}>🎯<b style={{color:"#f4e4b0",fontWeight:900}}>{p.matchScore.exact}</b></span>
+                  <span style={{display:"flex",alignItems:"center",gap:4,fontSize:11}}>✅<b style={{color:"#34d399",fontWeight:900}}>{p.matchScore.result}</b></span>
                 </div>
               ) : (
-                <span style={{fontSize:10,color:"#8a8472",flexShrink:0}}>{p.predictedCount}/{FIXTURES.length}</span>
+                <div style={{fontSize:10,color:"#8a8472",marginTop:8,paddingTop:8,borderTop:"1px solid rgba(201,169,97,0.1)"}}>
+                  {p.predictedCount}/{FIXTURES.length} {t("league.predicted")}
+                </div>
               )}
             </button>
           );
