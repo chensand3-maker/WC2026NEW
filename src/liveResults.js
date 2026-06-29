@@ -348,7 +348,7 @@ export async function fetchKnockoutResults() {
   return {};
 }
 
-const MATCH_DETAILS_KEY = "wc2026_match_details_v2";
+const MATCH_DETAILS_KEY = "wc2026_match_details_v3";
 
 function getMatchDetailsCache() {
   try {
@@ -363,11 +363,16 @@ function saveMatchDetailsCache(cache) {
   } catch {}
 }
 
-export async function fetchMatchDetails(apiFixtureId) {
+export async function fetchMatchDetails(apiFixtureId, isLive = false) {
   if (!apiFixtureId) return null;
 
   const cache = getMatchDetailsCache();
-  if (cache[apiFixtureId]) return cache[apiFixtureId];
+  // Only trust the cache for matches that already have events AND aren't live.
+  // A live match (or one fetched before goals were logged) must be re-fetched,
+  // otherwise an early empty result gets frozen in forever.
+  if (cache[apiFixtureId] && !isLive && cache[apiFixtureId].events && cache[apiFixtureId].events.length > 0) {
+    return cache[apiFixtureId];
+  }
 
   if (!API_FOOTBALL_KEY || API_FOOTBALL_KEY === "PASTE_HERE") {
     throw new Error("API-Football key not set");
@@ -403,8 +408,12 @@ export async function fetchMatchDetails(apiFixtureId) {
     fetchedAt: Date.now(),
   };
 
-  cache[apiFixtureId] = result;
-  saveMatchDetailsCache(cache);
+  // Only persist to cache once the match is finished and has events —
+  // never freeze an empty/partial result from a live or just-started match.
+  if (!isLive && events.length > 0) {
+    cache[apiFixtureId] = result;
+    saveMatchDetailsCache(cache);
+  }
 
   return result;
 }
