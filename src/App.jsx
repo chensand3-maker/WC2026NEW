@@ -15,7 +15,7 @@ import { R32_THIRD_TABLE } from "./r32table";
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "5.13.0";
+const APP_VERSION = "5.13.1";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -17886,16 +17886,24 @@ function LeagueHub({
 
           {/* 🏆 PODIUM — top 3 (only once results exist) */}
           {hasActuals && members.length >= 1 && (
-            <div style={{display:"flex",alignItems:"flex-end",justifyContent:"center",gap:10,marginTop:18,paddingTop:14}}>
+            <>
+            <style>{`
+              @keyframes hubCrown { 0%,100%{transform:translateY(0) rotate(-5deg)} 50%{transform:translateY(-4px) rotate(5deg)} }
+              @keyframes hubGlow { 0%,100%{box-shadow:0 0 26px rgba(244,228,176,0.5)} 50%{box-shadow:0 0 42px rgba(244,228,176,0.85)} }
+              @keyframes hubRise { from{transform:translateY(14px);opacity:0} to{transform:translateY(0);opacity:1} }
+              @keyframes hubSparkle { 0%,100%{opacity:0;transform:scale(0.5)} 50%{opacity:1;transform:scale(1)} }
+            `}</style>
+            <div style={{display:"flex",alignItems:"flex-end",justifyContent:"center",gap:11,marginTop:20,paddingTop:14}}>
               {/* 2nd place (left) */}
               {members[1] && (() => {
                 const m = members[1];
                 return (
-                  <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:5,flex:1,maxWidth:110}}>
-                    <div style={{width:52,height:52,borderRadius:"50%",background:avatarBg(m),display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,fontWeight:900,color:"#fff",border:"2px solid #e2e8f0"}}>{avatarInner(m)}</div>
-                    <div style={{fontSize:12,fontWeight:800,color:"#f1f5f9",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:100}}>{m.name}</div>
-                    <div style={{fontSize:15,fontWeight:900,color:"#cbd5e1"}}>{m.totalPoints}</div>
-                    <div style={{width:"100%",height:42,borderRadius:"8px 8px 0 0",background:"linear-gradient(180deg,rgba(203,213,225,0.2),rgba(203,213,225,0.02))",display:"flex",alignItems:"flex-start",justifyContent:"center",paddingTop:6,fontSize:20,fontWeight:900,color:"rgba(255,255,255,0.25)"}}>2</div>
+                  <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:5,flex:1,maxWidth:118,animation:"hubRise 0.6s ease-out 0.05s backwards"}}>
+                    <div style={{width:55,height:55,borderRadius:"50%",background:avatarBg(m),display:"flex",alignItems:"center",justifyContent:"center",fontSize:23,fontWeight:900,color:"#fff",border:"2px solid #d8dde4"}}>{avatarInner(m)}</div>
+                    <div style={{fontSize:12,fontWeight:800,color:"#f5f3ee",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:108}}>{m.name}</div>
+                    <div style={{fontSize:15,fontWeight:900,color:"#d8dde4"}}>{m.totalPoints}</div>
+                    <div style={{fontSize:7.5,color:"#8a8472",fontWeight:700}}>🏠 {m.matchScore.total} · 🏆 {m.koScore.total}</div>
+                    <div style={{width:"100%",height:46,borderRadius:"9px 9px 0 0",background:"linear-gradient(180deg,rgba(216,221,228,0.2),transparent)",display:"flex",alignItems:"flex-start",justifyContent:"center",paddingTop:7,fontSize:22,fontWeight:900,color:"rgba(216,221,228,0.4)",border:"1px solid rgba(216,221,228,0.22)",borderBottom:"none"}}>2</div>
                   </div>
                 );
               })()}
@@ -17903,14 +17911,17 @@ function LeagueHub({
               {members[0] && (() => {
                 const m = members[0];
                 return (
-                  <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:5,flex:1,maxWidth:110}}>
+                  <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:5,flex:1,maxWidth:118,animation:"hubRise 0.6s ease-out 0.25s backwards"}}>
                     <div style={{position:"relative",display:"flex",justifyContent:"center"}}>
-                      <span style={{position:"absolute",top:-18,fontSize:20}}>👑</span>
-                      <div style={{width:66,height:66,borderRadius:"50%",background:avatarBg(m),display:"flex",alignItems:"center",justifyContent:"center",fontSize:26,fontWeight:900,color:"#fff",border:"2px solid #fde68a",boxShadow:"0 0 26px rgba(251,191,36,0.55)"}}>{avatarInner(m)}</div>
+                      <span style={{position:"absolute",top:-22,fontSize:24,animation:"hubCrown 2s ease-in-out infinite",zIndex:3}}>👑</span>
+                      <span style={{position:"absolute",top:-6,left:-4,fontSize:11,animation:"hubSparkle 1.8s ease-in-out infinite"}}>✨</span>
+                      <span style={{position:"absolute",top:8,right:-8,fontSize:11,animation:"hubSparkle 1.8s ease-in-out 0.6s infinite"}}>⭐</span>
+                      <div style={{width:70,height:70,borderRadius:"50%",background:avatarBg(m),display:"flex",alignItems:"center",justifyContent:"center",fontSize:30,fontWeight:900,color:"#fff",border:"2.5px solid #f4e4b0",animation:"hubGlow 2.5s ease-in-out infinite"}}>{avatarInner(m)}</div>
                     </div>
-                    <div style={{fontSize:12,fontWeight:800,color:"#f1f5f9",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:100}}>{m.name}</div>
-                    <div style={{fontSize:15,fontWeight:900,color:"#fbbf24"}}>{m.totalPoints}</div>
-                    <div style={{width:"100%",height:56,borderRadius:"8px 8px 0 0",background:"linear-gradient(180deg,rgba(251,191,36,0.25),rgba(251,191,36,0.03))",display:"flex",alignItems:"flex-start",justifyContent:"center",paddingTop:6,fontSize:20,fontWeight:900,color:"rgba(255,255,255,0.25)"}}>1</div>
+                    <div style={{fontSize:12,fontWeight:800,color:"#f4e4b0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:108}}>{m.name}</div>
+                    <div style={{fontSize:19,fontWeight:900,color:"#f4e4b0"}}>{m.totalPoints}</div>
+                    <div style={{fontSize:7.5,color:"#8a8472",fontWeight:700}}>🏠 {m.matchScore.total} · 🏆 {m.koScore.total}</div>
+                    <div style={{width:"100%",height:64,borderRadius:"9px 9px 0 0",background:"linear-gradient(180deg,rgba(244,228,176,0.32),transparent)",display:"flex",alignItems:"flex-start",justifyContent:"center",paddingTop:7,fontSize:23,fontWeight:900,color:"rgba(244,228,176,0.45)",border:"1px solid rgba(244,228,176,0.35)",borderBottom:"none"}}>1</div>
                   </div>
                 );
               })()}
@@ -17918,15 +17929,17 @@ function LeagueHub({
               {members[2] && (() => {
                 const m = members[2];
                 return (
-                  <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:5,flex:1,maxWidth:110}}>
-                    <div style={{width:52,height:52,borderRadius:"50%",background:avatarBg(m),display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,fontWeight:900,color:"#fff",border:"2px solid #f59e0b"}}>{avatarInner(m)}</div>
-                    <div style={{fontSize:12,fontWeight:800,color:"#f1f5f9",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:100}}>{m.name}</div>
-                    <div style={{fontSize:15,fontWeight:900,color:"#f59e0b"}}>{m.totalPoints}</div>
-                    <div style={{width:"100%",height:32,borderRadius:"8px 8px 0 0",background:"linear-gradient(180deg,rgba(217,119,6,0.2),rgba(217,119,6,0.02))",display:"flex",alignItems:"flex-start",justifyContent:"center",paddingTop:6,fontSize:20,fontWeight:900,color:"rgba(255,255,255,0.25)"}}>3</div>
+                  <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:5,flex:1,maxWidth:118,animation:"hubRise 0.6s ease-out 0.15s backwards"}}>
+                    <div style={{width:55,height:55,borderRadius:"50%",background:avatarBg(m),display:"flex",alignItems:"center",justifyContent:"center",fontSize:23,fontWeight:900,color:"#fff",border:"2px solid #c9883e"}}>{avatarInner(m)}</div>
+                    <div style={{fontSize:12,fontWeight:800,color:"#f5f3ee",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:108}}>{m.name}</div>
+                    <div style={{fontSize:15,fontWeight:900,color:"#d8923e"}}>{m.totalPoints}</div>
+                    <div style={{fontSize:7.5,color:"#8a8472",fontWeight:700}}>🏠 {m.matchScore.total} · 🏆 {m.koScore.total}</div>
+                    <div style={{width:"100%",height:34,borderRadius:"9px 9px 0 0",background:"linear-gradient(180deg,rgba(216,146,62,0.2),transparent)",display:"flex",alignItems:"flex-start",justifyContent:"center",paddingTop:7,fontSize:22,fontWeight:900,color:"rgba(216,146,62,0.45)",border:"1px solid rgba(216,146,62,0.28)",borderBottom:"none"}}>3</div>
                   </div>
                 );
               })()}
             </div>
+            </>
           )}
 
           {/* 🎯 Compact leader banner: sniper + unlucky */}
@@ -18079,28 +18092,33 @@ function LeagueHub({
               <div style={{flex:1,minWidth:0}}>
                 <div style={{
                   fontSize: isPodium && showPoints ? 15 : 14,
-                  color:"#f1f5f9",fontWeight:700,
+                  color: p.isMe ? "#f4e4b0" : "#f5f3ee",fontWeight:800,
                   overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",
                 }}>{p.name}{p.isMe?t("league.you"):""}</div>
-                <div style={{fontSize:10,color:"#64748b",marginTop:1}}>
-                  {p.predictedCount}/{FIXTURES.length} {t("league.predicted")}
-                  {showPoints && p.koScore?.exact>0 && ` · 🏆${p.koScore.exact}`}
-                </div>
+                {showPoints ? (
+                  <div style={{fontSize:8.5,color:"#8a8472",fontWeight:600,marginTop:1}}>
+                    🏠 בתים <b style={{color:"#c9a961"}}>{p.matchScore.total}</b> · 🏆 נוקאאוט <b style={{color:"#c9a961"}}>{p.koScore.total}</b>
+                  </div>
+                ) : (
+                  <div style={{fontSize:10,color:"#8a8472",marginTop:1}}>
+                    {p.predictedCount}/{FIXTURES.length} {t("league.predicted")}
+                  </div>
+                )}
               </div>
               {/* 🎯 Bull / ✓ Wins / 👟 Golden Boot stat columns (only with results) */}
               {showPoints && (
                 <div style={{display:"flex",gap:10,marginInlineEnd:4}}>
                   <div style={{textAlign:"center",minWidth:26}}>
-                    <div style={{fontSize:14,fontWeight:900,color:"#fbbf24",lineHeight:1}}>{p.matchScore.exact}</div>
-                    <div style={{fontSize:8,color:"#64748b"}}>🎯</div>
+                    <div style={{fontSize:14,fontWeight:900,color:"#f4e4b0",lineHeight:1}}>{p.matchScore.exact}</div>
+                    <div style={{fontSize:8,color:"#8a8472"}}>🎯</div>
                   </div>
                   <div style={{textAlign:"center",minWidth:26}}>
-                    <div style={{fontSize:14,fontWeight:900,color:"#4ade80",lineHeight:1}}>{p.matchScore.result}</div>
-                    <div style={{fontSize:8,color:"#64748b"}}>✓</div>
+                    <div style={{fontSize:14,fontWeight:900,color:"#34d399",lineHeight:1}}>{p.matchScore.result}</div>
+                    <div style={{fontSize:8,color:"#8a8472"}}>✓</div>
                   </div>
                   <div style={{textAlign:"center",minWidth:26}}>
-                    <div style={{fontSize:14,fontWeight:900,color:"#a855f7",lineHeight:1}}>{p.tsPoints || 0}</div>
-                    <div style={{fontSize:8,color:"#64748b"}}>👟</div>
+                    <div style={{fontSize:14,fontWeight:900,color:"#c9a961",lineHeight:1}}>{p.tsPoints || 0}</div>
+                    <div style={{fontSize:8,color:"#8a8472"}}>👟</div>
                   </div>
                 </div>
               )}
@@ -18109,7 +18127,7 @@ function LeagueHub({
                 <div style={{
                   fontSize: isPodium && showPoints ? 24 : 20,
                   fontWeight:900,
-                  color: showPoints ? (isPodium ? podiumBorder : "#94a3b8") : "#475569",
+                  color: showPoints ? (isPodium ? podiumBorder : "#c9a961") : "#5e5640",
                   lineHeight:1,
                 }}><AnimatedNumber value={p.totalPoints} /></div>
               </div>
