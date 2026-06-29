@@ -15,7 +15,7 @@ import { R32_THIRD_TABLE } from "./r32table";
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "5.13.1";
+const APP_VERSION = "5.13.2";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -18096,8 +18096,10 @@ function LeagueHub({
                   overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",
                 }}>{p.name}{p.isMe?t("league.you"):""}</div>
                 {showPoints ? (
-                  <div style={{fontSize:8.5,color:"#8a8472",fontWeight:600,marginTop:1}}>
-                    🏠 בתים <b style={{color:"#c9a961"}}>{p.matchScore.total}</b> · 🏆 נוקאאוט <b style={{color:"#c9a961"}}>{p.koScore.total}</b>
+                  <div style={{fontSize:9,color:"#8a8472",fontWeight:600,marginTop:2,display:"flex",gap:8,flexWrap:"wrap"}}>
+                    <span>🏠 בתים <b style={{color:"#c9a961"}}>{p.matchScore.total}</b></span>
+                    <span>🏆 נוקאאוט <b style={{color:"#c9a961"}}>{p.koScore.total}</b></span>
+                    {p.matchScore.exact > 0 && <span>🎯 <b style={{color:"#f4e4b0"}}>{p.matchScore.exact}</b></span>}
                   </div>
                 ) : (
                   <div style={{fontSize:10,color:"#8a8472",marginTop:1}}>
@@ -18105,31 +18107,15 @@ function LeagueHub({
                   </div>
                 )}
               </div>
-              {/* 🎯 Bull / ✓ Wins / 👟 Golden Boot stat columns (only with results) */}
-              {showPoints && (
-                <div style={{display:"flex",gap:10,marginInlineEnd:4}}>
-                  <div style={{textAlign:"center",minWidth:26}}>
-                    <div style={{fontSize:14,fontWeight:900,color:"#f4e4b0",lineHeight:1}}>{p.matchScore.exact}</div>
-                    <div style={{fontSize:8,color:"#8a8472"}}>🎯</div>
-                  </div>
-                  <div style={{textAlign:"center",minWidth:26}}>
-                    <div style={{fontSize:14,fontWeight:900,color:"#34d399",lineHeight:1}}>{p.matchScore.result}</div>
-                    <div style={{fontSize:8,color:"#8a8472"}}>✓</div>
-                  </div>
-                  <div style={{textAlign:"center",minWidth:26}}>
-                    <div style={{fontSize:14,fontWeight:900,color:"#c9a961",lineHeight:1}}>{p.tsPoints || 0}</div>
-                    <div style={{fontSize:8,color:"#8a8472"}}>👟</div>
-                  </div>
-                </div>
-              )}
               {/* Points */}
-              <div style={{textAlign:"right"}}>
+              <div style={{textAlign:"center",flexShrink:0}}>
                 <div style={{
                   fontSize: isPodium && showPoints ? 24 : 20,
                   fontWeight:900,
                   color: showPoints ? (isPodium ? podiumBorder : "#c9a961") : "#5e5640",
                   lineHeight:1,
                 }}><AnimatedNumber value={p.totalPoints} /></div>
+                {showPoints && <div style={{fontSize:7,color:"#8a8472",letterSpacing:1,marginTop:2}}>נק׳</div>}
               </div>
             </button>
           );
