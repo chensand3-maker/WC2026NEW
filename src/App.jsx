@@ -15,7 +15,7 @@ import { R32_THIRD_TABLE } from "./r32table";
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "5.16.0";
+const APP_VERSION = "5.16.1";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -12946,23 +12946,20 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
           : "0 0 14px -2px rgba(224,82,77,0.2), 0 12px 30px -10px rgba(0,0,0,0.7)")
         : "0 14px 38px -14px rgba(0,0,0,0.78)",
     }}>
-      {/* 🎯 Background effect by score type — bullseye for exact, ✓ for win, ✗ for miss */}
-      {sc && !collapsed && (
-        <div style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",
-          width:200,height:200,pointerEvents:"none",zIndex:1,
-          ...(score.type === "exact" ? {
-            background:"radial-gradient(circle, transparent 18%, rgba(244,228,176,0.08) 19%, rgba(244,228,176,0.08) 23%, transparent 24%), radial-gradient(circle, transparent 34%, rgba(244,228,176,0.06) 35%, rgba(244,228,176,0.06) 40%, transparent 41%), radial-gradient(circle, transparent 50%, rgba(244,228,176,0.04) 51%, rgba(244,228,176,0.04) 57%, transparent 58%)",
-            animation:"goldPulse 3s ease-in-out infinite",
-          } : {}),
-        }}/>
+      {/* 🎯 Subtle background effect by score — bullseye / ✓ / ✗ (shown even when collapsed) */}
+      {score && score.type === "exact" && (
+        <div style={{position:"absolute",top:"50%",insetInlineStart:42,transform:"translateY(-50%)",
+          width:130,height:130,pointerEvents:"none",zIndex:0,
+          background:"radial-gradient(circle, transparent 16%, rgba(244,228,176,0.09) 17%, rgba(244,228,176,0.09) 21%, transparent 22%), radial-gradient(circle, transparent 32%, rgba(244,228,176,0.06) 33%, rgba(244,228,176,0.06) 38%, transparent 39%), radial-gradient(circle, transparent 48%, rgba(244,228,176,0.04) 49%, rgba(244,228,176,0.04) 55%, transparent 56%)",
+          animation:"goldPulse 3s ease-in-out infinite"}}/>
       )}
-      {/* Big faded icon in corner for win/miss/exact */}
-      {sc && !collapsed && (
-        <span style={{position:"absolute",top:10,insetInlineStart:12,fontSize:46,zIndex:1,pointerEvents:"none",
-          opacity: score.type === "exact" ? 0.12 : 0.1,
-          color: score.type === "result" ? "#34d399" : score.type === "wrong" ? "#fca5a5" : "#f4e4b0"}}>
-          {score.type === "exact" ? "🎯" : score.type === "result" ? "✓" : "✗"}
-        </span>
+      {score && score.type === "result" && (
+        <span style={{position:"absolute",top:"50%",insetInlineStart:28,transform:"translateY(-50%)",
+          fontSize:70,opacity:0.06,zIndex:0,pointerEvents:"none",color:"#34d399",fontWeight:900}}>✓</span>
+      )}
+      {score && score.type === "wrong" && (
+        <span style={{position:"absolute",top:"50%",insetInlineStart:28,transform:"translateY(-50%)",
+          fontSize:70,opacity:0.05,zIndex:0,pointerEvents:"none",color:"#fca5a5",fontWeight:900}}>✗</span>
       )}
       {/* Floating reaction */}
       {reaction && (
