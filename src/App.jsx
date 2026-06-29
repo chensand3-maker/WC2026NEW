@@ -15,7 +15,7 @@ import { R32_THIRD_TABLE } from "./r32table";
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "5.13.6";
+const APP_VERSION = "5.13.7";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -18030,31 +18030,28 @@ function LeagueHub({
         {members.map((p, i) => {
           const showPoints = hasActuals;
           const isTop3 = i < 3 && showPoints;
-          const medal = i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : null;
-          // Stripe + points color by place
-          const stripe = i === 0 ? "linear-gradient(180deg,#fff4cc,#c9a961)"
-                       : i === 1 ? "linear-gradient(180deg,#e8e8ee,#9ca3af)"
-                       : "linear-gradient(180deg,#e0b888,#a16207)";
+          const medalIcon = i === 0 ? "🥇" : i === 1 ? "🥈" : "🥉";
           const ptsColor = i === 0 ? "#f4e4b0" : i === 1 ? "#d8dde4" : i === 2 ? "#d8923e" : "#c9a961";
+          // Spinning conic frame, colored by medal
+          const spinFrame = i === 0 ? "conic-gradient(from var(--lbspin,0deg), #5e4e26, #c9a961, #f4e4b0, #fff4cc, #f4e4b0, #c9a961, #5e4e26)"
+                          : i === 1 ? "conic-gradient(from var(--lbspin,0deg), #5b6068, #9ca3af, #d8dde4, #ffffff, #d8dde4, #9ca3af, #5b6068)"
+                          : "conic-gradient(from var(--lbspin,0deg), #5c3a16, #a16207, #d8923e, #f0b878, #d8923e, #a16207, #5c3a16)";
+          const glowColor = i === 0 ? "rgba(244,228,176,0.3)" : i === 1 ? "rgba(216,221,228,0.28)" : "rgba(216,146,62,0.28)";
 
           if (isTop3) {
-            // ⭐ Top-3: big medal + colored side stripe + full breakdown
+            // ⭐ Top-3: spinning medal-colored frame + big medal + full breakdown
             return (
               <div key={p.uid} style={{
-                position:"relative",borderRadius:14,marginBottom:9,overflow:"hidden",
-                background:"linear-gradient(165deg,#0e0e13,#08080c)",border:"1px solid transparent",
-                backgroundImage: p.isMe
-                  ? "linear-gradient(165deg,#1a1408,#0e0a04), linear-gradient(135deg,#f4e4b0,#c9a961,#8a6d2e)"
-                  : "linear-gradient(165deg,#0e0e13,#08080c), linear-gradient(135deg,#5e4e26,#c9a961 45%,#5e4e26)",
-                backgroundOrigin:"border-box",backgroundClip:"padding-box, border-box",
+                position:"relative",borderRadius:16,padding:1.6,marginBottom:9,
+                background:spinFrame,animation:"lbSpin 6s linear infinite",
+                boxShadow:`0 0 18px -4px ${glowColor}, 0 12px 30px -12px rgba(0,0,0,0.8)`,
               }}>
-                <div style={{position:"absolute",insetInlineStart:0,top:0,bottom:0,width:5,background:stripe}}/>
                 <button onClick={()=>setViewing(p.uid)} style={{
                   width:"100%",display:"block",textAlign:"start",cursor:"pointer",fontFamily:"inherit",
-                  background:"transparent",border:"none",padding:"12px 13px 12px 16px",
+                  background:"linear-gradient(165deg,#0e0e13,#08080c)",border:"none",borderRadius:14.5,padding:"12px 13px",
                 }}>
                   <div style={{display:"flex",alignItems:"center",gap:11}}>
-                    <span style={{fontSize:26,width:34,textAlign:"center",flexShrink:0}}>{medal}</span>
+                    <span style={{fontSize:26,width:34,textAlign:"center",flexShrink:0}}>{medalIcon}</span>
                     <div style={{width:40,height:40,borderRadius:"50%",background:avatarBg(p),display:"flex",alignItems:"center",justifyContent:"center",fontSize:19,fontWeight:900,color:"#fff",flexShrink:0}}>{avatarInner(p)}</div>
                     <span style={{flex:1,fontSize:15,fontWeight:800,color:p.isMe?"#f4e4b0":"#f5f3ee",minWidth:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.name}{p.isMe?t("league.you"):""}</span>
                     <div style={{textAlign:"center",flexShrink:0}}>
