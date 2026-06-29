@@ -15,7 +15,7 @@ import { R32_THIRD_TABLE } from "./r32table";
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "5.13.7";
+const APP_VERSION = "5.14.0";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -12910,8 +12910,12 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
   const sc = score && scoreColors[score.type];
 
   // 🎨 Gold-black elegant frame. Finished matches get a colored gradient border
-  // (gold/green/red); upcoming + live matches get the elegant gold hairline.
-  const frameGradient = sc
+  // (gold/green/red); upcoming matches get the elegant gold hairline; LIVE matches
+  // get a spinning red-gold conic frame to draw attention.
+  const isLiveFrame = matchIsLiveNow;
+  const frameGradient = isLiveFrame
+    ? "conic-gradient(from var(--lbspin,0deg), #7f1d1d, #e0524d, #fca5a5, #f4e4b0, #fca5a5, #e0524d, #7f1d1d)"
+    : sc
     ? (score.type === "exact" ? "linear-gradient(135deg,#fff4cc,#f4e4b0 35%,#c9a961 50%,#f4e4b0 65%,#fff4cc)"
       : score.type === "result" ? "linear-gradient(135deg,#6ee7b7,#10b981,#065f46)"
       : "linear-gradient(135deg,#fca5a5,#e0524d,#7f1d1d)")
@@ -12927,8 +12931,12 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
       backgroundClip:"padding-box, border-box",
       borderRadius:16,padding:"12px 14px",marginBottom:10,transition:"all 0.25s",
       position:"relative",overflow:"hidden",
-      animation: reaction ? "matchFlash 0.5s ease-out" : (score && score.type === "exact" ? "goldPulse 2.5s ease-in-out infinite" : "none"),
-      boxShadow: sc
+      animation: reaction ? "matchFlash 0.5s ease-out"
+        : isLiveFrame ? "lbSpin 5s linear infinite"
+        : (score && score.type === "exact" ? "goldPulse 2.5s ease-in-out infinite" : "none"),
+      boxShadow: isLiveFrame
+        ? "0 0 18px -3px rgba(224,82,77,0.35), 0 12px 30px -10px rgba(0,0,0,0.7)"
+        : sc
         ? (score.type === "exact" ? "0 0 22px -2px rgba(244,228,176,0.3), 0 12px 30px -10px rgba(0,0,0,0.7)"
           : score.type === "result" ? "0 0 16px -2px rgba(16,185,129,0.22), 0 12px 30px -10px rgba(0,0,0,0.7)"
           : "0 0 14px -2px rgba(224,82,77,0.2), 0 12px 30px -10px rgba(0,0,0,0.7)")
