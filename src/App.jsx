@@ -15,7 +15,7 @@ import { R32_THIRD_TABLE } from "./r32table";
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "5.13.2";
+const APP_VERSION = "5.13.3";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -17888,6 +17888,8 @@ function LeagueHub({
           {hasActuals && members.length >= 1 && (
             <>
             <style>{`
+              @property --lbspin { syntax:'<angle>'; initial-value:0deg; inherits:false; }
+              @keyframes lbSpin { to { --lbspin:360deg; } }
               @keyframes hubCrown { 0%,100%{transform:translateY(0) rotate(-5deg)} 50%{transform:translateY(-4px) rotate(5deg)} }
               @keyframes hubGlow { 0%,100%{box-shadow:0 0 26px rgba(244,228,176,0.5)} 50%{box-shadow:0 0 42px rgba(244,228,176,0.85)} }
               @keyframes hubRise { from{transform:translateY(14px);opacity:0} to{transform:translateY(0);opacity:1} }
@@ -18030,94 +18032,47 @@ function LeagueHub({
         )}
         {members.map((p, i) => {
           const showPoints = hasActuals;
-          // Top 3 get medals; everyone below gets 🗑️
           const isPodium = i < 3;
-          const icon = i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : "🗑️";
-          // Subtle podium bg color: gold, silver, bronze
-          const podiumGlow = i === 0 ? "rgba(251,191,36,0.18)"
-                           : i === 1 ? "rgba(203,213,225,0.15)"
-                           : i === 2 ? "rgba(180,83,9,0.18)"
-                           : null;
-          const podiumBorder = i === 0 ? "#fbbf24"
-                             : i === 1 ? "#cbd5e1"
-                             : i === 2 ? "#b45309"
-                             : null;
-          // Background: podium colors for top 3, "trash" gray for the rest
-          const rowBg = isPodium && showPoints
-            ? `linear-gradient(135deg, ${podiumGlow}, rgba(36,49,80,0.4))`
-            : p.isMe ? "linear-gradient(135deg,color-mix(in srgb, var(--accent) 12%, transparent),color-mix(in srgb, var(--accent2) 5%, transparent))"
-            : "rgba(30,41,59,0.5)";
-          const rowBorder = isPodium && showPoints
-            ? `1px solid ${podiumBorder}`
-            : p.isMe ? "1px solid color-mix(in srgb, var(--accent) 55%, transparent)"
-            : "1px solid rgba(71,85,105,0.3)";
-          // Below-podium rows get a slightly dimmer look when results exist
-          const rowOpacity = !isPodium && showPoints ? 0.75 : 1;
-
+          const icon = i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `${i+1}`;
+          // Top-3 get a spinning gold frame; the rest get a static gold hairline.
+          const spinning = isPodium && showPoints;
           return (
-            <button key={p.uid} onClick={()=>setViewing(p.uid)} style={{
-              width:"100%",display:"flex",alignItems:"center",gap:12,
-              background: rowBg,
-              border: rowBorder,
-              borderRadius: isPodium && showPoints ? 14 : 12,
-              padding: isPodium && showPoints ? "14px 14px" : "12px 14px",
-              marginBottom:8,cursor:"pointer",fontFamily:"inherit",textAlign:"left",
-              opacity: rowOpacity,
-              transition: "all 0.2s",
-              boxShadow: isPodium && showPoints ? `0 4px 14px ${podiumGlow}` : "none",
+            <div key={p.uid} style={{
+              position:"relative",borderRadius:16,padding:spinning?1.5:1,marginBottom:9,
+              background: spinning
+                ? "conic-gradient(from var(--lbspin,0deg), #5e4e26, #c9a961, #f4e4b0, #fff4cc, #f4e4b0, #c9a961, #5e4e26)"
+                : p.isMe ? "linear-gradient(135deg,#f4e4b0,#c9a961,#8a6d2e)" : "linear-gradient(135deg,#5e4e26,#c9a961 45%,#5e4e26)",
+              animation: spinning ? "lbSpin 6s linear infinite" : "none",
+              boxShadow: spinning ? "0 12px 30px -12px rgba(0,0,0,0.8)" : "none",
             }}>
-              {/* Rank icon */}
-              <div style={{
-                minWidth: isPodium && showPoints ? 40 : 32,
-                display:"flex",flexDirection:"column",alignItems:"center",gap:1,
+              <button onClick={()=>setViewing(p.uid)} style={{
+                width:"100%",display:"block",textAlign:"start",cursor:"pointer",fontFamily:"inherit",
+                background:"linear-gradient(165deg,#0e0e13,#08080c)",border:"none",borderRadius:14.5,padding:"12px 13px",
               }}>
-                <span style={{fontSize: isPodium && showPoints ? 26 : 20, lineHeight:1}}>{showPoints ? icon : `${i+1}`}</span>
-                {showPoints && isPodium && (
-                  <span style={{fontSize:9,color:podiumBorder,fontWeight:800,letterSpacing:1}}>
-                    {i===0?"1ST":i===1?"2ND":"3RD"}
-                  </span>
-                )}
-              </div>
-              {/* Avatar */}
-              <div style={{
-                width: isPodium && showPoints ? 38 : 34,
-                height: isPodium && showPoints ? 38 : 34,
-                borderRadius:"50%",
-                background:avatarBg(p),
-                display:"flex",alignItems:"center",justifyContent:"center",
-                fontSize: isPodium && showPoints ? 16 : 14,
-                fontWeight:900,color:"#fff",flexShrink:0,
-              }}>{avatarInner(p)}</div>
-              {/* Name + breakdown */}
-              <div style={{flex:1,minWidth:0}}>
-                <div style={{
-                  fontSize: isPodium && showPoints ? 15 : 14,
-                  color: p.isMe ? "#f4e4b0" : "#f5f3ee",fontWeight:800,
-                  overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",
-                }}>{p.name}{p.isMe?t("league.you"):""}</div>
+                <div style={{display:"flex",alignItems:"center",gap:11}}>
+                  <span style={{width:24,fontSize:isPodium?16:15,fontWeight:900,color:isPodium?"#f4e4b0":"#8a8472",textAlign:"center",flexShrink:0}}>{showPoints?icon:`${i+1}`}</span>
+                  <div style={{width:40,height:40,borderRadius:"50%",background:avatarBg(p),display:"flex",alignItems:"center",justifyContent:"center",fontSize:19,fontWeight:900,color:"#fff",flexShrink:0}}>{avatarInner(p)}</div>
+                  <span style={{flex:1,fontSize:15,fontWeight:800,color:p.isMe?"#f4e4b0":"#f5f3ee",minWidth:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.name}{p.isMe?t("league.you"):""}</span>
+                  <div style={{textAlign:"center",flexShrink:0}}>
+                    <div style={{fontSize:23,fontWeight:900,color:showPoints?"#f4e4b0":"#5e5640",lineHeight:1}}><AnimatedNumber value={p.totalPoints} /></div>
+                    <div style={{fontSize:7,color:"#8a8472",letterSpacing:1}}>נק׳</div>
+                  </div>
+                </div>
                 {showPoints ? (
-                  <div style={{fontSize:9,color:"#8a8472",fontWeight:600,marginTop:2,display:"flex",gap:8,flexWrap:"wrap"}}>
-                    <span>🏠 בתים <b style={{color:"#c9a961"}}>{p.matchScore.total}</b></span>
-                    <span>🏆 נוקאאוט <b style={{color:"#c9a961"}}>{p.koScore.total}</b></span>
-                    {p.matchScore.exact > 0 && <span>🎯 <b style={{color:"#f4e4b0"}}>{p.matchScore.exact}</b></span>}
+                  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginTop:10,paddingTop:10,borderTop:"1px solid rgba(201,169,97,0.15)"}}>
+                    <span style={{display:"flex",alignItems:"center",gap:4,fontSize:11}}>🏠<b style={{color:"#c9a961",fontWeight:900}}>{p.matchScore.total}</b></span>
+                    <span style={{display:"flex",alignItems:"center",gap:4,fontSize:11}}>🏆<b style={{color:"#fff4cc",fontWeight:900}}>{p.koScore.total}</b></span>
+                    <span style={{display:"flex",alignItems:"center",gap:4,fontSize:11}}>👟<b style={{color:"#a5b4fc",fontWeight:900}}>{p.tsPoints||0}</b></span>
+                    <span style={{display:"flex",alignItems:"center",gap:4,fontSize:11}}>🎯<b style={{color:"#f4e4b0",fontWeight:900}}>{p.matchScore.exact}</b></span>
+                    <span style={{display:"flex",alignItems:"center",gap:4,fontSize:11}}>✅<b style={{color:"#34d399",fontWeight:900}}>{p.matchScore.result}</b></span>
                   </div>
                 ) : (
-                  <div style={{fontSize:10,color:"#8a8472",marginTop:1}}>
+                  <div style={{fontSize:10,color:"#8a8472",marginTop:8,paddingTop:8,borderTop:"1px solid rgba(201,169,97,0.12)"}}>
                     {p.predictedCount}/{FIXTURES.length} {t("league.predicted")}
                   </div>
                 )}
-              </div>
-              {/* Points */}
-              <div style={{textAlign:"center",flexShrink:0}}>
-                <div style={{
-                  fontSize: isPodium && showPoints ? 24 : 20,
-                  fontWeight:900,
-                  color: showPoints ? (isPodium ? podiumBorder : "#c9a961") : "#5e5640",
-                  lineHeight:1,
-                }}><AnimatedNumber value={p.totalPoints} /></div>
-                {showPoints && <div style={{fontSize:7,color:"#8a8472",letterSpacing:1,marginTop:2}}>נק׳</div>}
-              </div>
-            </button>
+              </button>
+            </div>
           );
         })}
 
@@ -20964,6 +20919,8 @@ function AppInner() {
           0%, 100% { box-shadow: 0 0 22px -6px rgba(244,228,176,0.25), 0 12px 30px -10px rgba(0,0,0,0.7); }
           50% { box-shadow: 0 0 26px -2px rgba(244,228,176,0.5), 0 12px 30px -10px rgba(0,0,0,0.7); }
         }
+        @property --lbspin { syntax:'<angle>'; initial-value:0deg; inherits:false; }
+        @keyframes lbSpin { to { --lbspin:360deg; } }
         @keyframes championPop {
           0% { transform: scale(0) rotate(-180deg); opacity: 0; }
           60% { transform: scale(1.15) rotate(10deg); opacity: 1; }
