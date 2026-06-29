@@ -15,7 +15,7 @@ import { R32_THIRD_TABLE } from "./r32table";
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "5.14.4";
+const APP_VERSION = "5.15.0";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -15625,44 +15625,97 @@ function KnockoutBracket({ standings, bestThirds, liveStandings, liveBestThirds,
     const isOpen = openRound === key;
     const predicted = safeMatches.filter(m => { const p = koPicks[m.id]; return p && p.h !== "" && p.h !== undefined; }).length;
     const total = safeMatches.length;
-    return (
-      <div key={key} style={{marginBottom:12,borderRadius:16,overflow:"hidden",
-        border:"1px solid rgba(255,255,255,0.06)",background:"rgba(18,26,44,0.4)"}}>
+    // Active round = first round that has teams set but at least one unfinished match
+    const finishedCount = safeMatches.filter(m => { const r = actualKoScores?.[m.id]; return r && r.h !== "" && r.h !== undefined; }).length;
+    const hasTeams = safeMatches.some(m => m.a && m.b);
+    const isActive = hasTeams && finishedCount < total && total > 0;
+
+    const inner = (
+      <div style={{borderRadius: isActive ? 14.5 : 16,overflow:"hidden",
+        background:"linear-gradient(165deg,#0e0e13,#08080c)"}}>
         <div onClick={()=>toggleRound(key)} style={{display:"flex",alignItems:"center",gap:10,padding:"14px",
-          cursor:"pointer",userSelect:"none",background:"linear-gradient(160deg,rgba(30,41,64,0.6),transparent)"}}>
-          <div style={{fontFamily:"inherit",fontSize:13,fontWeight:900,color:"#0d1424",width:32,height:32,
+          cursor:"pointer",userSelect:"none"}}>
+          <div style={{fontFamily:"inherit",fontSize:13,fontWeight:900,color:"#1a1400",width:32,height:32,
             borderRadius:9,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,
-            background: isOpen ? "linear-gradient(135deg,#fbbf24,#d97706)" : "linear-gradient(135deg,#8295b5,#5b6b8c)"}}>{badge}</div>
-          <div style={{fontSize:14,fontWeight:800,letterSpacing:2,color:"#c3d0e8"}}>{label}</div>
-          <div style={{marginRight:"auto",fontSize:10,fontWeight:700,
-            background: predicted>0 ? "rgba(251,191,36,0.15)" : "rgba(255,255,255,0.05)",
-            color: predicted>0 ? "#fbbf24" : "#5b6b8c",padding:"2px 9px",borderRadius:20}}>{predicted}/{total}</div>
-          <div style={{fontSize:13,color:"#5b6b8c",transition:"transform .25s",transform: isOpen?"rotate(180deg)":"none"}}>▼</div>
+            background: isActive ? "linear-gradient(135deg,#fff4cc,#f4e4b0,#c9a961)" : isOpen ? "linear-gradient(135deg,#f4e4b0,#c9a961)" : "rgba(201,169,97,0.2)",
+            color: (isActive||isOpen) ? "#1a1400" : "#c9a961"}}>{badge}</div>
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{fontSize:14,fontWeight:800,letterSpacing:1,color: isActive ? "#f4e4b0" : "#e8e4da"}}>{label}</div>
+            {isActive && <div style={{fontSize:8,color:"#e0524d",fontWeight:800,display:"flex",alignItems:"center",gap:3,marginTop:2}}>
+              <span style={{width:4,height:4,borderRadius:"50%",background:"#e0524d",animation:"livePulse 1.2s infinite",display:"inline-block"}}/> מתרחש עכשיו
+            </div>}
+          </div>
+          <div style={{fontSize:10,fontWeight:700,
+            background: predicted>0 ? "rgba(201,169,97,0.15)" : "rgba(255,255,255,0.05)",
+            color: predicted>0 ? "#c9a961" : "#8a8472",padding:"2px 9px",borderRadius:20}}>{predicted}/{total}</div>
+          <div style={{fontSize:13,color:"#8a8472",transition:"transform .25s",transform: isOpen?"rotate(180deg)":"none"}}>▼</div>
         </div>
         {isOpen && (
           <div style={{padding:"6px 10px 12px"}}>
             {safeMatches.length > 0
               ? safeMatches.map(m => renderCompactMatch(m))
-              : <div style={{textAlign:"center",color:"#5b6b8c",fontSize:11,padding:"8px"}}>יתמלא בהמשך</div>}
+              : <div style={{textAlign:"center",color:"#8a8472",fontSize:11,padding:"8px"}}>יתמלא בהמשך</div>}
           </div>
         )}
+      </div>
+    );
+
+    // Active round gets a spinning gold frame; others a static gold hairline
+    if (isActive) {
+      return (
+        <div key={key} style={{marginBottom:12,borderRadius:16,padding:1.6,
+          background:"conic-gradient(from var(--lbspin,0deg), #5e4e26, #c9a961, #f4e4b0, #fff4cc, #f4e4b0, #c9a961, #5e4e26)",
+          animation:"lbSpin 6s linear infinite",boxShadow:"0 0 16px -4px rgba(244,228,176,0.25)"}}>
+          {inner}
+        </div>
+      );
+    }
+    return (
+      <div key={key} style={{marginBottom:12,borderRadius:16,overflow:"hidden",border:"1px solid transparent",
+        background:"linear-gradient(165deg,#0e0e13,#08080c)",
+        backgroundImage:"linear-gradient(165deg,#0e0e13,#08080c), linear-gradient(135deg,#5e4e26,#c9a961 45%,#5e4e26)",
+        backgroundOrigin:"border-box",backgroundClip:"padding-box, border-box"}}>
+        {inner}
       </div>
     );
   };
 
   return (
     <div style={{padding:"16px 14px 100px",maxWidth:920,margin:"0 auto"}}>
-      <div style={{textAlign:"center",marginBottom:18}}>
-        <div style={{fontSize:10,color:"#64748b",letterSpacing:3}}>{t("bracket.knockoutStage")}</div>
-        <h2 style={{fontSize:24,margin:"4px 0",background:"linear-gradient(180deg,#fde68a,#f59e0b)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",fontWeight:900}}>{t("bracket.title")}</h2>
-        <p style={{fontSize:12,color:"#94a3b8",margin:"0 0 10px"}}>{t("bracket.tapToAdvance")}</p>
+      <style>{`
+        @keyframes koCup { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-4px)} }
+      `}</style>
+      <div style={{textAlign:"center",marginBottom:16}}>
+        <div style={{fontSize:10,color:"#c9a961",letterSpacing:3,opacity:0.9}}>{t("bracket.knockoutStage")}</div>
+        <h2 style={{fontSize:24,margin:"4px 0",background:"linear-gradient(180deg,#f4e4b0,#c9a961)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text",fontWeight:900}}>{t("bracket.title")}</h2>
+      </div>
+
+      {/* 🏆 Champion card — spinning gold frame */}
+      <div style={{position:"relative",borderRadius:18,padding:1.6,marginBottom:16,
+        background:"conic-gradient(from var(--lbspin,0deg), #5e4e26, #c9a961, #f4e4b0, #fff4cc, #f4e4b0, #c9a961, #5e4e26)",
+        animation:"lbSpin 7s linear infinite",boxShadow:"0 0 22px -6px rgba(244,228,176,0.3), 0 14px 36px -14px rgba(0,0,0,0.8)"}}>
+        <div style={{background:"linear-gradient(165deg,#14110a,#0a0805)",borderRadius:16.5,padding:"20px 16px",textAlign:"center"}}>
+          <div style={{fontSize:40,animation:"koCup 2.5s ease-in-out infinite"}}>🏆</div>
+          <div style={{fontSize:9,color:"#c9a961",letterSpacing:3,fontWeight:700,marginTop:4}}>אלוף המונדיאל</div>
+          {champion ? (
+            <>
+              <div style={{fontSize:38,marginTop:8}}>{champion.flag || champion.f || "🏆"}</div>
+              <div style={{fontSize:24,fontWeight:900,marginTop:4,background:"linear-gradient(180deg,#fff4cc,#c9a961)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text"}}>{champion.name || champion.n}</div>
+            </>
+          ) : (
+            <div style={{fontSize:18,color:"#5e5640",fontWeight:800,marginTop:8}}>טרם הוכרע</div>
+          )}
+        </div>
+      </div>
+
+      <div style={{textAlign:"center",marginBottom:14}}>
         <div style={{
           display:"inline-flex",alignItems:"center",gap:8,
-          background:"linear-gradient(135deg,#fbbf24,#d97706)",
-          color:"#1e2940",
+          background:"linear-gradient(135deg,#f4e4b0,#c9a961)",
+          color:"#1a1400",
           padding:"5px 14px",borderRadius:20,
           fontSize:11,fontWeight:900,letterSpacing:1,
-          boxShadow:"0 4px 12px rgba(251,191,36,0.4)",
+          boxShadow:"0 4px 12px rgba(201,169,97,0.3)",
         }}>
           {t("bracket.doublePoints")}
         </div>
