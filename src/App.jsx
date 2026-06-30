@@ -15,7 +15,7 @@ import { R32_THIRD_TABLE } from "./r32table";
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "5.16.9";
+const APP_VERSION = "5.17.0";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -13233,22 +13233,28 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
         // If we only have the live aggregate (no ft90 yet), show a single "live extra time" cell.
         if (!actual.ft90) {
           return (
-            <div style={{marginTop:10,display:"flex",gap:5}}>
-              <div style={{flex:1,textAlign:"center",padding:"6px 4px",borderRadius:8,
+            <div style={{marginTop:10}}>
+              <div style={{textAlign:"center",padding:"7px 4px",borderRadius:8,
                 background:"rgba(139,92,246,0.1)",border:"1px solid rgba(139,92,246,0.45)"}}>
-                <div style={{fontSize:7,fontWeight:700,letterSpacing:0.5,color:"#a78bfa"}}>
-                  {matchPhase==="pens" ? "פנדלים — בעיצומם" : "הארכה — בעיצומה"}
+                <div style={{fontSize:7.5,fontWeight:700,letterSpacing:0.5,color:"#a78bfa"}}>
+                  {matchPhase==="pens" ? "🥅 פנדלים — בעיצומם" : "⏱️ הארכה — בעיצומה"}
                 </div>
-                <div style={{fontSize:13,fontWeight:800,marginTop:2,color:"#f5f3ee"}}>{actual.h} : {actual.a}</div>
+                <div style={{fontSize:15,fontWeight:900,marginTop:2,color:"#f5f3ee"}}>{actual.h} : {actual.a}</div>
+                <div style={{fontSize:7,color:"#8a8472",marginTop:2}}>תוצאה כוללת (כולל 90 הדקות)</div>
               </div>
             </div>
           );
         }
         return (
-          <div style={{marginTop:10,display:"flex",gap:5}}>
-            {cell("90 דקות ✓", ph90, "scored")}
-            {phET && cell("הארכה", phET, (matchPhase==="et") ? "now" : "")}
-            {phPK && cell("פנדלים", phPK, (matchPhase==="pens") ? "now" : "")}
+          <div style={{marginTop:10}}>
+            <div style={{display:"flex",gap:5}}>
+              {cell("90 דקות", ph90, "scored")}
+              {phET && cell("אחרי הארכה", phET, (matchPhase==="et") ? "now" : "")}
+              {phPK && cell("פנדלים", phPK, (matchPhase==="pens") ? "now" : "")}
+            </div>
+            <div style={{fontSize:7,color:"#8a8472",textAlign:"center",marginTop:4}}>
+              הניקוד נקבע לפי תוצאת 90 הדקות
+            </div>
           </div>
         );
       })()}
