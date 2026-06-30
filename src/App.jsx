@@ -15,7 +15,7 @@ import { R32_THIRD_TABLE } from "./r32table";
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "5.17.1";
+const APP_VERSION = "5.17.2";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -18175,8 +18175,8 @@ function LeagueHub({
                     <span style={{display:"flex",alignItems:"center",gap:4,fontSize:11}}>🏠<b style={{color:"#c9a961",fontWeight:900}}>{p.matchScore.total}</b></span>
                     <span style={{display:"flex",alignItems:"center",gap:4,fontSize:11}}>🏆<b style={{color:"#fff4cc",fontWeight:900}}>{p.koScore.total}</b></span>
                     <span style={{display:"flex",alignItems:"center",gap:4,fontSize:11}}>👟<b style={{color:"#a5b4fc",fontWeight:900}}>{p.tsPoints||0}</b></span>
-                    <span style={{display:"flex",alignItems:"center",gap:4,fontSize:11}}>🎯<b style={{color:"#f4e4b0",fontWeight:900}}>{p.matchScore.exact}</b></span>
-                    <span style={{display:"flex",alignItems:"center",gap:4,fontSize:11}}>✅<b style={{color:"#34d399",fontWeight:900}}>{p.matchScore.result}</b></span>
+                    <span style={{display:"flex",alignItems:"center",gap:4,fontSize:11}}>🎯<b style={{color:"#f4e4b0",fontWeight:900}}>{(p.matchScore.exact||0)+(p.koScore.exact||0)}</b></span>
+                    <span style={{display:"flex",alignItems:"center",gap:4,fontSize:11}}>✅<b style={{color:"#34d399",fontWeight:900}}>{(p.matchScore.result||0)+(p.koScore.result||0)}</b></span>
                   </div>
                 </button>
               </div>
@@ -18205,8 +18205,8 @@ function LeagueHub({
                   <span style={{display:"flex",alignItems:"center",gap:4,fontSize:11}}>🏠<b style={{color:"#c9a961",fontWeight:900}}>{p.matchScore.total}</b></span>
                   <span style={{display:"flex",alignItems:"center",gap:4,fontSize:11}}>🏆<b style={{color:"#fff4cc",fontWeight:900}}>{p.koScore.total}</b></span>
                   <span style={{display:"flex",alignItems:"center",gap:4,fontSize:11}}>👟<b style={{color:"#a5b4fc",fontWeight:900}}>{p.tsPoints||0}</b></span>
-                  <span style={{display:"flex",alignItems:"center",gap:4,fontSize:11}}>🎯<b style={{color:"#f4e4b0",fontWeight:900}}>{p.matchScore.exact}</b></span>
-                  <span style={{display:"flex",alignItems:"center",gap:4,fontSize:11}}>✅<b style={{color:"#34d399",fontWeight:900}}>{p.matchScore.result}</b></span>
+                  <span style={{display:"flex",alignItems:"center",gap:4,fontSize:11}}>🎯<b style={{color:"#f4e4b0",fontWeight:900}}>{(p.matchScore.exact||0)+(p.koScore.exact||0)}</b></span>
+                  <span style={{display:"flex",alignItems:"center",gap:4,fontSize:11}}>✅<b style={{color:"#34d399",fontWeight:900}}>{(p.matchScore.result||0)+(p.koScore.result||0)}</b></span>
                 </div>
               ) : (
                 <div style={{fontSize:10,color:"#8a8472",marginTop:8,paddingTop:8,borderTop:"1px solid rgba(201,169,97,0.1)"}}>
