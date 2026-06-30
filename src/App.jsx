@@ -15,7 +15,7 @@ import { R32_THIRD_TABLE } from "./r32table";
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "5.17.2";
+const APP_VERSION = "5.17.3";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -18055,11 +18055,15 @@ function LeagueHub({
 
           {/* 🎯 Compact leader banner: sniper + unlucky */}
           {hasActuals && members.length > 0 && (() => {
-            const topHit = [...members].sort((a,b) => (b.matchScore.exact - a.matchScore.exact) || (b.totalPoints - a.totalPoints))[0];
-            const eligible = members.filter(m => m.matchScore.played > 0);
-            const topMiss = eligible.length ? [...eligible].sort((a,b) => (b.matchScore.wrong - a.matchScore.wrong) || (a.totalPoints - b.totalPoints))[0] : null;
-            const anyHits = topHit && topHit.matchScore.exact > 0;
-            const anyMisses = topMiss && topMiss.matchScore.wrong > 0;
+            // Combine group-stage + knockout hits/misses for the league-wide leaders.
+            const totalExact = m => (m.matchScore.exact || 0) + (m.koScore?.exact || 0);
+            const totalWrong = m => (m.matchScore.wrong || 0) + (m.koScore?.wrong || 0);
+            const totalPlayed = m => (m.matchScore.played || 0) + (m.koScore?.played || 0);
+            const topHit = [...members].sort((a,b) => (totalExact(b) - totalExact(a)) || (b.totalPoints - a.totalPoints))[0];
+            const eligible = members.filter(m => totalPlayed(m) > 0);
+            const topMiss = eligible.length ? [...eligible].sort((a,b) => (totalWrong(b) - totalWrong(a)) || (a.totalPoints - b.totalPoints))[0] : null;
+            const anyHits = topHit && totalExact(topHit) > 0;
+            const anyMisses = topMiss && totalWrong(topMiss) > 0;
             if (!anyHits && !anyMisses) return null;
             return (
               <div style={{display:"flex",gap:8,marginTop:14}}>
@@ -18068,7 +18072,7 @@ function LeagueHub({
                     <span style={{fontSize:20}}>🎯</span>
                     <div style={{textAlign:"start",flex:1,minWidth:0}}>
                       <div style={{fontSize:9,color:"#fbbf24",fontWeight:800}}>צלף הליגה</div>
-                      <div style={{fontSize:12,fontWeight:800,color:"#f1f5f9",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{topHit.name} · <span style={{color:"#fbbf24"}}>{topHit.matchScore.exact} בולים</span></div>
+                      <div style={{fontSize:12,fontWeight:800,color:"#f1f5f9",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{topHit.name} · <span style={{color:"#fbbf24"}}>{totalExact(topHit)} בולים</span></div>
                     </div>
                   </div>
                 )}
@@ -18077,7 +18081,7 @@ function LeagueHub({
                     <span style={{fontSize:20}}>🌧️</span>
                     <div style={{textAlign:"start",flex:1,minWidth:0}}>
                       <div style={{fontSize:9,color:"#38bdf8",fontWeight:800}}>חסר מזל</div>
-                      <div style={{fontSize:12,fontWeight:800,color:"#f1f5f9",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{topMiss.name} · <span style={{color:"#38bdf8"}}>{topMiss.matchScore.wrong} פספוסים</span></div>
+                      <div style={{fontSize:12,fontWeight:800,color:"#f1f5f9",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{topMiss.name} · <span style={{color:"#38bdf8"}}>{totalWrong(topMiss)} פספוסים</span></div>
                     </div>
                   </div>
                 )}
