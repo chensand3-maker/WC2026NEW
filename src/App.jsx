@@ -15,7 +15,7 @@ import { R32_THIRD_TABLE } from "./r32table";
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "5.17.0";
+const APP_VERSION = "5.17.1";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -13249,7 +13249,9 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
           <div style={{marginTop:10}}>
             <div style={{display:"flex",gap:5}}>
               {cell("90 דקות", ph90, "scored")}
-              {phET && cell("אחרי הארכה", phET, (matchPhase==="et") ? "now" : "")}
+              {/* "After extra time" = the real cumulative score (API's goals), since
+                  score.extratime is unreliable; the live aggregate is the source of truth. */}
+              {(matchPhase==="aet" || matchPhase==="et" || phPK) && cell("אחרי הארכה", { h: actual.h, a: actual.a }, (matchPhase==="et") ? "now" : "")}
               {phPK && cell("פנדלים", phPK, (matchPhase==="pens") ? "now" : "")}
             </div>
             <div style={{fontSize:7,color:"#8a8472",textAlign:"center",marginTop:4}}>
