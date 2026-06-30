@@ -15,7 +15,7 @@ import { R32_THIRD_TABLE } from "./r32table";
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "5.16.5";
+const APP_VERSION = "5.16.7";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -1898,13 +1898,22 @@ function scoreKoMatch(predicted, actual) {
   // 🔴 Don't award points for live matches
   if (actual.isLive === true) return { points: 0, type: "none" };
   const ph = parseInt(predicted.h), pa = parseInt(predicted.a);
-  const ah = parseInt(actual.h), aa = parseInt(actual.a);
+  // ⏱️ Knockout predictions are judged on the 90-minute (regulation) result.
+  // If a match went to extra time / penalties, `actual.h/.a` hold the FINAL score,
+  // but the bet is about 90 minutes — so prefer `ft90` when it's available.
+  let ah, aa;
+  if (actual.ft90 && actual.ft90.h !== undefined && actual.ft90.h !== null && actual.ft90.h !== "") {
+    ah = parseInt(actual.ft90.h); aa = parseInt(actual.ft90.a);
+  } else {
+    ah = parseInt(actual.h); aa = parseInt(actual.a);
+  }
   if (isNaN(ph) || isNaN(pa) || isNaN(ah) || isNaN(aa)) return { points: 0, type: "none" };
   if (ph === ah && pa === aa) return { points: POINTS.KO_EXACT, type: "exact" };
   const predResult = ph > pa ? "h" : ph < pa ? "a" : "d";
   const actResult = ah > aa ? "h" : ah < aa ? "a" : "d";
-  if (predResult === actResult && predResult !== "d") {
-    // Correct winner. (Draws don't qualify here — if you predicted draw and it was draw, that's "exact".)
+  if (predResult === actResult) {
+    // Correct outcome at 90' — including a correctly-predicted draw
+    // (a draw after 90 min is a valid KO outcome, since the winner is decided later).
     return { points: POINTS.KO_RESULT, type: "result" };
   }
   return { points: POINTS.WRONG, type: "wrong" };
@@ -13204,10 +13213,11 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
       })()}
       {/* ⏱️ Phase timeline — only for KO matches that went to extra-time / penalties */}
       {!collapsed && (matchPhase === "et" || matchPhase === "pens" || matchPhase === "aet") && actual && (() => {
-        const ph90 = actual.ft90;
+        // During a LIVE extra-time/penalty phase the API may not expose the 90' score yet.
+        // Fall back to the current scoreline so the timeline always renders something useful.
+        const ph90 = actual.ft90 || { h: actual.h, a: actual.a };
         const phET = actual.etRes;
         const phPK = actual.pkRes;
-        if (!ph90) return null;
         const cell = (label, val, kind) => (
           <div style={{flex:1,textAlign:"center",padding:"6px 4px",borderRadius:8,
             background: kind==="scored" ? "rgba(201,169,97,0.1)" : kind==="now" ? "rgba(139,92,246,0.1)" : "rgba(255,255,255,0.025)",
@@ -13216,6 +13226,20 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
             <div style={{fontSize:13,fontWeight:800,marginTop:2,color: kind==="scored" ? "#f4e4b0" : "#f5f3ee"}}>{val.h} : {val.a}</div>
           </div>
         );
+        // If we only have the live aggregate (no ft90 yet), show a single "live extra time" cell.
+        if (!actual.ft90) {
+          return (
+            <div style={{marginTop:10,display:"flex",gap:5}}>
+              <div style={{flex:1,textAlign:"center",padding:"6px 4px",borderRadius:8,
+                background:"rgba(139,92,246,0.1)",border:"1px solid rgba(139,92,246,0.45)"}}>
+                <div style={{fontSize:7,fontWeight:700,letterSpacing:0.5,color:"#a78bfa"}}>
+                  {matchPhase==="pens" ? "פנדלים — בעיצומם" : "הארכה — בעיצומה"}
+                </div>
+                <div style={{fontSize:13,fontWeight:800,marginTop:2,color:"#f5f3ee"}}>{actual.h} : {actual.a}</div>
+              </div>
+            </div>
+          );
+        }
         return (
           <div style={{marginTop:10,display:"flex",gap:5}}>
             {cell("90 דקות ✓", ph90, "scored")}

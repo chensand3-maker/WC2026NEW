@@ -324,10 +324,18 @@ export function mapKnockoutToBracket(liveData, bracketMatches) {
     }
     if (!result) continue;
 
+    // Carry the 90-minute result through so KO scoring can judge bets on regulation time.
+    let ft90 = null;
+    if (result.ft90 && result.ft90.h !== undefined && result.ft90.h !== null) {
+      ft90 = swapped
+        ? { h: String(result.ft90.a), a: String(result.ft90.h) }
+        : { h: String(result.ft90.h), a: String(result.ft90.a) };
+    }
+
     if (swapped) {
-      scores[m.id] = { h: String(result.a), a: String(result.h), isLive: result.isLive === true, isFinished: result.isFinished === true, status: result.status };
+      scores[m.id] = { h: String(result.a), a: String(result.h), isLive: result.isLive === true, isFinished: result.isFinished === true, status: result.status, ft90 };
     } else {
-      scores[m.id] = { h: String(result.h), a: String(result.a), isLive: result.isLive === true, isFinished: result.isFinished === true, status: result.status };
+      scores[m.id] = { h: String(result.h), a: String(result.a), isLive: result.isLive === true, isFinished: result.isFinished === true, status: result.status, ft90 };
     }
 
     if (result.winnerName) {
