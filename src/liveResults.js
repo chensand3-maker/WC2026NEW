@@ -325,17 +325,27 @@ export function mapKnockoutToBracket(liveData, bracketMatches) {
     if (!result) continue;
 
     // Carry the 90-minute result through so KO scoring can judge bets on regulation time.
-    let ft90 = null;
+    let ft90 = null, etRes = null, pkRes = null;
     if (result.ft90 && result.ft90.h !== undefined && result.ft90.h !== null) {
       ft90 = swapped
         ? { h: String(result.ft90.a), a: String(result.ft90.h) }
         : { h: String(result.ft90.h), a: String(result.ft90.a) };
     }
+    if (result.etRes && result.etRes.h !== undefined && result.etRes.h !== null) {
+      etRes = swapped
+        ? { h: String(result.etRes.a), a: String(result.etRes.h) }
+        : { h: String(result.etRes.h), a: String(result.etRes.a) };
+    }
+    if (result.pkRes && result.pkRes.h !== undefined && result.pkRes.h !== null) {
+      pkRes = swapped
+        ? { h: String(result.pkRes.a), a: String(result.pkRes.h) }
+        : { h: String(result.pkRes.h), a: String(result.pkRes.a) };
+    }
 
     if (swapped) {
-      scores[m.id] = { h: String(result.a), a: String(result.h), isLive: result.isLive === true, isFinished: result.isFinished === true, status: result.status, ft90 };
+      scores[m.id] = { h: String(result.a), a: String(result.h), isLive: result.isLive === true, isFinished: result.isFinished === true, status: result.status, ft90, etRes, pkRes };
     } else {
-      scores[m.id] = { h: String(result.h), a: String(result.a), isLive: result.isLive === true, isFinished: result.isFinished === true, status: result.status, ft90 };
+      scores[m.id] = { h: String(result.h), a: String(result.a), isLive: result.isLive === true, isFinished: result.isFinished === true, status: result.status, ft90, etRes, pkRes };
     }
 
     if (result.winnerName) {
