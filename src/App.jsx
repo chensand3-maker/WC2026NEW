@@ -15,7 +15,7 @@ import { R32_THIRD_TABLE } from "./r32table";
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "5.16.7";
+const APP_VERSION = "5.16.8";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -12905,6 +12905,10 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
     if (st === "ET" || st === "BT") return "et";       // live, in extra time
     if (st === "P" || st === "PEN") return "pens";       // penalty shootout / decided on pens
     if (st === "AET") return "aet";                       // finished after extra time
+    // Some finished matches come back as plain "FT" even though they went to ET/pens —
+    // detect that from the presence of extra-time / penalty sub-scores.
+    if (actual?.pkRes) return "pens";
+    if (actual?.etRes) return "aet";
     return null;
   })();
   const score = actual && actual.h !== undefined && actual.h !== "" && hasResult && !matchIsLiveNow
@@ -13211,8 +13215,8 @@ function MatchCard({ fixture, pick, actual, onPick, showResults, homeInputId, aw
           </div>
         );
       })()}
-      {/* ⏱️ Phase timeline — only for KO matches that went to extra-time / penalties */}
-      {!collapsed && (matchPhase === "et" || matchPhase === "pens" || matchPhase === "aet") && actual && (() => {
+      {/* ⏱️ Phase timeline — KO matches that went to extra-time / penalties (shown even collapsed) */}
+      {(matchPhase === "et" || matchPhase === "pens" || matchPhase === "aet") && actual && (() => {
         // During a LIVE extra-time/penalty phase the API may not expose the 90' score yet.
         // Fall back to the current scoreline so the timeline always renders something useful.
         const ph90 = actual.ft90 || { h: actual.h, a: actual.a };
