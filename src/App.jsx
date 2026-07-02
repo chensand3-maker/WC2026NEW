@@ -15,7 +15,7 @@ import { R32_THIRD_TABLE } from "./r32table";
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "5.17.3";
+const APP_VERSION = "5.18.0";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -13522,17 +13522,25 @@ function MatchDetailsModal({ fixture, apiFixtureId, onClose }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [details, setDetails] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
+  const loadDetails = (force) => {
     if (!apiFixtureId) {
       setError("no_fixture_id");
       setLoading(false);
       return;
     }
+    fetchMatchDetails(apiFixtureId, false, force)
+      .then(d => { setDetails(d); setLoading(false); setRefreshing(false); })
+      .catch(e => { setError(e.message); setLoading(false); setRefreshing(false); });
+  };
+
+  useEffect(() => {
     setLoading(true);
-    fetchMatchDetails(apiFixtureId)
-      .then(d => { setDetails(d); setLoading(false); })
-      .catch(e => { setError(e.message); setLoading(false); });
+    // Always fetch fresh when the user opens the details — a result seen early
+    // (e.g. at 1-0) must reflect later goals.
+    loadDetails(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [apiFixtureId]);
 
   const home = findTeam(fixture.home);
@@ -13583,10 +13591,17 @@ function MatchDetailsModal({ fixture, apiFixtureId, onClose }) {
           <div style={{fontSize:10,color:"#94a3b8",letterSpacing:2,fontWeight:700}}>
             📊 {t("matchdetails.title")}
           </div>
-          <button onClick={onClose} style={{
-            background:"transparent",border:"none",color:"#94a3b8",fontSize:20,
-            cursor:"pointer",fontFamily:"inherit",padding:0,
-          }}>✕</button>
+          <div style={{display:"flex",alignItems:"center",gap:6}}>
+            <button onClick={() => { setRefreshing(true); loadDetails(true); }} disabled={refreshing} style={{
+              background:"rgba(201,169,97,0.12)",border:"1px solid rgba(201,169,97,0.3)",color:"#c9a961",
+              fontSize:14,cursor:refreshing?"default":"pointer",fontFamily:"inherit",
+              borderRadius:8,padding:"3px 9px",opacity:refreshing?0.5:1,
+            }} title="רענן">{refreshing ? "⏳" : "🔄"}</button>
+            <button onClick={onClose} style={{
+              background:"transparent",border:"none",color:"#94a3b8",fontSize:20,
+              cursor:"pointer",fontFamily:"inherit",padding:0,
+            }}>✕</button>
+          </div>
         </div>
 
         {/* Score banner */}
@@ -14497,7 +14512,7 @@ function H2HInline({ homeTeam, awayTeam, actuals, teamMatchStats }) {
   );
 }
 
-function TodayScreen({ picks, actuals, onPick, onBack, onGoToBracket, leagueMembers = null, onRefresh, lastFetchAt, onShowDetails = null, liveData = null, onTeamClick = null, teamMatchStats = {}, standings = null, koPicks = {}, setKoPicks = ()=>{}, koWinners = {}, setKoWinners = ()=>{}, actualKoScores = {} }) {
+function TodayScreen({ picks, actuals, onPick, onBack, onGoToBracket, leagueMembers = null, onRefresh, lastFetchAt, onShowDetails = null, liveData = null, onTeamClick = null, teamMatchStats = {}, standings = null, koPicks = {}, setKoPicks = ()=>{}, koWinners = {}, setKoWinners = ()=>{}, actualKo = {}, actualKoScores = {} }) {
   const t = useT();
 
   // 🏆 Build the FULL knockout bracket so KO matches can be predicted inline here.
@@ -14524,11 +14539,15 @@ function TodayScreen({ picks, actuals, onPick, onBack, onGoToBracket, leagueMemb
       }
       return ph(`מנצח M${73+idx}`);
     };
-    // For R16 display we ALWAYS show both possible teams from each R32 match
-    // (the projected matchup), regardless of the user's R32 pick.
+    // For R16 display we show the REAL qualified team when the R32 match is decided
+    // (actualKo), otherwise the projected matchup (both possible teams).
     const W32 = (idx) => {
       const mm = r32arr[idx];
       if (!mm) return ph(`מנצח M${73+idx}`);
+      // If the real R32 result is in, show the actual winner so R16 becomes bettable.
+      const realWin = actualKo[mm.id];
+      if (realWin === "a" && mm.a) return mm.a;
+      if (realWin === "b" && mm.b) return mm.b;
       return phPair(mm, idx);
     };
     // R16 official pairings (M89..M96)
@@ -14576,7 +14595,7 @@ function TodayScreen({ picks, actuals, onPick, onBack, onGoToBracket, leagueMemb
     map["FINAL"] = { id:"FINAL", a: WSF("SF-0",101), b: WSF("SF-1",102) };
 
     return map;
-  }, [standings, koWinners]);
+  }, [standings, koWinners, actualKo]);
 
   // ─── Pull-to-refresh ───
   const [ptrDist, setPtrDist] = useState(0);
@@ -20031,9 +20050,11 @@ function AppInner() {
     } catch {}
   }, [leagueData?.gifts, userId]);
 
-  // 🎴 Show wheel popup ONCE per day (stored in localStorage)
+  // 🎴 Wheel popup DISABLED — the game stays available in the sidebar, but no auto popup.
   const wheelPopupOncePerSessionRef = useRef(false);
   useEffect(() => {
+    return; // popup disabled — do not auto-show
+    // eslint-disable-next-line no-unreachable
     if (!name || !wheelAvailable || showLuckyWheel) return;
     if (wheelPopupOncePerSessionRef.current) return; // already shown this session
     // Check if already shown today
@@ -21218,6 +21239,7 @@ function AppInner() {
           setKoPicks={setKoPicks}
           koWinners={koWinners}
           setKoWinners={setKoWinners}
+          actualKo={actualKo}
           actualKoScores={actualKoScores}
         />
       )}
