@@ -15,7 +15,7 @@ import { R32_THIRD_TABLE } from "./r32table";
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "5.18.0";
+const APP_VERSION = "5.18.1";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -14560,9 +14560,10 @@ function TodayScreen({ picks, actuals, onPick, onBack, onGoToBracket, leagueMemb
     const W16 = (id, mNum) => {
       const mm = map[id];
       if (!mm) return ph(`מנצח M${mNum}`);
-      const pick = koWinners[id];
-      if (pick === "a" && mm.a && !mm.a.placeholder) return mm.a;
-      if (pick === "b" && mm.b && !mm.b.placeholder) return mm.b;
+      // Only advance a team when the R16 match REALLY finished (actualKo), not on my prediction.
+      const win = actualKo[id];
+      if (win === "a" && mm.a && !mm.a.placeholder) return mm.a;
+      if (win === "b" && mm.b && !mm.b.placeholder) return mm.b;
       return ph(`מנצח M${mNum}`);
     };
     // QF (M97..M100): W89vsW90, W93vsW94, W91vsW92, W95vsW96
@@ -14574,9 +14575,9 @@ function TodayScreen({ picks, actuals, onPick, onBack, onGoToBracket, leagueMemb
     const WQF = (id, mNum) => {
       const mm = map[id];
       if (!mm) return ph(`מנצח M${mNum}`);
-      const pick = koWinners[id];
-      if (pick === "a" && mm.a && !mm.a.placeholder) return mm.a;
-      if (pick === "b" && mm.b && !mm.b.placeholder) return mm.b;
+      const win = actualKo[id];
+      if (win === "a" && mm.a && !mm.a.placeholder) return mm.a;
+      if (win === "b" && mm.b && !mm.b.placeholder) return mm.b;
       return ph(`מנצח M${mNum}`);
     };
     // SF (M101,M102): W97vsW98, W99vsW100
@@ -14586,9 +14587,9 @@ function TodayScreen({ picks, actuals, onPick, onBack, onGoToBracket, leagueMemb
     const WSF = (id, mNum) => {
       const mm = map[id];
       if (!mm) return ph(`מנצח M${mNum}`);
-      const pick = koWinners[id];
-      if (pick === "a" && mm.a && !mm.a.placeholder) return mm.a;
-      if (pick === "b" && mm.b && !mm.b.placeholder) return mm.b;
+      const win = actualKo[id];
+      if (win === "a" && mm.a && !mm.a.placeholder) return mm.a;
+      if (win === "b" && mm.b && !mm.b.placeholder) return mm.b;
       return ph(`מנצח M${mNum}`);
     };
     // FINAL (M104): W101 vs W102
