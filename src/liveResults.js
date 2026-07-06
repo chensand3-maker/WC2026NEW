@@ -381,14 +381,14 @@ function saveMatchDetailsCache(cache) {
   } catch {}
 }
 
-export async function fetchMatchDetails(apiFixtureId, isLive = false) {
+export async function fetchMatchDetails(apiFixtureId, isLive = false, forceFresh = false) {
   if (!apiFixtureId) return null;
 
   const cache = getMatchDetailsCache();
-  // Only trust the cache for matches that already have events AND aren't live.
-  // A live match (or one fetched before goals were logged) must be re-fetched,
-  // otherwise an early empty result gets frozen in forever.
-  if (cache[apiFixtureId] && !isLive && cache[apiFixtureId].events && cache[apiFixtureId].events.length > 0) {
+  // Trust the cache only when NOT forcing a refresh, the match isn't live, and we
+  // already have events. A manual open (forceFresh) always re-fetches so a result
+  // viewed early (e.g. at 1-0) updates once more goals are scored.
+  if (!forceFresh && cache[apiFixtureId] && !isLive && cache[apiFixtureId].events && cache[apiFixtureId].events.length > 0) {
     return cache[apiFixtureId];
   }
 
@@ -408,27 +408,50 @@ export async function fetchMatchDetails(apiFixtureId, isLive = false) {
   const eventsJson = await eventsRes.json();
 
   const events = [];
+  const cancelled = []; // VAR "goal cancelled" events — used to drop the disallowed goal
   for (const e of (eventsJson.response || [])) {
     const minute = e.time?.elapsed;
     const extra = e.time?.extra ? `+${e.time.extra}` : "";
     const type = e.type;
     const detail = e.detail;
+    const comments = e.comments || "";
     const playerName = e.player?.name || "";
     const assistName = e.assist?.name || "";
     const teamName = normalizeTeam(e.team?.name || "");
+    // Penalty-shootout kicks are logged as "Goal" events too — they are NOT match goals.
+    if (comments.toLowerCase().includes("penalty shootout")) continue;
+    // A goal disallowed by VAR stays in the feed as a normal Goal event,
+    // and the API adds a separate Var event ("Goal cancelled" / "Goal Disallowed").
+    // Collect those so we can remove the phantom goal below.
+    if (type === "Var" && /cancel|disallow|no goal/i.test(detail || "")) {
+      cancelled.push({ minute: (minute == null ? null : minute), playerName, teamName });
+      continue; // the cancellation itself isn't shown in the timeline
+    }
     // Keep goals even if the minute is missing.
     if (minute == null && type !== "Goal") continue;
     events.push({ minute: (minute == null ? "" : minute), extra, type, detail, playerName, assistName, teamName });
   }
 
+  // Remove goals that were disallowed by VAR — matched by scorer+team,
+  // or (when the player is missing) by same team within 2 minutes.
+  const cleanedEvents = cancelled.length === 0 ? events : events.filter(ev => {
+    if (ev.type !== "Goal") return true;
+    return !cancelled.some(c =>
+      c.teamName === ev.teamName && (
+        (c.playerName && ev.playerName && c.playerName === ev.playerName) ||
+        (c.minute != null && ev.minute !== "" && Math.abs(Number(c.minute) - Number(ev.minute)) <= 2)
+      )
+    );
+  });
+
   const result = {
-    events,
+    events: cleanedEvents,
     fetchedAt: Date.now(),
   };
 
   // Only persist to cache once the match is finished and has events —
   // never freeze an empty/partial result from a live or just-started match.
-  if (!isLive && events.length > 0) {
+  if (!isLive && cleanedEvents.length > 0) {
     cache[apiFixtureId] = result;
     saveMatchDetailsCache(cache);
   }
