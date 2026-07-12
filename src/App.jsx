@@ -15,7 +15,7 @@ import { R32_THIRD_TABLE } from "./r32table";
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "5.18.2";
+const APP_VERSION = "5.19.0";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -1318,6 +1318,9 @@ const KO_SCHEDULE = {
   // Semi-finals (Jul 14 & 15)
   "SF-0": { kickoff: _utc(2026,7,14,19, 0), venue: "AT&T Stadium, Dallas" },                 // Jul 14 3 PM EDT
   "SF-1": { kickoff: _utc(2026,7,15,19, 0), venue: "Mercedes-Benz Stadium, Atlanta" },       // Jul 15 3 PM EDT
+
+  // Third-place play-off (Jul 18)
+  "TP-0": { kickoff: _utc(2026,7,18,21, 0), venue: "Hard Rock Stadium, Miami" },             // Jul 18 5 PM EDT
 
   // Final
   "FINAL": { kickoff: _utc(2026,7,19,19, 0), venue: "MetLife Stadium, East Rutherford" },    // Jul 19 3 PM EDT
@@ -14592,6 +14595,17 @@ function TodayScreen({ picks, actuals, onPick, onBack, onGoToBracket, leagueMemb
       if (win === "b" && mm.b && !mm.b.placeholder) return mm.b;
       return ph(`מנצח M${mNum}`);
     };
+    // LSF — the LOSER of a semi-final (for the third-place play-off).
+    const LSF = (id, mNum) => {
+      const mm = map[id];
+      if (!mm) return ph(`מפסיד M${mNum}`);
+      const win = actualKo[id];
+      if (win === "a" && mm.b && !mm.b.placeholder) return mm.b;
+      if (win === "b" && mm.a && !mm.a.placeholder) return mm.a;
+      return ph(`מפסיד M${mNum}`);
+    };
+    // Third place (M103): losers of the two semi-finals
+    map["TP-0"] = { id:"TP-0", a: LSF("SF-0",101), b: LSF("SF-1",102) };
     // FINAL (M104): W101 vs W102
     map["FINAL"] = { id:"FINAL", a: WSF("SF-0",101), b: WSF("SF-1",102) };
 
@@ -14815,7 +14829,7 @@ function TodayScreen({ picks, actuals, onPick, onBack, onGoToBracket, leagueMemb
       return (
         <div key={m.slotId} ref={anchorFixtureId === `m-ko-${m.slotId}` ? todayAnchorRef : null} style={{scrollMarginTop:60}}>
           <div style={{display:"flex",alignItems:"center",gap:6,margin:"0 2px 4px"}}>
-            <span style={{fontSize:10,color:"#a5b4fc",letterSpacing:1,fontWeight:800}}>🏆 {m.slotId.startsWith("R32")?"שמינית 32":m.slotId.startsWith("R16")?"שמינית גמר":m.slotId.startsWith("QF")?"רבע גמר":m.slotId.startsWith("SF")?"חצי גמר":m.slotId==="FINAL"?"גמר":"נוקאאוט"}</span>
+            <span style={{fontSize:10,color:"#a5b4fc",letterSpacing:1,fontWeight:800}}>🏆 {m.slotId.startsWith("R32")?"שמינית 32":m.slotId.startsWith("R16")?"שמינית גמר":m.slotId.startsWith("QF")?"רבע גמר":m.slotId.startsWith("SF")?"חצי גמר":m.slotId==="FINAL"?"גמר":m.slotId==="TP-0"?"מקום שלישי":"נוקאאוט"}</span>
           </div>
           <MatchCard
             fixture={koFixture}
@@ -14900,7 +14914,7 @@ function TodayScreen({ picks, actuals, onPick, onBack, onGoToBracket, leagueMemb
         borderRadius:14,padding:"12px 14px",marginBottom:10,
       }}>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
-          <span style={{fontSize:10,color:"#a5b4fc",letterSpacing:1,fontWeight:800}}>🏆 {m.slotId.startsWith("R32")?"שמינית 32":m.slotId.startsWith("R16")?"שמינית גמר":m.slotId.startsWith("QF")?"רבע גמר":m.slotId.startsWith("SF")?"חצי גמר":m.slotId==="FINAL"?"גמר":"נוקאאוט"}</span>
+          <span style={{fontSize:10,color:"#a5b4fc",letterSpacing:1,fontWeight:800}}>🏆 {m.slotId.startsWith("R32")?"שמינית 32":m.slotId.startsWith("R16")?"שמינית גמר":m.slotId.startsWith("QF")?"רבע גמר":m.slotId.startsWith("SF")?"חצי גמר":m.slotId==="FINAL"?"גמר":m.slotId==="TP-0"?"מקום שלישי":"נוקאאוט"}</span>
           <span style={{fontSize:10,color:"#86efac"}}>📅 {k.day} · 🕐 {k.time}</span>
         </div>
         <div style={{display:"flex",flexDirection:"column",gap:6}}>
@@ -20457,8 +20471,10 @@ function AppInner() {
               { id:"SF-1", a:WQF("QF-2"), b:WQF("QF-3") },  // M102
             ];
             const sfWinners = sf.map(m => currentKo[m.id] === "a" ? m.a : currentKo[m.id] === "b" ? m.b : null);
+            const sfLosers  = sf.map(m => currentKo[m.id] === "a" ? m.b : currentKo[m.id] === "b" ? m.a : null);
+            const thirdPlace = { id:"TP-0", a:sfLosers[0], b:sfLosers[1] };  // M103: losers of the semis
             const final = { id:"FINAL", a:sfWinners[0], b:sfWinners[1] };
-            return { r32: realR32, r16, qf, sf, final };
+            return { r32: realR32, r16, qf, sf, thirdPlace, final };
           };
 
           // Iteratively resolve: each round needs the previous round's winners filled in.
@@ -20468,7 +20484,7 @@ function AppInner() {
           for (let pass = 0; pass < 5; pass++) {
             const realBracket = buildRealBracket(workingKo);
             // Flatten all rounds into one list of matches to look up
-            const allRounds = [...realBracket.r32, ...realBracket.r16, ...realBracket.qf, ...realBracket.sf, realBracket.final];
+            const allRounds = [...realBracket.r32, ...realBracket.r16, ...realBracket.qf, ...realBracket.sf, realBracket.thirdPlace, realBracket.final];
             const { winners: koWinners, scores: koScores } = mapKnockoutToBracket(data, allRounds);
             const mergedKo = { ...workingKo, ...koWinners };
             const mergedScores = { ...workingKoScores, ...koScores };
