@@ -15,7 +15,7 @@ import { R32_THIRD_TABLE } from "./r32table";
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "5.19.0";
+const APP_VERSION = "5.19.1";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -6881,6 +6881,32 @@ function LeagueAdminModal({ leagueData, leagueCode, onClose }) {
     }
     setSavingWinner(false);
   };
+  // 🎯 Admin: enter a match score pick for a member who forgot to bet
+  const [pickForMember, setPickForMember] = useState(null);
+  const [pickMatchId, setPickMatchId] = useState("");
+  const [pickH, setPickH] = useState("");
+  const [pickA, setPickA] = useState("");
+  const [savingPick, setSavingPick] = useState(false);
+  const handleSetMemberPick = async () => {
+    if (!pickForMember || !pickMatchId || pickH === "" || pickA === "") { alert("בחר משחק והזן תוצאה"); return; }
+    const h = Math.max(0, parseInt(pickH, 10) || 0);
+    const a = Math.max(0, parseInt(pickA, 10) || 0);
+    setSavingPick(true);
+    try {
+      const raw = pickForMember.raw || {};
+      const [kind, mid] = pickMatchId.split("::");
+      const newPicks = kind === "g" ? { ...(raw.picks || {}), [mid]: { h, a } } : (raw.picks || {});
+      const newKoPicks = kind === "ko" ? { ...(raw.koPicks || {}), [mid]: { h, a } } : (raw.koPicks || {});
+      // Preserve EVERY existing cloud field of the member — we only touch this one pick.
+      const { name: _nm, picks: _pk, koWinners: _kw, koPicks: _kp2, ...rest } = raw;
+      await updateMyPicks(leagueCode, pickForMember.uid, raw.name || pickForMember.name, newPicks, raw.koWinners || {}, { ...rest, koPicks: newKoPicks });
+      alert(`✅ נשמר ניחוש ${h}:${a} עבור ${pickForMember.name}`);
+      setPickForMember(null); setPickMatchId(""); setPickH(""); setPickA("");
+    } catch (err) {
+      alert("שגיאה: " + (err.message || "נסה שוב"));
+    }
+    setSavingPick(false);
+  };
   const handleRemove = async (member) => {
     const ok = confirm(`להסיר את ${member.name} מהליגה?\n\nהפעולה לא הפיכה — כל הניחושים והנתונים שלו יימחקו מהליגה.`);
     if (!ok) return;
@@ -7109,6 +7135,18 @@ function LeagueAdminModal({ leagueData, leagueCode, onClose }) {
                   }}>
                   🏆 קבע אלופה
                 </button>
+                <button
+                  onClick={() => { setPickForMember(m); setPickMatchId(""); setPickH(""); setPickA(""); }}
+                  style={{
+                    flex:1,minWidth:"45%",padding:"7px 10px",
+                    background:"linear-gradient(180deg,rgba(34,197,94,0.2),rgba(34,197,94,0.1))",
+                    border:"1px solid rgba(34,197,94,0.4)",
+                    borderRadius:8,
+                    color:"#86efac",fontSize:11,fontWeight:700,
+                    cursor:"pointer",fontFamily:"inherit",
+                  }}>
+                  🎯 הזן ניחוש
+                </button>
               </div>
             </div>
           ))}
@@ -7213,6 +7251,126 @@ function LeagueAdminModal({ leagueData, leagueCode, onClose }) {
           </div>
         </div>
       )}
+
+      {/* 🎯 Admin: enter a match pick for a member who forgot */}
+      {pickForMember && (() => {
+        const KO_ROUND_LABEL = (slot) => {
+          if (slot === "FINAL") return "גמר";
+          if (slot.startsWith("TP")) return "מקום שלישי";
+          const [r, i] = slot.split("-");
+          const nm = r === "R32" ? "שמינית 32" : r === "R16" ? "שמינית גמר" : r === "QF" ? "רבע גמר" : "חצי גמר";
+          return `${nm} ${Number(i) + 1}`;
+        };
+        const koOptions = Object.keys(KO_SCHEDULE)
+          .sort((a, b) => new Date(KO_SCHEDULE[a].kickoff) - new Date(KO_SCHEDULE[b].kickoff))
+          .map(slot => {
+            const d = new Date(KO_SCHEDULE[slot].kickoff);
+            return { v: `ko::${slot}`, label: `${KO_ROUND_LABEL(slot)} · ${d.getDate()}.${d.getMonth() + 1}` };
+          });
+        const selGroupFix = pickMatchId.startsWith("g::") ? FIXTURES.find(f => f.id === pickMatchId.slice(3)) : null;
+        const isKoSel = pickMatchId.startsWith("ko::");
+        return (
+          <div onClick={()=>!savingPick && setPickForMember(null)} style={{
+            position:"fixed",inset:0,zIndex:9600,background:"rgba(0,0,0,0.8)",
+            display:"flex",alignItems:"flex-end",justifyContent:"center",
+          }}>
+            <div onClick={e=>e.stopPropagation()} style={{
+              width:"100%",maxWidth:440,maxHeight:"85vh",
+              background:"linear-gradient(180deg,#0a1628,#04140b)",
+              borderRadius:"20px 20px 0 0",border:"1px solid rgba(34,197,94,0.35)",
+              display:"flex",flexDirection:"column",overflow:"hidden",
+            }}>
+              <div style={{padding:"16px 18px 12px",borderBottom:"1px solid rgba(255,255,255,0.08)"}}>
+                <div style={{fontSize:16,fontWeight:900,color:"#fff"}}>🎯 ניחוש ל{pickForMember.name}</div>
+                <div style={{fontSize:11,color:"#94a3b8",marginTop:2}}>בחר משחק והזן תוצאה — יישמר אצלו כאילו הימר בעצמו</div>
+              </div>
+              <div style={{padding:"14px 18px 22px",overflowY:"auto"}}>
+                <select
+                  value={pickMatchId}
+                  onChange={e=>setPickMatchId(e.target.value)}
+                  style={{
+                    width:"100%",padding:"11px 12px",borderRadius:10,
+                    background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.15)",
+                    color:"#fff",fontSize:13,fontFamily:"inherit",outline:"none",
+                  }}>
+                  <option value="" style={{color:"#000"}}>בחר משחק…</option>
+                  <optgroup label="נוקאאוט" style={{color:"#000"}}>
+                    {koOptions.map(o => (
+                      <option key={o.v} value={o.v} style={{color:"#000"}}>{o.label}</option>
+                    ))}
+                  </optgroup>
+                  <optgroup label="שלב הבתים" style={{color:"#000"}}>
+                    {FIXTURES.map(f => (
+                      <option key={f.id} value={`g::${f.id}`} style={{color:"#000"}}>
+                        {f.id} · {f.home} — {f.away}
+                      </option>
+                    ))}
+                  </optgroup>
+                </select>
+
+                {pickMatchId !== "" && (
+                  <>
+                    <div style={{
+                      display:"flex",alignItems:"center",justifyContent:"center",gap:14,
+                      marginTop:16,direction:"ltr",
+                    }}>
+                      <div style={{textAlign:"center"}}>
+                        <div style={{fontSize:10,color:"#94a3b8",fontWeight:700,marginBottom:6}}>
+                          {selGroupFix ? selGroupFix.home : "הקבוצה העליונה"}
+                        </div>
+                        <input
+                          type="number" min="0" inputMode="numeric"
+                          value={pickH}
+                          onChange={e=>setPickH(e.target.value)}
+                          style={{
+                            width:64,height:56,textAlign:"center",fontSize:22,fontWeight:900,
+                            borderRadius:12,background:"rgba(255,255,255,0.07)",
+                            border:"1.5px solid rgba(34,197,94,0.5)",color:"#fff",
+                            fontFamily:"inherit",outline:"none",
+                          }}
+                        />
+                      </div>
+                      <div style={{fontSize:20,fontWeight:900,color:"#64748b",paddingTop:18}}>:</div>
+                      <div style={{textAlign:"center"}}>
+                        <div style={{fontSize:10,color:"#94a3b8",fontWeight:700,marginBottom:6}}>
+                          {selGroupFix ? selGroupFix.away : "הקבוצה התחתונה"}
+                        </div>
+                        <input
+                          type="number" min="0" inputMode="numeric"
+                          value={pickA}
+                          onChange={e=>setPickA(e.target.value)}
+                          style={{
+                            width:64,height:56,textAlign:"center",fontSize:22,fontWeight:900,
+                            borderRadius:12,background:"rgba(255,255,255,0.07)",
+                            border:"1.5px solid rgba(34,197,94,0.5)",color:"#fff",
+                            fontFamily:"inherit",outline:"none",
+                          }}
+                        />
+                      </div>
+                    </div>
+                    {isKoSel && (
+                      <div style={{fontSize:10,color:"#64748b",textAlign:"center",marginTop:10,lineHeight:1.6}}>
+                        "העליונה"/"התחתונה" — לפי סדר הקבוצות בכרטיס המשחק בטאב המשחקים
+                      </div>
+                    )}
+                    <button
+                      onClick={handleSetMemberPick}
+                      disabled={savingPick}
+                      style={{
+                        width:"100%",marginTop:18,padding:"13px",borderRadius:12,border:"none",
+                        background:savingPick ? "rgba(34,197,94,0.3)" : "linear-gradient(135deg,#22c55e,#15803d)",
+                        color:"#fff",fontSize:14,fontWeight:900,fontFamily:"inherit",
+                        cursor:savingPick ? "wait" : "pointer",
+                      }}>
+                      {savingPick ? "שומר…" : "שמור ניחוש לחבר"}
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
