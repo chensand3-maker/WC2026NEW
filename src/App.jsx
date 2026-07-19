@@ -15,7 +15,7 @@ import { R32_THIRD_TABLE } from "./r32table";
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "5.19.1";
+const APP_VERSION = "5.19.2";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -20652,6 +20652,23 @@ function AppInner() {
             workingKo = mergedKo;
             workingKoScores = mergedScores;
           }
+          // 🏆 Derive the ACTUAL CHAMPION from the real final result.
+          // Bug fix: actualWinner was never set anywhere, so nobody ever received
+          // the 20-point winner bet. Once the FINAL has a real winner — set it.
+          try {
+            const finWin = workingKo["FINAL"];
+            if (finWin === "a" || finWin === "b") {
+              const finalMatch = buildRealBracket(workingKo).final;
+              const champTeam = finWin === "a" ? finalMatch.a : finalMatch.b;
+              const champName = champTeam && (champTeam.n || champTeam.name);
+              if (champName) {
+                const champ = { name: champName, flag: champTeam.f || champTeam.flag || "" };
+                setActualWinner(prev =>
+                  prev && (prev.name || prev.n) === champ.name ? prev : champ
+                );
+              }
+            }
+          } catch {}
           if (JSON.stringify(workingKo) !== JSON.stringify(actualKo)) {
             newActualKo = workingKo;
             setActualKo(workingKo);
