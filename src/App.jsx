@@ -15,7 +15,7 @@ import { R32_THIRD_TABLE } from "./r32table";
 
 // ─── APP VERSION ──────────────────────────────────────────────────────────────
 // Bump this manually before each deploy. Shown in the sidebar footer.
-const APP_VERSION = "5.19.2";
+const APP_VERSION = "5.20.0";
 
 // 🧹 Auto-clear ALL old live cache versions on every app load
 (function clearOldCaches() {
@@ -12041,6 +12041,247 @@ function BackToTopButton() {
 }
 
 // ─── RECAP MODAL: summary of matches that finished since user's last visit ───
+// ─── 🏆 CHAMPION CELEBRATION — full-screen takeover when the World Cup ends ──
+function ChampionCelebration({ board, leagueName = "", onClose }) {
+  const canvasRef = useRef(null);
+  const champ = board[0];
+  const second = board[1] || null;
+  const third = board[2] || null;
+  const gap = second ? champ.total - second.total : 0;
+
+  // Golden fireworks engine (canvas)
+  useEffect(() => {
+    const cv = canvasRef.current; if (!cv) return;
+    const ctx = cv.getContext("2d");
+    const DPR = Math.min(window.devicePixelRatio || 1, 2);
+    let W = window.innerWidth, H = window.innerHeight, run = true, raf, launchT;
+    const size = () => { W = window.innerWidth; H = window.innerHeight; cv.width = W * DPR; cv.height = H * DPR; ctx.setTransform(DPR, 0, 0, DPR, 0, 0); };
+    size(); window.addEventListener("resize", size);
+    const rockets = [], parts = [];
+    const COLORS = ["#fff4cc", "#f4e4b0", "#e9c877", "#ffffff", "#ffd27a"];
+    const launch = () => {
+      if (!run) return;
+      rockets.push({ x: W * (0.15 + Math.random() * 0.7), y: H + 8, vx: (Math.random() - .5) * 1.2, vy: -(7.5 + Math.random() * 3.2), fuse: 52 + Math.random() * 22 });
+      launchT = setTimeout(launch, 700 + Math.random() * 900);
+    };
+    launchT = setTimeout(launch, 400);
+    const explode = (x, y) => {
+      const n = 40 + Math.random() * 26, c = COLORS[(Math.random() * COLORS.length) | 0];
+      for (let i = 0; i < n; i++) {
+        const a = (Math.PI * 2 / n) * i + Math.random() * .2, sp = 1.6 + Math.random() * 3.2;
+        parts.push({ x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, life: 1, c });
+      }
+    };
+    const loop = () => {
+      if (!run) return;
+      ctx.clearRect(0, 0, W, H);
+      ctx.globalCompositeOperation = "lighter";
+      for (let i = rockets.length - 1; i >= 0; i--) {
+        const r = rockets[i];
+        r.x += r.vx; r.y += r.vy; r.vy += 0.045; r.fuse--;
+        ctx.fillStyle = "rgba(255,244,204,.95)";
+        ctx.beginPath(); ctx.arc(r.x, r.y, 2, 0, 7); ctx.fill();
+        if (r.fuse <= 0 || r.vy > -1) { explode(r.x, r.y); rockets.splice(i, 1); }
+      }
+      for (let i = parts.length - 1; i >= 0; i--) {
+        const p = parts[i];
+        p.x += p.vx; p.y += p.vy; p.vy += 0.035; p.vx *= .985; p.life -= .012;
+        if (p.life <= 0) { parts.splice(i, 1); continue; }
+        ctx.globalAlpha = p.life; ctx.fillStyle = p.c;
+        ctx.beginPath(); ctx.arc(p.x, p.y, 1.5 + p.life * 1.4, 0, 7); ctx.fill();
+      }
+      ctx.globalAlpha = 1; ctx.globalCompositeOperation = "source-over";
+      raf = requestAnimationFrame(loop);
+    };
+    raf = requestAnimationFrame(loop);
+    return () => { run = false; cancelAnimationFrame(raf); clearTimeout(launchT); window.removeEventListener("resize", size); };
+  }, []);
+
+  const confetti = useMemo(() => Array.from({ length: 45 }, () => ({
+    left: Math.random() * 100,
+    bg: ["#f4e4b0", "#c9a961", "#fff4cc", "#e8e8f0", "#b87a44"][(Math.random() * 5) | 0],
+    dur: 3.4 + Math.random() * 3.4, delay: Math.random() * 4,
+    w: 5 + Math.random() * 5, h: 9 + Math.random() * 7,
+  })), []);
+  const sparks = useMemo(() => Array.from({ length: 9 }, () => ({
+    left: 36 + Math.random() * 28, dur: 1.7 + Math.random() * 1.5, delay: Math.random() * 2.4,
+  })), []);
+  const initial = (n) => (n || "?").trim().charAt(0);
+
+  return (
+    <div style={{
+      position: "fixed", inset: 0, zIndex: 9800, overflowY: "auto",
+      background: "radial-gradient(120% 60% at 50% 0%, rgba(201,169,97,0.14), transparent 55%), radial-gradient(100% 100% at 50% 100%, #14100a, #0a0a0e 55%, #060608 100%)",
+      display: "flex", flexDirection: "column", alignItems: "center", padding: "46px 18px 40px",
+    }}>
+      <style>{`
+        @property --chspin{syntax:'<angle>';initial-value:0deg;inherits:false}
+        @keyframes chSpin{to{--chspin:360deg}}
+        @keyframes chRays{to{transform:rotate(360deg)}}
+        @keyframes chPop{0%{transform:scale(.6);opacity:0}70%{transform:scale(1.05)}100%{transform:scale(1);opacity:1}}
+        @keyframes chCrown{0%{transform:translateY(-40px) rotate(-14deg);opacity:0}60%{transform:translateY(4px) rotate(4deg);opacity:1}100%{transform:translateY(0) rotate(0)}}
+        @keyframes chShine{0%,15%{background-position:220% 0}60%,100%{background-position:-220% 0}}
+        @keyframes chConf{0%{transform:translateY(-8vh) rotate(0)}100%{transform:translateY(108vh) rotate(720deg)}}
+        @keyframes chRise{0%{transform:translateY(0);opacity:0}12%{opacity:.95}100%{transform:translateY(-150px);opacity:0}}
+        @keyframes chPod{0%{transform:translateY(30px);opacity:0}100%{transform:translateY(0);opacity:1}}
+      `}</style>
+
+      <canvas ref={canvasRef} style={{ position: "fixed", inset: 0, pointerEvents: "none" }} />
+      <div style={{ position: "fixed", inset: 0, pointerEvents: "none", overflow: "hidden" }}>
+        {confetti.map((c, i) => (
+          <span key={i} style={{
+            position: "absolute", top: "-8vh", left: c.left + "%", width: c.w, height: c.h,
+            borderRadius: 2, background: c.bg, animation: `chConf ${c.dur}s linear ${c.delay}s infinite`,
+          }} />
+        ))}
+      </div>
+
+      <button onClick={onClose} style={{
+        position: "fixed", top: 14, insetInlineEnd: 14, zIndex: 6, width: 38, height: 38,
+        borderRadius: "50%", border: "1px solid rgba(201,169,97,.4)", background: "rgba(10,9,6,.75)",
+        color: "#c9a961", fontSize: 16, fontWeight: 900, cursor: "pointer", fontFamily: "inherit",
+      }}>✕</button>
+
+      <div style={{ position: "relative", zIndex: 3, width: "100%", maxWidth: 392 }}>
+        {/* champion card — spinning gold frame */}
+        <div style={{
+          borderRadius: 26, padding: 2,
+          background: "conic-gradient(from var(--chspin),#5e4e26,#c9a961,#f4e4b0,#fff4cc,#f4e4b0,#c9a961,#5e4e26)",
+          animation: "chSpin 5s linear infinite, chPop .8s cubic-bezier(.2,.8,.3,1.2) both .3s",
+          boxShadow: "0 30px 80px -28px rgba(201,169,97,.45)",
+        }}>
+          <div style={{
+            background: "radial-gradient(90% 50% at 50% 0%, rgba(201,169,97,.16), transparent 60%), linear-gradient(172deg,#14110a,#0a0906)",
+            borderRadius: 24, padding: "28px 20px 24px", textAlign: "center", position: "relative", overflow: "hidden",
+          }}>
+            <div style={{
+              position: "absolute", top: 150, left: "50%", transform: "translate(-50%,-50%)",
+              width: 420, height: 420, borderRadius: "50%", pointerEvents: "none", opacity: .45,
+              background: "repeating-conic-gradient(from 0deg, rgba(244,228,176,.16) 0deg 7deg, transparent 7deg 24deg)",
+              WebkitMask: "radial-gradient(circle,#000 0%,transparent 60%)",
+              mask: "radial-gradient(circle,#000 0%,transparent 60%)",
+              animation: "chRays 36s linear infinite",
+            }} />
+            {sparks.map((s, i) => (
+              <i key={i} style={{
+                position: "absolute", bottom: "40%", left: s.left + "%", width: 3, height: 3,
+                borderRadius: "50%", background: "#fff4cc", boxShadow: "0 0 8px rgba(244,228,176,.95)",
+                animation: `chRise ${s.dur}s ease-out ${s.delay}s infinite`,
+              }} />
+            ))}
+
+            {/* crown */}
+            <svg width="64" height="46" viewBox="0 0 64 46" style={{ position: "relative", zIndex: 2, animation: "chCrown 1s cubic-bezier(.2,.8,.3,1.3) both .8s" }}>
+              <defs>
+                <linearGradient id="chcg" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0" stopColor="#fff4cc" /><stop offset=".55" stopColor="#e9c877" /><stop offset="1" stopColor="#a07f35" />
+                </linearGradient>
+              </defs>
+              <path d="M6 38 L2 12 L17 24 L32 4 L47 24 L62 12 L58 38 Z" fill="url(#chcg)" />
+              <rect x="6" y="38" width="52" height="6" rx="3" fill="url(#chcg)" />
+              <circle cx="2" cy="10" r="3" fill="#fff4cc" /><circle cx="32" cy="4" r="3.4" fill="#fff4cc" /><circle cx="62" cy="10" r="3" fill="#fff4cc" />
+              <circle cx="20" cy="34" r="2.2" fill="#7a5f22" /><circle cx="32" cy="34" r="2.2" fill="#7a5f22" /><circle cx="44" cy="34" r="2.2" fill="#7a5f22" />
+            </svg>
+
+            <div style={{ position: "relative", zIndex: 2, fontSize: 10, fontWeight: 800, letterSpacing: 4, color: "#8a8472", marginTop: 10 }}>
+              אלוף המונדיאל של הליגה
+            </div>
+            <div style={{
+              position: "relative", zIndex: 2, fontSize: 46, fontWeight: 900, lineHeight: 1.1, marginTop: 6,
+              background: "linear-gradient(100deg,#8a6d2e 15%,#f4e4b0 40%,#ffffff 50%,#f4e4b0 60%,#8a6d2e 85%)",
+              backgroundSize: "220% 100%", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
+              animation: "chShine 4s ease-in-out infinite",
+              filter: "drop-shadow(0 6px 24px rgba(201,169,97,.45))", wordBreak: "break-word",
+            }}>
+              {champ.name}
+            </div>
+            <div style={{ position: "relative", zIndex: 2, fontSize: 13.5, fontWeight: 800, color: "#e8e4da", marginTop: 6 }}>
+              מלך הניחושים{leagueName ? ` של ${leagueName}` : ""} 🥇
+            </div>
+
+            {/* World-Cup style trophy, drawn in code */}
+            <svg width="84" height="115" viewBox="0 0 110 150" style={{ position: "relative", zIndex: 2, marginTop: 16, filter: "drop-shadow(0 14px 34px rgba(201,169,97,.5))" }}>
+              <defs>
+                <linearGradient id="chtg" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0" stopColor="#fff6d6" /><stop offset=".45" stopColor="#e9c877" />
+                  <stop offset=".8" stopColor="#b8923f" /><stop offset="1" stopColor="#8a6a26" />
+                </linearGradient>
+                <radialGradient id="chgl" cx=".35" cy=".3" r=".9">
+                  <stop offset="0" stopColor="#fff8dd" /><stop offset=".6" stopColor="#e2bd68" /><stop offset="1" stopColor="#a5812f" />
+                </radialGradient>
+              </defs>
+              <circle cx="55" cy="34" r="27" fill="url(#chgl)" />
+              <path d="M31 28 C42 20, 68 20, 79 28" fill="none" stroke="rgba(255,250,225,.6)" strokeWidth="2" />
+              <path d="M30 40 C44 48, 66 48, 80 40" fill="none" stroke="rgba(120,90,30,.45)" strokeWidth="2" />
+              <ellipse cx="47" cy="26" rx="8" ry="5" fill="rgba(255,255,255,.5)" />
+              <path d="M34 52 C26 66, 30 74, 40 80 L70 80 C80 74, 84 66, 76 52 C68 62, 42 62, 34 52 Z" fill="url(#chtg)" />
+              <path d="M42 80 C46 96, 46 100, 40 112 L70 112 C64 100, 64 96, 68 80 Z" fill="url(#chtg)" />
+              <rect x="30" y="112" width="50" height="12" rx="5" fill="url(#chtg)" />
+              <rect x="24" y="126" width="62" height="13" rx="6" fill="url(#chtg)" />
+              <ellipse cx="44" cy="60" rx="4" ry="14" fill="rgba(255,250,225,.35)" transform="rotate(14 44 60)" />
+            </svg>
+
+            <div style={{
+              position: "relative", zIndex: 2, display: "flex", justifyContent: "center", gap: 26,
+              marginTop: 18, paddingTop: 16, borderTop: "1px solid rgba(201,169,97,.22)",
+            }}>
+              <div>
+                <div style={{ fontSize: 9, letterSpacing: 2, color: "#8a8472", fontWeight: 700 }}>נקודות</div>
+                <div style={{ fontSize: 19, fontWeight: 900, marginTop: 4, background: "linear-gradient(180deg,#fff4cc,#c9a961)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>{champ.total.toLocaleString()}</div>
+              </div>
+              <div>
+                <div style={{ fontSize: 9, letterSpacing: 2, color: "#8a8472", fontWeight: 700 }}>בולים</div>
+                <div style={{ fontSize: 19, fontWeight: 900, marginTop: 4, background: "linear-gradient(180deg,#fff4cc,#c9a961)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>{champ.exact}</div>
+              </div>
+              {second && (
+                <div>
+                  <div style={{ fontSize: 9, letterSpacing: 2, color: "#8a8472", fontWeight: 700 }}>פער מהשני</div>
+                  <div style={{ fontSize: 19, fontWeight: 900, marginTop: 4, background: "linear-gradient(180deg,#fff4cc,#c9a961)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>+{gap}</div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* podium */}
+        <div style={{ display: "flex", alignItems: "flex-end", gap: 10, marginTop: 24, justifyContent: "center" }}>
+          {second && (
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 7, animation: "chPod .7s ease both 1.3s" }}>
+              <div style={{ width: 42, height: 42, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 900, color: "#15151c", border: "2px solid rgba(244,228,176,.7)", background: "linear-gradient(135deg,#e8e8f0,#a8a8b8)" }}>{initial(second.name)}</div>
+              <div style={{ fontSize: 12, fontWeight: 800, color: "#e8e4da" }}>{second.name}</div>
+              <div style={{ fontSize: 10, fontWeight: 700, color: "#8a8472" }}>{second.total.toLocaleString()} נק'</div>
+              <div style={{ width: 84, height: 58, borderRadius: "10px 10px 0 0", display: "flex", alignItems: "flex-start", justifyContent: "center", paddingTop: 7, fontSize: 15, fontWeight: 900, color: "#15151c", background: "linear-gradient(180deg,#e8e8f0,#a8a8b8 70%,#78788a)" }}>2</div>
+            </div>
+          )}
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 7, animation: "chPod .7s ease both 1.1s" }}>
+            <div style={{ width: 46, height: 46, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, fontWeight: 900, color: "#1a1400", border: "2px solid rgba(255,244,204,.9)", background: "linear-gradient(135deg,#fff4cc,#c9a961)" }}>{initial(champ.name)}</div>
+            <div style={{ fontSize: 13, fontWeight: 900, color: "#fff" }}>{champ.name}</div>
+            <div style={{ fontSize: 10, fontWeight: 700, color: "#c9a961" }}>{champ.total.toLocaleString()} נק'</div>
+            <div style={{ width: 88, height: 84, borderRadius: "10px 10px 0 0", display: "flex", alignItems: "flex-start", justifyContent: "center", paddingTop: 8, fontSize: 16, fontWeight: 900, color: "#1a1400", background: "linear-gradient(180deg,#fff4cc,#c9a961 60%,#8a6d2e)" }}>1</div>
+          </div>
+          {third && (
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 7, animation: "chPod .7s ease both 1.5s" }}>
+              <div style={{ width: 42, height: 42, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 900, color: "#1c0f04", border: "2px solid rgba(244,228,176,.7)", background: "linear-gradient(135deg,#e8b98a,#b87a44)" }}>{initial(third.name)}</div>
+              <div style={{ fontSize: 12, fontWeight: 800, color: "#e8e4da" }}>{third.name}</div>
+              <div style={{ fontSize: 10, fontWeight: 700, color: "#8a8472" }}>{third.total.toLocaleString()} נק'</div>
+              <div style={{ width: 84, height: 42, borderRadius: "10px 10px 0 0", display: "flex", alignItems: "flex-start", justifyContent: "center", paddingTop: 7, fontSize: 15, fontWeight: 900, color: "#1c0f04", background: "linear-gradient(180deg,#e8b98a,#b87a44 70%,#8a5426)" }}>3</div>
+            </div>
+          )}
+        </div>
+
+        <button onClick={onClose} style={{
+          marginTop: 24, width: "100%", padding: 15, border: "none", borderRadius: 15,
+          background: "linear-gradient(135deg,#f4e4b0,#c9a961 60%,#8a6d2e)", color: "#1a1400",
+          fontSize: 14.5, fontWeight: 900, fontFamily: "inherit", letterSpacing: .3, cursor: "pointer",
+          boxShadow: "0 14px 34px -12px rgba(201,169,97,.55)",
+        }}>
+          כל הכבוד {champ.name}! לאפליקציה ←
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function RecapModal({ recap, onClose }) {
   const t = useT();
   if (!recap || !recap.newMatches?.length) return null;
@@ -20895,6 +21136,54 @@ function AppInner() {
     }
   }, [picks, actuals, koWinners, koPicks, actualKoScores, winnerPick, topScorerPick, actualWinner, actualTopScorer, myTotalPoints, leagueCodes.join("|"), leagueData, pickedAtHours, cardCollection]);
 
+  // ─── 🏆 CHAMPION CELEBRATION — computed once the World Cup is decided ──
+  // Same formula as the league table: group + knockout + winner bet + top scorer.
+  const championBoard = useMemo(() => {
+    try {
+      if (!actualWinner) return null; // tournament not over yet
+      const data = allLeagueData?.[activeLeagueCode];
+      if (!data?.members) return null;
+      const rows = Object.entries(data.members).map(([uid, m]) => {
+        const ms = totalScore(m.picks || {}, actuals);
+        const ks = totalKoScore(m.koPicks, actualKoScores);
+        let bonus = 0;
+        if (m.winnerPick) {
+          const aw = actualWinner.name || actualWinner.n;
+          const mw = m.winnerPick.name || m.winnerPick.n;
+          if (aw && mw && aw === mw) bonus += POINTS.WINNER_BET;
+        }
+        if (m.topScorerPick) {
+          const f = (topScorers || []).find(s => nameMatch(s.name, m.topScorerPick.name));
+          if (f) bonus += (f.goals || 0) * POINTS.TOP_SCORER_GOAL;
+          else if (m.topScorerGoals && nameMatch(m.topScorerName, m.topScorerPick.name)) bonus += m.topScorerGoals * POINTS.TOP_SCORER_GOAL;
+          else if (actualTopScorer && nameMatch(actualTopScorer.name, m.topScorerPick.name)) bonus += (actualTopScorer.goals || 0) * POINTS.TOP_SCORER_GOAL;
+        }
+        return {
+          uid, name: m.name || "?",
+          total: (ms.total || 0) + (ks.total || 0) + bonus,
+          exact: (ms.exact || 0) + (ks.exact || 0),
+        };
+      }).sort((a, b) => b.total !== a.total ? b.total - a.total
+        : b.exact !== a.exact ? b.exact - a.exact
+        : (a.uid || "").localeCompare(b.uid || ""));
+      return rows.length >= 2 ? rows : null;
+    } catch { return null; }
+  }, [actualWinner, allLeagueData, activeLeagueCode, actuals, actualKoScores, topScorers, actualTopScorer]);
+
+  const [showChampionScreen, setShowChampionScreen] = useState(false);
+  useEffect(() => {
+    if (!championBoard || !name || !activeLeagueCode) return;
+    let t;
+    try {
+      if (localStorage.getItem("wc2026_champ_seen_v1") === activeLeagueCode) return;
+      t = setTimeout(() => {
+        setShowChampionScreen(true);
+        try { localStorage.setItem("wc2026_champ_seen_v1", activeLeagueCode); } catch {}
+      }, 1600);
+    } catch {}
+    return () => clearTimeout(t);
+  }, [championBoard, name, activeLeagueCode]);
+
   // ─── 💰 COIN REWARDS ──────────────────────────────────────────────────
   // Whenever a new match result appears, scan for predictions that just
   // became scorable. Award coins ONCE per match (tracked in earnedFromIds).
@@ -21633,6 +21922,9 @@ function AppInner() {
       )}
 
       {/* 📊 Recap modal — new matches since last visit */}
+      {showChampionScreen && championBoard && (
+        <ChampionCelebration board={championBoard} leagueName={leagueName} onClose={() => setShowChampionScreen(false)} />
+      )}
       {pendingRecap && (
         <RecapModal recap={pendingRecap} onClose={()=>setPendingRecap(null)} />
       )}
